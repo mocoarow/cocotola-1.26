@@ -28,5 +28,11 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+
+mise.toml
+
+.claude/
+CLAUDE.md
+AGENTS.md
