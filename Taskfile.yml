@@ -6,6 +6,7 @@ dotenv: ['.env']
 vars:
   GO_PROJECTS:
     - hello-world
+    - third-party-library
 
 tasks:
   init:
@@ -41,9 +42,9 @@ tasks:
     cmds:
       - task: lint
       - yamllint -c .yamllint.yml .
-      - misspell -locale US -error .
+      - misspell -locale US -i "$(paste -sd, .misspell-ignore)" -error .
       - markdownlint --config .markdownlint.yaml .
-      - gitleaks detect -c .gitleaks.toml --no-banner
+      - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
 
   generate-go-project:
     cmds:

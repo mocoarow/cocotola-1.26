@@ -1,0 +1,37 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "third-party-library_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/third-party-library",
+    visibility = ["//visibility:private"],
+    deps = ["@com_github_google_uuid//:uuid"],
+)
+
+go_binary(
+    name = "third-party-library",
+    embed = [":third-party-library_lib"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "pkg",
+    srcs = [":third-party-library"],
+)
+
+oci_image(
+    name = "image",
+    # base = "@distroless_static_debian12_linux_amd64",
+    base = "@distroless_static_debian12_debug",
+    entrypoint = ["/third-party-library"],
+    tars = [":pkg"],
+)
+
+oci_load(
+    name = "load",
+    image = ":image",
+    repo_tags = ["third-party-library:latest"],
+)
