@@ -16,13 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Read misspell ignore list
+        id: misspell-ignore
+        run: |
+          IGNORE=$(paste -sd, .misspell-ignore)
+          echo "words=${IGNORE}" >> "$GITHUB_OUTPUT"
+
       - name: misspell
         uses: reviewdog/action-misspell@d6429416b12b09b4e2768307d53bef58d172e962 # v1.27.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           reporter: github-pr-review
           locale: US
-          ignore: importas
+          ignore: ${{ steps.misspell-ignore.outputs.words }}
           fail_on_error: true
 
       - name: yamllint
