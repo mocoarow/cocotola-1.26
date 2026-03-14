@@ -1,0 +1,125 @@
+---
+version: "2"
+run:
+  go: "1.26"
+  build-tags:
+    - small
+    - medium
+    - large
+linters:
+  enable:
+    - asasalint
+    - bodyclose
+    - canonicalheader
+    - decorder
+    - dupl
+    - dupword
+    - errorlint
+    - errchkjson
+    - errcheck
+    - exhaustive
+    - exhaustruct
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - gocritic
+    - gocheckcompilerdirectives
+    - gochecknoglobals
+    - gocognit
+    - goconst
+    - gocyclo
+    - goheader
+    - gosec
+    - iface
+    - importas
+    - intrange
+    - interfacebloat
+    - ireturn
+    - makezero
+    - mirror
+    - misspell
+    - mnd
+    - modernize
+    - musttag
+    - nestif
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nolintlint
+    - paralleltest
+    - perfsprint
+    - prealloc
+    - predeclared
+    - reassign
+    - revive
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagliatelle
+    - testifylint
+    - testpackage
+    - thelper
+    - unconvert
+    - whitespace
+    - wrapcheck
+    - wsl_v5
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print.*$
+    gocognit:
+      min-complexity: 20
+    gocyclo:
+      min-complexity: 12
+    gosec:
+      excludes:
+        - G115
+    staticcheck:
+      checks:
+        - all
+    wrapcheck:
+      extra-ignore-sigs:
+        - errors.Errorf(
+        - .Errorf(
+        - .Errorf
+      ignore-sigs:
+        - errors.Errorf(
+        - .Errorf(
+        - .Errorf
+        - errors.New(
+    wsl_v5:
+      disable:
+        - if
+        - expr
+        - append
+        - range
+        - assign
+        - decl
+        - return
+        - defer
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - dupl
+          - exhaustruct
+          - goconst
+          - gochecknoglobals
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$

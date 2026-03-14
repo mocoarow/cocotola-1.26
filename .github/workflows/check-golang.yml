@@ -1,0 +1,45 @@
+---
+name: Check Go
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+permissions: {}
+jobs:
+  golang:
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    strategy:
+      matrix:
+        workdir:
+          - hello-world
+    name: golang
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files-specific
+        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47.0.0
+        with:
+          files: |
+            ${{ matrix.workdir }}/**
+
+      - name: golangci-lint
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
+        uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 # v2.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          golangci_lint_flags: --config=../.golangci.yml --timeout=10m
+          tool_name: golangci-lint
+          filter_mode: nofilter
+          fail_on_error: true
+          workdir: ${{ matrix.workdir }}

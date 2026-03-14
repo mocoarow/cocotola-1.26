@@ -1,0 +1,51 @@
+# rules_go
+bazel_dep(name = "rules_go", version = "0.60.0", repo_name = "rules_go")
+
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.download(version = "1.26.1")
+
+# gazelle
+bazel_dep(name = "gazelle", version = "0.47.0", repo_name = "gazelle")
+
+bazel_dep(name = "bazel_skylib", version = "1.9.0")
+
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
+go_deps.from_file(go_work = "//:go.work")
+
+use_repo(
+    go_deps,
+)
+
+# pkg
+bazel_dep(name = "rules_pkg", version = "1.2.0")
+
+# oci
+bazel_dep(name = "rules_oci", version = "2.2.7")
+
+oci = use_extension("@rules_oci//oci:extensions.bzl", "oci")
+oci.pull(
+    name = "distroless_static_debian12",
+    digest = "sha256:2b7c93f6d6648c11f0e80a48558c8f77885eb0445213b8e69a6a0d7c89fc6ae4",
+    image = "gcr.io/distroless/static-debian12",
+    platforms = [
+        "linux/amd64",
+    ],
+    tag = "nonroot",
+)
+oci.pull(
+    name = "distroless_static_debian12_debug",
+    digest = "sha256:0eb1b021dc83cd103a4f5bec6d5292907b7f649137a200e178aa42d768d93ba2",
+    image = "gcr.io/distroless/static-debian12:debug",
+    platforms = [
+        "linux/amd64",
+    ],
+)
+
+# to generate the lines below, run `bazel mod tidy`
+use_repo(
+    oci,
+    "distroless_static_debian12",
+    "distroless_static_debian12_debug",
+    "distroless_static_debian12_debug_linux_amd64",
+    "distroless_static_debian12_linux_amd64",
+)

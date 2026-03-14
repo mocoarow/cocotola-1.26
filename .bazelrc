@@ -1,0 +1,6 @@
+common --enable_bzlmod
+
+# Default builds run locally. Add `--config=remote` when you explicitly want the remote cache.
+build:remote --remote_cache=https://storage.googleapis.com/bazel-cache-mocoarow-25-08 --google_default_credentials
+test:remote --remote_cache=https://storage.googleapis.com/bazel-cache-mocoarow-25-08 --google_default_credentials
+run:remote --remote_cache=https://storage.googleapis.com/bazel-cache-mocoarow-25-08 --google_default_credentials

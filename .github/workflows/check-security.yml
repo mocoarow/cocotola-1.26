@@ -1,0 +1,26 @@
+---
+name: Check Security
+on:
+  pull_request:
+    branches:
+      - main
+permissions: read-all
+jobs:
+  trivy_scan:
+    permissions:
+      id-token: write
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Fail build on High/Critical Vulnerabilities
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # 0.35.0
+        with:
+          scan-type: fs
+          format: table
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1

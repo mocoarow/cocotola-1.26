@@ -1,0 +1,7 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/mocoarow/cocotola-1.26
+# gazelle:build_tags small,medium,large
+# gazelle:map_kind go_test smart_go_test //bazel:go_test.bzl
+
+gazelle(name = "gazelle")

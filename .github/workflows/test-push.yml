@@ -1,0 +1,50 @@
+---
+name: Test Push
+on:
+  push:
+    branches:
+      - main
+permissions: {}
+jobs:
+  test_go:
+    strategy:
+      matrix:
+        go-version: [1.26.x]
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      # kics-scan ignore-line
+      id-token: write
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
+        with:
+          bazelisk-version: 1.x
+
+      - run: bazel info
+
+      - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - run: task test-remote
+
+      - uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.lcov
+          slug: mocoarow/cocotola-1.26
