@@ -1,0 +1,52 @@
+---
+name: Check Others
+on:
+  pull_request:
+    branches:
+      - main
+permissions: {}
+jobs:
+  others:
+    name: others
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: misspell
+        uses: reviewdog/action-misspell@d6429416b12b09b4e2768307d53bef58d172e962 # v1.27.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          locale: US
+          ignore: importas
+          fail_on_error: true
+
+      - name: yamllint
+        uses: reviewdog/action-yamllint@f01d8a48fd8d89f89895499fca2cff09f9e9e8c0 # v1.21.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          yamllint_flags: -c .yamllint.yml .
+          fail_on_error: true
+
+      - name: gitleaks
+        uses: reviewdog/action-gitleaks@2b7b5685e3e3eecddab5d30cfa04f18123031421 # v1.8.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: warning
+          fail_level: any
+          gitleaks_flags: -c .gitleaks.toml
+
+      - name: markdownlint
+        uses: reviewdog/action-markdownlint@3667398db9118d7e78f7a63d10e26ce454ba5f58 # v0.26.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          reporter: github-pr-review
+          level: warning
+          fail_level: any
+          markdownlint_flags: "--config .markdownlint.yaml ."

@@ -1,0 +1,141 @@
+---
+version: "3"
+
+dotenv: ['.env']
+
+vars:
+  GO_PROJECTS:
+    - hello-world
+
+tasks:
+  init:
+    cmds:
+      - go work init
+      - go work use -r .
+
+  gazelle:
+    cmds:
+      - bazelisk run //:gazelle -- -build_tags=small,medium,large
+
+  mod-tidy:
+    cmds:
+      - bazelisk run @rules_go//go -- mod tidy
+
+  lint-go-project:
+    cmds:
+      - |
+        cd {{ .GO_PROJECT }}
+        golangci-lint run --config ../.golangci.yml --timeout=5m
+    requires:
+      vars: [GO_PROJECT]
+
+  lint:
+    cmds:
+      - for:
+          var: GO_PROJECTS
+        task: lint-go-project
+        vars:
+          GO_PROJECT: "{{ .ITEM }}"
+
+  check:
+    cmds:
+      - task: lint
+      - yamllint -c .yamllint.yml .
+      - misspell -locale US -error .
+      - markdownlint --config .markdownlint.yaml .
+      - gitleaks detect -c .gitleaks.toml --no-banner
+
+  generate-go-project:
+    cmds:
+      - |
+        cd {{ .GO_PROJECT }}
+        if [ -f .mockery.yaml ]; then
+          mockery
+        fi
+    requires:
+      vars: [GO_PROJECT]
+
+  generate:
+    desc: "Generate code (e.g., mocks) for all Go projects"
+    cmds:
+      - for:
+          var: GO_PROJECTS
+        task: generate-go-project
+        vars:
+          GO_PROJECT: "{{ .ITEM }}"
+
+  push-project:
+    cmds:
+      - bazelisk run //{{ .PROJECT }}:push -- --tag {{ .TAG }}
+    requires:
+      vars: [PROJECT, TAG]
+
+  push:
+    cmds:
+      - for:
+          var: GO_APPS
+        task: push-project
+        vars:
+          PROJECT: "{{ .ITEM }}"
+    requires:
+      vars: [TAG]
+
+  build-go-project:
+    cmds:
+      - bazelisk run //{{ .PROJECT }}:load
+    requires:
+      vars: [PROJECT]
+
+  build:
+    cmds:
+      - for:
+          var: GO_APPS
+        task: build-go-project
+        vars:
+          PROJECT: "{{ .ITEM }}"
+
+  test:
+    cmds:
+      - rm -f ./coverage.lcov
+      - bazelisk test //... --collect_code_coverage=true --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no
+      - bazelisk coverage //... --combined_report=lcov --test_size_filters=small,medium
+      - |
+        OUTPUT_PATH=$(bazelisk info output_path)
+        cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+
+  test-remote:
+    cmds:
+      - rm -f ./coverage.lcov
+      - bazelisk test --config=remote //... --collect_code_coverage=true --test_output=errors --test_timeout=60 --test_size_filters=small,medium
+      - bazelisk coverage --config=remote //... --combined_report=lcov --test_size_filters=small,medium
+      - |
+        OUTPUT_PATH=$(bazelisk info output_path)
+        cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+
+  update-mod-go-project:
+    cmds:
+      - |
+        cd {{ .GO_PROJECT }}
+        GOPROXY=direct go get -u ./...
+        go mod tidy
+    requires:
+      vars: [GO_PROJECT]
+
+  update-mod:
+    cmds:
+      - for:
+          var: GO_PROJECTS
+        task: update-mod-go-project
+        vars:
+          GO_PROJECT: "{{ .ITEM }}"
+
+  run-hello-world:
+    cmds:
+      - bazelisk run //hello-world:hello-world
+  run-hello-world-remote:
+    cmds:
+      - bazelisk run --config=remote //hello-world:hello-world
+
+  kics:
+    cmds:
+      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.github/kics.yml

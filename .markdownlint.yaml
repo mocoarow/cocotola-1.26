@@ -1,0 +1,11 @@
+---
+# Source: https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# Ref: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+
+# Default state for all rules
+default: true
+
+# MD013/line-length - Line length
+MD013:
+  # Disable line-length checks
+  line_length: -1

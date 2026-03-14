@@ -1,0 +1,48 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "hello-world_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/hello-world",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "hello-world",
+    embed = [":hello-world_lib"],
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "pkg",
+    srcs = [":hello-world"],
+)
+
+oci_image(
+    name = "image",
+    base = "@distroless_static_debian12_linux_amd64",
+    entrypoint = ["/hello-world"],
+    tars = [":pkg"],
+)
+
+oci_load(
+    name = "load",
+    image = ":image",
+    repo_tags = ["hello-world:latest"],
+)
+
+oci_push(
+    name = "push",
+    image = ":image",
+    remote_tags = ["latest"],
+    repository = "us-west1-docker.pkg.dev/mocoarow-25-08/hello-world/hello-world",
+)
+
+smart_go_test(
+    name = "hello-world_test",
+    srcs = ["main_test.go"],
+    deps = [":hello-world_lib"],
+)
