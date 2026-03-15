@@ -55,8 +55,6 @@ smart_go_test(
         "log_test.go",
         "trace_test.go",
     ],
-    deps = [
-        ":gateway",
-        "@io_opentelemetry_go_otel_sdk//trace",
-    ],
+    embed = [":gateway"],
+    deps = ["@io_opentelemetry_go_otel_sdk//trace"],
 )

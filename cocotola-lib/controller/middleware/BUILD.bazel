@@ -13,7 +13,6 @@ go_library(
     deps = [
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_prometheus_client_golang//prometheus",
-        "@com_github_prometheus_client_golang//prometheus/promauto",
     ],
 )
 
