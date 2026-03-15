@@ -1,0 +1,29 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "handler",
+    srcs = [
+        "doc.go",
+        "router.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/middleware",
+        "@com_github_gin_contrib_cors//:cors",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_samber_slog_gin//:slog-gin",
+        "@io_opentelemetry_go_contrib_instrumentation_github_com_gin_gonic_gin_otelgin//:otelgin",
+    ],
+)
+
+smart_go_test(
+    name = "handler_test",
+    srcs = ["router_test.go"],
+    deps = [
+        ":handler",
+        "//cocotola-lib/controller",
+    ],
+)

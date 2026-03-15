@@ -39,7 +39,7 @@ def smart_go_test(name, srcs, **kwargs):
     if regular_srcs:
         go_test(
             name = name,
-            srcs = regular_srcs,
+            srcs = regular_srcs + helper_srcs,
             **kwargs
         )
 

@@ -1,0 +1,11 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "logging",
+    srcs = [
+        "doc.go",
+        "logging.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging",
+    visibility = ["//visibility:public"],
+)

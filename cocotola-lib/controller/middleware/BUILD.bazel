@@ -1,0 +1,26 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "middleware",
+    srcs = [
+        "doc.go",
+        "metrics_middleware.go",
+        "wait_middleware.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_prometheus_client_golang//prometheus",
+    ],
+)
+
+smart_go_test(
+    name = "middleware_test",
+    srcs = ["middleware_test.go"],
+    deps = [
+        ":middleware",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)

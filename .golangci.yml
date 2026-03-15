@@ -77,6 +77,17 @@ linters:
     gosec:
       excludes:
         - G115
+    revive:
+      severity: warning
+      enable-default-rules: true
+      # enable-all-rules: true
+      rules:
+        - name: line-length-limit
+          disabled: true
+        - name: add-constant
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
     staticcheck:
       checks:
         - all
@@ -102,11 +113,6 @@ linters:
         - defer
   exclusions:
     generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
     rules:
       - path: _test\.go
         linters:
