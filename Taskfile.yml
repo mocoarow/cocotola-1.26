@@ -8,6 +8,9 @@ vars:
     - hello-world
     - third-party-library
     - cocotola-lib
+    - cocotola-auth
+  GO_APPS:
+    - cocotola-auth
 
 tasks:
   init:

@@ -1,0 +1,34 @@
+---
+# Shared MySQL service configuration
+services:
+  local-mysql-base:
+    image: mysql:8.4.7
+    container_name: local-mysql
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_bin
+    environment:
+      # kics-scan ignore-line
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: username
+      # kics-scan ignore-line
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: local
+      TZ: Etc/GMT
+    ports:
+      - 127.0.0.1:${MYSQL_PORT:-3306}:3306
+    volumes:
+      - ./sqls:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysql", "-u", "username", "-ppassword", "-e", "DESCRIBE local.healthcheck"]
+      interval: 5s
+      timeout: 30s
+      retries: 6
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT
