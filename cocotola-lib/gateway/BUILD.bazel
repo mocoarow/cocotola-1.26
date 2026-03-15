@@ -1,0 +1,62 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "gateway",
+    srcs = [
+        "db.go",
+        "db_mysql.go",
+        "doc.go",
+        "log.go",
+        "log_otlp.go",
+        "log_uptrace.go",
+        "signal_watch.go",
+        "trace.go",
+        "trace_google.go",
+        "trace_none.go",
+        "trace_otlp.go",
+        "trace_stdout.go",
+        "trace_uptrace.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/logging",
+        "//cocotola-lib/process",
+        "@com_github_go_sql_driver_mysql//:mysql",
+        "@com_github_googlecloudplatform_opentelemetry_operations_go_exporter_trace//:trace",
+        "@com_github_mocoarow_slogotel//:slogotel",
+        "@com_github_orandin_slog_gorm//:slog-gorm",
+        "@io_gorm_driver_mysql//:mysql",
+        "@io_gorm_gorm//:gorm",
+        "@io_gorm_plugin_opentelemetry//tracing",
+        "@io_opentelemetry_go_contrib_bridges_otelslog//:otelslog",
+        "@io_opentelemetry_go_contrib_processors_baggagecopy//:baggagecopy",
+        "@io_opentelemetry_go_otel//:otel",
+        "@io_opentelemetry_go_otel//propagation",
+        "@io_opentelemetry_go_otel//semconv/v1.40.0:v1_40_0",
+        "@io_opentelemetry_go_otel_exporters_otlp_otlplog_otlploghttp//:otlploghttp",
+        "@io_opentelemetry_go_otel_exporters_otlp_otlptrace//:otlptrace",
+        "@io_opentelemetry_go_otel_exporters_otlp_otlptrace_otlptracegrpc//:otlptracegrpc",
+        "@io_opentelemetry_go_otel_exporters_otlp_otlptrace_otlptracehttp//:otlptracehttp",
+        "@io_opentelemetry_go_otel_exporters_stdout_stdouttrace//:stdouttrace",
+        "@io_opentelemetry_go_otel_log//global",
+        "@io_opentelemetry_go_otel_sdk//resource",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@io_opentelemetry_go_otel_sdk_log//:log",
+    ],
+)
+
+smart_go_test(
+    name = "gateway_test",
+    srcs = [
+        "db_test.go",
+        "export_test.go",
+        "log_test.go",
+        "trace_test.go",
+    ],
+    deps = [
+        ":gateway",
+        "@io_opentelemetry_go_otel_sdk//trace",
+    ],
+)
