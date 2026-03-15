@@ -37,6 +37,12 @@ use_repo(
     "io_opentelemetry_go_otel_sdk",
     "io_opentelemetry_go_otel_sdk_log",
     "org_golang_x_sync",
+    "com_github_go_playground_validator_v10",
+    "com_github_stretchr_testify",
+    "com_github_golang_jwt_jwt_v5",
+    "in_yaml_go_yaml_v4",
+    "com_github_ohler55_ojg",
+    "com_github_mocoarow_cocotola_1_26_cocotola_lib",
 )
 
 # pkg

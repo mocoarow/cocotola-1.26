@@ -1,22 +1,24 @@
-package handler_test
+package auth_test
 
 import (
 	"os"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 )
 
-var (
-	config libcontroller.Config
-)
+var config libcontroller.Config
 
 func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode)
+
 	config = libcontroller.Config{
 		CORS: libcontroller.CORSConfig{
 			AllowOrigins: "*",
 			AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-			AllowHeaders: "Content-Type",
+			AllowHeaders: "Content-Type,Authorization,X-Token-Delivery",
 		},
 		Log: libcontroller.LogConfig{
 			AccessLog:             false,
@@ -29,7 +31,5 @@ func TestMain(m *testing.M) {
 		},
 	}
 
-	code := m.Run()
-
-	os.Exit(code)
+	os.Exit(m.Run())
 }

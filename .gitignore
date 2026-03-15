@@ -30,6 +30,7 @@ profile.cov
 mise.toml
 
 .claude/
+.serena/
 CLAUDE.md
 AGENTS.md
 
