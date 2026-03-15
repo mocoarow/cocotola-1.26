@@ -6,4 +6,6 @@ useDefault = true
 [allowlist]
 paths = [
   '''local.yml''',
+  '''go\.work\.sum''',
+  '''go\.sum''',
 ]
