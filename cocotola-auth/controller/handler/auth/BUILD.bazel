@@ -1,0 +1,51 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "auth",
+    srcs = [
+        "auth.go",
+        "doc.go",
+        "get_me_handler.go",
+        "password_authenticate_handler.go",
+        "revoke_handler.go",
+        "token_handler.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/api",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/auth",
+        "//cocotola-lib/logging",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "auth_test",
+    srcs = [
+        "auth_test.go",
+        "get_me_handler_test.go",
+        "helper_test.go",
+        "mocks_test.go",
+        "password_authenticate_handler_test.go",
+        "revoke_handler_test.go",
+        "token_handler_test.go",
+    ],
+    deps = [
+        ":auth",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/auth",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_ohler55_ojg//jp",
+        "@com_github_ohler55_ojg//oj",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

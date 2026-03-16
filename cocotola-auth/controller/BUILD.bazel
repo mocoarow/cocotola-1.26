@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "controller",
+    srcs = [
+        "context.go",
+        "cookie.go",
+        "doc.go",
+        "error.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/api"],
+)
+
+smart_go_test(
+    name = "controller_test",
+    srcs = ["cookie_test.go"],
+    deps = [
+        ":controller",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
