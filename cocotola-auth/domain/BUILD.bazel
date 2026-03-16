@@ -1,0 +1,37 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "domain",
+    srcs = [
+        "access_token.go",
+        "const.go",
+        "doc.go",
+        "error.go",
+        "refresh_token.go",
+        "session_token.go",
+        "token_generator.go",
+        "token_whitelist.go",
+        "validator.go",
+        "value_objects.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_go_playground_validator_v10//:validator"],
+)
+
+smart_go_test(
+    name = "domain_test",
+    srcs = [
+        "access_token_test.go",
+        "refresh_token_test.go",
+        "session_token_test.go",
+        "token_generator_test.go",
+        "token_whitelist_test.go",
+        "value_objects_test.go",
+    ],
+    deps = [
+        ":domain",
+        "@com_github_stretchr_testify//assert",
+    ],
+)
