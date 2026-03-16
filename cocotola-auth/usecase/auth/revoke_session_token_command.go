@@ -1,0 +1,89 @@
+package auth
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
+)
+
+type revokeSessionTokenRepo interface {
+	FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error)
+	Save(ctx context.Context, token *domain.SessionToken) error
+}
+
+type revokeSessionTokenWhitelistRepo interface {
+	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
+	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
+}
+
+type revokeSessionTokenCache interface {
+	GetSessionToken(hash string) (*domain.SessionToken, bool)
+	DeleteSessionToken(hash string)
+}
+
+// RevokeSessionTokenCommand revokes a session token.
+type RevokeSessionTokenCommand struct {
+	repo          revokeSessionTokenRepo
+	whitelistRepo revokeSessionTokenWhitelistRepo
+	cache         revokeSessionTokenCache
+	config        AuthUsecaseConfig
+}
+
+// NewRevokeSessionTokenCommand returns a new RevokeSessionTokenCommand.
+func NewRevokeSessionTokenCommand(
+	repo revokeSessionTokenRepo,
+	whitelistRepo revokeSessionTokenWhitelistRepo,
+	cache revokeSessionTokenCache,
+	config AuthUsecaseConfig,
+) *RevokeSessionTokenCommand {
+	return &RevokeSessionTokenCommand{
+		repo:          repo,
+		whitelistRepo: whitelistRepo,
+		cache:         cache,
+		config:        config,
+	}
+}
+
+// RevokeSessionToken revokes a session token.
+func (c *RevokeSessionTokenCommand) RevokeSessionToken(ctx context.Context, input *authservice.RevokeSessionTokenInput) error {
+	hash := string(domain.HashToken(input.RawToken))
+
+	token, ok := c.cache.GetSessionToken(hash)
+	if !ok {
+		var err error
+		token, err = c.repo.FindByTokenHash(ctx, hash)
+		if err != nil {
+			return fmt.Errorf("find session token: %w", err)
+		}
+	}
+
+	if token.IsRevoked() {
+		return domain.ErrTokenRevoked
+	}
+
+	// TX1: Revoke session token
+	now := c.config.Now()
+	token.Revoke(now)
+	if err := c.repo.Save(ctx, token); err != nil {
+		return fmt.Errorf("save session token: %w", err)
+	}
+
+	c.cache.DeleteSessionToken(hash)
+
+	// TX2: Remove from whitelist (separate aggregate, separate transaction)
+	entries, err := c.whitelistRepo.FindByUserID(ctx, token.UserID())
+	if err != nil {
+		return fmt.Errorf("find session token whitelist: %w", err)
+	}
+
+	whitelist := domain.NewTokenWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
+	whitelist.Remove([]string{token.ID()})
+
+	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {
+		return fmt.Errorf("save session token whitelist: %w", err)
+	}
+
+	return nil
+}

@@ -1,0 +1,42 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "auth",
+    srcs = [
+        "command.go",
+        "create_session_token_command.go",
+        "create_token_pair_command.go",
+        "doc.go",
+        "extend_session_token_command.go",
+        "password_authenticate_command.go",
+        "query.go",
+        "refresh_access_token_command.go",
+        "revoke_session_token_command.go",
+        "revoke_token_command.go",
+        "validate_access_token_query.go",
+        "validate_session_token_query.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/auth",
+        "@com_github_google_uuid//:uuid",
+    ],
+)
+
+smart_go_test(
+    name = "auth_test",
+    srcs = [
+        "revoke_session_token_command_test.go",
+        "validate_access_token_query_test.go",
+    ],
+    embed = [":auth"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/auth",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+    ],
+)
