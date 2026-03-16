@@ -1,0 +1,38 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "gateway",
+    srcs = [
+        "access_token_repository.go",
+        "access_token_whitelist_repository.go",
+        "auth.go",
+        "doc.go",
+        "refresh_token_repository.go",
+        "refresh_token_whitelist_repository.go",
+        "session_token_repository.go",
+        "session_token_whitelist_repository.go",
+        "token_cache.go",
+        "user_authenticator.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/auth",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@io_gorm_gorm//:gorm",
+        "@org_golang_x_crypto//bcrypt",
+    ],
+)
+
+smart_go_test(
+    name = "gateway_test",
+    srcs = ["auth_test.go"],
+    deps = [
+        ":gateway",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
