@@ -25,10 +25,10 @@ go_library(
 smart_go_test(
     name = "controller_test",
     srcs = [
-        "cors_test.go",
-        "metrics_server_test.go",
-        "stringutil_test.go",
-        "web_server_test.go",
+        "cors_s_test.go",
+        "metrics_server_s_test.go",
+        "stringutil_s_test.go",
+        "web_server_s_test.go",
     ],
     deps = [":controller"],
 )

@@ -13,9 +13,19 @@ type DebugConfig struct {
 	Wait bool `yaml:"wait"`
 }
 
-// Config holds handler-level configuration for CORS, logging, and debug settings.
-type Config struct {
-	CORS  CORSConfig  `yaml:"cors" validate:"required"`
-	Log   LogConfig   `yaml:"log" validate:"required"`
-	Debug DebugConfig `yaml:"debug" validate:"required"`
+// ShutdownConfig holds graceful shutdown timeout settings.
+type ShutdownConfig struct {
+	GracePeriodSec  int `yaml:"gracePeriodSec" validate:"gte=1"`
+	ShutdownTimeSec int `yaml:"shutdownTimeSec" validate:"gte=1"`
+}
+
+// ServerConfig holds HTTP server port, CORS, logging, debug, and shutdown settings.
+type ServerConfig struct {
+	HTTPPort             int            `yaml:"httpPort" validate:"required"`
+	MetricsPort          int            `yaml:"metricsPort" validate:"required"`
+	ReadHeaderTimeoutSec int            `yaml:"readHeaderTimeoutSec" validate:"gte=1"`
+	CORS                 CORSConfig     `yaml:"cors" validate:"required"`
+	Log                  LogConfig      `yaml:"log" validate:"required"`
+	Debug                DebugConfig    `yaml:"debug" validate:"required"`
+	Shutdown             ShutdownConfig `yaml:"shutdown" validate:"required"`
 }

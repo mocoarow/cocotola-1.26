@@ -1,0 +1,20 @@
+---
+# Shared Jaeger configuration
+services:
+  local-jaeger-base:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.13.0
+    container_name: local-jaeger
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "localhost:13133/status"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT

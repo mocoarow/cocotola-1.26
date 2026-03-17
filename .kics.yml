@@ -12,3 +12,4 @@ exclude-queries:
   - 698ed579-b239-4f8f-a388-baa4bcb13ef8
 exclude-paths:
   - openapi/openapi.yaml
+  - cocotola-auth/api/openapi.yaml

@@ -1,0 +1,20 @@
+---
+# Shared LGTM configuration
+services:
+  local-lgtm-base:
+    image: grafana/otel-lgtm:0.21.0
+    container_name: local-lgtm
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "localhost:3000/api/health"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT

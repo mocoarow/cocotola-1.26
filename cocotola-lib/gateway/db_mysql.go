@@ -42,7 +42,7 @@ type MySQLConfig struct {
 	Database string `yaml:"database" validate:"required"`
 }
 
-func initDBMySQL(ctx context.Context, cfg *DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
+func initDBMySQL(ctx context.Context, cfg DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
 	if cfg.MySQL == nil {
 		return nil, nil, errors.New("mysql configuration is required")
 	}

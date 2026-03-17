@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "config",
+    srcs = [
+        "config.go",
+        "doc.go",
+    ],
+    embedsrcs = ["config.yml"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/config",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/gateway",
+        "@in_yaml_go_yaml_v4//:yaml",
+    ],
+)

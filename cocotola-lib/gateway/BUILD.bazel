@@ -50,10 +50,10 @@ go_library(
 smart_go_test(
     name = "gateway_test",
     srcs = [
-        "db_test.go",
+        "db_s_test.go",
         "export_test.go",
         "log_test.go",
-        "trace_test.go",
+        "trace_s_test.go",
     ],
     embed = [":gateway"],
     deps = ["@io_opentelemetry_go_otel_sdk//trace"],

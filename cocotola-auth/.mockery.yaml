@@ -1,0 +1,23 @@
+---
+all: false
+dir: '{{.InterfaceDir}}'
+filename: mocks_test.go
+force-file-write: true
+formatter: goimports
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}_test'
+recursive: false
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase:
+    config:
+      all: true

@@ -8,6 +8,9 @@ vars:
     - hello-world
     - third-party-library
     - cocotola-lib
+    - cocotola-auth
+  GO_APPS:
+    - cocotola-auth
 
 tasks:
   init:
@@ -137,6 +140,12 @@ tasks:
   run-hello-world-remote:
     cmds:
       - bazelisk run --config=remote //hello-world:hello-world
+
+  run-cocotola-auth:
+    desc: "Run cocotola-auth with local infrastructure"
+    cmds:
+      - docker compose -f compose.local.mysql-lgtm.yml up -d --wait
+      - bazelisk run //cocotola-auth:cocotola-auth
 
   kics:
     cmds:

@@ -14,6 +14,6 @@ go_library(
 
 smart_go_test(
     name = "process_test",
-    srcs = ["multiprocess_test.go"],
+    srcs = ["multiprocess_s_test.go"],
     deps = [":process"],
 )

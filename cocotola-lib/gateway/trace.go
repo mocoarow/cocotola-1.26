@@ -48,7 +48,7 @@ type TraceConfig struct {
 	Uptrace            *UptraceTraceConfig `yaml:"uptrace"`
 }
 
-func initTracerExporter(ctx context.Context, traceConfig *TraceConfig) (sdktrace.SpanExporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
+func initTracerExporter(ctx context.Context, traceConfig TraceConfig) (sdktrace.SpanExporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
 	switch traceConfig.Exporter {
 	case "google":
 		return initTracerExporterGoogle(ctx, traceConfig)
@@ -78,7 +78,7 @@ func initTraceSampler(samplingPercentage int) sdktrace.Sampler { //nolint:iretur
 }
 
 // InitTracerProvider creates an OpenTelemetry tracer provider and sets it as the global default.
-func InitTracerProvider(ctx context.Context, traceConfig *TraceConfig, appName string) (func(), error) {
+func InitTracerProvider(ctx context.Context, traceConfig TraceConfig, appName string) (func(), error) {
 	exp, err := initTracerExporter(ctx, traceConfig)
 	if err != nil {
 		return nil, fmt.Errorf("init tracer exporter: %w", err)

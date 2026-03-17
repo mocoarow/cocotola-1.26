@@ -46,7 +46,7 @@ type LogConfig struct {
 }
 
 // InitLog sets up the global slog default based on the configured exporter.
-func InitLog(ctx context.Context, logConfig *LogConfig, appName string) (func(), error) {
+func InitLog(ctx context.Context, logConfig LogConfig, appName string) (func(), error) {
 	if logConfig.Exporter == "none" {
 		defaultLogLevel := stringToLogLevel(logConfig.Level)
 		jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{ //nolint:exhaustruct
@@ -64,7 +64,7 @@ func InitLog(ctx context.Context, logConfig *LogConfig, appName string) (func(),
 
 const logShutdownTimeout = 5 * time.Second
 
-func initLogExporter(ctx context.Context, logConfig *LogConfig) (sdklog.Exporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
+func initLogExporter(ctx context.Context, logConfig LogConfig) (sdklog.Exporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
 	switch logConfig.Exporter {
 	case "otlphttp":
 		return initLogExporterOTLPHTTP(ctx, logConfig)
@@ -76,7 +76,7 @@ func initLogExporter(ctx context.Context, logConfig *LogConfig) (sdklog.Exporter
 }
 
 // InitLogProvider creates an OpenTelemetry log provider and sets it as the global slog default.
-func InitLogProvider(ctx context.Context, logConfig *LogConfig, appName string) (func(), error) {
+func InitLogProvider(ctx context.Context, logConfig LogConfig, appName string) (func(), error) {
 	exp, err := initLogExporter(ctx, logConfig)
 	if err != nil {
 		return nil, fmt.Errorf("init log exporter: %w", err)

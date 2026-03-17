@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 )
 
-func initTracerExporterUptraceHTTP(ctx context.Context, traceConfig *TraceConfig) (*otlptrace.Exporter, error) {
+func initTracerExporterUptraceHTTP(ctx context.Context, traceConfig TraceConfig) (*otlptrace.Exporter, error) {
 	if traceConfig.Uptrace == nil {
 		return nil, errors.New("uptrace trace configuration is required")
 	}

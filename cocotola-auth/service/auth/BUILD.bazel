@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "auth",
+    srcs = ["auth.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
+)

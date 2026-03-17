@@ -13,12 +13,6 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
 )
 
-// ShutdownConfig holds graceful shutdown timeout settings.
-type ShutdownConfig struct {
-	GracePeriodSec  int `yaml:"gracePeriodSec" validate:"gte=1"`
-	ShutdownTimeSec int `yaml:"shutdownTimeSec" validate:"gte=1"`
-}
-
 // WithWebServerProcess returns a RunProcessFunc that starts the main HTTP server.
 func WithWebServerProcess(router http.Handler, port int, readHeaderTimeout, shutdownTime time.Duration) process.RunProcessFunc {
 	return func(ctx context.Context) process.RunProcess {

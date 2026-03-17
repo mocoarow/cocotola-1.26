@@ -12,7 +12,7 @@ func Test_InitRootRouterGroup_shouldReturnRouter_whenValidConfig(t *testing.T) {
 	t.Parallel()
 
 	// given
-	config := &controller.Config{
+	config := controller.ServerConfig{
 		CORS: controller.CORSConfig{
 			AllowOrigins:     "*",
 			AllowMethods:     "GET,POST",
@@ -46,7 +46,7 @@ func Test_InitRootRouterGroup_shouldReturnError_whenCORSCredentialsWithWildcard(
 	t.Parallel()
 
 	// given
-	config := &controller.Config{
+	config := controller.ServerConfig{
 		CORS: controller.CORSConfig{
 			AllowOrigins:     "*",
 			AllowMethods:     "GET",
@@ -77,7 +77,7 @@ func Test_InitRootRouterGroup_shouldEnableAccessLog_whenAccessLogEnabled(t *test
 	t.Parallel()
 
 	// given
-	config := &controller.Config{
+	config := controller.ServerConfig{
 		CORS: controller.CORSConfig{
 			AllowOrigins:     "http://localhost:3000",
 			AllowMethods:     "GET,POST",

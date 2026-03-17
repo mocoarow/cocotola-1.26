@@ -41,11 +41,11 @@ func Test_InitDB_shouldReturnError_whenDriverNameIsInvalid(t *testing.T) {
 	t.Parallel()
 
 	// given
-	dbConfig := &gateway.DBConfig{
+	dbConfig := gateway.DBConfig{
 		DriverName: "invalid_driver",
 		MySQL:      nil,
 	}
-	logConfig := &gateway.LogConfig{
+	logConfig := gateway.LogConfig{
 		Level:    "warn",
 		Exporter: "none",
 		Levels:   map[string]string{},

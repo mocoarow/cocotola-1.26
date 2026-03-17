@@ -1,0 +1,28 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cocotola-auth_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cocotola-auth/config",
+        "//cocotola-auth/controller/handler/auth",
+        "//cocotola-auth/controller/middleware",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/gateway",
+        "//cocotola-auth/usecase/auth",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "//cocotola-lib/gateway",
+        "//cocotola-lib/logging",
+        "//cocotola-lib/process",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+    ],
+)
+
+go_binary(
+    name = "cocotola-auth",
+    embed = [":cocotola-auth_lib"],
+    visibility = ["//visibility:public"],
+)

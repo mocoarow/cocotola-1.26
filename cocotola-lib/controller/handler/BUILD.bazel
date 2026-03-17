@@ -21,7 +21,7 @@ go_library(
 
 smart_go_test(
     name = "handler_test",
-    srcs = ["router_test.go"],
+    srcs = ["router_s_test.go"],
     deps = [
         ":handler",
         "//cocotola-lib/controller",
