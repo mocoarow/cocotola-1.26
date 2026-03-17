@@ -1,0 +1,25 @@
+---
+services:
+  local-mysql:
+    extends:
+      service: local-mysql-base
+      file: ./compose.common-mysql.yml
+    networks:
+      - cocotola
+
+  local-jaeger:
+    extends:
+      service: local-jaeger-base
+      file: ./compose.common-jaeger.yml
+    ports:
+      - 127.0.0.1:4317:4317
+      - 127.0.0.1:4318:4318
+      - 127.0.0.1:14268:14268
+      - 127.0.0.1:16686:16686
+      - 127.0.0.1:13133:13133
+    networks:
+      - cocotola
+
+networks:
+  cocotola:
+    driver: bridge
