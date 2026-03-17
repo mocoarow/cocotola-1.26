@@ -26,18 +26,18 @@ type PasswordAuthenticateUsecase interface {
 // PasswordAuthenticateHandler handles the POST /auth/authenticate endpoint.
 type PasswordAuthenticateHandler struct {
 	usecase            PasswordAuthenticateUsecase
-	logger             *slog.Logger
-	cookieConfig       *controller.CookieConfig
+	cookieConfig       controller.CookieConfig
 	sessionTokenTTLMin int
+	logger             *slog.Logger
 }
 
 // NewPasswordAuthenticateHandler returns a new PasswordAuthenticateHandler.
-func NewPasswordAuthenticateHandler(usecase PasswordAuthenticateUsecase, cookieConfig *controller.CookieConfig, sessionTokenTTLMin int) *PasswordAuthenticateHandler {
+func NewPasswordAuthenticateHandler(usecase PasswordAuthenticateUsecase, cookieConfig controller.CookieConfig, sessionTokenTTLMin int) *PasswordAuthenticateHandler {
 	return &PasswordAuthenticateHandler{
 		usecase:            usecase,
-		logger:             slog.Default().With(slog.String(liblogging.LoggerNameKey, "PasswordAuthenticateHandler")),
 		cookieConfig:       cookieConfig,
 		sessionTokenTTLMin: sessionTokenTTLMin,
+		logger:             slog.Default().With(slog.String(liblogging.LoggerNameKey, "PasswordAuthenticateHandler")),
 	}
 }
 
@@ -83,12 +83,6 @@ func (h *PasswordAuthenticateHandler) Authenticate(c *gin.Context) {
 
 	switch tokenDelivery {
 	case "cookie":
-		if h.cookieConfig == nil {
-			h.logger.ErrorContext(ctx, "cookie delivery requested but cookie config is not available")
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("cookie_not_configured", "cookie delivery is not configured"))
-			return
-		}
-
 		sessionInput, err := authservice.NewCreateSessionTokenInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
 		if err != nil {
 			h.logger.ErrorContext(ctx, "create session token input", slog.Any("error", err))

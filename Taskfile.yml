@@ -141,6 +141,12 @@ tasks:
     cmds:
       - bazelisk run --config=remote //hello-world:hello-world
 
+  run-cocotola-auth:
+    desc: "Run cocotola-auth with local infrastructure"
+    cmds:
+      - docker compose -f compose.local.mysql-lgtm.yml up -d --wait
+      - bazelisk run //cocotola-auth:cocotola-auth
+
   kics:
     cmds:
       - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.github/kics.yml

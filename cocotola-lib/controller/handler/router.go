@@ -17,7 +17,7 @@ import (
 )
 
 // InitRootRouterGroup creates a Gin engine with recovery, CORS, metrics, tracing, and optional access logging.
-func InitRootRouterGroup(_ context.Context, config *controller.Config, appName string) (*gin.Engine, error) {
+func InitRootRouterGroup(_ context.Context, config controller.ServerConfig, appName string) (*gin.Engine, error) {
 	if !config.Debug.Gin {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -36,14 +36,12 @@ func InitRootRouterGroup(_ context.Context, config *controller.Config, appName s
 	})))
 
 	if config.Log.AccessLog {
-		withRequestBody := config.Log.AccessLogRequestBody
-		withResponseBody := config.Log.AccessLogResponseBody
 		router.Use(sloggin.NewWithConfig(slog.Default(), sloggin.Config{ //nolint:exhaustruct
 			DefaultLevel:     slog.LevelInfo,
 			ClientErrorLevel: slog.LevelWarn,
 			ServerErrorLevel: slog.LevelError,
-			WithRequestBody:  withRequestBody,
-			WithResponseBody: withResponseBody,
+			WithRequestBody:  config.Log.AccessLogRequestBody,
+			WithResponseBody: config.Log.AccessLogResponseBody,
 			Filters: []sloggin.Filter{
 				func(c *gin.Context) bool {
 					path := c.Request.URL.Path

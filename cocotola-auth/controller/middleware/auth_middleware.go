@@ -26,7 +26,7 @@ type AuthUsecase interface {
 
 // NewAuthMiddleware returns a Gin middleware that validates Bearer tokens (JWT)
 // or session cookies (opaque token) and sets the user identity in the Gin context.
-func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig *controller.CookieConfig, sessionTokenTTLMin int) gin.HandlerFunc {
+func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieConfig, sessionTokenTTLMin int) gin.HandlerFunc {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-AuthMiddleware"))
 
 	return func(c *gin.Context) {
@@ -50,33 +50,31 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig *controller.CookieC
 		}
 
 		// Fall back to session cookie (opaque token)
-		if cookieConfig != nil {
-			cookie, err := c.Cookie(cookieConfig.Name)
-			if err == nil && cookie != "" {
-				output, err := authUsecase.ValidateSessionToken(ctx, &authservice.ValidateSessionTokenInput{RawToken: cookie})
-				if err != nil {
-					logger.WarnContext(ctx, "validate session token", slog.Any("error", err))
-					c.Status(http.StatusUnauthorized)
-					c.Abort()
-					return
-				}
-				setUserContext(c, ctx, output.UserID, output.LoginID, output.OrganizationName, logger)
-
-				// Sliding window: extend the session
-				if err := authUsecase.ExtendSessionToken(ctx, &authservice.ExtendSessionTokenInput{RawToken: cookie}); err != nil {
-					logger.WarnContext(ctx, "extend session token", slog.Any("error", err))
-				} else {
-					cookieConfig.SetTokenCookie(c.Writer, cookie, sessionTokenTTLMin)
-				}
-
-				c.Next()
-				return
-			}
+		cookie, err := c.Cookie(cookieConfig.Name)
+		if err != nil || cookie == "" {
+			logger.InfoContext(ctx, "no token found in Authorization header or cookie")
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
 		}
 
-		logger.InfoContext(ctx, "no token found in Authorization header or cookie")
-		c.Status(http.StatusUnauthorized)
-		c.Abort()
+		output, err := authUsecase.ValidateSessionToken(ctx, &authservice.ValidateSessionTokenInput{RawToken: cookie})
+		if err != nil {
+			logger.WarnContext(ctx, "validate session token", slog.Any("error", err))
+			c.Status(http.StatusUnauthorized)
+			c.Abort()
+			return
+		}
+		setUserContext(c, ctx, output.UserID, output.LoginID, output.OrganizationName, logger)
+
+		// Sliding window: extend the session
+		if err := authUsecase.ExtendSessionToken(ctx, &authservice.ExtendSessionTokenInput{RawToken: cookie}); err != nil {
+			logger.WarnContext(ctx, "extend session token", slog.Any("error", err))
+		} else {
+			cookieConfig.SetTokenCookie(c.Writer, cookie, sessionTokenTTLMin)
+		}
+
+		c.Next()
 	}
 }
 

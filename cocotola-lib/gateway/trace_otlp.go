@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 )
 
-func initTracerExporterOTLPHTTP(ctx context.Context, traceConfig *TraceConfig) (*otlptrace.Exporter, error) {
+func initTracerExporterOTLPHTTP(ctx context.Context, traceConfig TraceConfig) (*otlptrace.Exporter, error) {
 	if traceConfig.OTLP == nil {
 		return nil, errors.New("otlp trace configuration is required")
 	}
@@ -30,7 +30,7 @@ func initTracerExporterOTLPHTTP(ctx context.Context, traceConfig *TraceConfig) (
 	return exp, nil
 }
 
-func initTracerExporterOTLPgRPC(ctx context.Context, traceConfig *TraceConfig) (*otlptrace.Exporter, error) {
+func initTracerExporterOTLPgRPC(ctx context.Context, traceConfig TraceConfig) (*otlptrace.Exporter, error) {
 	if traceConfig.OTLP == nil {
 		return nil, errors.New("otlp trace configuration is required")
 	}

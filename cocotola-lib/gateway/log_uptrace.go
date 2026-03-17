@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 )
 
-func initLogExporterUptraceHTTP(ctx context.Context, logConfig *LogConfig) (*otlploghttp.Exporter, error) {
+func initLogExporterUptraceHTTP(ctx context.Context, logConfig LogConfig) (*otlploghttp.Exporter, error) {
 	if logConfig.Uptrace == nil {
 		return nil, errors.New("uptrace log configuration is required")
 	}

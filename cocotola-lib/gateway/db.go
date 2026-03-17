@@ -25,7 +25,7 @@ type DBConnection struct {
 	DB         *gorm.DB
 }
 
-func initDB(ctx context.Context, dbConfig *DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
+func initDB(ctx context.Context, dbConfig DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
 	switch dbConfig.DriverName {
 	case DriverNameMySQL:
 		return initDBMySQL(ctx, dbConfig, logLevel, appName)
@@ -36,7 +36,7 @@ func initDB(ctx context.Context, dbConfig *DBConfig, logLevel slog.Level, appNam
 
 // InitDB initializes a database connection based on the configured driver.
 // It returns the connection and a cleanup function to close the underlying sql.DB.
-func InitDB(ctx context.Context, dbConfig *DBConfig, logConfig *LogConfig, appName string) (*DBConnection, func(), error) {
+func InitDB(ctx context.Context, dbConfig DBConfig, logConfig LogConfig, appName string) (*DBConnection, func(), error) {
 	dbLogLevel := slog.LevelWarn
 	if level, ok := logConfig.Levels["db"]; ok {
 		dbLogLevel = stringToLogLevel(level)

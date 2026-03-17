@@ -60,7 +60,7 @@ func run() (int, error) {
 	}
 	defer shutdownDB()
 
-	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server.Gin, domain.AppName)
+	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init router: %w", err)
 	}

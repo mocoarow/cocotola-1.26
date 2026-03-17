@@ -21,7 +21,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
-var testCookieConfig = &controller.CookieConfig{
+var testCookieConfig = controller.CookieConfig{
 	Name:     "session_token",
 	Path:     "/",
 	Secure:   false,
@@ -54,7 +54,7 @@ func initAuthRouter(t *testing.T, ctx context.Context, usecase *MockAuthUsecase)
 func initAuthRouterWithMiddleware(t *testing.T, ctx context.Context, usecase *MockAuthUsecase, authMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
-	router, err := libhandler.InitRootRouterGroup(ctx, &config, domain.AppName)
+	router, err := libhandler.InitRootRouterGroup(ctx, config, domain.AppName)
 	require.NoError(t, err)
 	api := router.Group("api")
 	v1 := api.Group("v1")

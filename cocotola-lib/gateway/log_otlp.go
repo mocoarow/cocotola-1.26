@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 )
 
-func initLogExporterOTLPHTTP(ctx context.Context, logConfig *LogConfig) (*otlploghttp.Exporter, error) {
+func initLogExporterOTLPHTTP(ctx context.Context, logConfig LogConfig) (*otlploghttp.Exporter, error) {
 	if logConfig.OTLP == nil {
 		return nil, errors.New("otlp log configuration is required")
 	}

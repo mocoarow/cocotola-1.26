@@ -9,12 +9,12 @@ import (
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 )
 
-var config libcontroller.Config
+var config libcontroller.ServerConfig
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
 
-	config = libcontroller.Config{
+	config = libcontroller.ServerConfig{
 		CORS: libcontroller.CORSConfig{
 			AllowOrigins: "*",
 			AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",

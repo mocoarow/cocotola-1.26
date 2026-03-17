@@ -25,12 +25,12 @@ type RevokeUsecase interface {
 // RevokeHandler handles the POST /auth/logout and POST /auth/revoke endpoints.
 type RevokeHandler struct {
 	usecase      RevokeUsecase
+	cookieConfig controller.CookieConfig
 	logger       *slog.Logger
-	cookieConfig *controller.CookieConfig
 }
 
 // NewRevokeHandler returns a new RevokeHandler.
-func NewRevokeHandler(usecase RevokeUsecase, cookieConfig *controller.CookieConfig) *RevokeHandler {
+func NewRevokeHandler(usecase RevokeUsecase, cookieConfig controller.CookieConfig) *RevokeHandler {
 	return &RevokeHandler{
 		usecase:      usecase,
 		logger:       slog.Default().With(slog.String(liblogging.LoggerNameKey, "RevokeHandler")),
@@ -41,11 +41,6 @@ func NewRevokeHandler(usecase RevokeUsecase, cookieConfig *controller.CookieConf
 // Logout handles POST /auth/logout and clears the session cookie.
 func (h *RevokeHandler) Logout(c *gin.Context) {
 	ctx := c.Request.Context()
-	if h.cookieConfig == nil {
-		h.logger.ErrorContext(ctx, "logout requested but cookie config is not available")
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("cookie_not_configured", "cookie delivery is not configured"))
-		return
-	}
 
 	// Try to revoke the session token if present
 	cookie, err := c.Cookie(h.cookieConfig.Name)

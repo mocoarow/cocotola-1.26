@@ -23,7 +23,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var testCookieConfig = &controller.CookieConfig{
+var testCookieConfig = controller.CookieConfig{
 	Name:     "session_token",
 	Path:     "/",
 	Secure:   false,
