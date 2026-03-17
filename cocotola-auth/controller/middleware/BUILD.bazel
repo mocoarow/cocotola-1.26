@@ -24,7 +24,7 @@ go_library(
 smart_go_test(
     name = "middleware_test",
     srcs = [
-        "auth_middleware_test.go",
+        "auth_middleware_s_test.go",
         "mocks_test.go",
     ],
     deps = [

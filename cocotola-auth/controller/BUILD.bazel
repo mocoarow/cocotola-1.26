@@ -16,7 +16,7 @@ go_library(
 
 smart_go_test(
     name = "controller_test",
-    srcs = ["cookie_test.go"],
+    srcs = ["cookie_s_test.go"],
     deps = [
         ":controller",
         "@com_github_stretchr_testify//assert",

@@ -23,12 +23,12 @@ go_library(
 smart_go_test(
     name = "domain_test",
     srcs = [
-        "access_token_test.go",
-        "refresh_token_test.go",
-        "session_token_test.go",
-        "token_generator_test.go",
-        "token_whitelist_test.go",
-        "value_objects_test.go",
+        "access_token_s_test.go",
+        "refresh_token_s_test.go",
+        "session_token_s_test.go",
+        "token_generator_s_test.go",
+        "token_whitelist_s_test.go",
+        "value_objects_s_test.go",
     ],
     deps = [
         ":domain",

@@ -26,13 +26,13 @@ go_library(
 smart_go_test(
     name = "auth_test",
     srcs = [
-        "auth_test.go",
-        "get_me_handler_test.go",
+        "auth_s_test.go",
+        "get_me_handler_s_test.go",
         "helper_test.go",
         "mocks_test.go",
-        "password_authenticate_handler_test.go",
-        "revoke_handler_test.go",
-        "token_handler_test.go",
+        "password_authenticate_handler_s_test.go",
+        "revoke_handler_s_test.go",
+        "token_handler_s_test.go",
     ],
     deps = [
         ":auth",

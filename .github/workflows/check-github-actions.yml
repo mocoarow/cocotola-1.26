@@ -7,6 +7,7 @@ on:
     paths:
       - .github/**/*.yml
       - .github/**/*.yaml
+      - aqua.yaml
 permissions: {}
 jobs:
   actions-lint:
@@ -29,9 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
         with:
-          go-version: stable
-          cache: false
-      - run: go install github.com/suzuki-shunsuke/pinact/v3/cmd/pinact@v3.9.0
+          aqua_version: v2.57.0
       - run: pinact run --check

@@ -68,6 +68,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
+      security: []
   /api/v1/auth/logout:
     post:
       summary: User logout
@@ -88,6 +89,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
+      security: []
   /api/v1/auth/refresh:
     post:
       summary: Refresh access token
@@ -133,6 +135,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
+      security: []
   /api/v1/auth/revoke:
     post:
       summary: Revoke a token
@@ -326,3 +329,6 @@ components:
       in: cookie
       name: session_token
 servers: []
+security:
+  - BearerAuth: []
+  - CookieAuth: []
