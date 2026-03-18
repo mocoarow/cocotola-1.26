@@ -13,3 +13,24 @@ var ErrTokenRevoked = errors.New("token revoked")
 
 // ErrSessionExpired is returned when a session token has exceeded its absolute timeout.
 var ErrSessionExpired = errors.New("session expired")
+
+// ErrOrganizationNotFound is returned when an organization cannot be found.
+var ErrOrganizationNotFound = errors.New("organization not found")
+
+// ErrAppUserNotFound is returned when an app user cannot be found.
+var ErrAppUserNotFound = errors.New("app user not found")
+
+// ErrGroupNotFound is returned when a group cannot be found.
+var ErrGroupNotFound = errors.New("group not found")
+
+// ErrActiveUserLimitReached is returned when the organization has reached its active user limit.
+var ErrActiveUserLimitReached = errors.New("active user limit reached")
+
+// ErrActiveGroupLimitReached is returned when the organization has reached its active group limit.
+var ErrActiveGroupLimitReached = errors.New("active group limit reached")
+
+// ErrCyclicGroupHierarchy is returned when adding a group edge would create a cycle.
+var ErrCyclicGroupHierarchy = errors.New("cyclic group hierarchy")
+
+// ErrDuplicateEntry is returned when attempting to add a duplicate entry.
+var ErrDuplicateEntry = errors.New("duplicate entry")
