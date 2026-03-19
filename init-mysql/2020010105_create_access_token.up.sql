@@ -12,6 +12,6 @@ create table `access_token` (
  ,primary key(`id`)
  ,index(`user_id`, `created_at`)
  ,index(`refresh_token_id`)
- ,foreign key(`user_id`) references `user`(`id`) on delete cascade
+ ,foreign key(`user_id`) references `app_user`(`id`) on delete cascade
  ,foreign key(`refresh_token_id`) references `refresh_token`(`id`) on delete cascade
 );

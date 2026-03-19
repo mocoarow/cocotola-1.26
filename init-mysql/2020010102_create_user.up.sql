@@ -1,4 +1,4 @@
-create table `user` (
+create table `app_user` (
  `id` int auto_increment
 ,`version` int not null default 1
 ,`created_at` datetime not null default current_timestamp
@@ -13,7 +13,7 @@ create table `user` (
 ,`provider_id` varchar(40) character set ascii
 ,`encrypted_provider_access_token` text character set ascii
 ,`encrypted_provider_refresh_token` text character set ascii
-,`deleted` tinyint(1) not null
+,`enabled` tinyint(1) not null default 1
 ,primary key(`id`)
 ,unique(`organization_id`, `login_id`)
 ,foreign key(`organization_id`) references `organization`(`id`) on delete cascade

@@ -18,7 +18,7 @@ type userRecord struct {
 	OrganizationID   int    `gorm:"column:organization_id"`
 	LoginID          string `gorm:"column:login_id"`
 	HashedPassword   string `gorm:"column:hashed_password"`
-	Deleted          bool   `gorm:"column:deleted"`
+	Enabled          bool   `gorm:"column:enabled"`
 	OrganizationName string `gorm:"column:organization_name"`
 }
 
@@ -37,7 +37,7 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 	var record userRecord
 	err := a.db.WithContext(ctx).
 		Table("app_user").
-		Select("app_user.id, app_user.organization_id, app_user.login_id, app_user.hashed_password, app_user.deleted, organization.name as organization_name").
+		Select("app_user.id, app_user.organization_id, app_user.login_id, app_user.hashed_password, app_user.enabled, organization.name as organization_name").
 		Joins("JOIN organization ON app_user.organization_id = organization.id").
 		Where("app_user.login_id = ? AND organization.name = ?", loginID, organizationName).
 		First(&record).Error
@@ -48,7 +48,7 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 		return nil, fmt.Errorf("find user: %w", err)
 	}
 
-	if record.Deleted {
+	if !record.Enabled {
 		return nil, domain.ErrUnauthenticated
 	}
 
