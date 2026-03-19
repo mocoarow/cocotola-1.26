@@ -12,10 +12,18 @@ import (
 
 // replaceRecords deletes all records matching the where clause, then inserts new records,
 // all within a single transaction.
-func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string, whereArg any, emptyRecord *R, newRecords []R, label string) error {
+// It first queries existing records via snapshot read (no locks), then deletes only if
+// records exist, using primary-key-based deletion to avoid InnoDB gap locks.
+func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string, whereArg any, newRecords []R, label string) error {
 	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where(whereClause, whereArg).Delete(emptyRecord).Error; err != nil {
-			return fmt.Errorf("delete %s: %w", label, err)
+		var existing []R
+		if err := tx.Where(whereClause, whereArg).Find(&existing).Error; err != nil {
+			return fmt.Errorf("find existing %s: %w", label, err)
+		}
+		if len(existing) > 0 {
+			if err := tx.Delete(&existing).Error; err != nil {
+				return fmt.Errorf("delete %s: %w", label, err)
+			}
 		}
 		if len(newRecords) == 0 {
 			return nil
@@ -58,14 +66,14 @@ func findAndConvertWhitelist[R any](ctx context.Context, db *gorm.DB, userID int
 }
 
 // saveWhitelist converts domain whitelist entries to records and persists them.
-func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domain.TokenWhitelist, toRecord func(int, domain.WhitelistEntry) R, emptyRecord *R, label string) error {
+func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domain.TokenWhitelist, toRecord func(int, domain.WhitelistEntry) R, label string) error {
 	entries := whitelist.Entries()
 
 	records := make([]R, len(entries))
 	for i, e := range entries {
 		records[i] = toRecord(whitelist.UserID(), e)
 	}
-	return replaceRecords(ctx, db, "user_id = ?", whitelist.UserID(), emptyRecord, records, label)
+	return replaceRecords(ctx, db, "user_id = ?", whitelist.UserID(), records, label)
 }
 
 // findMemberIDs queries records by organization_id and extracts member IDs.

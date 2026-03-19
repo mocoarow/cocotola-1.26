@@ -65,6 +65,5 @@ func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domain.G
 		}
 	}
 	return replaceRecords(ctx, r.db, "organization_id = ?", hierarchy.OrganizationID(),
-		&groupNGroupRecord{OrganizationID: 0, ParentGroupID: 0, ChildGroupID: 0, CreatedAt: time.Time{}, CreatedBy: 0},
 		records, "group hierarchy entries")
 }

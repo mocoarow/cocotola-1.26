@@ -15,3 +15,4 @@ ignore:
   - analysis_options.yaml
   - pubspec.yaml
   - openapi/openapi.yaml
+  - .serena/

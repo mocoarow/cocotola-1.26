@@ -10,6 +10,5 @@ exclude-severities:
 exclude-queries:
   # Healthcheck Not Set
   - 698ed579-b239-4f8f-a388-baa4bcb13ef8
-exclude-paths:
-  - openapi/openapi.yaml
-  - cocotola-auth/api/openapi.yaml
+  # Security Field On Operations Has An Empty Array (v3) - auth endpoints intentionally public
+  - 663c442d-f918-4f62-b096-0bf5dcbeb655

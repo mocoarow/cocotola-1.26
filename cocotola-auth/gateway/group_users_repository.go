@@ -63,6 +63,5 @@ func (r *GroupUsersRepository) Save(ctx context.Context, gu *domain.GroupUsers) 
 		}
 	}
 	return replaceRecords(ctx, r.db, "group_id = ?", gu.GroupID(),
-		&userNGroupRecord{GroupID: 0, UserID: 0, CreatedAt: time.Time{}, CreatedBy: 0},
 		records, "group user entries")
 }

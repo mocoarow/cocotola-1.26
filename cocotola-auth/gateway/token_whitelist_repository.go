@@ -38,7 +38,7 @@ func (r *AccessTokenWhitelistRepository) FindByUserID(ctx context.Context, userI
 func (r *AccessTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
 	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) accessTokenWhitelistRecord {
 		return accessTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
-	}, &accessTokenWhitelistRecord{UserID: 0, TokenID: "", CreatedAt: time.Time{}}, "access token whitelist entries")
+	}, "access token whitelist entries")
 }
 
 // --- refresh token whitelist ---
@@ -70,7 +70,7 @@ func (r *RefreshTokenWhitelistRepository) FindByUserID(ctx context.Context, user
 func (r *RefreshTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
 	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) refreshTokenWhitelistRecord {
 		return refreshTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
-	}, &refreshTokenWhitelistRecord{UserID: 0, TokenID: "", CreatedAt: time.Time{}}, "refresh token whitelist entries")
+	}, "refresh token whitelist entries")
 }
 
 // --- session token whitelist ---
@@ -102,5 +102,5 @@ func (r *SessionTokenWhitelistRepository) FindByUserID(ctx context.Context, user
 func (r *SessionTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
 	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) sessionTokenWhitelistRecord {
 		return sessionTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
-	}, &sessionTokenWhitelistRecord{UserID: 0, TokenID: "", CreatedAt: time.Time{}}, "session token whitelist entries")
+	}, "session token whitelist entries")
 }

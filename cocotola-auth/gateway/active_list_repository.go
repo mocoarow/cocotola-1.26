@@ -56,7 +56,6 @@ func (r *ActiveGroupListRepository) Save(ctx context.Context, list *domain.Activ
 		}
 	}
 	return replaceRecords(ctx, r.db, "organization_id = ?", list.OrganizationID(),
-		&activeGroupRecord{OrganizationID: 0, GroupID: 0, CreatedAt: time.Time{}},
 		records, "active group entries")
 }
 
@@ -106,6 +105,5 @@ func (r *ActiveUserListRepository) Save(ctx context.Context, list *domain.Active
 		}
 	}
 	return replaceRecords(ctx, r.db, "organization_id = ?", list.OrganizationID(),
-		&activeUserRecord{OrganizationID: 0, UserID: 0, CreatedAt: time.Time{}},
 		records, "active user entries")
 }
