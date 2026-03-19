@@ -16,7 +16,10 @@ type TokenCache struct {
 
 // NewTokenCache returns a new TokenCache.
 func NewTokenCache() *TokenCache {
-	return &TokenCache{} //nolint:exhaustruct
+	return &TokenCache{
+		sessionTokens: sync.Map{},
+		accessTokens:  sync.Map{},
+	}
 }
 
 // SetSessionToken caches a session token by its hash.
@@ -31,7 +34,11 @@ func (c *TokenCache) GetSessionToken(hash string) (*domain.SessionToken, bool) {
 	if !ok {
 		return nil, false
 	}
-	token := v.(*domain.SessionToken)
+	token, ok := v.(*domain.SessionToken)
+	if !ok {
+		c.sessionTokens.Delete(hash)
+		return nil, false
+	}
 	if token.IsExpired(time.Now()) {
 		c.sessionTokens.Delete(hash)
 		return nil, false
@@ -56,7 +63,11 @@ func (c *TokenCache) GetAccessToken(jti string) (*domain.AccessToken, bool) {
 	if !ok {
 		return nil, false
 	}
-	token := v.(*domain.AccessToken)
+	token, ok := v.(*domain.AccessToken)
+	if !ok {
+		c.accessTokens.Delete(jti)
+		return nil, false
+	}
 	if token.IsExpired(time.Now()) {
 		c.accessTokens.Delete(jti)
 		return nil, false
@@ -72,13 +83,13 @@ func (c *TokenCache) DeleteAccessToken(jti string) {
 // CleanExpired removes all expired tokens from both caches.
 func (c *TokenCache) CleanExpired(now time.Time) {
 	c.sessionTokens.Range(func(key, value any) bool {
-		if value.(*domain.SessionToken).IsExpired(now) {
+		if token, ok := value.(*domain.SessionToken); ok && token.IsExpired(now) {
 			c.sessionTokens.Delete(key)
 		}
 		return true
 	})
 	c.accessTokens.Range(func(key, value any) bool {
-		if value.(*domain.AccessToken).IsExpired(now) {
+		if token, ok := value.(*domain.AccessToken); ok && token.IsExpired(now) {
 			c.accessTokens.Delete(key)
 		}
 		return true

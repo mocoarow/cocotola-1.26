@@ -27,20 +27,8 @@ type AccessTokenRepository interface {
 	FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]domain.AccessToken, error)
 }
 
-// SessionTokenWhitelistRepository defines persistence operations for session token whitelist.
-type SessionTokenWhitelistRepository interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-// RefreshTokenWhitelistRepository defines persistence operations for refresh token whitelist.
-type RefreshTokenWhitelistRepository interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-// AccessTokenWhitelistRepository defines persistence operations for access token whitelist.
-type AccessTokenWhitelistRepository interface {
+// WhitelistRepository defines persistence operations for token whitelists.
+type WhitelistRepository interface {
 	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
 	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
 }
@@ -66,8 +54,8 @@ type TokenCache interface {
 	DeleteAccessToken(jti string)
 }
 
-// AuthUsecaseConfig holds TTL and whitelist configuration.
-type AuthUsecaseConfig struct {
+// UsecaseConfig holds TTL and whitelist configuration.
+type UsecaseConfig struct {
 	SessionTokenTTLMin int
 	SessionMaxTTLMin   int
 	AccessTokenTTLMin  int
@@ -77,32 +65,32 @@ type AuthUsecaseConfig struct {
 }
 
 // Now returns the current time using ClockFunc if set, otherwise time.Now.
-func (c AuthUsecaseConfig) Now() time.Time {
+func (c UsecaseConfig) Now() time.Time {
 	if c.ClockFunc != nil {
 		return c.ClockFunc()
 	}
 	return time.Now()
 }
 
-// AuthQuery composes all authentication Query structs.
-type AuthQuery struct {
+// Query composes all authentication Query structs.
+type Query struct {
 	*PasswordAuthenticateQuery
 	*ValidateSessionTokenQuery
 	*ValidateAccessTokenQuery
 }
 
-// NewAuthQuery returns a new AuthQuery with the given dependencies.
-func NewAuthQuery(
+// NewQuery returns a new Query with the given dependencies.
+func NewQuery(
 	userAuthenticator UserAuthenticator,
 	sessionTokenRepo SessionTokenRepository,
-	sessionTokenWhitelistRepo SessionTokenWhitelistRepository,
+	sessionTokenWhitelistRepo WhitelistRepository,
 	accessTokenRepo AccessTokenRepository,
-	accessTokenWhitelistRepo AccessTokenWhitelistRepository,
+	accessTokenWhitelistRepo WhitelistRepository,
 	jwtManager JWTManager,
 	tokenCache TokenCache,
-	config AuthUsecaseConfig,
-) *AuthQuery {
-	return &AuthQuery{
+	config UsecaseConfig,
+) *Query {
+	return &Query{
 		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),

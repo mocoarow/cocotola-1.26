@@ -2,6 +2,7 @@ package domain
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 )
 
@@ -33,7 +34,7 @@ type LoginID string
 // NewLoginID creates a validated LoginID.
 func NewLoginID(id string) (LoginID, error) {
 	if id == "" {
-		return "", fmt.Errorf("login id must not be empty")
+		return "", errors.New("login id must not be empty")
 	}
 	return LoginID(id), nil
 }

@@ -12,5 +12,5 @@ create table `session_token` (
  ,primary key(`id`)
  ,unique(`token_hash`)
  ,index(`user_id`, `created_at`)
- ,foreign key(`user_id`) references `user`(`id`) on delete cascade
+ ,foreign key(`user_id`) references `app_user`(`id`) on delete cascade
 );

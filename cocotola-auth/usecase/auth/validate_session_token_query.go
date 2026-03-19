@@ -13,29 +13,20 @@ type validateSessionTokenRepo interface {
 	FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error)
 }
 
-type validateSessionTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-}
-
-type validateSessionTokenCache interface {
-	GetSessionToken(hash string) (*domain.SessionToken, bool)
-	SetSessionToken(hash string, token *domain.SessionToken)
-}
-
 // ValidateSessionTokenQuery validates a raw session token and returns user info.
 type ValidateSessionTokenQuery struct {
 	repo          validateSessionTokenRepo
-	whitelistRepo validateSessionTokenWhitelistRepo
-	cache         validateSessionTokenCache
-	config        AuthUsecaseConfig
+	whitelistRepo whitelistFinder
+	cache         sessionTokenCacheReadWriter
+	config        UsecaseConfig
 }
 
 // NewValidateSessionTokenQuery returns a new ValidateSessionTokenQuery.
 func NewValidateSessionTokenQuery(
 	repo validateSessionTokenRepo,
-	whitelistRepo validateSessionTokenWhitelistRepo,
-	cache validateSessionTokenCache,
-	config AuthUsecaseConfig,
+	whitelistRepo whitelistFinder,
+	cache sessionTokenCacheReadWriter,
+	config UsecaseConfig,
 ) *ValidateSessionTokenQuery {
 	return &ValidateSessionTokenQuery{
 		repo:          repo,

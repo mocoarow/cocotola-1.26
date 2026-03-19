@@ -40,7 +40,7 @@ func (m *JWTManager) CreateAccessToken(loginID string, userID int, organizationN
 		LoginID:          loginID,
 		UserID:           userID,
 		OrganizationName: organizationName,
-		RegisteredClaims: jwt.RegisteredClaims{ //nolint:exhaustruct
+		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
 			Issuer:    "cocotola-auth",
 			Subject:   "AccessToken",
@@ -82,7 +82,20 @@ func (m *JWTManager) parseToken(tokenString string) (*userClaims, error) {
 		return m.signingKey, nil
 	}
 
-	currentToken, err := jwt.ParseWithClaims(tokenString, &userClaims{}, keyFunc) //nolint:exhaustruct
+	currentToken, err := jwt.ParseWithClaims(tokenString, &userClaims{
+		LoginID:          "",
+		UserID:           0,
+		OrganizationName: "",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    "",
+			Subject:   "",
+			Audience:  nil,
+			ExpiresAt: nil,
+			NotBefore: nil,
+			IssuedAt:  nil,
+			ID:        "",
+		},
+	}, keyFunc)
 	if err != nil {
 		return nil, fmt.Errorf("parse token: %w", err)
 	}

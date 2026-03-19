@@ -16,6 +16,6 @@
 //   - ValidateSessionTokenQuery: validates a session token and returns user info
 //   - ValidateAccessTokenQuery: validates a JWT access token and returns user info
 //
-// AuthUsecase composes all commands and queries via embedding, so it satisfies
+// Usecase composes all commands and queries via embedding, so it satisfies
 // both the handler and middleware interfaces.
 package auth

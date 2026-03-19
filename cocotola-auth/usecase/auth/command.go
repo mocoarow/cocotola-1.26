@@ -1,7 +1,7 @@
 package auth
 
-// AuthCommand composes all authentication Command structs.
-type AuthCommand struct {
+// Command composes all authentication Command structs.
+type Command struct {
 	*CreateSessionTokenCommand
 	*CreateTokenPairCommand
 	*ExtendSessionTokenCommand
@@ -10,19 +10,19 @@ type AuthCommand struct {
 	*RevokeTokenCommand
 }
 
-// NewAuthCommand returns a new AuthCommand with the given dependencies.
-func NewAuthCommand(
+// NewCommand returns a new Command with the given dependencies.
+func NewCommand(
 	sessionTokenRepo SessionTokenRepository,
-	sessionTokenWhitelistRepo SessionTokenWhitelistRepository,
+	sessionTokenWhitelistRepo WhitelistRepository,
 	refreshTokenRepo RefreshTokenRepository,
-	refreshTokenWhitelistRepo RefreshTokenWhitelistRepository,
+	refreshTokenWhitelistRepo WhitelistRepository,
 	accessTokenRepo AccessTokenRepository,
-	accessTokenWhitelistRepo AccessTokenWhitelistRepository,
+	accessTokenWhitelistRepo WhitelistRepository,
 	jwtManager JWTManager,
 	tokenCache TokenCache,
-	config AuthUsecaseConfig,
-) *AuthCommand {
-	return &AuthCommand{
+	config UsecaseConfig,
+) *Command {
+	return &Command{
 		CreateSessionTokenCommand: NewCreateSessionTokenCommand(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		CreateTokenPairCommand:    NewCreateTokenPairCommand(refreshTokenRepo, accessTokenRepo, refreshTokenWhitelistRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 		ExtendSessionTokenCommand: NewExtendSessionTokenCommand(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
@@ -32,29 +32,29 @@ func NewAuthCommand(
 	}
 }
 
-// AuthUsecase composes all authentication Command and Query structs.
+// Usecase composes all authentication Command and Query structs.
 // Each embedded struct provides a single focused operation with only
 // the dependencies it needs.
-type AuthUsecase struct {
-	*AuthQuery
-	*AuthCommand
+type Usecase struct {
+	*Query
+	*Command
 }
 
-// NewAuthUsecase returns a new AuthUsecase with the given dependencies.
-func NewAuthUsecase(
+// NewUsecase returns a new Usecase with the given dependencies.
+func NewUsecase(
 	userAuthenticator UserAuthenticator,
 	sessionTokenRepo SessionTokenRepository,
-	sessionTokenWhitelistRepo SessionTokenWhitelistRepository,
+	sessionTokenWhitelistRepo WhitelistRepository,
 	refreshTokenRepo RefreshTokenRepository,
-	refreshTokenWhitelistRepo RefreshTokenWhitelistRepository,
+	refreshTokenWhitelistRepo WhitelistRepository,
 	accessTokenRepo AccessTokenRepository,
-	accessTokenWhitelistRepo AccessTokenWhitelistRepository,
+	accessTokenWhitelistRepo WhitelistRepository,
 	jwtManager JWTManager,
 	tokenCache TokenCache,
-	config AuthUsecaseConfig,
-) *AuthUsecase {
-	return &AuthUsecase{
-		AuthQuery:   NewAuthQuery(userAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		AuthCommand: NewAuthCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+	config UsecaseConfig,
+) *Usecase {
+	return &Usecase{
+		Query:   NewQuery(userAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}
 }

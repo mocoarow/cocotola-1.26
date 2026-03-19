@@ -1,3 +1,4 @@
+// Package main is the entry point for the cocotola-auth microservice.
 package main
 
 import (
@@ -81,14 +82,15 @@ func run() (int, error) {
 	tokenCache := gateway.NewTokenCache()
 
 	// usecase layer
-	usecaseConfig := authusecase.AuthUsecaseConfig{
+	usecaseConfig := authusecase.UsecaseConfig{
 		SessionTokenTTLMin: cfg.Auth.SessionTokenTTLMin,
 		SessionMaxTTLMin:   cfg.Auth.SessionMaxTTLMin,
 		AccessTokenTTLMin:  cfg.Auth.AccessTokenTTLMin,
 		RefreshTokenTTLMin: cfg.Auth.RefreshTokenTTLMin,
 		TokenWhitelistSize: cfg.Auth.TokenWhitelistSize,
+		ClockFunc:          nil,
 	}
-	authUsecase := authusecase.NewAuthUsecase(
+	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
 		sessionTokenRepo,
 		sessionTokenWhitelistRepo,

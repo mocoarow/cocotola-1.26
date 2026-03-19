@@ -26,6 +26,7 @@ type AuthConfig struct {
 	Cookie             controller.CookieConfig `yaml:"cookie" validate:"required"`
 }
 
+// Config holds all configuration for the cocotola-auth service.
 type Config struct {
 	Server libcontroller.ServerConfig `yaml:"server" validate:"required"`
 	DB     libgateway.DBConfig        `yaml:"db" validate:"required"`
@@ -56,6 +57,7 @@ func ExpandEnvWithDefaults(varName string) string {
 	return os.Getenv(varName)
 }
 
+// LoadConfig reads the embedded config.yml file, expands environment variables, and returns a validated Config.
 func LoadConfig() (*Config, error) {
 	filename := "config.yml"
 	confContent, err := config.ReadFile(filename)

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -28,7 +29,7 @@ func Test_NewSessionToken_shouldReturnToken_whenAllFieldsAreValid(t *testing.T) 
 	token, err := domain.NewSessionToken(id, userID, loginID, org, hash, created, expires)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, id, token.ID())
 	assert.Equal(t, userID, token.UserID())
 	assert.Equal(t, loginID, token.LoginID())
@@ -49,7 +50,7 @@ func Test_NewSessionToken_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := domain.NewSessionToken("", userID, loginID, org, hash, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewSessionToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
@@ -62,7 +63,7 @@ func Test_NewSessionToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	_, err := domain.NewSessionToken(id, 0, loginID, org, hash, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewSessionToken_shouldReturnError_whenTokenHashIsInvalid(t *testing.T) {
@@ -75,7 +76,7 @@ func Test_NewSessionToken_shouldReturnError_whenTokenHashIsInvalid(t *testing.T)
 	_, err := domain.NewSessionToken(id, userID, loginID, org, "short", created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_SessionToken_Revoke_shouldSetRevokedAt_whenTokenIsActive(t *testing.T) {

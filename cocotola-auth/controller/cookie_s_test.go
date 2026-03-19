@@ -29,11 +29,11 @@ func Test_CookieConfig_SetTokenCookie_shouldSetCorrectAttributes(t *testing.T) {
 		{
 			name: "Lax SameSite with Secure",
 			cookieConfig: &controller.CookieConfig{
-				Name:                "access_token",
-				Path:                "/",
-				Secure:              true,
-				SameSite:            "Lax",
-							},
+				Name:     "access_token",
+				Path:     "/",
+				Secure:   true,
+				SameSite: "Lax",
+			},
 			token:        "test-token",
 			tokenTTLMin:  60,
 			wantName:     "access_token",
@@ -46,11 +46,11 @@ func Test_CookieConfig_SetTokenCookie_shouldSetCorrectAttributes(t *testing.T) {
 		{
 			name: "Strict SameSite without Secure",
 			cookieConfig: &controller.CookieConfig{
-				Name:                "token",
-				Path:                "/api",
-				Secure:              false,
-				SameSite:            "Strict",
-							},
+				Name:     "token",
+				Path:     "/api",
+				Secure:   false,
+				SameSite: "Strict",
+			},
 			token:        "another-token",
 			tokenTTLMin:  30,
 			wantName:     "token",

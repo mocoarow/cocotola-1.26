@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"fmt"
 )
 
@@ -24,5 +25,5 @@ func GenerateOpaqueToken() (string, TokenHash, error) {
 // HashToken returns the SHA256 hex digest of the given raw token string.
 func HashToken(raw string) TokenHash {
 	h := sha256.Sum256([]byte(raw))
-	return TokenHash(fmt.Sprintf("%x", h))
+	return TokenHash(hex.EncodeToString(h[:]))
 }

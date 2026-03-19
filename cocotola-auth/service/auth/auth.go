@@ -1,3 +1,4 @@
+// Package auth provides service-layer types for authentication input/output validation.
 package auth
 
 import (
@@ -163,7 +164,7 @@ func NewValidateSessionTokenInput(rawToken string) (*ValidateSessionTokenInput, 
 		RawToken: rawToken,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate validate session token input: %w", err)
+		return nil, fmt.Errorf("new validate session token input: %w", err)
 	}
 	return m, nil
 }
@@ -183,7 +184,7 @@ func NewValidateSessionTokenOutput(userID int, loginID string, organizationName 
 		OrganizationName: organizationName,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate validate session token output: %w", err)
+		return nil, fmt.Errorf("new validate session token output: %w", err)
 	}
 	return m, nil
 }
@@ -201,7 +202,7 @@ func NewValidateAccessTokenInput(jwtString string) (*ValidateAccessTokenInput, e
 		JWTString: jwtString,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate validate access token input: %w", err)
+		return nil, fmt.Errorf("new validate access token input: %w", err)
 	}
 	return m, nil
 }
@@ -221,7 +222,7 @@ func NewValidateAccessTokenOutput(userID int, loginID string, organizationName s
 		OrganizationName: organizationName,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate validate access token output: %w", err)
+		return nil, fmt.Errorf("new validate access token output: %w", err)
 	}
 	return m, nil
 }

@@ -1,8 +1,8 @@
 go 1.26.1
 
 use (
-    ./hello-world
-    ./third-party-library
-    ./cocotola-lib
-    ./cocotola-auth
+	./cocotola-auth
+	./cocotola-lib
+	./hello-world
+	./third-party-library
 )

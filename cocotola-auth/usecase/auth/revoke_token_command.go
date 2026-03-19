@@ -8,31 +8,6 @@ import (
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-type revokeTokenRefreshRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error)
-	Save(ctx context.Context, token *domain.RefreshToken) error
-}
-
-type revokeTokenAccessRepo interface {
-	FindByID(ctx context.Context, id string) (*domain.AccessToken, error)
-	FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]domain.AccessToken, error)
-	Save(ctx context.Context, token *domain.AccessToken) error
-}
-
-type revokeTokenRefreshWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-type revokeTokenAccessWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-type revokeTokenJWT interface {
-	ParseAccessToken(tokenString string) (*authservice.UserInfo, string, error)
-}
-
 type revokeTokenCache interface {
 	DeleteAccessToken(jti string)
 }
@@ -40,24 +15,24 @@ type revokeTokenCache interface {
 // RevokeTokenCommand revokes a token. If the token is a JWT, it revokes the access token.
 // If the token is an opaque token, it revokes the refresh token and all associated access tokens.
 type RevokeTokenCommand struct {
-	refreshRepo          revokeTokenRefreshRepo
-	accessRepo           revokeTokenAccessRepo
-	refreshWhitelistRepo revokeTokenRefreshWhitelistRepo
-	accessWhitelistRepo  revokeTokenAccessWhitelistRepo
-	jwt                  revokeTokenJWT
+	refreshRepo          RefreshTokenRepository
+	accessRepo           AccessTokenRepository
+	refreshWhitelistRepo WhitelistRepository
+	accessWhitelistRepo  WhitelistRepository
+	jwt                  jwtParser
 	cache                revokeTokenCache
-	config               AuthUsecaseConfig
+	config               UsecaseConfig
 }
 
 // NewRevokeTokenCommand returns a new RevokeTokenCommand.
 func NewRevokeTokenCommand(
-	refreshRepo revokeTokenRefreshRepo,
-	accessRepo revokeTokenAccessRepo,
-	refreshWhitelistRepo revokeTokenRefreshWhitelistRepo,
-	accessWhitelistRepo revokeTokenAccessWhitelistRepo,
-	jwt revokeTokenJWT,
+	refreshRepo RefreshTokenRepository,
+	accessRepo AccessTokenRepository,
+	refreshWhitelistRepo WhitelistRepository,
+	accessWhitelistRepo WhitelistRepository,
+	jwt jwtParser,
 	cache revokeTokenCache,
-	config AuthUsecaseConfig,
+	config UsecaseConfig,
 ) *RevokeTokenCommand {
 	return &RevokeTokenCommand{
 		refreshRepo:          refreshRepo,

@@ -27,6 +27,7 @@ func NewSessionToken(id string, userID int, loginID LoginID, organizationName st
 		tokenHash:        tokenHash,
 		createdAt:        createdAt,
 		expiresAt:        expiresAt,
+		revokedAt:        nil,
 	}
 	if err := m.validate(); err != nil {
 		return nil, err
