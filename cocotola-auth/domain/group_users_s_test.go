@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -15,7 +16,7 @@ func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsZero(t *testing.T) {
 	_, err := domain.NewGroupUsers(0, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsNegative(t *testing.T) {
@@ -25,7 +26,7 @@ func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsNegative(t *testing.T) {
 	_, err := domain.NewGroupUsers(-1, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_GroupUsers_Add_shouldSucceed_whenUserNotInGroup(t *testing.T) {
@@ -38,7 +39,7 @@ func Test_GroupUsers_Add_shouldSucceed_whenUserNotInGroup(t *testing.T) {
 	err := g.Add(3)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, g.Size())
 	assert.True(t, g.Contains(3))
 }
@@ -53,7 +54,7 @@ func Test_GroupUsers_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	err := g.Add(2)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrDuplicateEntry)
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
 }
 
 func Test_GroupUsers_Remove_shouldRemoveUser(t *testing.T) {
@@ -106,6 +107,6 @@ func Test_GroupUsers_Add_shouldSucceed_whenAddingToEmptyGroup(t *testing.T) {
 	err := g.Add(1)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, g.Size())
 }

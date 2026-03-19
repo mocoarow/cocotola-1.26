@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -24,7 +25,7 @@ func Test_NewAccessToken_shouldReturnToken_whenAllFieldsAreValid(t *testing.T) {
 	token, err := domain.NewAccessToken(id, rtID, userID, loginID, org, created, expires)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, id, token.ID())
 	assert.Equal(t, rtID, token.RefreshTokenID())
 	assert.Equal(t, userID, token.UserID())
@@ -45,7 +46,7 @@ func Test_NewAccessToken_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := domain.NewAccessToken("", rtID, userID, loginID, org, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenRefreshTokenIDIsEmpty(t *testing.T) {
@@ -58,7 +59,7 @@ func Test_NewAccessToken_shouldReturnError_whenRefreshTokenIDIsEmpty(t *testing.
 	_, err := domain.NewAccessToken(id, "", userID, loginID, org, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
@@ -71,7 +72,7 @@ func Test_NewAccessToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	_, err := domain.NewAccessToken(id, rtID, 0, loginID, org, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
@@ -84,7 +85,7 @@ func Test_NewAccessToken_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
 	_, err := domain.NewAccessToken(id, rtID, userID, "", org, created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenOrganizationNameIsEmpty(t *testing.T) {
@@ -97,7 +98,7 @@ func Test_NewAccessToken_shouldReturnError_whenOrganizationNameIsEmpty(t *testin
 	_, err := domain.NewAccessToken(id, rtID, userID, loginID, "", created, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenCreatedAtIsZero(t *testing.T) {
@@ -110,7 +111,7 @@ func Test_NewAccessToken_shouldReturnError_whenCreatedAtIsZero(t *testing.T) {
 	_, err := domain.NewAccessToken(id, rtID, userID, loginID, org, time.Time{}, expires)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenExpiresAtIsZero(t *testing.T) {
@@ -123,7 +124,7 @@ func Test_NewAccessToken_shouldReturnError_whenExpiresAtIsZero(t *testing.T) {
 	_, err := domain.NewAccessToken(id, rtID, userID, loginID, org, created, time.Time{})
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_AccessToken_Revoke_shouldSetRevokedAt_whenTokenIsActive(t *testing.T) {

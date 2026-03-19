@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -23,7 +24,7 @@ func Test_NewGroup_shouldReturnGroup_whenAllFieldsAreValid(t *testing.T) {
 	group, err := domain.NewGroup(id, orgID, name, enabled)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, id, group.ID())
 	assert.Equal(t, orgID, group.OrganizationID())
 	assert.Equal(t, name, group.Name())
@@ -40,7 +41,7 @@ func Test_NewGroup_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := domain.NewGroup(0, orgID, name, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroup_shouldReturnError_whenIDIsNegative(t *testing.T) {
@@ -53,7 +54,7 @@ func Test_NewGroup_shouldReturnError_whenIDIsNegative(t *testing.T) {
 	_, err := domain.NewGroup(-1, orgID, name, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroup_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -66,7 +67,7 @@ func Test_NewGroup_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	_, err := domain.NewGroup(id, 0, name, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroup_shouldReturnError_whenNameIsEmpty(t *testing.T) {
@@ -79,7 +80,7 @@ func Test_NewGroup_shouldReturnError_whenNameIsEmpty(t *testing.T) {
 	_, err := domain.NewGroup(id, orgID, "", enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroup_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
@@ -93,7 +94,7 @@ func Test_NewGroup_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
 	_, err := domain.NewGroup(id, orgID, longName, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroup_shouldSucceed_whenNameIsAtMaxLength(t *testing.T) {
@@ -107,7 +108,7 @@ func Test_NewGroup_shouldSucceed_whenNameIsAtMaxLength(t *testing.T) {
 	group, err := domain.NewGroup(id, orgID, maxName, enabled)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, maxName, group.Name())
 }
 

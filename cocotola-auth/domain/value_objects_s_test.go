@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -18,7 +19,7 @@ func Test_NewTokenHash_shouldReturnHash_whenValidHex64(t *testing.T) {
 	hash, err := domain.NewTokenHash(validHex)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, domain.TokenHash(validHex), hash)
 }
 
@@ -32,7 +33,7 @@ func Test_NewTokenHash_shouldReturnError_whenLengthIsNot64(t *testing.T) {
 	_, err := domain.NewTokenHash(shortHex)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "64 characters")
 }
 
@@ -46,7 +47,7 @@ func Test_NewTokenHash_shouldReturnError_whenNotValidHex(t *testing.T) {
 	_, err := domain.NewTokenHash(invalidHex)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "valid hex")
 }
 
@@ -60,7 +61,7 @@ func Test_NewLoginID_shouldReturnLoginID_whenNotEmpty(t *testing.T) {
 	loginID, err := domain.NewLoginID(id)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, domain.LoginID(id), loginID)
 }
 
@@ -71,7 +72,7 @@ func Test_NewLoginID_shouldReturnError_whenEmpty(t *testing.T) {
 	_, err := domain.NewLoginID("")
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must not be empty")
 }
 

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -15,7 +16,7 @@ func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsZero(t *testin
 	_, err := domain.NewActiveUserList(0, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsNegative(t *testing.T) {
@@ -25,7 +26,7 @@ func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsNegative(t *te
 	_, err := domain.NewActiveUserList(-1, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_ActiveUserList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {
@@ -38,7 +39,7 @@ func Test_ActiveUserList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {
 	err := list.Add(3, 5)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, list.Size())
 	assert.True(t, list.Contains(3))
 }
@@ -53,7 +54,7 @@ func Test_ActiveUserList_Add_shouldReturnError_whenAtLimit(t *testing.T) {
 	err := list.Add(4, 3)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrActiveUserLimitReached)
+	require.ErrorIs(t, err, domain.ErrActiveUserLimitReached)
 }
 
 func Test_ActiveUserList_Add_shouldReturnError_whenDuplicate(t *testing.T) {
@@ -66,7 +67,7 @@ func Test_ActiveUserList_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	err := list.Add(2, 5)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrDuplicateEntry)
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
 }
 
 func Test_ActiveUserList_Remove_shouldRemoveEntry(t *testing.T) {
@@ -119,6 +120,6 @@ func Test_ActiveUserList_Add_shouldSucceed_whenAddingToEmptyList(t *testing.T) {
 	err := list.Add(1, 5)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, list.Size())
 }

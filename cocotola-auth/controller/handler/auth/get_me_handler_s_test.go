@@ -16,7 +16,7 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	r := initAuthRouterWithMiddleware(t, ctx, authUsecase, fakeAuthMiddleware(42, "user42", "org1"))
+	r := initAuthRouterWithMiddleware(ctx, t, authUsecase, fakeAuthMiddleware(42, "user42", "org1"))
 	w := httptest.NewRecorder()
 
 	// when
@@ -51,7 +51,7 @@ func Test_GetMeHandler_GetMe_shouldReturn401_whenUserIDMissing(t *testing.T) {
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	r := initAuthRouterWithMiddleware(t, ctx, authUsecase, noopMiddleware())
+	r := initAuthRouterWithMiddleware(ctx, t, authUsecase, noopMiddleware())
 	w := httptest.NewRecorder()
 
 	// when

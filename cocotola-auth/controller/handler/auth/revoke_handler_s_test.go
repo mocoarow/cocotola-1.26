@@ -19,7 +19,7 @@ func Test_RevokeHandler_Logout_shouldReturn204_andClearCookie(t *testing.T) {
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	authUsecase.On("RevokeSessionToken", mock.Anything, mock.Anything).Return(nil).Maybe()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 
 	// when
@@ -45,7 +45,7 @@ func Test_RevokeHandler_Revoke_shouldReturn204_whenTokenRevoked(t *testing.T) {
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	authUsecase.On("RevokeToken", mock.Anything, mock.Anything).Return(nil).Once()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"token":"some-token"}`
 

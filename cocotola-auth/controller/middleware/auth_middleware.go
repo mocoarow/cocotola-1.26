@@ -44,7 +44,7 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieCo
 				c.Abort()
 				return
 			}
-			setUserContext(c, ctx, output.UserID, output.LoginID, output.OrganizationName, logger)
+			setUserContext(ctx, c, output.UserID, output.LoginID, output.OrganizationName, logger)
 			c.Next()
 			return
 		}
@@ -65,7 +65,7 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieCo
 			c.Abort()
 			return
 		}
-		setUserContext(c, ctx, output.UserID, output.LoginID, output.OrganizationName, logger)
+		setUserContext(ctx, c, output.UserID, output.LoginID, output.OrganizationName, logger)
 
 		// Sliding window: extend the session
 		if err := authUsecase.ExtendSessionToken(ctx, &authservice.ExtendSessionTokenInput{RawToken: cookie}); err != nil {
@@ -86,7 +86,7 @@ func extractBearerToken(c *gin.Context) string {
 	return ""
 }
 
-func setUserContext(c *gin.Context, ctx context.Context, userID int, loginID string, organizationName string, logger *slog.Logger) {
+func setUserContext(ctx context.Context, c *gin.Context, userID int, loginID string, organizationName string, logger *slog.Logger) {
 	c.Set(controller.ContextFieldUserID{}, userID)
 	c.Set(controller.ContextFieldLoginID{}, loginID)
 	c.Set(controller.ContextFieldOrganizationName{}, organizationName)

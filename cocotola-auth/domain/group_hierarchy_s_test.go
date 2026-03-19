@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -19,7 +20,7 @@ func Test_NewHierarchyEdge_shouldReturnEdge_whenValid(t *testing.T) {
 	edge, err := domain.NewHierarchyEdge(1, 2)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, edge.ParentGroupID())
 	assert.Equal(t, 2, edge.ChildGroupID())
 }
@@ -31,7 +32,7 @@ func Test_NewHierarchyEdge_shouldReturnError_whenParentIDIsZero(t *testing.T) {
 	_, err := domain.NewHierarchyEdge(0, 2)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewHierarchyEdge_shouldReturnError_whenChildIDIsNegative(t *testing.T) {
@@ -41,7 +42,7 @@ func Test_NewHierarchyEdge_shouldReturnError_whenChildIDIsNegative(t *testing.T)
 	_, err := domain.NewHierarchyEdge(1, -1)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -51,7 +52,7 @@ func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsZero(t *testin
 	_, err := domain.NewGroupHierarchy(0, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsNegative(t *testing.T) {
@@ -61,7 +62,7 @@ func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsNegative(t *te
 	_, err := domain.NewGroupHierarchy(-1, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldSucceed_whenNoCycle(t *testing.T) {
@@ -74,7 +75,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenNoCycle(t *testing.T) {
 	err := h.AddEdge(1, 2)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, h.Edges(), 1)
 }
 
@@ -88,7 +89,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenSelfLoop(t *testing.T) {
 	err := h.AddEdge(1, 1)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
+	require.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDirectCycle(t *testing.T) {
@@ -103,7 +104,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDirectCycle(t *testing.T)
 	err := h.AddEdge(2, 1)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
+	require.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldReturnError_whenIndirectCycle(t *testing.T) {
@@ -120,7 +121,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenIndirectCycle(t *testing.
 	err := h.AddEdge(3, 1)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
+	require.ErrorIs(t, err, domain.ErrCyclicGroupHierarchy)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDuplicate(t *testing.T) {
@@ -135,7 +136,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDuplicate(t *testing.T) {
 	err := h.AddEdge(1, 2)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrDuplicateEntry)
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldSucceed_whenMultipleBranches(t *testing.T) {
@@ -151,7 +152,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenMultipleBranches(t *testing.T
 	err := h.AddEdge(1, 3)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Len(t, h.Edges(), 2)
 }
 
@@ -170,7 +171,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenDiamondShape(t *testing.T) {
 	err := h.AddEdge(3, 4)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func Test_GroupHierarchy_RemoveEdge_shouldRemoveEdge(t *testing.T) {
@@ -239,7 +240,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_afterCycleEdgeRemoved(t *testing.
 	err := h.AddEdge(3, 1)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func Test_GroupHierarchy_Edges_shouldReturnDefensiveCopy(t *testing.T) {

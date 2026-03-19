@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"math/rand"
 	"net/http"
 	"testing"
 
@@ -46,12 +45,12 @@ func fakeAuthMiddleware(userID int, loginID string, organizationName string) gin
 	}
 }
 
-func initAuthRouter(t *testing.T, ctx context.Context, usecase *MockAuthUsecase) *gin.Engine {
+func initAuthRouter(ctx context.Context, t *testing.T, usecase *MockAuthUsecase) *gin.Engine {
 	t.Helper()
-	return initAuthRouterWithMiddleware(t, ctx, usecase, noopMiddleware())
+	return initAuthRouterWithMiddleware(ctx, t, usecase, noopMiddleware())
 }
 
-func initAuthRouterWithMiddleware(t *testing.T, ctx context.Context, usecase *MockAuthUsecase, authMiddleware gin.HandlerFunc) *gin.Engine {
+func initAuthRouterWithMiddleware(ctx context.Context, t *testing.T, usecase *MockAuthUsecase, authMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, config, domain.AppName)
@@ -66,10 +65,6 @@ func initAuthRouterWithMiddleware(t *testing.T, ctx context.Context, usecase *Mo
 	authhandler.InitAuthRouter(authenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	return router
-}
-
-func randomUserID() int {
-	return rand.Intn(1000000) + 1 //nolint:gosec
 }
 
 func readBytes(t *testing.T, b *bytes.Buffer) []byte {

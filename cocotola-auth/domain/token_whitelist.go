@@ -88,7 +88,7 @@ func (w *TokenWhitelist) Add(entry WhitelistEntry) []string {
 	evictCount := len(w.entries) - w.maxSize
 	evictedIDs := make([]string, evictCount)
 
-	for i := 0; i < evictCount; i++ {
+	for i := range evictCount {
 		evictedIDs[i] = w.entries[i].ID
 	}
 

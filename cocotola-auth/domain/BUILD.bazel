@@ -15,6 +15,7 @@ go_library(
         "group_child_groups.go",
         "group_hierarchy.go",
         "group_users.go",
+        "int_id_set.go",
         "organization.go",
         "refresh_token.go",
         "session_token.go",
@@ -49,5 +50,6 @@ smart_go_test(
     deps = [
         ":domain",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

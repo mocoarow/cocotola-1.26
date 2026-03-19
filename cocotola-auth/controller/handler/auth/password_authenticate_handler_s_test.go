@@ -31,7 +31,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn200_whenValidCred
 	require.NoError(t, err)
 	authUsecase.On("CreateTokenPair", mock.Anything, mock.Anything).Return(tokenOutput, nil).Once()
 
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
 
@@ -63,7 +63,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn400_whenRequestBo
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"","password":""}`
 
@@ -86,7 +86,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn401_whenUsecaseRe
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("authenticate user: %w", domain.ErrUnauthenticated)).Once()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
 
@@ -109,7 +109,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn500_whenUsecaseRe
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(nil, errors.New("unexpected error")).Once()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
 
@@ -139,7 +139,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldSetCookie_whenXTokenDel
 	require.NoError(t, err)
 	authUsecase.On("CreateSessionToken", mock.Anything, mock.Anything).Return(sessionOutput, nil).Once()
 
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
 
@@ -167,7 +167,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn400_whenXTokenDel
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
 

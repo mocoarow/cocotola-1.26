@@ -24,7 +24,7 @@ func Test_RefreshHandler_Refresh_shouldReturn200_whenValidRefreshToken(t *testin
 	refreshOutput, err := authservice.NewRefreshAccessTokenOutput("new-jwt-access-token")
 	require.NoError(t, err)
 	authUsecase.On("RefreshAccessToken", mock.Anything, mock.Anything).Return(refreshOutput, nil).Once()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"refreshToken":"valid-refresh-token"}`
 
@@ -51,7 +51,7 @@ func Test_RefreshHandler_Refresh_shouldReturn401_whenRefreshTokenExpired(t *test
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	authUsecase.On("RefreshAccessToken", mock.Anything, mock.Anything).Return(nil, domain.ErrSessionExpired).Once()
-	r := initAuthRouter(t, ctx, authUsecase)
+	r := initAuthRouter(ctx, t, authUsecase)
 	w := httptest.NewRecorder()
 	body := `{"refreshToken":"expired-token"}`
 

@@ -28,6 +28,7 @@ func NewAccessToken(id string, refreshTokenID string, userID int, loginID LoginI
 		organizationName: organizationName,
 		createdAt:        createdAt,
 		expiresAt:        expiresAt,
+		revokedAt:        nil,
 	}
 	if err := m.validate(); err != nil {
 		return nil, err

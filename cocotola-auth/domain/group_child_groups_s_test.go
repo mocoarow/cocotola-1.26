@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -15,7 +16,7 @@ func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsZero(t *testing.T) 
 	_, err := domain.NewGroupChildGroups(0, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsNegative(t *testing.T) {
@@ -25,7 +26,7 @@ func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsNegative(t *testing
 	_, err := domain.NewGroupChildGroups(-1, nil)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_GroupChildGroups_Add_shouldSucceed_whenGroupNotInChildren(t *testing.T) {
@@ -38,7 +39,7 @@ func Test_GroupChildGroups_Add_shouldSucceed_whenGroupNotInChildren(t *testing.T
 	err := g.Add(4)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, g.Size())
 	assert.True(t, g.Contains(4))
 }
@@ -53,7 +54,7 @@ func Test_GroupChildGroups_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	err := g.Add(3)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrDuplicateEntry)
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
 }
 
 func Test_GroupChildGroups_Remove_shouldRemoveChildGroup(t *testing.T) {
@@ -106,6 +107,6 @@ func Test_GroupChildGroups_Add_shouldSucceed_whenAddingToEmptyGroup(t *testing.T
 	err := g.Add(2)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, g.Size())
 }

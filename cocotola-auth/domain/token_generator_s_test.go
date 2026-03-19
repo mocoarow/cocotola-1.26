@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -16,7 +17,7 @@ func Test_GenerateOpaqueToken_shouldReturnNonEmptyTokenAndHash(t *testing.T) {
 	raw, hash, err := domain.GenerateOpaqueToken()
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.NotEmpty(t, raw)
 	assert.Len(t, string(hash), 64)
 }
@@ -28,9 +29,9 @@ func Test_GenerateOpaqueToken_shouldReturnValidHexHash(t *testing.T) {
 	_, hash, err := domain.GenerateOpaqueToken()
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	_, decodeErr := hex.DecodeString(string(hash))
-	assert.NoError(t, decodeErr)
+	require.NoError(t, decodeErr)
 }
 
 func Test_GenerateOpaqueToken_shouldReturnHashMatchingRawToken(t *testing.T) {
@@ -40,7 +41,7 @@ func Test_GenerateOpaqueToken_shouldReturnHashMatchingRawToken(t *testing.T) {
 	raw, hash, err := domain.GenerateOpaqueToken()
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expected := domain.HashToken(raw)
 	assert.Equal(t, expected, hash)
 }
@@ -68,7 +69,7 @@ func Test_HashToken_shouldReturn64CharHexDigest(t *testing.T) {
 	// then
 	assert.Len(t, string(hash), 64)
 	_, err := hex.DecodeString(string(hash))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func Test_HashToken_shouldReturnSameHashForSameInput(t *testing.T) {

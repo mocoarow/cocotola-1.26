@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -22,7 +23,7 @@ func Test_NewAppUser_shouldReturnAppUser_whenAllFieldsAreValid(t *testing.T) {
 	user, err := domain.NewAppUser(id, orgID, loginID, enabled)
 
 	// then
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, id, user.ID())
 	assert.Equal(t, orgID, user.OrganizationID())
 	assert.Equal(t, loginID, user.LoginID())
@@ -39,7 +40,7 @@ func Test_NewAppUser_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := domain.NewAppUser(0, orgID, loginID, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAppUser_shouldReturnError_whenIDIsNegative(t *testing.T) {
@@ -52,7 +53,7 @@ func Test_NewAppUser_shouldReturnError_whenIDIsNegative(t *testing.T) {
 	_, err := domain.NewAppUser(-1, orgID, loginID, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAppUser_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -65,7 +66,7 @@ func Test_NewAppUser_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	_, err := domain.NewAppUser(id, 0, loginID, enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_NewAppUser_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
@@ -78,7 +79,7 @@ func Test_NewAppUser_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
 	_, err := domain.NewAppUser(id, orgID, "", enabled)
 
 	// then
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func Test_AppUser_Enable_shouldSetEnabledTrue_whenDisabled(t *testing.T) {
