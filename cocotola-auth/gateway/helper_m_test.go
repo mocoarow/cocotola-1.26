@@ -14,7 +14,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
-func setupOrganization(t *testing.T, tx *gorm.DB, ctx context.Context, name string) int {
+func setupOrganization(ctx context.Context, t *testing.T, tx *gorm.DB, name string) int {
 	t.Helper()
 	orgRepo := gateway.NewOrganizationRepository(tx)
 	org := domain.ReconstructOrganization(0, name, 100, 50)
@@ -24,12 +24,12 @@ func setupOrganization(t *testing.T, tx *gorm.DB, ctx context.Context, name stri
 	return inserted.ID
 }
 
-func setupUsers(t *testing.T, tx *gorm.DB, ctx context.Context, orgID int, orgName string, count int) []int {
+func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgName string, count int) []int {
 	t.Helper()
 	userRepo := gateway.NewAppUserRepository(tx)
 	userIDs := make([]int, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		loginID := domain.LoginID(fmt.Sprintf("%s-user-%d", orgName, i))
 		user := domain.ReconstructAppUser(0, orgID, loginID, true)
 		require.NoError(t, userRepo.Save(ctx, user))
@@ -40,12 +40,12 @@ func setupUsers(t *testing.T, tx *gorm.DB, ctx context.Context, orgID int, orgNa
 	return userIDs
 }
 
-func setupGroups(t *testing.T, tx *gorm.DB, ctx context.Context, orgID int, orgName string, count int) []int {
+func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgName string, count int) []int {
 	t.Helper()
 	groupRepo := gateway.NewGroupRepository(tx)
 	groupIDs := make([]int, count)
 
-	for i := 0; i < count; i++ {
+	for i := range count {
 		name := fmt.Sprintf("%s-group-%d", orgName, i)
 		group := domain.ReconstructGroup(0, orgID, name, true)
 		require.NoError(t, groupRepo.Save(ctx, group))

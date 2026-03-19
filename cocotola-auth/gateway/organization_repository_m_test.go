@@ -65,7 +65,7 @@ func Test_OrganizationRepository_FindByID_shouldReturnError_whenOrganizationDoes
 	_, err := repo.FindByID(ctx, 999999)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrOrganizationNotFound)
+	require.ErrorIs(t, err, domain.ErrOrganizationNotFound)
 }
 
 func Test_OrganizationRepository_FindByName_shouldReturnOrganization_whenNameExists(t *testing.T) {
@@ -100,5 +100,5 @@ func Test_OrganizationRepository_FindByName_shouldReturnError_whenNameDoesNotExi
 	_, err := repo.FindByName(ctx, "nonexistent-org")
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrOrganizationNotFound)
+	require.ErrorIs(t, err, domain.ErrOrganizationNotFound)
 }

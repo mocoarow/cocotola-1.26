@@ -19,8 +19,8 @@ func Test_GroupHierarchyRepository_Save_shouldInsertEdges_whenEdgesExist(t *test
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "hierarchy-save-org")
-	groupIDs := setupGroups(t, tx, ctx, orgID, "hierarchy-save-org", 3)
+	orgID := setupOrganization(ctx, t, tx, "hierarchy-save-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-save-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
 	edges := []domain.HierarchyEdge{
 		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
@@ -42,8 +42,8 @@ func Test_GroupHierarchyRepository_FindByOrganizationID_shouldReturnHierarchy_wh
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "hierarchy-find-org")
-	groupIDs := setupGroups(t, tx, ctx, orgID, "hierarchy-find-org", 3)
+	orgID := setupOrganization(ctx, t, tx, "hierarchy-find-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-find-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
 	edges := []domain.HierarchyEdge{
 		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
@@ -69,7 +69,7 @@ func Test_GroupHierarchyRepository_FindByOrganizationID_shouldReturnEmptyHierarc
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "hierarchy-empty-org")
+	orgID := setupOrganization(ctx, t, tx, "hierarchy-empty-org")
 	repo := gateway.NewGroupHierarchyRepository(tx)
 
 	// when
@@ -86,8 +86,8 @@ func Test_GroupHierarchyRepository_Save_shouldReplaceEdges_whenCalledTwice(t *te
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "hierarchy-replace-org")
-	groupIDs := setupGroups(t, tx, ctx, orgID, "hierarchy-replace-org", 3)
+	orgID := setupOrganization(ctx, t, tx, "hierarchy-replace-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-replace-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
 
 	edges1 := []domain.HierarchyEdge{

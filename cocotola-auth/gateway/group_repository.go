@@ -45,6 +45,11 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 func (r *GroupRepository) Save(ctx context.Context, group *domain.Group) error {
 	record := groupRecord{
 		ID:             group.ID(),
+		Version:        0,
+		CreatedAt:      time.Time{},
+		UpdatedAt:      time.Time{},
+		CreatedBy:      0,
+		UpdatedBy:      0,
 		OrganizationID: group.OrganizationID(),
 		Name:           group.Name(),
 		Enabled:        group.Enabled(),

@@ -19,7 +19,7 @@ func Test_GroupRepository_Save_shouldInsertGroup_whenNewRecord(t *testing.T) {
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "group-save-org")
+	orgID := setupOrganization(ctx, t, tx, "group-save-org")
 	repo := gateway.NewGroupRepository(tx)
 	group := domain.ReconstructGroup(0, orgID, "test-group", true)
 
@@ -36,7 +36,7 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "group-findbyid-org")
+	orgID := setupOrganization(ctx, t, tx, "group-findbyid-org")
 	repo := gateway.NewGroupRepository(tx)
 	group := domain.ReconstructGroup(0, orgID, "findbyid-group", true)
 	require.NoError(t, repo.Save(ctx, group))
@@ -67,7 +67,7 @@ func Test_GroupRepository_FindByID_shouldReturnError_whenGroupDoesNotExist(t *te
 	_, err := repo.FindByID(ctx, 999999)
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrGroupNotFound)
+	require.ErrorIs(t, err, domain.ErrGroupNotFound)
 }
 
 func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing.T) {
@@ -76,7 +76,7 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(t, tx, ctx, "group-findbyname-org")
+	orgID := setupOrganization(ctx, t, tx, "group-findbyname-org")
 	repo := gateway.NewGroupRepository(tx)
 	group := domain.ReconstructGroup(0, orgID, "findbyname-group", true)
 	require.NoError(t, repo.Save(ctx, group))
@@ -102,5 +102,5 @@ func Test_GroupRepository_FindByName_shouldReturnError_whenNameDoesNotExist(t *t
 	_, err := repo.FindByName(ctx, 1, "nonexistent-group")
 
 	// then
-	assert.ErrorIs(t, err, domain.ErrGroupNotFound)
+	require.ErrorIs(t, err, domain.ErrGroupNotFound)
 }

@@ -53,31 +53,18 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 
 // Save persists the group hierarchy by replacing all entries for the organization.
 func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domain.GroupHierarchy) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("organization_id = ?", hierarchy.OrganizationID()).
-			Delete(&groupNGroupRecord{}).Error; err != nil {
-			return fmt.Errorf("delete group hierarchy entries: %w", err)
+	edges := hierarchy.Edges()
+	records := make([]groupNGroupRecord, len(edges))
+	for i, edge := range edges {
+		records[i] = groupNGroupRecord{
+			OrganizationID: hierarchy.OrganizationID(),
+			ParentGroupID:  edge.ParentGroupID(),
+			ChildGroupID:   edge.ChildGroupID(),
+			CreatedAt:      time.Now(),
+			CreatedBy:      0,
 		}
-
-		edges := hierarchy.Edges()
-		if len(edges) == 0 {
-			return nil
-		}
-
-		records := make([]groupNGroupRecord, len(edges))
-		for i, edge := range edges {
-			records[i] = groupNGroupRecord{
-				OrganizationID: hierarchy.OrganizationID(),
-				ParentGroupID:  edge.ParentGroupID(),
-				ChildGroupID:   edge.ChildGroupID(),
-				CreatedAt:      time.Now(),
-				CreatedBy:      0,
-			}
-		}
-
-		if err := tx.Create(&records).Error; err != nil {
-			return fmt.Errorf("insert group hierarchy entries: %w", err)
-		}
-		return nil
-	})
+	}
+	return replaceRecords(ctx, r.db, "organization_id = ?", hierarchy.OrganizationID(),
+		&groupNGroupRecord{OrganizationID: 0, ParentGroupID: 0, ChildGroupID: 0, CreatedAt: time.Time{}, CreatedBy: 0},
+		records, "group hierarchy entries")
 }

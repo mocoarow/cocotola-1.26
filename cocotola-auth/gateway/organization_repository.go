@@ -45,6 +45,11 @@ func NewOrganizationRepository(db *gorm.DB) *OrganizationRepository {
 func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organization) error {
 	record := organizationRecord{
 		ID:              org.ID(),
+		Version:         0,
+		CreatedAt:       time.Time{},
+		UpdatedAt:       time.Time{},
+		CreatedBy:       0,
+		UpdatedBy:       0,
 		Name:            org.Name(),
 		MaxActiveUsers:  org.MaxActiveUsers(),
 		MaxActiveGroups: org.MaxActiveGroups(),

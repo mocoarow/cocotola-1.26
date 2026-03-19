@@ -52,30 +52,17 @@ func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (
 
 // Save persists the group users aggregate by replacing all entries for the group.
 func (r *GroupUsersRepository) Save(ctx context.Context, gu *domain.GroupUsers) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("group_id = ?", gu.GroupID()).
-			Delete(&userNGroupRecord{}).Error; err != nil {
-			return fmt.Errorf("delete group user entries: %w", err)
+	userIDs := gu.UserIDs()
+	records := make([]userNGroupRecord, len(userIDs))
+	for i, userID := range userIDs {
+		records[i] = userNGroupRecord{
+			GroupID:   gu.GroupID(),
+			UserID:    userID,
+			CreatedAt: time.Now(),
+			CreatedBy: 0,
 		}
-
-		userIDs := gu.UserIDs()
-		if len(userIDs) == 0 {
-			return nil
-		}
-
-		records := make([]userNGroupRecord, len(userIDs))
-		for i, userID := range userIDs {
-			records[i] = userNGroupRecord{
-				GroupID:   gu.GroupID(),
-				UserID:    userID,
-				CreatedAt: time.Now(),
-				CreatedBy: 0,
-			}
-		}
-
-		if err := tx.Create(&records).Error; err != nil {
-			return fmt.Errorf("insert group user entries: %w", err)
-		}
-		return nil
-	})
+	}
+	return replaceRecords(ctx, r.db, "group_id = ?", gu.GroupID(),
+		&userNGroupRecord{GroupID: 0, UserID: 0, CreatedAt: time.Time{}, CreatedBy: 0},
+		records, "group user entries")
 }

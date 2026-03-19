@@ -50,10 +50,21 @@ func NewAppUserRepository(db *gorm.DB) *AppUserRepository {
 // Save persists an app user record (upsert: insert or update).
 func (r *AppUserRepository) Save(ctx context.Context, user *domain.AppUser) error {
 	record := appUserRecord{
-		ID:             user.ID(),
-		OrganizationID: user.OrganizationID(),
-		LoginID:        string(user.LoginID()),
-		Enabled:        user.Enabled(),
+		ID:                            user.ID(),
+		Version:                       0,
+		CreatedAt:                     time.Time{},
+		UpdatedAt:                     time.Time{},
+		CreatedBy:                     0,
+		UpdatedBy:                     0,
+		OrganizationID:                user.OrganizationID(),
+		LoginID:                       string(user.LoginID()),
+		HashedPassword:                nil,
+		Username:                      nil,
+		Provider:                      nil,
+		ProviderID:                    nil,
+		EncryptedProviderAccessToken:  nil,
+		EncryptedProviderRefreshToken: nil,
+		Enabled:                       user.Enabled(),
 	}
 	if err := r.db.WithContext(ctx).
 		Omit("hashed_password", "username", "provider", "provider_id", "encrypted_provider_access_token", "encrypted_provider_refresh_token").

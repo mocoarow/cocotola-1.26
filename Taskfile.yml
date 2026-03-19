@@ -44,7 +44,7 @@ tasks:
 
   kics:
     cmds:
-      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.github/kics.yml
+      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.kics.yml
 
   yamllint:
     cmds:

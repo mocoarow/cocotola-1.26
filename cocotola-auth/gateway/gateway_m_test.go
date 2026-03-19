@@ -53,18 +53,16 @@ func TestMain(m *testing.M) {
 	}
 	testDB = db
 
-	defer func() {
-		sqlDB, err := db.DB()
-		if err != nil {
-			log.Printf("get sql.DB: %v", err)
-			return
-		}
+	exitCode := m.Run()
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Printf("get sql.DB: %v", err)
+	} else {
 		if err := sqlDB.Close(); err != nil {
 			log.Printf("close sql.DB: %v", err)
 		}
-	}()
-
-	exitCode := m.Run()
+	}
 
 	os.Exit(exitCode)
 }
