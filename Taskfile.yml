@@ -44,7 +44,7 @@ tasks:
 
   kics:
     cmds:
-      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.kics.yml
+      - docker run --rm -t -v ./:/path checkmarx/kics scan -p /path --config /path/.kics.yml
 
   yamllint:
     cmds:
@@ -58,6 +58,10 @@ tasks:
     cmds:
       - markdownlint --config .markdownlint.yaml .
 
+  trivy:
+    cmds:
+      - docker run --rm -v .:/workspace aquasec/trivy:0.69.0 fs --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /workspace
+
   gitleaks:
     cmds:
       - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
@@ -70,6 +74,7 @@ tasks:
       - task: misspell
       - task: markdownlint
       - task: gitleaks
+      - task: trivy
 
   generate-go-project:
     cmds:
