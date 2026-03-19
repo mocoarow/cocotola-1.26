@@ -42,13 +42,34 @@ tasks:
         vars:
           GO_PROJECT: "{{ .ITEM }}"
 
+  kics:
+    cmds:
+      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.github/kics.yml
+
+  yamllint:
+    cmds:
+      - yamllint -c .yamllint.yml .
+
+  misspell:
+    cmds:
+      - misspell -locale US -i "$(paste -sd, .misspell-ignore)" -error .
+
+  markdownlint:
+    cmds:
+      - markdownlint --config .markdownlint.yaml .
+
+  gitleaks:
+    cmds:
+      - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
+
   check:
     cmds:
       - task: lint
-      - yamllint -c .yamllint.yml .
-      - misspell -locale US -i "$(paste -sd, .misspell-ignore)" -error .
-      - markdownlint --config .markdownlint.yaml .
-      - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
+      - task: kics
+      - task: yamllint
+      - task: misspell
+      - task: markdownlint
+      - task: gitleaks
 
   generate-go-project:
     cmds:
@@ -101,6 +122,7 @@ tasks:
 
   test:
     cmds:
+      - docker compose -f compose.test.yml up -d --wait
       - rm -f ./coverage.lcov
       - bazelisk test //... --collect_code_coverage=true --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no
       - bazelisk coverage //... --combined_report=lcov --test_size_filters=small,medium
@@ -116,6 +138,10 @@ tasks:
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+
+  test-clear:
+    cmds:
+      - docker compose -f compose.test.yml down -v --remove-orphans
 
   update-mod-go-project:
     cmds:
@@ -146,7 +172,3 @@ tasks:
     cmds:
       - docker compose -f compose.local.mysql-lgtm.yml up -d --wait
       - bazelisk run //cocotola-auth:cocotola-auth
-
-  kics:
-    cmds:
-      - docker run -t -v ./:/path checkmarx/kics scan -p /path --config /path/.github/kics.yml
