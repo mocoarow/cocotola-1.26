@@ -29,6 +29,7 @@ go_library(
 smart_go_test(
     name = "auth_test",
     srcs = [
+        "mocks_test.go",
         "revoke_session_token_command_s_test.go",
         "validate_access_token_query_s_test.go",
     ],

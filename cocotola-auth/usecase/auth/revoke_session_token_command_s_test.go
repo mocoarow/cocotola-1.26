@@ -12,52 +12,6 @@ import (
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-// --- mocks ---
-
-type mockRevokeSessionTokenRepo struct{ mock.Mock }
-
-func (m *mockRevokeSessionTokenRepo) FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error) {
-	args := m.Called(ctx, hash)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*domain.SessionToken), args.Error(1)
-}
-
-func (m *mockRevokeSessionTokenRepo) Save(ctx context.Context, token *domain.SessionToken) error {
-	return m.Called(ctx, token).Error(0)
-}
-
-type mockRevokeSessionTokenWhitelistRepo struct{ mock.Mock }
-
-func (m *mockRevokeSessionTokenWhitelistRepo) FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error) {
-	args := m.Called(ctx, userID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]domain.WhitelistEntry), args.Error(1)
-}
-
-func (m *mockRevokeSessionTokenWhitelistRepo) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
-	return m.Called(ctx, whitelist).Error(0)
-}
-
-type mockRevokeSessionTokenCache struct{ mock.Mock }
-
-func (m *mockRevokeSessionTokenCache) GetSessionToken(hash string) (*domain.SessionToken, bool) {
-	args := m.Called(hash)
-	if args.Get(0) == nil {
-		return nil, args.Bool(1)
-	}
-	return args.Get(0).(*domain.SessionToken), args.Bool(1)
-}
-
-func (m *mockRevokeSessionTokenCache) DeleteSessionToken(hash string) {
-	m.Called(hash)
-}
-
-// --- tests ---
-
 func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTokenIsActive(t *testing.T) {
 	t.Parallel()
 
@@ -70,17 +24,17 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTok
 
 	sessionToken := domain.ReconstructSessionToken(tokenID, userID, "user1", "org1", domain.TokenHash(hash), now, now.Add(30*time.Minute), nil)
 
-	repoMock := &mockRevokeSessionTokenRepo{}
+	repoMock := newMockrevokeSessionTokenRepo(t)
 	repoMock.On("FindByTokenHash", mock.Anything, hash).Return(sessionToken, nil)
 	repoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
-	whitelistRepoMock := &mockRevokeSessionTokenWhitelistRepo{}
+	whitelistRepoMock := newMockrevokeSessionTokenWhitelistRepo(t)
 	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domain.WhitelistEntry{
 		{ID: tokenID, CreatedAt: now},
 	}, nil)
 	whitelistRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
-	cacheMock := &mockRevokeSessionTokenCache{}
+	cacheMock := newMockrevokeSessionTokenCache(t)
 	cacheMock.On("GetSessionToken", hash).Return(nil, false)
 	cacheMock.On("DeleteSessionToken", hash).Return()
 
@@ -115,12 +69,12 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldReturnErrTokenRevok
 
 	sessionToken := domain.ReconstructSessionToken(tokenID, 1, "user1", "org1", domain.TokenHash(hash), now.Add(-1*time.Hour), now.Add(30*time.Minute), &revokedAt)
 
-	repoMock := &mockRevokeSessionTokenRepo{}
+	repoMock := newMockrevokeSessionTokenRepo(t)
 	repoMock.On("FindByTokenHash", mock.Anything, hash).Return(sessionToken, nil)
 
-	whitelistRepoMock := &mockRevokeSessionTokenWhitelistRepo{}
+	whitelistRepoMock := newMockrevokeSessionTokenWhitelistRepo(t)
 
-	cacheMock := &mockRevokeSessionTokenCache{}
+	cacheMock := newMockrevokeSessionTokenCache(t)
 	cacheMock.On("GetSessionToken", hash).Return(nil, false)
 
 	config := AuthUsecaseConfig{TokenWhitelistSize: 10}
