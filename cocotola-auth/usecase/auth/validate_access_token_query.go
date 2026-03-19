@@ -12,14 +12,6 @@ type validateAccessTokenRepo interface {
 	FindByID(ctx context.Context, id string) (*domain.AccessToken, error)
 }
 
-type validateAccessTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-}
-
-type validateAccessTokenJWT interface {
-	ParseAccessToken(tokenString string) (*authservice.UserInfo, string, error)
-}
-
 type validateAccessTokenCache interface {
 	GetAccessToken(jti string) (*domain.AccessToken, bool)
 	SetAccessToken(jti string, token *domain.AccessToken)
@@ -29,19 +21,19 @@ type validateAccessTokenCache interface {
 // ValidateAccessTokenQuery validates a JWT access token against the whitelist.
 type ValidateAccessTokenQuery struct {
 	repo          validateAccessTokenRepo
-	whitelistRepo validateAccessTokenWhitelistRepo
-	jwt           validateAccessTokenJWT
+	whitelistRepo whitelistFinder
+	jwt           jwtParser
 	cache         validateAccessTokenCache
-	config        AuthUsecaseConfig
+	config        UsecaseConfig
 }
 
 // NewValidateAccessTokenQuery returns a new ValidateAccessTokenQuery.
 func NewValidateAccessTokenQuery(
 	repo validateAccessTokenRepo,
-	whitelistRepo validateAccessTokenWhitelistRepo,
-	jwt validateAccessTokenJWT,
+	whitelistRepo whitelistFinder,
+	jwt jwtParser,
 	cache validateAccessTokenCache,
-	config AuthUsecaseConfig,
+	config UsecaseConfig,
 ) *ValidateAccessTokenQuery {
 	return &ValidateAccessTokenQuery{
 		repo:          repo,

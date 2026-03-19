@@ -15,41 +15,24 @@ type refreshAccessTokenRefreshRepo interface {
 	FindByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error)
 }
 
-type refreshAccessTokenAccessRepo interface {
-	Save(ctx context.Context, token *domain.AccessToken) error
-}
-
-type refreshAccessTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-type refreshAccessTokenJWT interface {
-	CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error)
-}
-
-type refreshAccessTokenCache interface {
-	SetAccessToken(jti string, token *domain.AccessToken)
-}
-
 // RefreshAccessTokenCommand uses a raw refresh token to issue a new JWT access token.
 type RefreshAccessTokenCommand struct {
 	refreshRepo   refreshAccessTokenRefreshRepo
-	accessRepo    refreshAccessTokenAccessRepo
-	whitelistRepo refreshAccessTokenWhitelistRepo
-	jwt           refreshAccessTokenJWT
-	cache         refreshAccessTokenCache
-	config        AuthUsecaseConfig
+	accessRepo    accessTokenSaver
+	whitelistRepo WhitelistRepository
+	jwt           jwtCreator
+	cache         accessTokenCacheSetter
+	config        UsecaseConfig
 }
 
 // NewRefreshAccessTokenCommand returns a new RefreshAccessTokenCommand.
 func NewRefreshAccessTokenCommand(
 	refreshRepo refreshAccessTokenRefreshRepo,
-	accessRepo refreshAccessTokenAccessRepo,
-	whitelistRepo refreshAccessTokenWhitelistRepo,
-	jwt refreshAccessTokenJWT,
-	cache refreshAccessTokenCache,
-	config AuthUsecaseConfig,
+	accessRepo accessTokenSaver,
+	whitelistRepo WhitelistRepository,
+	jwt jwtCreator,
+	cache accessTokenCacheSetter,
+	config UsecaseConfig,
 ) *RefreshAccessTokenCommand {
 	return &RefreshAccessTokenCommand{
 		refreshRepo:   refreshRepo,

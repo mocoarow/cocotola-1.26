@@ -14,6 +14,7 @@ go_library(
         "refresh_access_token_command.go",
         "revoke_session_token_command.go",
         "revoke_token_command.go",
+        "shared_interfaces.go",
         "validate_access_token_query.go",
         "validate_session_token_query.go",
     ],
@@ -33,11 +34,12 @@ smart_go_test(
         "revoke_session_token_command_s_test.go",
         "validate_access_token_query_s_test.go",
     ],
-    embed = [":auth"],
     deps = [
+        ":auth",
         "//cocotola-auth/domain",
         "//cocotola-auth/service/auth",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -8,16 +8,6 @@ import (
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-type revokeSessionTokenRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error)
-	Save(ctx context.Context, token *domain.SessionToken) error
-}
-
-type revokeSessionTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
 type revokeSessionTokenCache interface {
 	GetSessionToken(hash string) (*domain.SessionToken, bool)
 	DeleteSessionToken(hash string)
@@ -25,18 +15,18 @@ type revokeSessionTokenCache interface {
 
 // RevokeSessionTokenCommand revokes a session token.
 type RevokeSessionTokenCommand struct {
-	repo          revokeSessionTokenRepo
-	whitelistRepo revokeSessionTokenWhitelistRepo
+	repo          SessionTokenRepository
+	whitelistRepo WhitelistRepository
 	cache         revokeSessionTokenCache
-	config        AuthUsecaseConfig
+	config        UsecaseConfig
 }
 
 // NewRevokeSessionTokenCommand returns a new RevokeSessionTokenCommand.
 func NewRevokeSessionTokenCommand(
-	repo revokeSessionTokenRepo,
-	whitelistRepo revokeSessionTokenWhitelistRepo,
+	repo SessionTokenRepository,
+	whitelistRepo WhitelistRepository,
 	cache revokeSessionTokenCache,
-	config AuthUsecaseConfig,
+	config UsecaseConfig,
 ) *RevokeSessionTokenCommand {
 	return &RevokeSessionTokenCommand{
 		repo:          repo,

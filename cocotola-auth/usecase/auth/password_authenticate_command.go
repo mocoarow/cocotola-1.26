@@ -7,17 +7,13 @@ import (
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-type passwordAuthenticateAuth interface {
-	Authenticate(ctx context.Context, loginID string, password string, organizationName string) (*authservice.UserInfo, error)
-}
-
 // PasswordAuthenticateQuery verifies user credentials.
 type PasswordAuthenticateQuery struct {
-	userAuthenticator passwordAuthenticateAuth
+	userAuthenticator UserAuthenticator
 }
 
 // NewPasswordAuthenticateQuery returns a new PasswordAuthenticateQuery.
-func NewPasswordAuthenticateQuery(userAuthenticator passwordAuthenticateAuth) *PasswordAuthenticateQuery {
+func NewPasswordAuthenticateQuery(userAuthenticator UserAuthenticator) *PasswordAuthenticateQuery {
 	return &PasswordAuthenticateQuery{
 		userAuthenticator: userAuthenticator,
 	}

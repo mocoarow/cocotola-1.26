@@ -9,34 +9,20 @@ import (
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-type extendSessionTokenRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error)
-	Save(ctx context.Context, token *domain.SessionToken) error
-}
-
-type extendSessionTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-}
-
-type extendSessionTokenCache interface {
-	GetSessionToken(hash string) (*domain.SessionToken, bool)
-	SetSessionToken(hash string, token *domain.SessionToken)
-}
-
 // ExtendSessionTokenCommand extends the expiry of a session token (sliding window).
 type ExtendSessionTokenCommand struct {
-	repo          extendSessionTokenRepo
-	whitelistRepo extendSessionTokenWhitelistRepo
-	cache         extendSessionTokenCache
-	config        AuthUsecaseConfig
+	repo          SessionTokenRepository
+	whitelistRepo whitelistFinder
+	cache         sessionTokenCacheReadWriter
+	config        UsecaseConfig
 }
 
 // NewExtendSessionTokenCommand returns a new ExtendSessionTokenCommand.
 func NewExtendSessionTokenCommand(
-	repo extendSessionTokenRepo,
-	whitelistRepo extendSessionTokenWhitelistRepo,
-	cache extendSessionTokenCache,
-	config AuthUsecaseConfig,
+	repo SessionTokenRepository,
+	whitelistRepo whitelistFinder,
+	cache sessionTokenCacheReadWriter,
+	config UsecaseConfig,
 ) *ExtendSessionTokenCommand {
 	return &ExtendSessionTokenCommand{
 		repo:          repo,

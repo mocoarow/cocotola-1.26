@@ -15,11 +15,6 @@ type createSessionTokenRepo interface {
 	Save(ctx context.Context, token *domain.SessionToken) error
 }
 
-type createSessionTokenWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
 type createSessionTokenCache interface {
 	SetSessionToken(hash string, token *domain.SessionToken)
 }
@@ -27,17 +22,17 @@ type createSessionTokenCache interface {
 // CreateSessionTokenCommand creates a new session token for cookie-based authentication.
 type CreateSessionTokenCommand struct {
 	repo          createSessionTokenRepo
-	whitelistRepo createSessionTokenWhitelistRepo
+	whitelistRepo WhitelistRepository
 	cache         createSessionTokenCache
-	config        AuthUsecaseConfig
+	config        UsecaseConfig
 }
 
 // NewCreateSessionTokenCommand returns a new CreateSessionTokenCommand.
 func NewCreateSessionTokenCommand(
 	repo createSessionTokenRepo,
-	whitelistRepo createSessionTokenWhitelistRepo,
+	whitelistRepo WhitelistRepository,
 	cache createSessionTokenCache,
-	config AuthUsecaseConfig,
+	config UsecaseConfig,
 ) *CreateSessionTokenCommand {
 	return &CreateSessionTokenCommand{
 		repo:          repo,

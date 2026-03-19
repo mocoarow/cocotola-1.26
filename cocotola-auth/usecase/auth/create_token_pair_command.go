@@ -15,48 +15,26 @@ type createTokenPairRefreshRepo interface {
 	Save(ctx context.Context, token *domain.RefreshToken) error
 }
 
-type createTokenPairAccessRepo interface {
-	Save(ctx context.Context, token *domain.AccessToken) error
-}
-
-type createTokenPairRefreshWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-type createTokenPairAccessWhitelistRepo interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
-	Save(ctx context.Context, whitelist *domain.TokenWhitelist) error
-}
-
-type createTokenPairJWT interface {
-	CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error)
-}
-
-type createTokenPairCache interface {
-	SetAccessToken(jti string, token *domain.AccessToken)
-}
-
 // CreateTokenPairCommand creates a new access token (JWT) and refresh token (opaque) pair.
 type CreateTokenPairCommand struct {
 	refreshRepo          createTokenPairRefreshRepo
-	accessRepo           createTokenPairAccessRepo
-	refreshWhitelistRepo createTokenPairRefreshWhitelistRepo
-	accessWhitelistRepo  createTokenPairAccessWhitelistRepo
-	jwt                  createTokenPairJWT
-	cache                createTokenPairCache
-	config               AuthUsecaseConfig
+	accessRepo           accessTokenSaver
+	refreshWhitelistRepo WhitelistRepository
+	accessWhitelistRepo  WhitelistRepository
+	jwt                  jwtCreator
+	cache                accessTokenCacheSetter
+	config               UsecaseConfig
 }
 
 // NewCreateTokenPairCommand returns a new CreateTokenPairCommand.
 func NewCreateTokenPairCommand(
 	refreshRepo createTokenPairRefreshRepo,
-	accessRepo createTokenPairAccessRepo,
-	refreshWhitelistRepo createTokenPairRefreshWhitelistRepo,
-	accessWhitelistRepo createTokenPairAccessWhitelistRepo,
-	jwt createTokenPairJWT,
-	cache createTokenPairCache,
-	config AuthUsecaseConfig,
+	accessRepo accessTokenSaver,
+	refreshWhitelistRepo WhitelistRepository,
+	accessWhitelistRepo WhitelistRepository,
+	jwt jwtCreator,
+	cache accessTokenCacheSetter,
+	config UsecaseConfig,
 ) *CreateTokenPairCommand {
 	return &CreateTokenPairCommand{
 		refreshRepo:          refreshRepo,
