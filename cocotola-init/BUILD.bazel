@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cocotola-init_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cocotola-init/config",
+        "//cocotola-init/initialize",
+        "//cocotola-lib/gateway",
+    ],
+)
+
+go_binary(
+    name = "cocotola-init",
+    embed = [":cocotola-init_lib"],
+    visibility = ["//visibility:public"],
+)

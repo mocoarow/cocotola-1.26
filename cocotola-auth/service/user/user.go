@@ -11,14 +11,16 @@ import (
 
 // CreateAppUserInput holds the parameters for creating an app user.
 type CreateAppUserInput struct {
+	OperatorID     int    `validate:"required,gt=0"`
 	OrganizationID int    `validate:"required,gt=0"`
 	LoginID        string `validate:"required"`
 	Password       string `validate:"required,min=8"`
 }
 
 // NewCreateAppUserInput creates a validated CreateAppUserInput.
-func NewCreateAppUserInput(organizationID int, loginID string, password string) (*CreateAppUserInput, error) {
+func NewCreateAppUserInput(operatorID int, organizationID int, loginID string, password string) (*CreateAppUserInput, error) {
 	m := &CreateAppUserInput{
+		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 		LoginID:        loginID,
 		Password:       password,
@@ -55,13 +57,15 @@ func NewCreateAppUserOutput(appUserID int, organizationID int, loginID string, e
 
 // ChangePasswordInput holds the parameters for changing a user's password.
 type ChangePasswordInput struct {
+	OperatorID  int    `validate:"required,gt=0"`
 	AppUserID   int    `validate:"required,gt=0"`
 	NewPassword string `validate:"required,min=8"`
 }
 
 // NewChangePasswordInput creates a validated ChangePasswordInput.
-func NewChangePasswordInput(appUserID int, newPassword string) (*ChangePasswordInput, error) {
+func NewChangePasswordInput(operatorID int, appUserID int, newPassword string) (*ChangePasswordInput, error) {
 	m := &ChangePasswordInput{
+		OperatorID:  operatorID,
 		AppUserID:   appUserID,
 		NewPassword: newPassword,
 	}

@@ -1,0 +1,13 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "initialize",
+    srcs = ["initializer.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/initialize",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/gateway",
+        "@io_gorm_gorm//:gorm",
+    ],
+)

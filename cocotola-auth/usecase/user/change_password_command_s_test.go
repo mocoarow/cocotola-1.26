@@ -17,11 +17,13 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	userID := 1
+	orgID := 1
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 
-	user := domain.ReconstructAppUser(userID, 1, "user@example.com", "$2a$10$oldhash", true)
+	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -32,8 +34,11 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	hasherMock := newMockpasswordHasher(t)
 	hasherMock.On("Hash", newPassword).Return(hashedPassword, nil)
 
-	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock)
-	input := &userservice.ChangePasswordInput{AppUserID: userID, NewPassword: newPassword}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+
+	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
+	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
 
 	// when
 	output, err := cmd.ChangePassword(context.Background(), input)
@@ -44,10 +49,43 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	saverMock.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 }
 
+func Test_ChangePasswordCommand_ChangePassword_shouldReturnForbidden_whenNotAuthorized(t *testing.T) {
+	t.Parallel()
+
+	// given
+	operatorID := 99
+	userID := 1
+	orgID := 1
+	newPassword := "newpassword123"
+
+	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+
+	finderMock := newMockappUserFinder(t)
+	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
+
+	saverMock := newMockappUserSaver(t)
+	hasherMock := newMockpasswordHasher(t)
+
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(false, nil)
+
+	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
+	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
+
+	// when
+	output, err := cmd.ChangePassword(context.Background(), input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrForbidden)
+	require.Nil(t, output)
+	saverMock.AssertNotCalled(t, "Save")
+}
+
 func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenUserNotFound(t *testing.T) {
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	userID := 1
 	newPassword := "newpassword123"
 
@@ -55,11 +93,11 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenUserNotFoun
 	finderMock.On("FindByID", mock.Anything, userID).Return(nil, domain.ErrAppUserNotFound)
 
 	saverMock := newMockappUserSaver(t)
-
 	hasherMock := newMockpasswordHasher(t)
+	authCheckerMock := newMockauthorizationChecker(t)
 
-	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock)
-	input := &userservice.ChangePasswordInput{AppUserID: userID, NewPassword: newPassword}
+	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
+	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
 
 	// when
 	output, err := cmd.ChangePassword(context.Background(), input)
@@ -74,20 +112,24 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	userID := 1
+	orgID := 1
 	newPassword := "short"
 
-	user := domain.ReconstructAppUser(userID, 1, "user@example.com", "$2a$10$oldhash", true)
+	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
 
 	saverMock := newMockappUserSaver(t)
-
 	hasherMock := newMockpasswordHasher(t)
 
-	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock)
-	input := &userservice.ChangePasswordInput{AppUserID: userID, NewPassword: newPassword}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+
+	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
+	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
 
 	// when
 	output, err := cmd.ChangePassword(context.Background(), input)
@@ -102,12 +144,14 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	userID := 1
+	orgID := 1
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 	saveErr := errors.New("db error")
 
-	user := domain.ReconstructAppUser(userID, 1, "user@example.com", "$2a$10$oldhash", true)
+	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -118,8 +162,11 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	hasherMock := newMockpasswordHasher(t)
 	hasherMock.On("Hash", newPassword).Return(hashedPassword, nil)
 
-	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock)
-	input := &userservice.ChangePasswordInput{AppUserID: userID, NewPassword: newPassword}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+
+	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
+	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
 
 	// when
 	output, err := cmd.ChangePassword(context.Background(), input)
