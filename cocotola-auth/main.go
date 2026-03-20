@@ -22,7 +22,10 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
+	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
 )
+
+const eventBusBufferSize = 100
 
 func main() {
 	exitCode, err := run()
@@ -82,6 +85,16 @@ func run() (int, error) {
 	accessTokenWhitelistRepo := gateway.NewAccessTokenWhitelistRepository(dbConn.DB)
 	tokenCache := gateway.NewTokenCache()
 
+	// event bus
+	eventBusLogger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-event-bus"))
+	eventBus := gateway.NewEventBus(eventBusBufferSize, eventBusLogger)
+
+	activeUserListRepo := gateway.NewActiveUserListRepository(dbConn.DB)
+	orgRepo := gateway.NewOrganizationRepository(dbConn.DB)
+	eventHandlerLogger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-event-handler"))
+	activeUserListHandler := eventusecase.NewActiveUserListHandler(activeUserListRepo, orgRepo, eventHandlerLogger)
+	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
+
 	// usecase layer
 	usecaseConfig := authusecase.UsecaseConfig{
 		SessionTokenTTLMin: cfg.Auth.SessionTokenTTLMin,
@@ -126,6 +139,7 @@ func run() (int, error) {
 		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, readHeaderTimeout, shutdownTime),
 		libcontroller.WithMetricsServerProcess(cfg.Server.MetricsPort, readHeaderTimeout, shutdownTime),
 		libgateway.WithSignalWatchProcess(),
+		eventBus.Start,
 	)
 
 	gracefulShutdownTime2 := time.Duration(cfg.Server.Shutdown.GracePeriodSec) * time.Second

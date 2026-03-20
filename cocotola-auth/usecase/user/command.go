@@ -10,13 +10,13 @@ type Command struct {
 func NewCommand(
 	appUserRepo appUserCreator,
 	orgRepo organizationFinder,
-	activeUserRepo activeUserListRepository,
+	publisher eventPublisher,
 	appUserFinder appUserFinder,
 	appUserSaver appUserSaver,
 	hasher passwordHasher,
 ) *Command {
 	return &Command{
-		CreateAppUserCommand:  NewCreateAppUserCommand(appUserRepo, orgRepo, activeUserRepo, hasher),
+		CreateAppUserCommand:  NewCreateAppUserCommand(appUserRepo, orgRepo, publisher, hasher),
 		ChangePasswordCommand: NewChangePasswordCommand(appUserFinder, appUserSaver, hasher),
 	}
 }
