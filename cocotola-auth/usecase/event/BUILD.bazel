@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "event",
+    srcs = ["active_user_list_handler.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
+)
+
+smart_go_test(
+    name = "event_test",
+    srcs = [
+        "active_user_list_handler_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":event",
+        "//cocotola-auth/domain",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

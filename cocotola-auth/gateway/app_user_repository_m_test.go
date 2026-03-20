@@ -21,7 +21,7 @@ func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T)
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-save-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "testuser@example.com", true)
+	user := domain.ReconstructAppUser(0, orgID, "testuser@example.com", "", true)
 
 	// when
 	err := repo.Save(ctx, user)
@@ -38,7 +38,7 @@ func Test_AppUserRepository_FindByID_shouldReturnAppUser_whenUserExists(t *testi
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "findbyid@example.com", true)
+	user := domain.ReconstructAppUser(0, orgID, "findbyid@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
@@ -78,7 +78,7 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnAppUser_whenLoginIDExists(
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyloginid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "login@example.com", true)
+	user := domain.ReconstructAppUser(0, orgID, "login@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	// when
@@ -105,23 +105,25 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnError_whenLoginIDDoesNotEx
 	require.ErrorIs(t, err, domain.ErrAppUserNotFound)
 }
 
-func Test_AppUserRepository_Save_shouldNotOverwriteHashedPassword_whenUpdating(t *testing.T) {
+func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPassword(t *testing.T) {
 	t.Parallel()
 	// given
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
-	orgID := setupOrganization(ctx, t, tx, "appuser-omit-org")
+	orgID := setupOrganization(ctx, t, tx, "appuser-pw-org")
 	hashedPw := "$2a$10$abcdefghij"
-	tx.Exec("INSERT INTO app_user (created_by, updated_by, organization_id, login_id, hashed_password, enabled) VALUES (0, 0, ?, 'omit-test@example.com', ?, 1)", orgID, hashedPw)
-
-	var inserted gateway.AppUserRecordForTest
-	require.NoError(t, tx.Where("login_id = ?", "omit-test@example.com").First(&inserted).Error)
 
 	repo := gateway.NewAppUserRepository(tx)
-	updated := domain.ReconstructAppUser(inserted.ID, orgID, "omit-test@example.com", false)
+	user := domain.ReconstructAppUser(0, orgID, "pw-test@example.com", hashedPw, true)
+	require.NoError(t, repo.Save(ctx, user))
+
+	var inserted gateway.AppUserRecordForTest
+	require.NoError(t, tx.Where("login_id = ?", "pw-test@example.com").First(&inserted).Error)
 
 	// when
+	newHashedPw := "$2a$10$newhashedpw"
+	updated := domain.ReconstructAppUser(inserted.ID, orgID, "pw-test@example.com", newHashedPw, false)
 	err := repo.Save(ctx, updated)
 
 	// then
@@ -129,6 +131,6 @@ func Test_AppUserRepository_Save_shouldNotOverwriteHashedPassword_whenUpdating(t
 	var afterUpdate gateway.AppUserRecordForTest
 	require.NoError(t, tx.Where("id = ?", inserted.ID).First(&afterUpdate).Error)
 	assert.False(t, afterUpdate.Enabled)
-	assert.NotNil(t, afterUpdate.HashedPassword)
-	assert.Equal(t, hashedPw, *afterUpdate.HashedPassword)
+	require.NotNil(t, afterUpdate.HashedPassword)
+	assert.Equal(t, newHashedPw, *afterUpdate.HashedPassword)
 }

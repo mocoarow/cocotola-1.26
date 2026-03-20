@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -24,12 +23,13 @@ type userRecord struct {
 
 // UserAuthenticator verifies user credentials against the database.
 type UserAuthenticator struct {
-	db *gorm.DB
+	db     *gorm.DB
+	hasher domain.PasswordHasher
 }
 
 // NewUserAuthenticator returns a new UserAuthenticator.
-func NewUserAuthenticator(db *gorm.DB) *UserAuthenticator {
-	return &UserAuthenticator{db: db}
+func NewUserAuthenticator(db *gorm.DB, hasher domain.PasswordHasher) *UserAuthenticator {
+	return &UserAuthenticator{db: db, hasher: hasher}
 }
 
 // Authenticate verifies the login credentials and returns user info.
@@ -52,7 +52,8 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 		return nil, domain.ErrUnauthenticated
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(record.HashedPassword), []byte(password)); err != nil {
+	user := domain.ReconstructAppUser(record.ID, record.OrganizationID, domain.LoginID(record.LoginID), record.HashedPassword, record.Enabled)
+	if err := user.VerifyPassword(password, a.hasher); err != nil {
 		return nil, domain.ErrUnauthenticated
 	}
 

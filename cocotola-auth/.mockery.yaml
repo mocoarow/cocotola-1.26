@@ -24,3 +24,9 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user:
+    config:
+      all: true
