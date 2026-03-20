@@ -31,13 +31,19 @@ func NewCreateAppUserInput(organizationID int, loginID string, password string) 
 
 // CreateAppUserOutput holds the result of creating an app user.
 type CreateAppUserOutput struct {
-	AppUserID int `validate:"required,gt=0"`
+	AppUserID      int    `validate:"required,gt=0"`
+	OrganizationID int    `validate:"required,gt=0"`
+	LoginID        string `validate:"required"`
+	Enabled        bool
 }
 
 // NewCreateAppUserOutput creates a validated CreateAppUserOutput.
-func NewCreateAppUserOutput(appUserID int) (*CreateAppUserOutput, error) {
+func NewCreateAppUserOutput(appUserID int, organizationID int, loginID string, enabled bool) (*CreateAppUserOutput, error) {
 	m := &CreateAppUserOutput{
-		AppUserID: appUserID,
+		AppUserID:      appUserID,
+		OrganizationID: organizationID,
+		LoginID:        loginID,
+		Enabled:        enabled,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create app user output: %w", err)

@@ -71,7 +71,7 @@ func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userser
 	// Publish domain event for eventual consistency with ActiveUserList.
 	c.publisher.Publish(domain.NewAppUserCreated(appUserID, input.OrganizationID, input.LoginID, time.Now()))
 
-	output, err := userservice.NewCreateAppUserOutput(appUserID)
+	output, err := userservice.NewCreateAppUserOutput(appUserID, input.OrganizationID, input.LoginID, true)
 	if err != nil {
 		return nil, fmt.Errorf("create app user output: %w", err)
 	}

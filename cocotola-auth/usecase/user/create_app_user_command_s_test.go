@@ -47,6 +47,9 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldCreateUser_whenOrganizationHa
 	// then
 	require.NoError(t, err)
 	require.Equal(t, generatedUserID, output.AppUserID)
+	require.Equal(t, orgID, output.OrganizationID)
+	require.Equal(t, loginID, output.LoginID)
+	require.True(t, output.Enabled)
 	appUserRepoMock.AssertCalled(t, "Create", mock.Anything, orgID, loginID, hashedPassword)
 	publisherMock.AssertCalled(t, "Publish", mock.Anything)
 }
