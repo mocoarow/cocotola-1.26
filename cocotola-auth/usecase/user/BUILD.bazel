@@ -1,8 +1,10 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "user",
     srcs = [
+        "change_password_command.go",
         "command.go",
         "create_app_user_command.go",
         "doc.go",
@@ -12,5 +14,21 @@ go_library(
     deps = [
         "//cocotola-auth/domain",
         "//cocotola-auth/service/user",
+    ],
+)
+
+smart_go_test(
+    name = "user_test",
+    srcs = [
+        "change_password_command_s_test.go",
+        "create_app_user_command_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":user",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/user",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

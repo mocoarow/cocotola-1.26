@@ -12,6 +12,7 @@ go_library(
         "//cocotola-auth/domain",
         "//cocotola-auth/gateway",
         "//cocotola-auth/usecase/auth",
+        "//cocotola-auth/usecase/event",
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
         "//cocotola-lib/gateway",
