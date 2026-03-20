@@ -1,0 +1,14 @@
+app:
+  ownerLoginId: ${OWNER_LOGIN_ID}
+  ownerPassword: ${OWNER_PASSWORD}
+db:
+  driverName: ${APP_DB_DRIVER_NAME:-mysql}
+  mysql:
+    username: ${AUTH_MYSQL_USERNAME}
+    password: ${AUTH_MYSQL_PASSWORD}
+    host: ${AUTH_MYSQL_HOST:-127.0.0.1}
+    port: ${AUTH_MYSQL_PORT:-3306}
+    database: ${AUTH_MYSQL_DATABASE:-local}
+log:
+  level: ${LOG_LEVEL:-info}
+  exporter: ${LOG_EXPORTER:-none}
