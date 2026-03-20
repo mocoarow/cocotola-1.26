@@ -34,3 +34,6 @@ var ErrCyclicGroupHierarchy = errors.New("cyclic group hierarchy")
 
 // ErrDuplicateEntry is returned when attempting to add a duplicate entry.
 var ErrDuplicateEntry = errors.New("duplicate entry")
+
+// ErrForbidden is returned when the operator does not have permission to perform the action.
+var ErrForbidden = errors.New("forbidden")
