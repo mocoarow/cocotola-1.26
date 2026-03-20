@@ -26,12 +26,17 @@ type passwordHasher interface {
 	Compare(hashedPassword string, password string) error
 }
 
+type authorizationChecker interface {
+	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource) (bool, error)
+}
+
 // CreateAppUserCommand creates a new app user within an organization.
 type CreateAppUserCommand struct {
 	appUserRepo appUserCreator
 	orgRepo     organizationFinder
 	publisher   eventPublisher
 	hasher      passwordHasher
+	authChecker authorizationChecker
 }
 
 // NewCreateAppUserCommand returns a new CreateAppUserCommand.
@@ -40,17 +45,28 @@ func NewCreateAppUserCommand(
 	orgRepo organizationFinder,
 	publisher eventPublisher,
 	hasher passwordHasher,
+	authChecker authorizationChecker,
 ) *CreateAppUserCommand {
 	return &CreateAppUserCommand{
 		appUserRepo: appUserRepo,
 		orgRepo:     orgRepo,
 		publisher:   publisher,
 		hasher:      hasher,
+		authChecker: authChecker,
 	}
 }
 
 // CreateAppUser creates a new app user and publishes an AppUserCreated event.
 func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userservice.CreateAppUserInput) (*userservice.CreateAppUserOutput, error) {
+	// Authorization check.
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateUser(), domain.ResourceAny())
+	if err != nil {
+		return nil, fmt.Errorf("authorization check: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrForbidden
+	}
+
 	// TX1: Find organization to validate existence.
 	if _, err := c.orgRepo.FindByID(ctx, input.OrganizationID); err != nil {
 		return nil, fmt.Errorf("find organization: %w", err)

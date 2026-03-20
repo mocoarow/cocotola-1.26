@@ -21,6 +21,7 @@ type ChangePasswordCommand struct {
 	appUserFinder appUserFinder
 	appUserSaver  appUserSaver
 	hasher        passwordHasher
+	authChecker   authorizationChecker
 }
 
 // NewChangePasswordCommand returns a new ChangePasswordCommand.
@@ -28,11 +29,13 @@ func NewChangePasswordCommand(
 	finder appUserFinder,
 	saver appUserSaver,
 	hasher passwordHasher,
+	authChecker authorizationChecker,
 ) *ChangePasswordCommand {
 	return &ChangePasswordCommand{
 		appUserFinder: finder,
 		appUserSaver:  saver,
 		hasher:        hasher,
+		authChecker:   authChecker,
 	}
 }
 
@@ -41,6 +44,15 @@ func (c *ChangePasswordCommand) ChangePassword(ctx context.Context, input *users
 	user, err := c.appUserFinder.FindByID(ctx, input.AppUserID)
 	if err != nil {
 		return nil, fmt.Errorf("find app user: %w", err)
+	}
+
+	// Authorization check using the user's organization.
+	allowed, err := c.authChecker.IsAllowed(ctx, user.OrganizationID(), input.OperatorID, domain.ActionChangePassword(), domain.ResourceUser(input.AppUserID))
+	if err != nil {
+		return nil, fmt.Errorf("authorization check: %w", err)
+	}
+	if !allowed {
+		return nil, domain.ErrForbidden
 	}
 
 	if err := user.ChangePassword(input.NewPassword, c.hasher); err != nil {

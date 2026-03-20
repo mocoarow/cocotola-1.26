@@ -17,6 +17,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldCreateUser_whenOrganizationHa
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	orgID := 1
 	loginID := "user1@example.com"
 	password := "securepass"
@@ -38,8 +39,11 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldCreateUser_whenOrganizationHa
 	hasherMock := newMockpasswordHasher(t)
 	hasherMock.On("Hash", password).Return(hashedPassword, nil)
 
-	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock)
-	input := &userservice.CreateAppUserInput{OrganizationID: orgID, LoginID: loginID, Password: password}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+
+	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
+	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationID: orgID, LoginID: loginID, Password: password}
 
 	// when
 	output, err := cmd.CreateAppUser(context.Background(), input)
@@ -54,10 +58,40 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldCreateUser_whenOrganizationHa
 	publisherMock.AssertCalled(t, "Publish", mock.Anything)
 }
 
+func Test_CreateAppUserCommand_CreateAppUser_shouldReturnForbidden_whenNotAuthorized(t *testing.T) {
+	t.Parallel()
+
+	// given
+	operatorID := 99
+	orgID := 1
+	loginID := "user1@example.com"
+	password := "securepass"
+
+	appUserRepoMock := newMockappUserCreator(t)
+	orgRepoMock := newMockorganizationFinder(t)
+	publisherMock := newMockeventPublisher(t)
+	hasherMock := newMockpasswordHasher(t)
+
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(false, nil)
+
+	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
+	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationID: orgID, LoginID: loginID, Password: password}
+
+	// when
+	output, err := cmd.CreateAppUser(context.Background(), input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrForbidden)
+	require.Nil(t, output)
+	appUserRepoMock.AssertNotCalled(t, "Create")
+}
+
 func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenOrganizationNotFound(t *testing.T) {
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	orgID := 1
 	loginID := "user1@example.com"
 	password := "securepass"
@@ -68,11 +102,13 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenOrganizationN
 	orgRepoMock.On("FindByID", mock.Anything, orgID).Return(nil, domain.ErrOrganizationNotFound)
 
 	publisherMock := newMockeventPublisher(t)
-
 	hasherMock := newMockpasswordHasher(t)
 
-	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock)
-	input := &userservice.CreateAppUserInput{OrganizationID: orgID, LoginID: loginID, Password: password}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+
+	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
+	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationID: orgID, LoginID: loginID, Password: password}
 
 	// when
 	output, err := cmd.CreateAppUser(context.Background(), input)
@@ -87,6 +123,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenCreateAppUser
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	orgID := 1
 	loginID := "user1@example.com"
 	password := "securepass"
@@ -107,8 +144,11 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenCreateAppUser
 	hasherMock := newMockpasswordHasher(t)
 	hasherMock.On("Hash", password).Return(hashedPassword, nil)
 
-	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock)
-	input := &userservice.CreateAppUserInput{OrganizationID: orgID, LoginID: loginID, Password: password}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+
+	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
+	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationID: orgID, LoginID: loginID, Password: password}
 
 	// when
 	output, err := cmd.CreateAppUser(context.Background(), input)
@@ -123,6 +163,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenHasherFails(t
 	t.Parallel()
 
 	// given
+	operatorID := 99
 	orgID := 1
 	loginID := "user1@example.com"
 	password := "securepass"
@@ -141,8 +182,11 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenHasherFails(t
 	hasherMock := newMockpasswordHasher(t)
 	hasherMock.On("Hash", password).Return("", hashErr)
 
-	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock)
-	input := &userservice.CreateAppUserInput{OrganizationID: orgID, LoginID: loginID, Password: password}
+	authCheckerMock := newMockauthorizationChecker(t)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+
+	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
+	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationID: orgID, LoginID: loginID, Password: password}
 
 	// when
 	output, err := cmd.CreateAppUser(context.Background(), input)

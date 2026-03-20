@@ -14,9 +14,10 @@ func NewCommand(
 	appUserFinder appUserFinder,
 	appUserSaver appUserSaver,
 	hasher passwordHasher,
+	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
-		CreateAppUserCommand:  NewCreateAppUserCommand(appUserRepo, orgRepo, publisher, hasher),
-		ChangePasswordCommand: NewChangePasswordCommand(appUserFinder, appUserSaver, hasher),
+		CreateAppUserCommand:  NewCreateAppUserCommand(appUserRepo, orgRepo, publisher, hasher, authChecker),
+		ChangePasswordCommand: NewChangePasswordCommand(appUserFinder, appUserSaver, hasher, authChecker),
 	}
 }
