@@ -24,6 +24,8 @@ use_repo(
     "com_github_samber_slog_gin",
     "io_gorm_driver_mysql",
     "io_gorm_gorm",
+    "com_github_casbin_gorm_adapter_v3",
+    "com_github_casbin_casbin_v3",
     "io_gorm_plugin_opentelemetry",
     "io_opentelemetry_go_contrib_bridges_otelslog",
     "io_opentelemetry_go_contrib_instrumentation_github_com_gin_gonic_gin_otelgin",
