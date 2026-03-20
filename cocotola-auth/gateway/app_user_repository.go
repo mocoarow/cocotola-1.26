@@ -34,7 +34,11 @@ func (appUserRecord) TableName() string {
 }
 
 func toAppUserDomain(r *appUserRecord) *domain.AppUser {
-	return domain.ReconstructAppUser(r.ID, r.OrganizationID, domain.LoginID(r.LoginID), r.Enabled)
+	var hashedPw string
+	if r.HashedPassword != nil {
+		hashedPw = *r.HashedPassword
+	}
+	return domain.ReconstructAppUser(r.ID, r.OrganizationID, domain.LoginID(r.LoginID), hashedPw, r.Enabled)
 }
 
 // AppUserRepository implements app user persistence using MySQL via GORM.
@@ -49,6 +53,11 @@ func NewAppUserRepository(db *gorm.DB) *AppUserRepository {
 
 // Save persists an app user record (upsert: insert or update).
 func (r *AppUserRepository) Save(ctx context.Context, user *domain.AppUser) error {
+	hp := user.HashedPassword()
+	var hashedPw *string
+	if hp != "" {
+		hashedPw = &hp
+	}
 	record := appUserRecord{
 		ID:                            user.ID(),
 		Version:                       0,
@@ -58,7 +67,7 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domain.AppUser) erro
 		UpdatedBy:                     0,
 		OrganizationID:                user.OrganizationID(),
 		LoginID:                       string(user.LoginID()),
-		HashedPassword:                nil,
+		HashedPassword:                hashedPw,
 		Username:                      nil,
 		Provider:                      nil,
 		ProviderID:                    nil,
@@ -67,11 +76,36 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domain.AppUser) erro
 		Enabled:                       user.Enabled(),
 	}
 	if err := r.db.WithContext(ctx).
-		Omit("hashed_password", "username", "provider", "provider_id", "encrypted_provider_access_token", "encrypted_provider_refresh_token").
+		Omit("username", "provider", "provider_id", "encrypted_provider_access_token", "encrypted_provider_refresh_token").
 		Save(&record).Error; err != nil {
 		return fmt.Errorf("save app user: %w", err)
 	}
 	return nil
+}
+
+// Create inserts a new app user record and returns the auto-generated ID.
+func (r *AppUserRepository) Create(ctx context.Context, organizationID int, loginID string, hashedPassword string) (int, error) {
+	record := appUserRecord{
+		ID:                            0,
+		Version:                       0,
+		CreatedAt:                     time.Time{},
+		UpdatedAt:                     time.Time{},
+		CreatedBy:                     0,
+		UpdatedBy:                     0,
+		OrganizationID:                organizationID,
+		LoginID:                       loginID,
+		HashedPassword:                &hashedPassword,
+		Username:                      nil,
+		Provider:                      nil,
+		ProviderID:                    nil,
+		EncryptedProviderAccessToken:  nil,
+		EncryptedProviderRefreshToken: nil,
+		Enabled:                       true,
+	}
+	if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
+		return 0, fmt.Errorf("create app user: %w", err)
+	}
+	return record.ID, nil
 }
 
 // FindByID looks up an app user by its ID.

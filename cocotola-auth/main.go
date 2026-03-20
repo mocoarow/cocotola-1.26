@@ -72,7 +72,8 @@ func run() (int, error) {
 		jwt.SigningMethodHS256,
 		time.Duration(cfg.Auth.AccessTokenTTLMin)*time.Minute,
 	)
-	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB)
+	bcryptHasher := gateway.NewBcryptHasher()
+	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB, bcryptHasher)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(dbConn.DB)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(dbConn.DB)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(dbConn.DB)

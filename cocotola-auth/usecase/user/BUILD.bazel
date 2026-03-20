@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "user",
+    srcs = [
+        "command.go",
+        "create_app_user_command.go",
+        "doc.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/user",
+    ],
+)
