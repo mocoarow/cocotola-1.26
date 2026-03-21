@@ -35,5 +35,8 @@ var ErrCyclicGroupHierarchy = errors.New("cyclic group hierarchy")
 // ErrDuplicateEntry is returned when attempting to add a duplicate entry.
 var ErrDuplicateEntry = errors.New("duplicate entry")
 
+// ErrSpaceNotFound is returned when a space cannot be found.
+var ErrSpaceNotFound = errors.New("space not found")
+
 // ErrForbidden is returned when the operator does not have permission to perform the action.
 var ErrForbidden = errors.New("forbidden")

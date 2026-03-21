@@ -14,12 +14,14 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
 	grouphandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group"
+	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
 	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
+	spaceusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 	libprocess "github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
@@ -65,6 +67,10 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
 	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
+	spaceRepo := gateway.NewSpaceRepository(db)
+	userNSpaceRepo := gateway.NewUserNSpaceRepository(db)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, userNSpaceRepo, eventHandlerLogger)
+	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer
 	usecaseConfig := authusecase.UsecaseConfig{
@@ -106,6 +112,12 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
 	grouphandler.InitGroupRouter(createGroupHandler, v1, authMiddleware)
+
+	// space usecase + controller
+	spaceCommand := spaceusecase.NewCommand(spaceRepo, spaceRepo, userNSpaceRepo, orgRepo, eventBus, authzChecker)
+	createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
+	listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
+	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, v1, authMiddleware)
 
 	return eventBus.Start, nil
 }

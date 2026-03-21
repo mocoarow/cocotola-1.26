@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "space",
+    srcs = ["space.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
+)

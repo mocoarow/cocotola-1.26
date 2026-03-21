@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -16,4 +17,12 @@ func GetIntFromPath(c *gin.Context, param string) (int, error) {
 	}
 
 	return id, nil
+}
+
+// SafeIntToInt32 converts an int to int32 with overflow check.
+func SafeIntToInt32(v int) (int32, error) {
+	if v < math.MinInt32 || v > math.MaxInt32 {
+		return 0, fmt.Errorf("value %d overflows int32", v)
+	}
+	return int32(v), nil
 }

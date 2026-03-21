@@ -71,28 +71,38 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 		return fmt.Errorf("add guest to active user list: %w", err)
 	}
 
-	// 8. Create or find SystemOwner user
-	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, org.ID(), logger)
-	if err != nil {
-		return fmt.Errorf("find or create system owner: %w", err)
-	}
-
-	// 9. Setup SystemOwner RBAC policies
-	if err := setupSystemOwnerRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
-		return fmt.Errorf("setup system owner rbac policies: %w", err)
-	}
-
-	// 10. Assign system_owner group to SystemOwner user
-	if err := assignSystemOwnerGroup(ctx, rbacRepo, org.ID(), systemOwnerID, logger); err != nil {
-		return fmt.Errorf("assign system owner group: %w", err)
+	// 8. Setup system owner and public space
+	if err := setupSystemOwnerAndSpace(ctx, db, appUserRepo, hasher, rbacRepo, org.ID(), logger); err != nil {
+		return fmt.Errorf("setup system owner and space: %w", err)
 	}
 
 	logger.InfoContext(ctx, "initialization completed successfully",
 		slog.Int("organization_id", org.ID()),
 		slog.Int("owner_user_id", ownerUserID),
 		slog.Int("guest_user_id", guestUserID),
-		slog.Int("system_owner_user_id", systemOwnerID),
 	)
+	return nil
+}
+
+func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domain.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, orgID, logger)
+	if err != nil {
+		return fmt.Errorf("find or create system owner: %w", err)
+	}
+
+	if err := setupSystemOwnerRBACPolicies(ctx, rbacRepo, orgID, logger); err != nil {
+		return fmt.Errorf("setup system owner rbac policies: %w", err)
+	}
+
+	if err := assignSystemOwnerGroup(ctx, rbacRepo, orgID, systemOwnerID, logger); err != nil {
+		return fmt.Errorf("assign system owner group: %w", err)
+	}
+
+	spaceRepo := gateway.NewSpaceRepository(db)
+	if err := findOrCreatePublicSpace(ctx, spaceRepo, orgID, systemOwnerID, logger); err != nil {
+		return fmt.Errorf("find or create public space: %w", err)
+	}
+
 	return nil
 }
 
@@ -254,6 +264,8 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 		domain.ActionDisableGroup(),
 		domain.ActionAddUserToGroup(),
 		domain.ActionRemoveUserFromGroup(),
+		domain.ActionCreateSpace(),
+		domain.ActionViewSpace(),
 	}
 
 	for _, action := range actions {
@@ -286,6 +298,8 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 		domain.ActionAddUserToGroup(),
 		domain.ActionRemoveUserFromGroup(),
 		domain.ActionCreateOrganization(),
+		domain.ActionCreateSpace(),
+		domain.ActionViewSpace(),
 	}
 
 	for _, action := range actions {
@@ -314,6 +328,30 @@ func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID i
 	logger.InfoContext(ctx, "admin group assigned to user",
 		slog.Int("organization_id", orgID),
 		slog.Int("user_id", userID),
+	)
+	return nil
+}
+
+func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID int, systemOwnerID int, logger *slog.Logger) error {
+	keyName := domain.PublicSpaceKeyName(organizationName)
+
+	_, err := repo.FindByKeyName(ctx, orgID, keyName)
+	if err == nil {
+		logger.InfoContext(ctx, "public space already exists", slog.String("key_name", keyName))
+		return nil
+	}
+	if !errors.Is(err, domain.ErrSpaceNotFound) {
+		return fmt.Errorf("find public space by key name: %w", err)
+	}
+
+	spaceID, err := repo.Create(ctx, orgID, systemOwnerID, keyName, "Public", domain.SpaceTypePublic().Value(), systemOwnerID)
+	if err != nil {
+		return fmt.Errorf("create public space: %w", err)
+	}
+
+	logger.InfoContext(ctx, "public space created",
+		slog.Int("space_id", spaceID),
+		slog.String("key_name", keyName),
 	)
 	return nil
 }

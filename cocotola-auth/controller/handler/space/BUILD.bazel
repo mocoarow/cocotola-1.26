@@ -1,20 +1,20 @@
 load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "group",
+    name = "space",
     srcs = [
-        "create_group_handler.go",
-        "doc.go",
-        "group.go",
+        "create_space_handler.go",
+        "list_spaces_handler.go",
+        "space.go",
     ],
-    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group",
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space",
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/api",
         "//cocotola-auth/controller",
         "//cocotola-auth/controller/handler",
         "//cocotola-auth/domain",
-        "//cocotola-auth/service/group",
+        "//cocotola-auth/service/space",
         "//cocotola-lib/logging",
         "@com_github_gin_gonic_gin//:gin",
     ],

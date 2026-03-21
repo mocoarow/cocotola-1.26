@@ -1,0 +1,105 @@
+---
+CreateSpaceRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=100
+      maxLength: 100
+      pattern: ^.*$
+    spaceType:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,oneof=public private
+      enum:
+        - public
+        - private
+  required:
+    - name
+    - spaceType
+
+CreateSpaceResponse:
+  type: object
+  properties:
+    spaceId:
+      type: integer
+      x-go-name: SpaceID
+      format: int32
+    organizationId:
+      type: integer
+      x-go-name: OrganizationID
+      format: int32
+    ownerId:
+      type: integer
+      x-go-name: OwnerID
+      format: int32
+    keyName:
+      type: string
+      pattern: ^.*$
+    name:
+      type: string
+      pattern: ^.*$
+    spaceType:
+      type: string
+      enum:
+        - public
+        - private
+    deleted:
+      type: boolean
+  required:
+    - spaceId
+    - organizationId
+    - ownerId
+    - keyName
+    - name
+    - spaceType
+    - deleted
+
+SpaceItem:
+  type: object
+  properties:
+    spaceId:
+      type: integer
+      x-go-name: SpaceID
+      format: int32
+    organizationId:
+      type: integer
+      x-go-name: OrganizationID
+      format: int32
+    ownerId:
+      type: integer
+      x-go-name: OwnerID
+      format: int32
+    keyName:
+      type: string
+      pattern: ^.*$
+    name:
+      type: string
+      pattern: ^.*$
+    spaceType:
+      type: string
+      enum:
+        - public
+        - private
+    deleted:
+      type: boolean
+  required:
+    - spaceId
+    - organizationId
+    - ownerId
+    - keyName
+    - name
+    - spaceType
+    - deleted
+
+ListSpacesResponse:
+  type: object
+  properties:
+    spaces:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/SpaceItem'
+  required:
+    - spaces

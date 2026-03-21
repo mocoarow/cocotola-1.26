@@ -7,6 +7,7 @@ go_library(
         "active_group_list_handler.go",
         "active_list_handler.go",
         "active_user_list_handler.go",
+        "private_space_handler.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event",
     visibility = ["//visibility:public"],
@@ -18,6 +19,7 @@ smart_go_test(
     srcs = [
         "active_user_list_handler_s_test.go",
         "mocks_test.go",
+        "private_space_handler_s_test.go",
     ],
     deps = [
         ":event",
