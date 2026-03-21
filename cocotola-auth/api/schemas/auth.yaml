@@ -1,0 +1,108 @@
+---
+PasswordAuthRequest:
+  type: object
+  properties:
+    loginId:
+      type: string
+      x-go-name: LoginID
+      x-oapi-codegen-extra-tags:
+        binding: required,max=100
+      pattern: ^.*$
+      maxLength: 100
+    password:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,min=8,max=20
+      minLength: 8
+      maxLength: 20
+      pattern: ^.*$
+    organizationName:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=20
+      maxLength: 20
+      pattern: ^.*$
+  required:
+    - loginId
+    - password
+    - organizationName
+
+GuestAuthRequest:
+  type: object
+  properties:
+    organizationName:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=20
+      maxLength: 20
+      pattern: ^.*$
+  required:
+    - organizationName
+
+AuthenticateResponse:
+  type: object
+  description: >-
+    Authentication response. When X-Token-Delivery is 'json' (default),
+    accessToken and refreshToken are returned in the body. When 'cookie',
+    the session token is delivered via Set-Cookie header and tokens are omitted.
+  properties:
+    accessToken:
+      type: string
+      pattern: ^.*$
+      description: JWT access token (omitted when delivered via cookie)
+    refreshToken:
+      type: string
+      pattern: ^.*$
+      description: Opaque refresh token (omitted when delivered via cookie)
+
+RefreshRequest:
+  type: object
+  properties:
+    refreshToken:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required
+      pattern: ^.*$
+  required:
+    - refreshToken
+
+RefreshResponse:
+  type: object
+  properties:
+    accessToken:
+      type: string
+      description: New JWT access token
+      pattern: ^.*$
+  required:
+    - accessToken
+
+RevokeRequest:
+  type: object
+  properties:
+    token:
+      type: string
+      description: The token to revoke (JWT access token or opaque refresh token)
+      x-oapi-codegen-extra-tags:
+        binding: required
+      pattern: ^.*$
+  required:
+    - token
+
+GetMeResponse:
+  type: object
+  properties:
+    userId:
+      type: integer
+      x-go-name: UserID
+      format: int32
+    loginId:
+      type: string
+      x-go-name: LoginID
+      pattern: ^.*$
+    organizationName:
+      type: string
+      pattern: ^.*$
+  required:
+    - userId
+    - loginId
+    - organizationName

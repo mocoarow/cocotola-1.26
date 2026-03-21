@@ -1,0 +1,34 @@
+---
+CreateGroupRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=255
+      maxLength: 255
+      pattern: ^.*$
+  required:
+    - name
+
+CreateGroupResponse:
+  type: object
+  properties:
+    groupId:
+      type: integer
+      x-go-name: GroupID
+      format: int32
+    organizationId:
+      type: integer
+      x-go-name: OrganizationID
+      format: int32
+    name:
+      type: string
+      pattern: ^.*$
+    enabled:
+      type: boolean
+  required:
+    - groupId
+    - organizationId
+    - name
+    - enabled

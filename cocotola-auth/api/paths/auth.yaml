@@ -1,0 +1,251 @@
+---
+password-authenticate:
+  post:
+    summary: Password authentication
+    deprecated: false
+    description: Authenticate user with login ID and password
+    operationId: passwordAuthentication
+    tags:
+      - auth
+    parameters:
+      - name: X-Token-Delivery
+        in: header
+        description: Token delivery method (json or cookie)
+        required: false
+        schema:
+          type: string
+          enum: [json, cookie]
+          default: json
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/PasswordAuthRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/AuthenticateResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Invalid credentials
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []
+
+guest-authenticate:
+  post:
+    summary: Guest authentication
+    deprecated: false
+    description: Authenticate as a guest user with organization name only
+    operationId: guestAuthentication
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/GuestAuthRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully authenticated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/AuthenticateResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Guest user not found or disabled
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []
+
+logout:
+  post:
+    summary: User logout
+    deprecated: false
+    description: Clear the session cookie and revoke the session token
+    operationId: logout
+    tags:
+      - auth
+    parameters: []
+    responses:
+      '204':
+        description: Successfully logged out
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []
+
+refresh:
+  post:
+    summary: Refresh access token
+    deprecated: false
+    description: Use a refresh token to obtain a new access token
+    operationId: refreshToken
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/RefreshRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully refreshed
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/RefreshResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Invalid or expired refresh token
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []
+
+revoke:
+  post:
+    summary: Revoke a token
+    deprecated: false
+    description: Revoke an access token (JWT) or refresh token (opaque). Revoking a refresh token also revokes all associated access tokens.
+    operationId: revokeToken
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/RevokeRequest'
+          examples: {}
+      required: true
+    responses:
+      '204':
+        description: Successfully revoked
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Token not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+me:
+  get:
+    summary: Get current user
+    deprecated: false
+    description: Get the authenticated user's information
+    operationId: getMe
+    tags:
+      - auth
+    parameters: []
+    responses:
+      '200':
+        description: Successfully retrieved user information
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/GetMeResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

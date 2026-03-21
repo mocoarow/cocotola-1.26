@@ -1,0 +1,56 @@
+---
+group:
+  post:
+    summary: Create a group
+    deprecated: false
+    description: Create a new group within the operator's organization
+    operationId: createGroup
+    tags:
+      - group
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/group.yaml#/CreateGroupRequest'
+          examples: {}
+      required: true
+    responses:
+      '201':
+        description: Successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/group.yaml#/CreateGroupResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Group name already exists or active group limit reached
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
