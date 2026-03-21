@@ -23,13 +23,14 @@ type userRecord struct {
 
 // UserAuthenticator verifies user credentials against the database.
 type UserAuthenticator struct {
-	db     *gorm.DB
-	hasher domain.PasswordHasher
+	db          *gorm.DB
+	hasher      domain.PasswordHasher
+	groupFinder domain.GroupFinder
 }
 
 // NewUserAuthenticator returns a new UserAuthenticator.
-func NewUserAuthenticator(db *gorm.DB, hasher domain.PasswordHasher) *UserAuthenticator {
-	return &UserAuthenticator{db: db, hasher: hasher}
+func NewUserAuthenticator(db *gorm.DB, hasher domain.PasswordHasher, groupFinder domain.GroupFinder) *UserAuthenticator {
+	return &UserAuthenticator{db: db, hasher: hasher, groupFinder: groupFinder}
 }
 
 // Authenticate verifies the login credentials and returns user info.
@@ -55,6 +56,18 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 	user := domain.ReconstructAppUser(record.ID, record.OrganizationID, domain.LoginID(record.LoginID), record.HashedPassword, record.Enabled)
 	if err := user.VerifyPassword(password, a.hasher); err != nil {
 		return nil, domain.ErrUnauthenticated
+	}
+
+	// Check login-denied groups via Casbin.
+	groups, err := a.groupFinder.GetGroupsForUser(ctx, record.OrganizationID, record.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get groups for user: %w", err)
+	}
+	denied := domain.LoginDeniedGroups()
+	for _, g := range groups {
+		if denied[g] {
+			return nil, domain.ErrUnauthenticated
+		}
 	}
 
 	userInfo, err := authservice.NewUserInfo(record.ID, record.LoginID, record.OrganizationName, time.Now())

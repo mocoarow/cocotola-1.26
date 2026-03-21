@@ -87,25 +87,25 @@ func Test_ResourceAny_shouldReturnWildcard(t *testing.T) {
 	assert.Equal(t, "*", resource.Value())
 }
 
-func Test_NewRBACRole_shouldReturnRole_whenValueIsValid(t *testing.T) {
+func Test_NewRBACGroup_shouldReturnGroup_whenValueIsValid(t *testing.T) {
 	t.Parallel()
 
 	// given
 	value := "admin"
 
 	// when
-	role, err := domain.NewRBACRole(value)
+	group, err := domain.NewRBACGroup(value)
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, value, role.Value())
+	assert.Equal(t, value, group.Value())
 }
 
-func Test_NewRBACRole_shouldReturnError_whenValueIsEmpty(t *testing.T) {
+func Test_NewRBACGroup_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// when
-	_, err := domain.NewRBACRole("")
+	_, err := domain.NewRBACGroup("")
 
 	// then
 	require.Error(t, err)

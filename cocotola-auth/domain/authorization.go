@@ -49,6 +49,9 @@ func ActionAddUserToGroup() RBACAction { return RBACAction{value: "add_user_to_g
 // ActionRemoveUserFromGroup returns the action for removing a user from a group.
 func ActionRemoveUserFromGroup() RBACAction { return RBACAction{value: "remove_user_from_group"} }
 
+// ActionCreateOrganization returns the action for creating an organization.
+func ActionCreateOrganization() RBACAction { return RBACAction{value: "create_organization"} }
+
 // RBACResource represents a target resource for authorization.
 type RBACResource struct {
 	value string
@@ -78,21 +81,21 @@ func ResourceGroup(groupID int) RBACResource {
 	return RBACResource{value: fmt.Sprintf("group:%d", groupID)}
 }
 
-// RBACRole represents a named role for authorization.
-type RBACRole struct {
+// RBACGroup represents a named group for authorization.
+type RBACGroup struct {
 	value string
 }
 
-// NewRBACRole creates a validated RBACRole.
-func NewRBACRole(value string) (RBACRole, error) {
+// NewRBACGroup creates a validated RBACGroup.
+func NewRBACGroup(value string) (RBACGroup, error) {
 	if value == "" {
-		return RBACRole{}, errors.New("rbac role must not be empty")
+		return RBACGroup{}, errors.New("rbac group must not be empty")
 	}
-	return RBACRole{value: value}, nil
+	return RBACGroup{value: value}, nil
 }
 
 // Value returns the string representation.
-func (r RBACRole) Value() string { return r.value }
+func (g RBACGroup) Value() string { return g.value }
 
 // RBACEffect represents the effect of a policy (allow or deny).
 type RBACEffect struct {
@@ -113,13 +116,26 @@ type AuthorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID int, operatorID int, action RBACAction, resource RBACResource) (bool, error)
 }
 
-// RBACPolicyRepository manages RBAC policies and role assignments.
+// RBACPolicyRepository manages RBAC policies and group assignments.
 type RBACPolicyRepository interface {
-	// Role assignment: assign/revoke a role for a user within an organization.
-	AssignRoleToUser(ctx context.Context, organizationID int, userID int, role RBACRole) error
-	RevokeRoleFromUser(ctx context.Context, organizationID int, userID int, role RBACRole) error
+	// Group assignment: assign/revoke a group for a user within an organization.
+	AssignGroupToUser(ctx context.Context, organizationID int, userID int, group RBACGroup) error
+	RevokeGroupFromUser(ctx context.Context, organizationID int, userID int, group RBACGroup) error
 
-	// Policy management: define what actions a role can perform on resources.
-	AddPolicy(ctx context.Context, organizationID int, role RBACRole, action RBACAction, resource RBACResource, effect RBACEffect) error
-	RemovePolicy(ctx context.Context, organizationID int, role RBACRole, action RBACAction, resource RBACResource, effect RBACEffect) error
+	// Policy management: define what actions a group can perform on resources.
+	AddPolicy(ctx context.Context, organizationID int, group RBACGroup, action RBACAction, resource RBACResource, effect RBACEffect) error
+	RemovePolicy(ctx context.Context, organizationID int, group RBACGroup, action RBACAction, resource RBACResource, effect RBACEffect) error
+}
+
+// GroupFinder retrieves groups assigned to a user within an organization.
+type GroupFinder interface {
+	GetGroupsForUser(ctx context.Context, organizationID int, userID int) ([]string, error)
+}
+
+// LoginDeniedGroups returns groups whose members cannot login.
+func LoginDeniedGroups() map[string]bool {
+	return map[string]bool{
+		"system_admin": true,
+		"system_owner": true,
+	}
 }
