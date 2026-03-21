@@ -76,7 +76,11 @@ func run() (int, error) {
 		time.Duration(cfg.Auth.AccessTokenTTLMin)*time.Minute,
 	)
 	bcryptHasher := gateway.NewBcryptHasher()
-	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB, bcryptHasher)
+	rbacRepo, err := gateway.NewRBACRepository(dbConn.DB)
+	if err != nil {
+		return 1, fmt.Errorf("new rbac repository: %w", err)
+	}
+	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB, bcryptHasher, rbacRepo)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(dbConn.DB)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(dbConn.DB)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(dbConn.DB)

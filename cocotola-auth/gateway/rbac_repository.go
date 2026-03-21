@@ -31,13 +31,14 @@ e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 m = g(r.sub, p.sub, r.dom) && (keyMatch(r.obj, p.obj) || g2(r.obj, p.obj, r.dom)) && r.act == p.act
 `
 
-// RBACRepository manages RBAC policies and role assignments using Casbin.
-// It implements domain.RBACPolicyRepository.
+// RBACRepository manages RBAC policies and group assignments using Casbin.
+// It implements domain.RBACPolicyRepository and domain.GroupFinder.
 type RBACRepository struct {
 	enforcer *casbin.Enforcer
 }
 
 var _ domain.RBACPolicyRepository = (*RBACRepository)(nil)
+var _ domain.GroupFinder = (*RBACRepository)(nil)
 
 // NewRBACRepository creates a new RBACRepository backed by the given database.
 func NewRBACRepository(db *gorm.DB) (*RBACRepository, error) {
@@ -76,35 +77,35 @@ func formatSubject(userID int) string {
 	return fmt.Sprintf("user:%d", userID)
 }
 
-// AssignRoleToUser assigns a role to a user within an organization.
-func (r *RBACRepository) AssignRoleToUser(_ context.Context, organizationID int, userID int, role domain.RBACRole) error {
+// AssignGroupToUser assigns a group to a user within an organization.
+func (r *RBACRepository) AssignGroupToUser(_ context.Context, organizationID int, userID int, group domain.RBACGroup) error {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 
-	if _, err := r.enforcer.AddNamedGroupingPolicy("g", sub, role.Value(), dom); err != nil {
+	if _, err := r.enforcer.AddNamedGroupingPolicy("g", sub, group.Value(), dom); err != nil {
 		return fmt.Errorf("add grouping policy: %w", err)
 	}
 
 	return nil
 }
 
-// RevokeRoleFromUser revokes a role from a user within an organization.
-func (r *RBACRepository) RevokeRoleFromUser(_ context.Context, organizationID int, userID int, role domain.RBACRole) error {
+// RevokeGroupFromUser revokes a group from a user within an organization.
+func (r *RBACRepository) RevokeGroupFromUser(_ context.Context, organizationID int, userID int, group domain.RBACGroup) error {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 
-	if _, err := r.enforcer.RemoveNamedGroupingPolicy("g", sub, role.Value(), dom); err != nil {
+	if _, err := r.enforcer.RemoveNamedGroupingPolicy("g", sub, group.Value(), dom); err != nil {
 		return fmt.Errorf("remove grouping policy: %w", err)
 	}
 
 	return nil
 }
 
-// AddPolicy adds a policy rule granting or denying a role an action on a resource.
-func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, role domain.RBACRole, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+// AddPolicy adds a policy rule granting or denying a group an action on a resource.
+func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, group domain.RBACGroup, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
 	dom := formatDomain(organizationID)
 
-	if _, err := r.enforcer.AddNamedPolicy("p", role.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
+	if _, err := r.enforcer.AddNamedPolicy("p", group.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
 		return fmt.Errorf("add named policy: %w", err)
 	}
 
@@ -112,10 +113,10 @@ func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, role d
 }
 
 // RemovePolicy removes a policy rule.
-func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, role domain.RBACRole, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, group domain.RBACGroup, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
 	dom := formatDomain(organizationID)
 
-	if _, err := r.enforcer.RemoveNamedPolicy("p", role.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
+	if _, err := r.enforcer.RemoveNamedPolicy("p", group.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
 		return fmt.Errorf("remove named policy: %w", err)
 	}
 
@@ -155,6 +156,19 @@ func (r *RBACRepository) Enforce(organizationID int, userID int, action domain.R
 	}
 
 	return ok, nil
+}
+
+// GetGroupsForUser retrieves groups assigned to a user within an organization.
+func (r *RBACRepository) GetGroupsForUser(_ context.Context, organizationID int, userID int) ([]string, error) {
+	dom := formatDomain(organizationID)
+	sub := formatSubject(userID)
+
+	groups, err := r.enforcer.GetRolesForUser(sub, dom)
+	if err != nil {
+		return nil, fmt.Errorf("get groups for user: %w", err)
+	}
+
+	return groups, nil
 }
 
 // LoadPolicy reloads all policies from the storage.

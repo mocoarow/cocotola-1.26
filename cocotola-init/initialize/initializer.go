@@ -21,7 +21,7 @@ const (
 )
 
 // Initialize bootstraps the cocotola tenant organization, creates the first owner user,
-// adds them to the active user list, sets up RBAC policies, and assigns the admin role.
+// adds them to the active user list, sets up RBAC policies, and assigns the admin group.
 func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPassword string) error {
 	logger := slog.Default()
 
@@ -55,14 +55,31 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 		return fmt.Errorf("setup rbac policies: %w", err)
 	}
 
-	// 5. Assign admin role to first owner
-	if err := assignAdminRole(ctx, rbacRepo, org.ID(), ownerUserID, logger); err != nil {
-		return fmt.Errorf("assign admin role: %w", err)
+	// 5. Assign admin group to first owner
+	if err := assignAdminGroup(ctx, rbacRepo, org.ID(), ownerUserID, logger); err != nil {
+		return fmt.Errorf("assign admin group: %w", err)
+	}
+
+	// 6. Create or find SystemOwner user
+	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, org.ID(), logger)
+	if err != nil {
+		return fmt.Errorf("find or create system owner: %w", err)
+	}
+
+	// 7. Setup SystemOwner RBAC policies
+	if err := setupSystemOwnerRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
+		return fmt.Errorf("setup system owner rbac policies: %w", err)
+	}
+
+	// 8. Assign system_owner group to SystemOwner user
+	if err := assignSystemOwnerGroup(ctx, rbacRepo, org.ID(), systemOwnerID, logger); err != nil {
+		return fmt.Errorf("assign system owner group: %w", err)
 	}
 
 	logger.InfoContext(ctx, "initialization completed successfully",
 		slog.Int("organization_id", org.ID()),
 		slog.Int("owner_user_id", ownerUserID),
+		slog.Int("system_owner_user_id", systemOwnerID),
 	)
 	return nil
 }
@@ -126,6 +143,40 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 	return userID, nil
 }
 
+const systemOwnerLoginID = "__system_owner"
+
+func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domain.PasswordHasher, orgID int, logger *slog.Logger) (int, error) {
+	user, err := repo.FindByLoginID(ctx, orgID, systemOwnerLoginID)
+	if err == nil {
+		logger.InfoContext(ctx, "system owner user already exists",
+			slog.Int("user_id", user.ID()),
+			slog.String("login_id", string(user.LoginID())),
+		)
+		return user.ID(), nil
+	}
+	if !errors.Is(err, domain.ErrAppUserNotFound) {
+		return 0, fmt.Errorf("find system owner by login id: %w", err)
+	}
+
+	// SystemOwner uses a random long password since it cannot login.
+	dummyPassword := "system_owner_no_login_00000000"
+	hashedPassword, err := domain.HashPassword(dummyPassword, hasher)
+	if err != nil {
+		return 0, fmt.Errorf("hash password: %w", err)
+	}
+
+	userID, err := repo.Create(ctx, orgID, systemOwnerLoginID, hashedPassword)
+	if err != nil {
+		return 0, fmt.Errorf("create system owner: %w", err)
+	}
+
+	logger.InfoContext(ctx, "system owner user created",
+		slog.Int("user_id", userID),
+		slog.String("login_id", systemOwnerLoginID),
+	)
+	return userID, nil
+}
+
 func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID int, logger *slog.Logger) error {
 	list, err := repo.FindByOrganizationID(ctx, org.ID())
 	if err != nil {
@@ -149,9 +200,9 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 }
 
 func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
-	adminRole, err := domain.NewRBACRole("admin")
+	adminGroup, err := domain.NewRBACGroup("admin")
 	if err != nil {
-		return fmt.Errorf("new rbac role: %w", err)
+		return fmt.Errorf("new rbac group: %w", err)
 	}
 
 	actions := []domain.RBACAction{
@@ -167,7 +218,7 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 	}
 
 	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, adminRole, action, domain.ResourceAny(), domain.EffectAllow()); err != nil {
+		if err := repo.AddPolicy(ctx, orgID, adminGroup, action, domain.ResourceAny(), domain.EffectAllow()); err != nil {
 			return fmt.Errorf("add policy %s: %w", action.Value(), err)
 		}
 	}
@@ -179,17 +230,66 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 	return nil
 }
 
-func assignAdminRole(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
-	adminRole, err := domain.NewRBACRole("admin")
+func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+	systemOwnerGroup, err := domain.NewRBACGroup("system_owner")
 	if err != nil {
-		return fmt.Errorf("new rbac role: %w", err)
+		return fmt.Errorf("new rbac group: %w", err)
 	}
 
-	if err := repo.AssignRoleToUser(ctx, orgID, userID, adminRole); err != nil {
-		return fmt.Errorf("assign role to user: %w", err)
+	actions := []domain.RBACAction{
+		domain.ActionCreateUser(),
+		domain.ActionViewUser(),
+		domain.ActionDisableUser(),
+		domain.ActionChangePassword(),
+		domain.ActionCreateGroup(),
+		domain.ActionViewGroup(),
+		domain.ActionDisableGroup(),
+		domain.ActionAddUserToGroup(),
+		domain.ActionRemoveUserFromGroup(),
+		domain.ActionCreateOrganization(),
 	}
 
-	logger.InfoContext(ctx, "admin role assigned to user",
+	for _, action := range actions {
+		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, domain.ResourceAny(), domain.EffectAllow()); err != nil {
+			return fmt.Errorf("add system owner policy %s: %w", action.Value(), err)
+		}
+	}
+
+	logger.InfoContext(ctx, "system owner RBAC policies created",
+		slog.Int("organization_id", orgID),
+		slog.Int("policy_count", len(actions)),
+	)
+	return nil
+}
+
+func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
+	adminGroup, err := domain.NewRBACGroup("admin")
+	if err != nil {
+		return fmt.Errorf("new rbac group: %w", err)
+	}
+
+	if err := repo.AssignGroupToUser(ctx, orgID, userID, adminGroup); err != nil {
+		return fmt.Errorf("assign group to user: %w", err)
+	}
+
+	logger.InfoContext(ctx, "admin group assigned to user",
+		slog.Int("organization_id", orgID),
+		slog.Int("user_id", userID),
+	)
+	return nil
+}
+
+func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
+	systemOwnerGroup, err := domain.NewRBACGroup("system_owner")
+	if err != nil {
+		return fmt.Errorf("new rbac group: %w", err)
+	}
+
+	if err := repo.AssignGroupToUser(ctx, orgID, userID, systemOwnerGroup); err != nil {
+		return fmt.Errorf("assign system owner group to user: %w", err)
+	}
+
+	logger.InfoContext(ctx, "system owner group assigned to user",
 		slog.Int("organization_id", orgID),
 		slog.Int("user_id", userID),
 	)

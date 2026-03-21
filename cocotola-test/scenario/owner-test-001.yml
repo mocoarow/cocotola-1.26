@@ -1,0 +1,36 @@
+---
+desc: オーナーの認証とユーザー情報取得を確認する
+runners:
+  req: http://localhost:8080
+vars:
+  OWNER_LOGIN_ID: ${OWNER_LOGIN_ID}
+  OWNER_PASSWORD: ${OWNER_PASSWORD}
+  ORGANIZATION_NAME: ${ORGANIZATION_NAME}
+steps:
+  createToken:
+    desc: アクセストークンを発行する
+    req:
+      /api/v1/auth/authenticate:
+        post:
+          body:
+            application/json:
+              loginId: "{{ vars.OWNER_LOGIN_ID }}"
+              password: "{{ vars.OWNER_PASSWORD }}"
+              organizationName: "{{ vars.ORGANIZATION_NAME }}"
+    test: |
+      current.res.status == 200
+      && (current.res.body.accessToken startsWith "eyJ") == true
+    bind:
+      ownerAccessToken: current.res.body.accessToken
+
+  profile:
+    desc: ユーザー情報を取得
+    req:
+      /api/v1/auth/me:
+        get:
+          headers:
+            authorization: "Bearer {{ ownerAccessToken }}"
+    test: |
+      current.res.status == 200
+      && current.res.body.loginId == vars.OWNER_LOGIN_ID
+      && current.res.body.organizationName == vars.ORGANIZATION_NAME
