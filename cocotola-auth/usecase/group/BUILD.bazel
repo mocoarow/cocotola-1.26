@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "group",
+    srcs = [
+        "command.go",
+        "create_group_command.go",
+        "doc.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/group",
+    ],
+)

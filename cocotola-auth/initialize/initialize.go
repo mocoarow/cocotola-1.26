@@ -13,11 +13,13 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
+	grouphandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
+	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 	libprocess "github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
@@ -55,10 +57,14 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	eventBus := gateway.NewEventBus(eventBusBufferSize, eventBusLogger)
 
 	activeUserListRepo := gateway.NewActiveUserListRepository(db)
+	activeGroupListRepo := gateway.NewActiveGroupListRepository(db)
 	orgRepo := gateway.NewOrganizationRepository(db)
+	groupRepo := gateway.NewGroupRepository(db)
 	eventHandlerLogger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-event-handler"))
 	activeUserListHandler := eventusecase.NewActiveUserListHandler(activeUserListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
+	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
+	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
 
 	// usecase layer
 	usecaseConfig := authusecase.UsecaseConfig{
@@ -94,6 +100,12 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	revokeHandler := authhandler.NewRevokeHandler(authUsecase, authConfig.Cookie)
 	getMeHandler := authhandler.NewGetMeHandler()
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+
+	// group usecase + controller
+	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
+	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
+	grouphandler.InitGroupRouter(createGroupHandler, v1, authMiddleware)
 
 	return eventBus.Start, nil
 }

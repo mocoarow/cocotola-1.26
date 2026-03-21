@@ -60,6 +60,25 @@ func (r *GroupRepository) Save(ctx context.Context, group *domain.Group) error {
 	return nil
 }
 
+// Create inserts a new group record and returns the auto-generated ID.
+func (r *GroupRepository) Create(ctx context.Context, organizationID int, name string) (int, error) {
+	record := groupRecord{
+		ID:             0,
+		Version:        0,
+		CreatedAt:      time.Time{},
+		UpdatedAt:      time.Time{},
+		CreatedBy:      0,
+		UpdatedBy:      0,
+		OrganizationID: organizationID,
+		Name:           name,
+		Enabled:        true,
+	}
+	if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
+		return 0, fmt.Errorf("create group: %w", err)
+	}
+	return record.ID, nil
+}
+
 // FindByID looks up a group by its ID.
 func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domain.Group, error) {
 	var record groupRecord

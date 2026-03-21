@@ -14,6 +14,7 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 tags:
   - name: auth
+  - name: group
 paths:
   /api/v1/auth/password/authenticate:
     post:
@@ -260,6 +261,61 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/group:
+    post:
+      summary: Create a group
+      deprecated: false
+      description: Create a new group within the operator's organization
+      operationId: createGroup
+      tags:
+        - group
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupRequest'
+            examples: {}
+        required: true
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateGroupResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '409':
+          description: Group name already exists or active group limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
 components:
   schemas:
     PasswordAuthRequest:
@@ -363,6 +419,38 @@ components:
         - userId
         - loginId
         - organizationName
+    CreateGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,max=255
+          maxLength: 255
+          pattern: ^.*$
+      required:
+        - name
+    CreateGroupResponse:
+      type: object
+      properties:
+        groupId:
+          type: integer
+          x-go-name: GroupID
+          format: int32
+        organizationId:
+          type: integer
+          x-go-name: OrganizationID
+          format: int32
+        name:
+          type: string
+          pattern: ^.*$
+        enabled:
+          type: boolean
+      required:
+        - groupId
+        - organizationId
+        - name
+        - enabled
     ErrorResponse:
       type: object
       properties:
