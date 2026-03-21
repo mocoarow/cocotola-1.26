@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "initialize",
+    srcs = ["initialize.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/config",
+        "//cocotola-auth/controller/handler/auth",
+        "//cocotola-auth/controller/middleware",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/gateway",
+        "//cocotola-auth/usecase/auth",
+        "//cocotola-auth/usecase/event",
+        "//cocotola-lib/logging",
+        "//cocotola-lib/process",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_golang_jwt_jwt_v5//:jwt",
+        "@io_gorm_gorm//:gorm",
+    ],
+)

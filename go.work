@@ -1,6 +1,7 @@
 go 1.26.1
 
 use (
+	./cocotola-app
 	./cocotola-auth
 	./cocotola-init
 	./cocotola-lib
