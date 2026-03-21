@@ -29,10 +29,12 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 		domain.SpaceTypePrivate().Value(), appUserID,
 	).Return(expectedSpaceID, nil)
 
-	userSpaceRepoMock := newMockuserSpaceAdder(t)
-	userSpaceRepoMock.On("AddUserToSpace", mock.Anything, orgID, appUserID, expectedSpaceID, appUserID).Return(nil)
+	policyRepoMock := newMockuserPolicyAdder(t)
+	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+	).Return(nil)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, userSpaceRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -44,7 +46,9 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 		domain.PrivateSpaceKeyName(loginID), "Private(user@example.com)",
 		domain.SpaceTypePrivate().Value(), appUserID,
 	)
-	userSpaceRepoMock.AssertCalled(t, "AddUserToSpace", mock.Anything, orgID, appUserID, expectedSpaceID, appUserID)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+	)
 }
 
 func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t *testing.T) {
@@ -61,9 +65,9 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t 
 		mock.Anything, mock.Anything, mock.Anything, appUserID,
 	).Return(0, createErr)
 
-	userSpaceRepoMock := newMockuserSpaceAdder(t)
+	policyRepoMock := newMockuserPolicyAdder(t)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, userSpaceRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -71,10 +75,10 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t 
 
 	// then
 	require.ErrorIs(t, err, createErr)
-	userSpaceRepoMock.AssertNotCalled(t, "AddUserToSpace")
+	policyRepoMock.AssertNotCalled(t, "AddPolicyForUser")
 }
 
-func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddUserToSpaceFails(t *testing.T) {
+func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddPolicyFails(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -89,10 +93,12 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddUserToSpaceFails(t
 		mock.Anything, mock.Anything, mock.Anything, appUserID,
 	).Return(expectedSpaceID, nil)
 
-	userSpaceRepoMock := newMockuserSpaceAdder(t)
-	userSpaceRepoMock.On("AddUserToSpace", mock.Anything, orgID, appUserID, expectedSpaceID, appUserID).Return(addErr)
+	policyRepoMock := newMockuserPolicyAdder(t)
+	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+	).Return(addErr)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, userSpaceRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -107,9 +113,9 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenEventTypeIsWrong(t *t
 
 	// given
 	spaceRepoMock := newMockspaceCreator(t)
-	userSpaceRepoMock := newMockuserSpaceAdder(t)
+	policyRepoMock := newMockuserPolicyAdder(t)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, userSpaceRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
 
 	// when
 	err := handler.Handle(context.Background(), badEvent{})

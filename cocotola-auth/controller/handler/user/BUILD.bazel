@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "user",
+    srcs = [
+        "create_user_handler.go",
+        "doc.go",
+        "user.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/api",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/controller/handler",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/user",
+        "//cocotola-lib/logging",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)

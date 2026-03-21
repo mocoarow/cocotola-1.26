@@ -13,8 +13,8 @@ type appUserCreator interface {
 	Create(ctx context.Context, organizationID int, loginID string, hashedPassword string) (int, error)
 }
 
-type organizationFinder interface {
-	FindByID(ctx context.Context, id int) (*domain.Organization, error)
+type organizationFinderByName interface {
+	FindByName(ctx context.Context, name string) (*domain.Organization, error)
 }
 
 type eventPublisher interface {
@@ -33,7 +33,7 @@ type authorizationChecker interface {
 // CreateAppUserCommand creates a new app user within an organization.
 type CreateAppUserCommand struct {
 	appUserRepo appUserCreator
-	orgRepo     organizationFinder
+	orgRepo     organizationFinderByName
 	publisher   eventPublisher
 	hasher      passwordHasher
 	authChecker authorizationChecker
@@ -42,7 +42,7 @@ type CreateAppUserCommand struct {
 // NewCreateAppUserCommand returns a new CreateAppUserCommand.
 func NewCreateAppUserCommand(
 	appUserRepo appUserCreator,
-	orgRepo organizationFinder,
+	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	hasher passwordHasher,
 	authChecker authorizationChecker,
@@ -58,18 +58,19 @@ func NewCreateAppUserCommand(
 
 // CreateAppUser creates a new app user and publishes an AppUserCreated event.
 func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userservice.CreateAppUserInput) (*userservice.CreateAppUserOutput, error) {
+	// TX1: Find organization by name to get organizationID.
+	org, err := c.orgRepo.FindByName(ctx, input.OrganizationName)
+	if err != nil {
+		return nil, fmt.Errorf("find organization: %w", err)
+	}
+
 	// Authorization check.
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateUser(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionCreateUser(), domain.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
 	if !allowed {
 		return nil, domain.ErrForbidden
-	}
-
-	// TX1: Find organization to validate existence.
-	if _, err := c.orgRepo.FindByID(ctx, input.OrganizationID); err != nil {
-		return nil, fmt.Errorf("find organization: %w", err)
 	}
 
 	// Hash password via domain policy (enforces MinPasswordLength).
@@ -79,15 +80,15 @@ func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userser
 	}
 
 	// TX2: Create app user record.
-	appUserID, err := c.appUserRepo.Create(ctx, input.OrganizationID, input.LoginID, hashedPassword)
+	appUserID, err := c.appUserRepo.Create(ctx, org.ID(), input.LoginID, hashedPassword)
 	if err != nil {
 		return nil, fmt.Errorf("create app user: %w", err)
 	}
 
 	// Publish domain event for eventual consistency with ActiveUserList.
-	c.publisher.Publish(domain.NewAppUserCreated(appUserID, input.OrganizationID, input.LoginID, time.Now()))
+	c.publisher.Publish(domain.NewAppUserCreated(appUserID, org.ID(), input.LoginID, time.Now()))
 
-	output, err := userservice.NewCreateAppUserOutput(appUserID, input.OrganizationID, input.LoginID, true)
+	output, err := userservice.NewCreateAppUserOutput(appUserID, org.ID(), input.LoginID, true)
 	if err != nil {
 		return nil, fmt.Errorf("create app user output: %w", err)
 	}

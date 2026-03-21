@@ -13,30 +13,23 @@ type spaceFinder interface {
 	FindByOrganizationID(ctx context.Context, organizationID int) ([]domain.Space, error)
 }
 
-type userSpaceFinder interface {
-	FindSpaceIDsByUserID(ctx context.Context, organizationID int, userID int) ([]int, error)
-}
-
 // ListSpacesQuery returns spaces accessible by the operator.
 type ListSpacesQuery struct {
-	spaceRepo     spaceFinder
-	userSpaceRepo userSpaceFinder
-	orgRepo       organizationFinderByName
-	authChecker   authorizationChecker
+	spaceRepo   spaceFinder
+	orgRepo     organizationFinderByName
+	authChecker authorizationChecker
 }
 
 // NewListSpacesQuery returns a new ListSpacesQuery.
 func NewListSpacesQuery(
 	spaceRepo spaceFinder,
-	userSpaceRepo userSpaceFinder,
 	orgRepo organizationFinderByName,
 	authChecker authorizationChecker,
 ) *ListSpacesQuery {
 	return &ListSpacesQuery{
-		spaceRepo:     spaceRepo,
-		userSpaceRepo: userSpaceRepo,
-		orgRepo:       orgRepo,
-		authChecker:   authChecker,
+		spaceRepo:   spaceRepo,
+		orgRepo:     orgRepo,
+		authChecker: authChecker,
 	}
 }
 
@@ -60,19 +53,27 @@ func (q *ListSpacesQuery) ListSpaces(ctx context.Context, input *spaceservice.Li
 		return nil, fmt.Errorf("find spaces by organization: %w", err)
 	}
 
-	userSpaceIDs, err := q.userSpaceRepo.FindSpaceIDsByUserID(ctx, org.ID(), input.OperatorID)
-	if err != nil {
-		return nil, fmt.Errorf("find user space ids: %w", err)
-	}
-
-	userSpaceSet := make(map[int]bool, len(userSpaceIDs))
-	for _, id := range userSpaceIDs {
-		userSpaceSet[id] = true
-	}
-
 	var items []spaceservice.Item
 	for _, s := range allSpaces {
-		if s.SpaceType().IsPublic() || userSpaceSet[s.ID()] {
+		if s.SpaceType().IsPublic() {
+			items = append(items, spaceservice.Item{
+				SpaceID:        s.ID(),
+				OrganizationID: s.OrganizationID(),
+				OwnerID:        s.OwnerID(),
+				KeyName:        s.KeyName(),
+				Name:           s.Name(),
+				SpaceType:      s.SpaceType().Value(),
+				Deleted:        s.Deleted(),
+			})
+
+			continue
+		}
+
+		spaceAllowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionViewSpace(), domain.ResourceSpace(s.ID()))
+		if err != nil {
+			return nil, fmt.Errorf("check space access: %w", err)
+		}
+		if spaceAllowed {
 			items = append(items, spaceservice.Item{
 				SpaceID:        s.ID(),
 				OrganizationID: s.OrganizationID(),

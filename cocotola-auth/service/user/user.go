@@ -11,19 +11,19 @@ import (
 
 // CreateAppUserInput holds the parameters for creating an app user.
 type CreateAppUserInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
-	LoginID        string `validate:"required"`
-	Password       string `validate:"required,min=8"`
+	OperatorID       int    `validate:"required,gt=0"`
+	OrganizationName string `validate:"required"`
+	LoginID          string `validate:"required"`
+	Password         string `validate:"required,min=8"`
 }
 
 // NewCreateAppUserInput creates a validated CreateAppUserInput.
-func NewCreateAppUserInput(operatorID int, organizationID int, loginID string, password string) (*CreateAppUserInput, error) {
+func NewCreateAppUserInput(operatorID int, organizationName string, loginID string, password string) (*CreateAppUserInput, error) {
 	m := &CreateAppUserInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		LoginID:        loginID,
-		Password:       password,
+		OperatorID:       operatorID,
+		OrganizationName: organizationName,
+		LoginID:          loginID,
+		Password:         password,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create app user input: %w", err)
