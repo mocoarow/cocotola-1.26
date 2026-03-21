@@ -1,3 +1,4 @@
+---
 password-authenticate:
   post:
     summary: Password authentication

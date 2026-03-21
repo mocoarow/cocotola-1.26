@@ -1,3 +1,4 @@
+---
 PasswordAuthRequest:
   type: object
   properties:

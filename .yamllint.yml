@@ -15,4 +15,5 @@ ignore:
   - analysis_options.yaml
   - pubspec.yaml
   - openapi/openapi.yaml
+  - cocotola-auth/api/openapi-bundled.yaml
   - .serena/
