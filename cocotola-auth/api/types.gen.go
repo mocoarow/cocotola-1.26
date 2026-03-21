@@ -23,15 +23,23 @@ type AuthenticateResponse struct {
 	RefreshToken *string `json:"refreshToken,omitempty"`
 }
 
+// CreateGroupRequest defines model for CreateGroupRequest.
+type CreateGroupRequest struct {
+	Name string `binding:"required,max=255" json:"name"`
+}
+
+// CreateGroupResponse defines model for CreateGroupResponse.
+type CreateGroupResponse struct {
+	Enabled        bool   `json:"enabled"`
+	GroupID        int32  `json:"groupId"`
+	Name           string `json:"name"`
+	OrganizationID int32  `json:"organizationId"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
-}
-
-// GuestAuthRequest defines model for GuestAuthRequest.
-type GuestAuthRequest struct {
-	OrganizationName string `binding:"required,max=20" json:"organizationName"`
 }
 
 // GetMeResponse defines model for GetMeResponse.
@@ -39,6 +47,11 @@ type GetMeResponse struct {
 	LoginID          string `json:"loginId"`
 	OrganizationName string `json:"organizationName"`
 	UserID           int32  `json:"userId"`
+}
+
+// GuestAuthRequest defines model for GuestAuthRequest.
+type GuestAuthRequest struct {
+	OrganizationName string `binding:"required,max=20" json:"organizationName"`
 }
 
 // PasswordAuthRequest defines model for PasswordAuthRequest.
@@ -65,14 +78,14 @@ type RevokeRequest struct {
 	Token string `binding:"required" json:"token"`
 }
 
-// PasswordAuthenticationParamsXTokenDelivery defines parameters for PasswordAuthentication.
-type PasswordAuthenticationParamsXTokenDelivery string
-
 // PasswordAuthenticationParams defines parameters for PasswordAuthentication.
 type PasswordAuthenticationParams struct {
 	// XTokenDelivery Token delivery method (json or cookie)
 	XTokenDelivery *PasswordAuthenticationParamsXTokenDelivery `json:"X-Token-Delivery,omitempty"`
 }
+
+// PasswordAuthenticationParamsXTokenDelivery defines parameters for PasswordAuthentication.
+type PasswordAuthenticationParamsXTokenDelivery string
 
 // GuestAuthenticationJSONRequestBody defines body for GuestAuthentication for application/json ContentType.
 type GuestAuthenticationJSONRequestBody = GuestAuthRequest
@@ -85,3 +98,6 @@ type RefreshTokenJSONRequestBody = RefreshRequest
 
 // RevokeTokenJSONRequestBody defines body for RevokeToken for application/json ContentType.
 type RevokeTokenJSONRequestBody = RevokeRequest
+
+// CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
+type CreateGroupJSONRequestBody = CreateGroupRequest

@@ -3,7 +3,11 @@ load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "event",
-    srcs = ["active_user_list_handler.go"],
+    srcs = [
+        "active_group_list_handler.go",
+        "active_list_handler.go",
+        "active_user_list_handler.go",
+    ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event",
     visibility = ["//visibility:public"],
     deps = ["//cocotola-auth/domain"],

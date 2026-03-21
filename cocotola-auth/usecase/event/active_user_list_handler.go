@@ -45,27 +45,10 @@ func (h *ActiveUserListHandler) Handle(ctx context.Context, event domain.Event) 
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
-	org, err := h.orgRepo.FindByID(ctx, e.OrganizationID)
-	if err != nil {
-		return fmt.Errorf("find organization %d: %w", e.OrganizationID, err)
-	}
-
-	activeUserList, err := h.activeUserRepo.FindByOrganizationID(ctx, e.OrganizationID)
-	if err != nil {
-		return fmt.Errorf("find active user list: %w", err)
-	}
-
-	if err := activeUserList.Add(e.AppUserID, org.MaxActiveUsers()); err != nil {
-		return fmt.Errorf("add to active user list: %w", err)
-	}
-
-	if err := h.activeUserRepo.Save(ctx, activeUserList); err != nil {
-		return fmt.Errorf("save active user list: %w", err)
-	}
-
-	h.logger.InfoContext(ctx, "added user to active user list",
-		slog.Int("app_user_id", e.AppUserID),
-		slog.Int("organization_id", e.OrganizationID))
-
-	return nil
+	return handleActiveListEvent[domain.ActiveUserList](
+		ctx, h.orgRepo, h.activeUserRepo,
+		e.OrganizationID, e.AppUserID,
+		func(org *domain.Organization) int { return org.MaxActiveUsers() },
+		"user", h.logger,
+	)
 }
