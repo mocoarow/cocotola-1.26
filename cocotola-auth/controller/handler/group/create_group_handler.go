@@ -3,15 +3,14 @@ package group
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
-	"math"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	groupservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group"
 
@@ -75,14 +74,14 @@ func (h *CreateGroupHandler) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	groupID, err := safeIntToInt32(output.GroupID)
+	groupID, err := handler.SafeIntToInt32(output.GroupID)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "convert group ID", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 		return
 	}
 
-	orgID, err := safeIntToInt32(output.OrganizationID)
+	orgID, err := handler.SafeIntToInt32(output.OrganizationID)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -115,11 +114,4 @@ func (h *CreateGroupHandler) handleError(ctx context.Context, c *gin.Context, er
 	}
 	h.logger.ErrorContext(ctx, "create group", slog.Any("error", err))
 	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-}
-
-func safeIntToInt32(v int) (int32, error) {
-	if v < math.MinInt32 || v > math.MaxInt32 {
-		return 0, fmt.Errorf("value %d overflows int32", v)
-	}
-	return int32(v), nil
 }

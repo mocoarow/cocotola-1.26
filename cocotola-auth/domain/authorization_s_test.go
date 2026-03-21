@@ -77,6 +77,16 @@ func Test_ResourceGroup_shouldFormatWithGroupPrefix(t *testing.T) {
 	assert.Equal(t, "group:10", resource.Value())
 }
 
+func Test_ResourceSpace_shouldFormatWithSpacePrefix(t *testing.T) {
+	t.Parallel()
+
+	// when
+	resource := domain.ResourceSpace(5)
+
+	// then
+	assert.Equal(t, "space:5", resource.Value())
+}
+
 func Test_ResourceAny_shouldReturnWildcard(t *testing.T) {
 	t.Parallel()
 
@@ -142,6 +152,8 @@ func Test_PredefinedActions_shouldHaveCorrectValues(t *testing.T) {
 		{name: "ActionDisableGroup", action: domain.ActionDisableGroup(), want: "disable_group"},
 		{name: "ActionAddUserToGroup", action: domain.ActionAddUserToGroup(), want: "add_user_to_group"},
 		{name: "ActionRemoveUserFromGroup", action: domain.ActionRemoveUserFromGroup(), want: "remove_user_from_group"},
+		{name: "ActionCreateSpace", action: domain.ActionCreateSpace(), want: "create_space"},
+		{name: "ActionViewSpace", action: domain.ActionViewSpace(), want: "view_space"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -66,3 +66,36 @@ func (e GroupCreated) EventType() string { return EventTypeGroupCreated }
 
 // OccurredAt returns the time the event occurred.
 func (e GroupCreated) OccurredAt() time.Time { return e.occurredAt }
+
+// EventTypeSpaceCreated is the event type identifier for SpaceCreated.
+const EventTypeSpaceCreated = "SpaceCreated"
+
+// SpaceCreated is emitted when a new space is created.
+type SpaceCreated struct {
+	SpaceID        int
+	OrganizationID int
+	OwnerID        int
+	KeyName        string
+	Name           string
+	SpaceType      string
+	occurredAt     time.Time
+}
+
+// NewSpaceCreated returns a new SpaceCreated event.
+func NewSpaceCreated(spaceID int, organizationID int, ownerID int, keyName string, name string, spaceType string, occurredAt time.Time) SpaceCreated {
+	return SpaceCreated{
+		SpaceID:        spaceID,
+		OrganizationID: organizationID,
+		OwnerID:        ownerID,
+		KeyName:        keyName,
+		Name:           name,
+		SpaceType:      spaceType,
+		occurredAt:     occurredAt,
+	}
+}
+
+// EventType returns the event type identifier.
+func (e SpaceCreated) EventType() string { return EventTypeSpaceCreated }
+
+// OccurredAt returns the time the event occurred.
+func (e SpaceCreated) OccurredAt() time.Time { return e.occurredAt }

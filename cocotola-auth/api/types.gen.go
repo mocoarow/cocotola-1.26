@@ -8,6 +8,24 @@ const (
 	CookieAuthScopes = "CookieAuth.Scopes"
 )
 
+// Defines values for CreateSpaceRequestSpaceType.
+const (
+	CreateSpaceRequestSpaceTypePrivate CreateSpaceRequestSpaceType = "private"
+	CreateSpaceRequestSpaceTypePublic  CreateSpaceRequestSpaceType = "public"
+)
+
+// Defines values for CreateSpaceResponseSpaceType.
+const (
+	CreateSpaceResponseSpaceTypePrivate CreateSpaceResponseSpaceType = "private"
+	CreateSpaceResponseSpaceTypePublic  CreateSpaceResponseSpaceType = "public"
+)
+
+// Defines values for SpaceItemSpaceType.
+const (
+	Private SpaceItemSpaceType = "private"
+	Public  SpaceItemSpaceType = "public"
+)
+
 // Defines values for PasswordAuthenticationParamsXTokenDelivery.
 const (
 	Cookie PasswordAuthenticationParamsXTokenDelivery = "cookie"
@@ -36,6 +54,29 @@ type CreateGroupResponse struct {
 	OrganizationID int32  `json:"organizationId"`
 }
 
+// CreateSpaceRequest defines model for CreateSpaceRequest.
+type CreateSpaceRequest struct {
+	Name      string                      `binding:"required,max=100" json:"name"`
+	SpaceType CreateSpaceRequestSpaceType `binding:"required,oneof=public private" json:"spaceType"`
+}
+
+// CreateSpaceRequestSpaceType defines model for CreateSpaceRequest.SpaceType.
+type CreateSpaceRequestSpaceType string
+
+// CreateSpaceResponse defines model for CreateSpaceResponse.
+type CreateSpaceResponse struct {
+	Deleted        bool                         `json:"deleted"`
+	KeyName        string                       `json:"keyName"`
+	Name           string                       `json:"name"`
+	OrganizationID int32                        `json:"organizationId"`
+	OwnerID        int32                        `json:"ownerId"`
+	SpaceID        int32                        `json:"spaceId"`
+	SpaceType      CreateSpaceResponseSpaceType `json:"spaceType"`
+}
+
+// CreateSpaceResponseSpaceType defines model for CreateSpaceResponse.SpaceType.
+type CreateSpaceResponseSpaceType string
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Code    string `json:"code"`
@@ -52,6 +93,11 @@ type GetMeResponse struct {
 // GuestAuthRequest defines model for GuestAuthRequest.
 type GuestAuthRequest struct {
 	OrganizationName string `binding:"required,max=20" json:"organizationName"`
+}
+
+// ListSpacesResponse defines model for ListSpacesResponse.
+type ListSpacesResponse struct {
+	Spaces []SpaceItem `json:"spaces"`
 }
 
 // PasswordAuthRequest defines model for PasswordAuthRequest.
@@ -78,6 +124,20 @@ type RevokeRequest struct {
 	Token string `binding:"required" json:"token"`
 }
 
+// SpaceItem defines model for SpaceItem.
+type SpaceItem struct {
+	Deleted        bool               `json:"deleted"`
+	KeyName        string             `json:"keyName"`
+	Name           string             `json:"name"`
+	OrganizationID int32              `json:"organizationId"`
+	OwnerID        int32              `json:"ownerId"`
+	SpaceID        int32              `json:"spaceId"`
+	SpaceType      SpaceItemSpaceType `json:"spaceType"`
+}
+
+// SpaceItemSpaceType defines model for SpaceItem.SpaceType.
+type SpaceItemSpaceType string
+
 // PasswordAuthenticationParams defines parameters for PasswordAuthentication.
 type PasswordAuthenticationParams struct {
 	// XTokenDelivery Token delivery method (json or cookie)
@@ -101,3 +161,6 @@ type RevokeTokenJSONRequestBody = RevokeRequest
 
 // CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
 type CreateGroupJSONRequestBody = CreateGroupRequest
+
+// CreateSpaceJSONRequestBody defines body for CreateSpace for application/json ContentType.
+type CreateSpaceJSONRequestBody = CreateSpaceRequest

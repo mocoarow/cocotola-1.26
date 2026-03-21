@@ -18,6 +18,7 @@ security:
 tags:
   - name: auth
   - name: group
+  - name: space
 paths:
   /api/v1/auth/password/authenticate:
     post:
@@ -321,6 +322,87 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/space:
+    post:
+      summary: Create a space
+      deprecated: false
+      description: Create a new space within the operator's organization
+      operationId: createSpace
+      tags:
+        - space
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSpaceRequest'
+            examples: {}
+        required: true
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSpaceResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+    get:
+      summary: List spaces
+      deprecated: false
+      description: List spaces accessible by the authenticated user
+      operationId: listSpaces
+      tags:
+        - space
+      parameters: []
+      responses:
+        '200':
+          description: Successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSpacesResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
 components:
   schemas:
     PasswordAuthRequest:
@@ -453,6 +535,107 @@ components:
         - organizationId
         - name
         - enabled
+    CreateSpaceRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,max=100
+          maxLength: 100
+          pattern: ^.*$
+        spaceType:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,oneof=public private
+          enum:
+            - public
+            - private
+      required:
+        - name
+        - spaceType
+    CreateSpaceResponse:
+      type: object
+      properties:
+        spaceId:
+          type: integer
+          x-go-name: SpaceID
+          format: int32
+        organizationId:
+          type: integer
+          x-go-name: OrganizationID
+          format: int32
+        ownerId:
+          type: integer
+          x-go-name: OwnerID
+          format: int32
+        keyName:
+          type: string
+          pattern: ^.*$
+        name:
+          type: string
+          pattern: ^.*$
+        spaceType:
+          type: string
+          enum:
+            - public
+            - private
+        deleted:
+          type: boolean
+      required:
+        - spaceId
+        - organizationId
+        - ownerId
+        - keyName
+        - name
+        - spaceType
+        - deleted
+    SpaceItem:
+      type: object
+      properties:
+        spaceId:
+          type: integer
+          x-go-name: SpaceID
+          format: int32
+        organizationId:
+          type: integer
+          x-go-name: OrganizationID
+          format: int32
+        ownerId:
+          type: integer
+          x-go-name: OwnerID
+          format: int32
+        keyName:
+          type: string
+          pattern: ^.*$
+        name:
+          type: string
+          pattern: ^.*$
+        spaceType:
+          type: string
+          enum:
+            - public
+            - private
+        deleted:
+          type: boolean
+      required:
+        - spaceId
+        - organizationId
+        - ownerId
+        - keyName
+        - name
+        - spaceType
+        - deleted
+    ListSpacesResponse:
+      type: object
+      properties:
+        spaces:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: '#/components/schemas/SpaceItem'
+      required:
+        - spaces
     ErrorResponse:
       type: object
       properties:

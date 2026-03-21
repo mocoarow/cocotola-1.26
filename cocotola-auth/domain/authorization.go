@@ -52,6 +52,12 @@ func ActionRemoveUserFromGroup() RBACAction { return RBACAction{value: "remove_u
 // ActionCreateOrganization returns the action for creating an organization.
 func ActionCreateOrganization() RBACAction { return RBACAction{value: "create_organization"} }
 
+// ActionCreateSpace returns the action for creating a space.
+func ActionCreateSpace() RBACAction { return RBACAction{value: "create_space"} }
+
+// ActionViewSpace returns the action for viewing a space.
+func ActionViewSpace() RBACAction { return RBACAction{value: "view_space"} }
+
 // RBACResource represents a target resource for authorization.
 type RBACResource struct {
 	value string
@@ -79,6 +85,11 @@ func ResourceUser(userID int) RBACResource {
 // ResourceGroup returns a resource representing a specific group.
 func ResourceGroup(groupID int) RBACResource {
 	return RBACResource{value: fmt.Sprintf("group:%d", groupID)}
+}
+
+// ResourceSpace returns a resource representing a specific space.
+func ResourceSpace(spaceID int) RBACResource {
+	return RBACResource{value: fmt.Sprintf("space:%d", spaceID)}
 }
 
 // RBACGroup represents a named group for authorization.

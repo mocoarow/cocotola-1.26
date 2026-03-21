@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "space",
+    srcs = [
+        "command.go",
+        "create_space_command.go",
+        "list_spaces_query.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/space",
+    ],
+)
