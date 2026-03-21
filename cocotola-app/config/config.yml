@@ -1,0 +1,56 @@
+---
+app:
+  auth:
+    signingKey: ${APP_AUTH_SIGNING_KEY}
+    accessTokenTtlMin: ${APP_AUTH_ACCESS_TOKEN_TTL_MIN:-60}
+    refreshTokenTtlMin: ${APP_AUTH_REFRESH_TOKEN_TTL_MIN:-43200}
+    sessionTokenTtlMin: ${APP_AUTH_SESSION_TOKEN_TTL_MIN:-30}
+    sessionMaxTtlMin: ${APP_AUTH_SESSION_MAX_TTL_MIN:-1440}
+    tokenWhitelistSize: ${APP_AUTH_TOKEN_WHITELIST_SIZE:-10}
+    cookie:
+      name: session_token
+      path: ${APP_AUTH_COOKIE_PATH:-/}
+      secure: ${APP_AUTH_COOKIE_SECURE:-true}
+      sameSite: ${APP_AUTH_COOKIE_SAME_SITE:-Lax}
+server:
+  httpPort: ${APP_HTTP_PORT:-8000}
+  metricsPort: ${APP_METRICS_PORT:-8001}
+  readHeaderTimeoutSec: ${APP_READ_HEADER_TIMEOUT_SEC:-30}
+  cors:
+    allowOrigins: ${CORS_ALLOW_ORIGINS:-'*'}
+    allowMethods: ${CORS_ALLOW_METHODS:-'GET,POST,PUT,DELETE,OPTIONS'}
+    allowHeaders: ${CORS_ALLOW_HEADERS:-'Content-Type,Authorization,X-Token-Delivery'}
+    allowCredentials: ${CORS_ALLOW_CREDENTIALS:-false}
+  log:
+    accessLog: ${APP_GIN_LOG_ACCESS_LOG:-true}
+    accessLogRequestBody: ${APP_GIN_LOG_ACCESS_LOG_REQUEST_BODY:-false}
+    accessLogResponseBody: ${APP_GIN_LOG_ACCESS_LOG_RESPONSE_BODY:-false}
+  debug:
+    gin: ${APP_GIN_DEBUG_GIN:-false}
+    wait: ${APP_GIN_DEBUG_WAIT:-false}
+  shutdown:
+    gracePeriodSec: ${APP_SHUTDOWN_GRACE_PERIOD_SEC:-1}
+    shutdownTimeSec: ${APP_SHUTDOWN_TIME_SEC:-1}
+db:
+  driverName: ${APP_DB_DRIVER_NAME:-mysql}
+  mysql:
+    username: ${APP_MYSQL_USERNAME}
+    password: ${APP_MYSQL_PASSWORD}
+    host: ${APP_MYSQL_HOST:-127.0.0.1}
+    port: ${APP_MYSQL_PORT:-3306}
+    database: ${APP_MYSQL_DATABASE:-local}
+trace:
+  exporter: ${TRACE_EXPORTER:-none}
+  otlp:
+    endpoint: ${TRACE_OTLP_ENDPOINT:-localhost:4317}
+    insecure: ${TRACE_OTLP_INSECURE:-true}
+  uptrace:
+log:
+  level: ${APP_LOG_LEVEL:-info}
+  exporter: ${APP_LOG_EXPORTER:-none}
+  otlp:
+    endpoint: ${APP_LOG_OTLP_ENDPOINT:-localhost:4318}
+    insecure: ${APP_LOG_OTLP_INSECURE:-true}
+  uptrace:
+    endpoint: ${APP_LOG_UPTRACE_ENDPOINT:-api.uptrace.dev}
+    dsn: ${APP_LOG_UPTRACE_DSN:-dummy}
