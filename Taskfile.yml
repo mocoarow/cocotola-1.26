@@ -76,6 +76,13 @@ tasks:
       - task: gitleaks
       - task: trivy
 
+  generate-openapi:
+    desc: "Bundle OpenAPI spec and generate Go types"
+    dir: cocotola-auth/api
+    cmds:
+      - npx --yes @redocly/cli@latest bundle openapi.yaml -o openapi-bundled.yaml
+      - oapi-codegen --config oapi-codegen.yaml openapi-bundled.yaml
+
   generate-go-project:
     cmds:
       - |
@@ -87,8 +94,9 @@ tasks:
       vars: [GO_PROJECT]
 
   generate:
-    desc: "Generate code (e.g., mocks) for all Go projects"
+    desc: "Generate code (OpenAPI types, mocks) for all Go projects"
     cmds:
+      - task: generate-openapi
       - for:
           var: GO_PROJECTS
         task: generate-go-project
