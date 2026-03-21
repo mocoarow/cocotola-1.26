@@ -17,6 +17,7 @@ go_library(
         "group_child_groups.go",
         "group_hierarchy.go",
         "group_users.go",
+        "guest.go",
         "int_id_set.go",
         "organization.go",
         "password_hasher.go",

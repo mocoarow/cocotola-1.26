@@ -29,6 +29,11 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// GuestAuthRequest defines model for GuestAuthRequest.
+type GuestAuthRequest struct {
+	OrganizationName string `binding:"required,max=20" json:"organizationName"`
+}
+
 // GetMeResponse defines model for GetMeResponse.
 type GetMeResponse struct {
 	LoginID          string `json:"loginId"`
@@ -68,6 +73,9 @@ type PasswordAuthenticationParams struct {
 	// XTokenDelivery Token delivery method (json or cookie)
 	XTokenDelivery *PasswordAuthenticationParamsXTokenDelivery `json:"X-Token-Delivery,omitempty"`
 }
+
+// GuestAuthenticationJSONRequestBody defines body for GuestAuthentication for application/json ContentType.
+type GuestAuthenticationJSONRequestBody = GuestAuthRequest
 
 // PasswordAuthenticationJSONRequestBody defines body for PasswordAuthentication for application/json ContentType.
 type PasswordAuthenticationJSONRequestBody = PasswordAuthRequest

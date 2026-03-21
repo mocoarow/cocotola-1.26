@@ -60,18 +60,29 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 		return fmt.Errorf("assign admin group: %w", err)
 	}
 
-	// 6. Create or find SystemOwner user
+	// 6. Create or find guest user
+	guestUserID, err := findOrCreateGuest(ctx, appUserRepo, org.ID(), logger)
+	if err != nil {
+		return fmt.Errorf("find or create guest: %w", err)
+	}
+
+	// 7. Add guest user to active user list
+	if err := addToActiveUserList(ctx, activeUserListRepo, org, guestUserID, logger); err != nil {
+		return fmt.Errorf("add guest to active user list: %w", err)
+	}
+
+	// 8. Create or find SystemOwner user
 	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, org.ID(), logger)
 	if err != nil {
 		return fmt.Errorf("find or create system owner: %w", err)
 	}
 
-	// 7. Setup SystemOwner RBAC policies
+	// 9. Setup SystemOwner RBAC policies
 	if err := setupSystemOwnerRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
 		return fmt.Errorf("setup system owner rbac policies: %w", err)
 	}
 
-	// 8. Assign system_owner group to SystemOwner user
+	// 10. Assign system_owner group to SystemOwner user
 	if err := assignSystemOwnerGroup(ctx, rbacRepo, org.ID(), systemOwnerID, logger); err != nil {
 		return fmt.Errorf("assign system owner group: %w", err)
 	}
@@ -79,6 +90,7 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 	logger.InfoContext(ctx, "initialization completed successfully",
 		slog.Int("organization_id", org.ID()),
 		slog.Int("owner_user_id", ownerUserID),
+		slog.Int("guest_user_id", guestUserID),
 		slog.Int("system_owner_user_id", systemOwnerID),
 	)
 	return nil
@@ -139,6 +151,33 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 	logger.InfoContext(ctx, "owner user created",
 		slog.Int("user_id", userID),
 		slog.String("login_id", loginID),
+	)
+	return userID, nil
+}
+
+func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID int, logger *slog.Logger) (int, error) {
+	guestLoginID := domain.NewGuestLoginID(organizationName)
+
+	user, err := repo.FindByLoginID(ctx, orgID, guestLoginID)
+	if err == nil {
+		logger.InfoContext(ctx, "guest user already exists",
+			slog.Int("user_id", user.ID()),
+			slog.String("login_id", string(user.LoginID())),
+		)
+		return user.ID(), nil
+	}
+	if !errors.Is(err, domain.ErrAppUserNotFound) {
+		return 0, fmt.Errorf("find guest by login id: %w", err)
+	}
+
+	userID, err := repo.Create(ctx, orgID, guestLoginID, "")
+	if err != nil {
+		return 0, fmt.Errorf("create guest user: %w", err)
+	}
+
+	logger.InfoContext(ctx, "guest user created",
+		slog.Int("user_id", userID),
+		slog.String("login_id", guestLoginID),
 	)
 	return userID, nil
 }

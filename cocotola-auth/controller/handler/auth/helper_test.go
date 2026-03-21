@@ -59,10 +59,11 @@ func initAuthRouterWithMiddleware(ctx context.Context, t *testing.T, usecase *Mo
 	v1 := api.Group("v1")
 
 	authenticateHandler := authhandler.NewPasswordAuthenticateHandler(usecase, testCookieConfig, 30)
+	guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(usecase)
 	refreshHandler := authhandler.NewRefreshHandler(usecase)
 	revokeHandler := authhandler.NewRevokeHandler(usecase, testCookieConfig)
 	getMeHandler := authhandler.NewGetMeHandler()
-	authhandler.InitAuthRouter(authenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	return router
 }

@@ -75,6 +75,7 @@ func (c UsecaseConfig) Now() time.Time {
 // Query composes all authentication Query structs.
 type Query struct {
 	*PasswordAuthenticateQuery
+	*GuestAuthenticateQuery
 	*ValidateSessionTokenQuery
 	*ValidateAccessTokenQuery
 }
@@ -82,6 +83,7 @@ type Query struct {
 // NewQuery returns a new Query with the given dependencies.
 func NewQuery(
 	userAuthenticator UserAuthenticator,
+	guestAuthenticator GuestAuthenticator,
 	sessionTokenRepo SessionTokenRepository,
 	sessionTokenWhitelistRepo WhitelistRepository,
 	accessTokenRepo AccessTokenRepository,
@@ -92,6 +94,7 @@ func NewQuery(
 ) *Query {
 	return &Query{
 		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
+		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}

@@ -43,6 +43,7 @@ type Usecase struct {
 // NewUsecase returns a new Usecase with the given dependencies.
 func NewUsecase(
 	userAuthenticator UserAuthenticator,
+	guestAuthenticator GuestAuthenticator,
 	sessionTokenRepo SessionTokenRepository,
 	sessionTokenWhitelistRepo WhitelistRepository,
 	refreshTokenRepo RefreshTokenRepository,
@@ -54,7 +55,7 @@ func NewUsecase(
 	config UsecaseConfig,
 ) *Usecase {
 	return &Usecase{
-		Query:   NewQuery(userAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}
 }

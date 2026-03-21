@@ -69,6 +69,52 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
       security: []
+  /api/v1/auth/guest/authenticate:
+    post:
+      summary: Guest authentication
+      deprecated: false
+      description: Authenticate as a guest user with organization name only
+      operationId: guestAuthentication
+      tags:
+        - auth
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestAuthRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticateResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Guest user not found or disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security: []
   /api/v1/auth/logout:
     post:
       summary: User logout
@@ -242,6 +288,17 @@ components:
       required:
         - loginId
         - password
+        - organizationName
+    GuestAuthRequest:
+      type: object
+      properties:
+        organizationName:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,max=20
+          maxLength: 20
+          pattern: ^.*$
+      required:
         - organizationName
     AuthenticateResponse:
       type: object

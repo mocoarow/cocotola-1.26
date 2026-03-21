@@ -81,6 +81,7 @@ func run() (int, error) {
 		return 1, fmt.Errorf("new rbac repository: %w", err)
 	}
 	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB, bcryptHasher, rbacRepo)
+	guestAuthenticator := gateway.NewGuestAuthenticator(dbConn.DB)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(dbConn.DB)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(dbConn.DB)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(dbConn.DB)
@@ -110,6 +111,7 @@ func run() (int, error) {
 	}
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
+		guestAuthenticator,
 		sessionTokenRepo,
 		sessionTokenWhitelistRepo,
 		refreshTokenRepo,
@@ -130,10 +132,11 @@ func run() (int, error) {
 	authMiddleware := middleware.NewAuthMiddleware(authUsecase, cfg.Auth.Cookie, cfg.Auth.SessionTokenTTLMin)
 	{
 		authenticateHandler := authhandler.NewPasswordAuthenticateHandler(authUsecase, cfg.Auth.Cookie, cfg.Auth.SessionTokenTTLMin)
+		guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(authUsecase)
 		refreshHandler := authhandler.NewRefreshHandler(authUsecase)
 		revokeHandler := authhandler.NewRevokeHandler(authUsecase, cfg.Auth.Cookie)
 		getMeHandler := authhandler.NewGetMeHandler()
-		authhandler.InitAuthRouter(authenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+		authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 	}
 
 	// run

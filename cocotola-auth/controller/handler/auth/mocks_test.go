@@ -38,6 +38,74 @@ func (_m *MockAuthUsecase) EXPECT() *MockAuthUsecase_Expecter {
 	return &MockAuthUsecase_Expecter{mock: &_m.Mock}
 }
 
+// GuestAuthenticate provides a mock function for the type MockAuthUsecase
+func (_mock *MockAuthUsecase) GuestAuthenticate(ctx context.Context, input *authservice.GuestAuthenticateInput) (*authservice.GuestAuthenticateOutput, error) {
+	ret := _mock.Called(ctx, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GuestAuthenticate")
+	}
+
+	var r0 *authservice.GuestAuthenticateOutput
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *authservice.GuestAuthenticateInput) (*authservice.GuestAuthenticateOutput, error)); ok {
+		return returnFunc(ctx, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *authservice.GuestAuthenticateInput) *authservice.GuestAuthenticateOutput); ok {
+		r0 = returnFunc(ctx, input)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*authservice.GuestAuthenticateOutput)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, *authservice.GuestAuthenticateInput) error); ok {
+		r1 = returnFunc(ctx, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockAuthUsecase_GuestAuthenticate_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GuestAuthenticate'
+type MockAuthUsecase_GuestAuthenticate_Call struct {
+	*mock.Call
+}
+
+// GuestAuthenticate is a helper method to define mock.On call
+//   - ctx context.Context
+//   - input *authservice.GuestAuthenticateInput
+func (_e *MockAuthUsecase_Expecter) GuestAuthenticate(ctx interface{}, input interface{}) *MockAuthUsecase_GuestAuthenticate_Call {
+	return &MockAuthUsecase_GuestAuthenticate_Call{Call: _e.mock.On("GuestAuthenticate", ctx, input)}
+}
+
+func (_c *MockAuthUsecase_GuestAuthenticate_Call) Run(run func(ctx context.Context, input *authservice.GuestAuthenticateInput)) *MockAuthUsecase_GuestAuthenticate_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 *authservice.GuestAuthenticateInput
+		if args[1] != nil {
+			arg1 = args[1].(*authservice.GuestAuthenticateInput)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockAuthUsecase_GuestAuthenticate_Call) Return(output *authservice.GuestAuthenticateOutput, err error) *MockAuthUsecase_GuestAuthenticate_Call {
+	_c.Call.Return(output, err)
+	return _c
+}
+
+func (_c *MockAuthUsecase_GuestAuthenticate_Call) RunAndReturn(run func(ctx context.Context, input *authservice.GuestAuthenticateInput) (*authservice.GuestAuthenticateOutput, error)) *MockAuthUsecase_GuestAuthenticate_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // CreateSessionToken provides a mock function for the type MockAuthUsecase
 func (_mock *MockAuthUsecase) CreateSessionToken(ctx context.Context, input *authservice.CreateSessionTokenInput) (*authservice.CreateSessionTokenOutput, error) {
 	ret := _mock.Called(ctx, input)

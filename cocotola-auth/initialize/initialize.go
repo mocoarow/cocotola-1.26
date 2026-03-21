@@ -41,6 +41,7 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 		return nil, fmt.Errorf("new RBAC repository: %w", err)
 	}
 	userAuthenticator := gateway.NewUserAuthenticator(db, bcryptHasher, rbacRepo)
+	guestAuthenticator := gateway.NewGuestAuthenticator(db)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(db)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(db)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(db)
@@ -70,6 +71,7 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	}
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
+		guestAuthenticator,
 		sessionTokenRepo,
 		sessionTokenWhitelistRepo,
 		refreshTokenRepo,
@@ -87,10 +89,11 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 
 	authMiddleware := middleware.NewAuthMiddleware(authUsecase, authConfig.Cookie, authConfig.SessionTokenTTLMin)
 	authenticateHandler := authhandler.NewPasswordAuthenticateHandler(authUsecase, authConfig.Cookie, authConfig.SessionTokenTTLMin)
+	guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(authUsecase)
 	refreshHandler := authhandler.NewRefreshHandler(authUsecase)
 	revokeHandler := authhandler.NewRevokeHandler(authUsecase, authConfig.Cookie)
 	getMeHandler := authhandler.NewGetMeHandler()
-	authhandler.InitAuthRouter(authenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	return eventBus.Start, nil
 }
