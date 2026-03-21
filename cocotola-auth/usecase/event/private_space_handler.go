@@ -12,27 +12,27 @@ type spaceCreator interface {
 	Create(ctx context.Context, organizationID int, ownerID int, keyName string, name string, spaceType string, createdBy int) (int, error)
 }
 
-type userSpaceAdder interface {
-	AddUserToSpace(ctx context.Context, organizationID int, userID int, spaceID int, createdBy int) error
+type userPolicyAdder interface {
+	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error
 }
 
 // PrivateSpaceHandler creates a private space when a new app user is created.
 type PrivateSpaceHandler struct {
-	spaceRepo     spaceCreator
-	userSpaceRepo userSpaceAdder
-	logger        *slog.Logger
+	spaceRepo  spaceCreator
+	policyRepo userPolicyAdder
+	logger     *slog.Logger
 }
 
 // NewPrivateSpaceHandler returns a new PrivateSpaceHandler.
 func NewPrivateSpaceHandler(
 	spaceRepo spaceCreator,
-	userSpaceRepo userSpaceAdder,
+	policyRepo userPolicyAdder,
 	logger *slog.Logger,
 ) *PrivateSpaceHandler {
 	return &PrivateSpaceHandler{
-		spaceRepo:     spaceRepo,
-		userSpaceRepo: userSpaceRepo,
-		logger:        logger,
+		spaceRepo:  spaceRepo,
+		policyRepo: policyRepo,
+		logger:     logger,
 	}
 }
 
@@ -51,8 +51,8 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 		return fmt.Errorf("create private space for user %d: %w", e.AppUserID, err)
 	}
 
-	if err := h.userSpaceRepo.AddUserToSpace(ctx, e.OrganizationID, e.AppUserID, spaceID, e.AppUserID); err != nil {
-		return fmt.Errorf("add user %d to private space %d: %w", e.AppUserID, spaceID, err)
+	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID, e.AppUserID, domain.ActionViewSpace(), domain.ResourceSpace(spaceID), domain.EffectAllow()); err != nil {
+		return fmt.Errorf("add view_space policy for user %d on space %d: %w", e.AppUserID, spaceID, err)
 	}
 
 	h.logger.InfoContext(ctx, "private space created for user",

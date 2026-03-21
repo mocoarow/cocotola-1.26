@@ -16,6 +16,7 @@ tags:
   - name: auth
   - name: group
   - name: space
+  - name: user
 paths:
   /api/v1/auth/password/authenticate:
     $ref: 'paths/auth.yaml#/password-authenticate'
@@ -33,6 +34,8 @@ paths:
     $ref: 'paths/group.yaml#/group'
   /api/v1/space:
     $ref: 'paths/space.yaml#/space'
+  /api/v1/user:
+    $ref: 'paths/user.yaml#/user'
 components:
   schemas:
     PasswordAuthRequest:
@@ -61,6 +64,10 @@ components:
       $ref: 'schemas/space.yaml#/SpaceItem'
     ListSpacesResponse:
       $ref: 'schemas/space.yaml#/ListSpacesResponse'
+    CreateUserRequest:
+      $ref: 'schemas/user.yaml#/CreateUserRequest'
+    CreateUserResponse:
+      $ref: 'schemas/user.yaml#/CreateUserResponse'
     ErrorResponse:
       $ref: 'schemas/common.yaml#/ErrorResponse'
   responses: {}

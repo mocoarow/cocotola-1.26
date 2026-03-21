@@ -39,6 +39,7 @@ type RBACRepository struct {
 
 var _ domain.RBACPolicyRepository = (*RBACRepository)(nil)
 var _ domain.GroupFinder = (*RBACRepository)(nil)
+var _ domain.UserPolicyManager = (*RBACRepository)(nil)
 
 // NewRBACRepository creates a new RBACRepository backed by the given database.
 func NewRBACRepository(db *gorm.DB) (*RBACRepository, error) {
@@ -118,6 +119,18 @@ func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, gro
 
 	if _, err := r.enforcer.RemoveNamedPolicy("p", group.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
 		return fmt.Errorf("remove named policy: %w", err)
+	}
+
+	return nil
+}
+
+// AddPolicyForUser adds a policy rule for a specific user (not group).
+func (r *RBACRepository) AddPolicyForUser(_ context.Context, organizationID int, userID int, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+	dom := formatDomain(organizationID)
+	sub := formatSubject(userID)
+
+	if _, err := r.enforcer.AddNamedPolicy("p", sub, resource.Value(), action.Value(), effect.Value(), dom); err != nil {
+		return fmt.Errorf("add user policy: %w", err)
 	}
 
 	return nil

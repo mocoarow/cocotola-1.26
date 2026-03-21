@@ -1,0 +1,56 @@
+---
+user:
+  post:
+    summary: Create a user
+    deprecated: false
+    description: Create a new user within the operator's organization
+    operationId: createUser
+    tags:
+      - user
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user.yaml#/CreateUserRequest'
+          examples: {}
+      required: true
+    responses:
+      '201':
+        description: Successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/user.yaml#/CreateUserResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: User already exists or active user limit reached
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

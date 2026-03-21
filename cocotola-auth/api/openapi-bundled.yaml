@@ -19,6 +19,7 @@ tags:
   - name: auth
   - name: group
   - name: space
+  - name: user
 paths:
   /api/v1/auth/password/authenticate:
     post:
@@ -403,6 +404,61 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/user:
+    post:
+      summary: Create a user
+      deprecated: false
+      description: Create a new user within the operator's organization
+      operationId: createUser
+      tags:
+        - user
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+            examples: {}
+        required: true
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '409':
+          description: User already exists or active user limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
 components:
   schemas:
     PasswordAuthRequest:
@@ -636,6 +692,46 @@ components:
             $ref: '#/components/schemas/SpaceItem'
       required:
         - spaces
+    CreateUserRequest:
+      type: object
+      properties:
+        loginId:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,max=255
+          maxLength: 255
+          pattern: ^.*$
+        password:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,min=8
+          minLength: 8
+          pattern: ^.*$
+      required:
+        - loginId
+        - password
+    CreateUserResponse:
+      type: object
+      properties:
+        appUserId:
+          type: integer
+          x-go-name: AppUserID
+          format: int32
+        organizationId:
+          type: integer
+          x-go-name: OrganizationID
+          format: int32
+        loginId:
+          type: string
+          x-go-name: LoginID
+          pattern: ^.*$
+        enabled:
+          type: boolean
+      required:
+        - appUserId
+        - organizationId
+        - loginId
+        - enabled
     ErrorResponse:
       type: object
       properties:

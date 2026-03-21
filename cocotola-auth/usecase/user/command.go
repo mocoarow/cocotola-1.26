@@ -9,7 +9,7 @@ type Command struct {
 // NewCommand returns a new Command with the given dependencies.
 func NewCommand(
 	appUserRepo appUserCreator,
-	orgRepo organizationFinder,
+	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	appUserFinder appUserFinder,
 	appUserSaver appUserSaver,

@@ -11,13 +11,12 @@ type Command struct {
 func NewCommand(
 	spaceRepo spaceCreator,
 	spaceFinderRepo spaceFinder,
-	userSpaceRepo userSpaceFinder,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
 		CreateSpaceCommand: NewCreateSpaceCommand(spaceRepo, orgRepo, publisher, authChecker),
-		ListSpacesQuery:    NewListSpacesQuery(spaceFinderRepo, userSpaceRepo, orgRepo, authChecker),
+		ListSpacesQuery:    NewListSpacesQuery(spaceFinderRepo, orgRepo, authChecker),
 	}
 }

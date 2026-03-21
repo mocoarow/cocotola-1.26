@@ -1,0 +1,70 @@
+---
+desc: オーナーがユーザーを作成し、ユーザーがログインしてプライベートスペースを取得する
+runners:
+  req: http://localhost:8000
+vars:
+  OWNER_LOGIN_ID: ${OWNER_LOGIN_ID}
+  OWNER_PASSWORD: ${OWNER_PASSWORD}
+  ORGANIZATION_NAME: ${ORGANIZATION_NAME}
+  NEW_USER_LOGIN_ID: ${NEW_USER_LOGIN_ID}
+  NEW_USER_PASSWORD: ${NEW_USER_PASSWORD}
+steps:
+  ownerAuth:
+    desc: オーナーのアクセストークンを発行する
+    req:
+      /api/v1/auth/password/authenticate:
+        post:
+          body:
+            application/json:
+              loginId: "{{ vars.OWNER_LOGIN_ID }}"
+              password: "{{ vars.OWNER_PASSWORD }}"
+              organizationName: "{{ vars.ORGANIZATION_NAME }}"
+    test: |
+      current.res.status == 200
+    bind:
+      ownerAccessToken: current.res.body.accessToken
+
+  createUser:
+    desc: オーナーが新しいユーザーを作成する
+    req:
+      /api/v1/user:
+        post:
+          headers:
+            authorization: "Bearer {{ ownerAccessToken }}"
+          body:
+            application/json:
+              loginId: "{{ vars.NEW_USER_LOGIN_ID }}"
+              password: "{{ vars.NEW_USER_PASSWORD }}"
+    test: |
+      current.res.status == 201
+    bind:
+      newUserID: current.res.body.appUserId
+
+  userAuth:
+    desc: 作成したユーザーでログインする
+    req:
+      /api/v1/auth/password/authenticate:
+        post:
+          body:
+            application/json:
+              loginId: "{{ vars.NEW_USER_LOGIN_ID }}"
+              password: "{{ vars.NEW_USER_PASSWORD }}"
+              organizationName: "{{ vars.ORGANIZATION_NAME }}"
+    test: |
+      current.res.status == 200
+    bind:
+      userAccessToken: current.res.body.accessToken
+
+  listSpaces:
+    desc: ユーザーが自分のプライベートスペースを取得する
+    req:
+      /api/v1/space:
+        get:
+          headers:
+            authorization: "Bearer {{ userAccessToken }}"
+    test: |
+      current.res.status == 200
+      && len(current.res.body.spaces) > 0
+      && current.res.body.spaces[?spaceType=='private'] | length(@) > 0
+    bind:
+      privateSpaceID: current.res.body.spaces[?spaceType=='private'] | [0].spaceId

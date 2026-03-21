@@ -138,6 +138,11 @@ type RBACPolicyRepository interface {
 	RemovePolicy(ctx context.Context, organizationID int, group RBACGroup, action RBACAction, resource RBACResource, effect RBACEffect) error
 }
 
+// UserPolicyManager manages per-user RBAC policies.
+type UserPolicyManager interface {
+	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action RBACAction, resource RBACResource, effect RBACEffect) error
+}
+
 // GroupFinder retrieves groups assigned to a user within an organization.
 type GroupFinder interface {
 	GetGroupsForUser(ctx context.Context, organizationID int, userID int) ([]string, error)

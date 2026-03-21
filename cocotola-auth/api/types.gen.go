@@ -77,6 +77,20 @@ type CreateSpaceResponse struct {
 // CreateSpaceResponseSpaceType defines model for CreateSpaceResponse.SpaceType.
 type CreateSpaceResponseSpaceType string
 
+// CreateUserRequest defines model for CreateUserRequest.
+type CreateUserRequest struct {
+	LoginId  string `binding:"required,max=255" json:"loginId"`
+	Password string `binding:"required,min=8" json:"password"`
+}
+
+// CreateUserResponse defines model for CreateUserResponse.
+type CreateUserResponse struct {
+	AppUserID      int32  `json:"appUserId"`
+	Enabled        bool   `json:"enabled"`
+	LoginID        string `json:"loginId"`
+	OrganizationID int32  `json:"organizationId"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Code    string `json:"code"`
@@ -164,3 +178,6 @@ type CreateGroupJSONRequestBody = CreateGroupRequest
 
 // CreateSpaceJSONRequestBody defines body for CreateSpace for application/json ContentType.
 type CreateSpaceJSONRequestBody = CreateSpaceRequest
+
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = CreateUserRequest
