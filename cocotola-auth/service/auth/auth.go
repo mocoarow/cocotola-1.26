@@ -297,6 +297,44 @@ func NewRefreshAccessTokenOutput(accessToken string) (*RefreshAccessTokenOutput,
 	return m, nil
 }
 
+// --- GuestAuthenticate ---
+
+// GuestAuthenticateInput holds the organization name for guest authentication.
+type GuestAuthenticateInput struct {
+	OrganizationName string `validate:"required"`
+}
+
+// NewGuestAuthenticateInput creates a validated GuestAuthenticateInput.
+func NewGuestAuthenticateInput(organizationName string) (*GuestAuthenticateInput, error) {
+	m := &GuestAuthenticateInput{
+		OrganizationName: organizationName,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate guest authenticate input: %w", err)
+	}
+	return m, nil
+}
+
+// GuestAuthenticateOutput holds the authenticated guest user's identity.
+type GuestAuthenticateOutput struct {
+	UserID           int    `validate:"required,gt=0"`
+	LoginID          string `validate:"required"`
+	OrganizationName string `validate:"required"`
+}
+
+// NewGuestAuthenticateOutput creates a validated GuestAuthenticateOutput.
+func NewGuestAuthenticateOutput(userID int, loginID string, organizationName string) (*GuestAuthenticateOutput, error) {
+	m := &GuestAuthenticateOutput{
+		UserID:           userID,
+		LoginID:          loginID,
+		OrganizationName: organizationName,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate guest authenticate output: %w", err)
+	}
+	return m, nil
+}
+
 // --- RevokeToken ---
 
 // RevokeTokenInput holds the token string to revoke.

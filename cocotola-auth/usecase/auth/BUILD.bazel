@@ -9,6 +9,7 @@ go_library(
         "create_token_pair_command.go",
         "doc.go",
         "extend_session_token_command.go",
+        "guest_authenticate_query.go",
         "password_authenticate_command.go",
         "query.go",
         "refresh_access_token_command.go",

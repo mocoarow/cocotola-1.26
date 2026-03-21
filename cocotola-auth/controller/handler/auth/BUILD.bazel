@@ -7,6 +7,7 @@ go_library(
         "auth.go",
         "doc.go",
         "get_me_handler.go",
+        "guest_authenticate_handler.go",
         "password_authenticate_handler.go",
         "revoke_handler.go",
         "token_handler.go",
