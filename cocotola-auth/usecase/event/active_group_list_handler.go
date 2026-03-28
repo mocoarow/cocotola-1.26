@@ -42,7 +42,7 @@ func (h *ActiveGroupListHandler) Handle(ctx context.Context, event domain.Event)
 
 	return handleActiveListEvent[domain.ActiveGroupList](
 		ctx, h.orgRepo, h.activeGroupRepo,
-		e.OrganizationID, e.GroupID,
+		e.OrganizationID(), e.GroupID(),
 		func(org *domain.Organization) int { return org.MaxActiveGroups() },
 		"group", h.logger,
 	)

@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -11,7 +11,7 @@ import (
 // Each interface follows ISP — only the methods needed by its consumers.
 
 type accessTokenSaver interface {
-	Save(ctx context.Context, token *domain.AccessToken) error
+	Save(ctx context.Context, token *domaintoken.AccessToken) error
 }
 
 type jwtCreator interface {
@@ -23,14 +23,14 @@ type jwtParser interface {
 }
 
 type accessTokenCacheSetter interface {
-	SetAccessToken(jti string, token *domain.AccessToken)
+	SetAccessToken(jti string, token *domaintoken.AccessToken)
 }
 
 type whitelistFinder interface {
-	FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error)
+	FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error)
 }
 
 type sessionTokenCacheReadWriter interface {
-	GetSessionToken(hash string) (*domain.SessionToken, bool)
-	SetSessionToken(hash string, token *domain.SessionToken)
+	GetSessionToken(hash string) (*domaintoken.SessionToken, bool)
+	SetSessionToken(hash string, token *domaintoken.SessionToken)
 }

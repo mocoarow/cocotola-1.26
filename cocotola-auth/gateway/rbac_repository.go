@@ -10,7 +10,7 @@ import (
 	gormadapter "github.com/casbin/gorm-adapter/v3"
 	"gorm.io/gorm"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 )
 
 const rbacModelConf = `
@@ -32,14 +32,14 @@ m = g(r.sub, p.sub, r.dom) && (keyMatch(r.obj, p.obj) || g2(r.obj, p.obj, r.dom)
 `
 
 // RBACRepository manages RBAC policies and group assignments using Casbin.
-// It implements domain.RBACPolicyRepository and domain.GroupFinder.
+// It implements domainrbac.PolicyRepository and domainrbac.GroupFinder.
 type RBACRepository struct {
 	enforcer *casbin.Enforcer
 }
 
-var _ domain.RBACPolicyRepository = (*RBACRepository)(nil)
-var _ domain.GroupFinder = (*RBACRepository)(nil)
-var _ domain.UserPolicyManager = (*RBACRepository)(nil)
+var _ domainrbac.PolicyRepository = (*RBACRepository)(nil)
+var _ domainrbac.GroupFinder = (*RBACRepository)(nil)
+var _ domainrbac.UserPolicyManager = (*RBACRepository)(nil)
 
 // NewRBACRepository creates a new RBACRepository backed by the given database.
 func NewRBACRepository(db *gorm.DB) (*RBACRepository, error) {
@@ -79,7 +79,7 @@ func formatSubject(userID int) string {
 }
 
 // AssignGroupToUser assigns a group to a user within an organization.
-func (r *RBACRepository) AssignGroupToUser(_ context.Context, organizationID int, userID int, group domain.RBACGroup) error {
+func (r *RBACRepository) AssignGroupToUser(_ context.Context, organizationID int, userID int, group domainrbac.Group) error {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 
@@ -91,7 +91,7 @@ func (r *RBACRepository) AssignGroupToUser(_ context.Context, organizationID int
 }
 
 // RevokeGroupFromUser revokes a group from a user within an organization.
-func (r *RBACRepository) RevokeGroupFromUser(_ context.Context, organizationID int, userID int, group domain.RBACGroup) error {
+func (r *RBACRepository) RevokeGroupFromUser(_ context.Context, organizationID int, userID int, group domainrbac.Group) error {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 
@@ -103,7 +103,7 @@ func (r *RBACRepository) RevokeGroupFromUser(_ context.Context, organizationID i
 }
 
 // AddPolicy adds a policy rule granting or denying a group an action on a resource.
-func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, group domain.RBACGroup, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, group domainrbac.Group, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error {
 	dom := formatDomain(organizationID)
 
 	if _, err := r.enforcer.AddNamedPolicy("p", group.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
@@ -114,7 +114,7 @@ func (r *RBACRepository) AddPolicy(_ context.Context, organizationID int, group 
 }
 
 // RemovePolicy removes a policy rule.
-func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, group domain.RBACGroup, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, group domainrbac.Group, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error {
 	dom := formatDomain(organizationID)
 
 	if _, err := r.enforcer.RemoveNamedPolicy("p", group.Value(), resource.Value(), action.Value(), effect.Value(), dom); err != nil {
@@ -125,7 +125,7 @@ func (r *RBACRepository) RemovePolicy(_ context.Context, organizationID int, gro
 }
 
 // AddPolicyForUser adds a policy rule for a specific user (not group).
-func (r *RBACRepository) AddPolicyForUser(_ context.Context, organizationID int, userID int, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error {
+func (r *RBACRepository) AddPolicyForUser(_ context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 
@@ -137,7 +137,7 @@ func (r *RBACRepository) AddPolicyForUser(_ context.Context, organizationID int,
 }
 
 // AddObjectGroupingPolicy adds a parent-child relationship between resources.
-func (r *RBACRepository) AddObjectGroupingPolicy(_ context.Context, organizationID int, child domain.RBACResource, parent domain.RBACResource) error {
+func (r *RBACRepository) AddObjectGroupingPolicy(_ context.Context, organizationID int, child domainrbac.Resource, parent domainrbac.Resource) error {
 	dom := formatDomain(organizationID)
 
 	if _, err := r.enforcer.AddNamedGroupingPolicy("g2", child.Value(), parent.Value(), dom); err != nil {
@@ -148,7 +148,7 @@ func (r *RBACRepository) AddObjectGroupingPolicy(_ context.Context, organization
 }
 
 // RemoveObjectGroupingPolicy removes a parent-child relationship between resources.
-func (r *RBACRepository) RemoveObjectGroupingPolicy(_ context.Context, organizationID int, child domain.RBACResource, parent domain.RBACResource) error {
+func (r *RBACRepository) RemoveObjectGroupingPolicy(_ context.Context, organizationID int, child domainrbac.Resource, parent domainrbac.Resource) error {
 	dom := formatDomain(organizationID)
 
 	if _, err := r.enforcer.RemoveNamedGroupingPolicy("g2", child.Value(), parent.Value(), dom); err != nil {
@@ -159,7 +159,7 @@ func (r *RBACRepository) RemoveObjectGroupingPolicy(_ context.Context, organizat
 }
 
 // Enforce checks whether a subject is allowed to perform an action on a resource.
-func (r *RBACRepository) Enforce(organizationID int, userID int, action domain.RBACAction, resource domain.RBACResource) (bool, error) {
+func (r *RBACRepository) Enforce(organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error) {
 	dom := formatDomain(organizationID)
 	sub := formatSubject(userID)
 

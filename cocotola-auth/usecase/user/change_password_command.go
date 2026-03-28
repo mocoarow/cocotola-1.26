@@ -5,15 +5,17 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	userservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user"
 )
 
 type appUserFinder interface {
-	FindByID(ctx context.Context, id int) (*domain.AppUser, error)
+	FindByID(ctx context.Context, id int) (*domainuser.AppUser, error)
 }
 
 type appUserSaver interface {
-	Save(ctx context.Context, user *domain.AppUser) error
+	Save(ctx context.Context, user *domainuser.AppUser) error
 }
 
 // ChangePasswordCommand changes a user's password.
@@ -47,7 +49,7 @@ func (c *ChangePasswordCommand) ChangePassword(ctx context.Context, input *users
 	}
 
 	// Authorization check using the user's organization.
-	allowed, err := c.authChecker.IsAllowed(ctx, user.OrganizationID(), input.OperatorID, domain.ActionChangePassword(), domain.ResourceUser(input.AppUserID))
+	allowed, err := c.authChecker.IsAllowed(ctx, user.OrganizationID(), input.OperatorID, domainrbac.ActionChangePassword(), domainrbac.ResourceUser(input.AppUserID))
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

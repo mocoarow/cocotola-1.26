@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -24,12 +27,12 @@ type userRecord struct {
 // UserAuthenticator verifies user credentials against the database.
 type UserAuthenticator struct {
 	db          *gorm.DB
-	hasher      domain.PasswordHasher
-	groupFinder domain.GroupFinder
+	hasher      domainuser.PasswordHasher
+	groupFinder domainrbac.GroupFinder
 }
 
 // NewUserAuthenticator returns a new UserAuthenticator.
-func NewUserAuthenticator(db *gorm.DB, hasher domain.PasswordHasher, groupFinder domain.GroupFinder) *UserAuthenticator {
+func NewUserAuthenticator(db *gorm.DB, hasher domainuser.PasswordHasher, groupFinder domainrbac.GroupFinder) *UserAuthenticator {
 	return &UserAuthenticator{db: db, hasher: hasher, groupFinder: groupFinder}
 }
 
@@ -53,7 +56,7 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 		return nil, domain.ErrUnauthenticated
 	}
 
-	user := domain.ReconstructAppUser(record.ID, record.OrganizationID, domain.LoginID(record.LoginID), record.HashedPassword, record.Enabled)
+	user := domainuser.ReconstructAppUser(record.ID, record.OrganizationID, domain.LoginID(record.LoginID), record.HashedPassword, record.Enabled)
 	if err := user.VerifyPassword(password, a.hasher); err != nil {
 		return nil, domain.ErrUnauthenticated
 	}
@@ -63,11 +66,8 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 	if err != nil {
 		return nil, fmt.Errorf("get groups for user: %w", err)
 	}
-	denied := domain.LoginDeniedGroups()
-	for _, g := range groups {
-		if denied[g] {
-			return nil, domain.ErrUnauthenticated
-		}
+	if slices.ContainsFunc(groups, domainrbac.IsLoginDenied) {
+		return nil, domain.ErrUnauthenticated
 	}
 
 	userInfo, err := authservice.NewUserInfo(record.ID, record.LoginID, record.OrganizationName, time.Now())

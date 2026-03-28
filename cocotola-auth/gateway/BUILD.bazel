@@ -29,6 +29,11 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/group",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
+        "//cocotola-auth/domain/token",
+        "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",
         "//cocotola-lib/process",
         "@com_github_casbin_casbin_v3//:casbin",
@@ -61,6 +66,9 @@ smart_go_test(
     embed = [":gateway"],
     deps = [
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/group",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/user",
         "//cocotola-lib/gateway",
         "@com_github_golang_jwt_jwt_v5//:jwt",
         "@com_github_stretchr_testify//assert",

@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -23,7 +23,7 @@ func Test_GroupUsersRepository_Save_shouldInsertEntries_whenListIsNotEmpty(t *te
 	userIDs := setupUsers(ctx, t, tx, orgID, "groupusers-save-org", 2)
 	groupIDs := setupGroups(ctx, t, tx, orgID, "groupusers-save-org", 1)
 	repo := gateway.NewGroupUsersRepository(tx)
-	gu, err := domain.NewGroupUsers(groupIDs[0], userIDs)
+	gu, err := domaingroup.NewUsers(groupIDs[0], userIDs)
 	require.NoError(t, err)
 
 	// when
@@ -43,7 +43,7 @@ func Test_GroupUsersRepository_FindByGroupID_shouldReturnGroupUsers_whenEntriesE
 	userIDs := setupUsers(ctx, t, tx, orgID, "groupusers-find-org", 3)
 	groupIDs := setupGroups(ctx, t, tx, orgID, "groupusers-find-org", 1)
 	repo := gateway.NewGroupUsersRepository(tx)
-	gu, err := domain.NewGroupUsers(groupIDs[0], userIDs)
+	gu, err := domaingroup.NewUsers(groupIDs[0], userIDs)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, gu))
 
@@ -88,12 +88,12 @@ func Test_GroupUsersRepository_Save_shouldReplaceEntries_whenCalledTwice(t *test
 	groupIDs := setupGroups(ctx, t, tx, orgID, "groupusers-replace-org", 1)
 	repo := gateway.NewGroupUsersRepository(tx)
 
-	gu1, err := domain.NewGroupUsers(groupIDs[0], userIDs)
+	gu1, err := domaingroup.NewUsers(groupIDs[0], userIDs)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, gu1))
 
 	// when: save with only the first user
-	gu2, err := domain.NewGroupUsers(groupIDs[0], userIDs[:1])
+	gu2, err := domaingroup.NewUsers(groupIDs[0], userIDs[:1])
 	require.NoError(t, err)
 	err = repo.Save(ctx, gu2)
 

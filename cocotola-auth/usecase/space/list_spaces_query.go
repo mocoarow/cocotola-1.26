@@ -5,12 +5,14 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 	spaceservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space"
 )
 
 type spaceFinder interface {
-	FindByID(ctx context.Context, id int) (*domain.Space, error)
-	FindByOrganizationID(ctx context.Context, organizationID int) ([]domain.Space, error)
+	FindByID(ctx context.Context, id int) (*domainspace.Space, error)
+	FindByOrganizationID(ctx context.Context, organizationID int) ([]domainspace.Space, error)
 }
 
 // ListSpacesQuery returns spaces accessible by the operator.
@@ -40,7 +42,7 @@ func (q *ListSpacesQuery) ListSpaces(ctx context.Context, input *spaceservice.Li
 		return nil, fmt.Errorf("find organization: %w", err)
 	}
 
-	allowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionViewSpace(), domain.ResourceAny())
+	allowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
@@ -69,7 +71,7 @@ func (q *ListSpacesQuery) ListSpaces(ctx context.Context, input *spaceservice.Li
 			continue
 		}
 
-		spaceAllowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionViewSpace(), domain.ResourceSpace(s.ID()))
+		spaceAllowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(s.ID()))
 		if err != nil {
 			return nil, fmt.Errorf("check space access: %w", err)
 		}

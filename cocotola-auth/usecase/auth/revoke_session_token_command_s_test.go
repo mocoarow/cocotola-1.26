@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 )
@@ -19,18 +20,18 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTok
 	// given
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	rawInput := "raw-session-value"
-	hash := string(domain.HashToken(rawInput))
+	hash := string(domaintoken.HashToken(rawInput))
 	tokenID := "session-token-id"
 	userID := 1
 
-	sessionToken := domain.ReconstructSessionToken(tokenID, userID, "user1", "org1", domain.TokenHash(hash), now, now.Add(30*time.Minute), nil)
+	sessionToken := domaintoken.ReconstructSessionToken(tokenID, userID, "user1", "org1", domain.TokenHash(hash), now, now.Add(30*time.Minute), nil)
 
 	repoMock := NewMockSessionTokenRepository(t)
 	repoMock.On("FindByTokenHash", mock.Anything, hash).Return(sessionToken, nil)
 	repoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	whitelistRepoMock := NewMockWhitelistRepository(t)
-	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domain.WhitelistEntry{
+	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domaintoken.WhitelistEntry{
 		{ID: tokenID, CreatedAt: now},
 	}, nil)
 	whitelistRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
@@ -65,10 +66,10 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldReturnErrTokenRevok
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	revokedAt := now.Add(-5 * time.Minute)
 	rawInput := "raw-session-value"
-	hash := string(domain.HashToken(rawInput))
+	hash := string(domaintoken.HashToken(rawInput))
 	tokenID := "session-token-id"
 
-	sessionToken := domain.ReconstructSessionToken(tokenID, 1, "user1", "org1", domain.TokenHash(hash), now.Add(-1*time.Hour), now.Add(30*time.Minute), &revokedAt)
+	sessionToken := domaintoken.ReconstructSessionToken(tokenID, 1, "user1", "org1", domain.TokenHash(hash), now.Add(-1*time.Hour), now.Add(30*time.Minute), &revokedAt)
 
 	repoMock := NewMockSessionTokenRepository(t)
 	repoMock.On("FindByTokenHash", mock.Anything, hash).Return(sessionToken, nil)

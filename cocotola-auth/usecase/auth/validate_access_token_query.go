@@ -5,16 +5,17 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 type validateAccessTokenRepo interface {
-	FindByID(ctx context.Context, id string) (*domain.AccessToken, error)
+	FindByID(ctx context.Context, id string) (*domaintoken.AccessToken, error)
 }
 
 type validateAccessTokenCache interface {
-	GetAccessToken(jti string) (*domain.AccessToken, bool)
-	SetAccessToken(jti string, token *domain.AccessToken)
+	GetAccessToken(jti string) (*domaintoken.AccessToken, bool)
+	SetAccessToken(jti string, token *domaintoken.AccessToken)
 	DeleteAccessToken(jti string)
 }
 
@@ -60,7 +61,10 @@ func (q *ValidateAccessTokenQuery) ValidateAccessToken(ctx context.Context, inpu
 		if err != nil {
 			return nil, fmt.Errorf("find access token whitelist: %w", err)
 		}
-		whitelist := domain.NewTokenWhitelist(userInfo.UserID, entries, q.config.TokenWhitelistSize)
+		whitelist, err := domaintoken.NewWhitelist(userInfo.UserID, entries, q.config.TokenWhitelistSize)
+		if err != nil {
+			return nil, fmt.Errorf("new access token whitelist: %w", err)
+		}
 		if !whitelist.ContainsToken(jti) {
 			return nil, domain.ErrTokenNotFound
 		}

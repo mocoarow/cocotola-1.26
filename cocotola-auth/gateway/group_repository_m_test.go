@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -21,7 +22,7 @@ func Test_GroupRepository_Save_shouldInsertGroup_whenNewRecord(t *testing.T) {
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-save-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domain.ReconstructGroup(0, orgID, "test-group", true)
+	group := domaingroup.ReconstructGroup(0, orgID, "test-group", true)
 
 	// when
 	err := repo.Save(ctx, group)
@@ -38,7 +39,7 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyid-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domain.ReconstructGroup(0, orgID, "findbyid-group", true)
+	group := domaingroup.ReconstructGroup(0, orgID, "findbyid-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	var inserted gateway.GroupRecordForTest
@@ -78,7 +79,7 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyname-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domain.ReconstructGroup(0, orgID, "findbyname-group", true)
+	group := domaingroup.ReconstructGroup(0, orgID, "findbyname-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	// when

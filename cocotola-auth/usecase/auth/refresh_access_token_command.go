@@ -8,11 +8,12 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 type refreshAccessTokenRefreshRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error)
+	FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error)
 }
 
 // RefreshAccessTokenCommand uses a raw refresh token to issue a new JWT access token.
@@ -46,7 +47,7 @@ func NewRefreshAccessTokenCommand(
 
 // RefreshAccessToken uses a raw refresh token to issue a new JWT access token.
 func (c *RefreshAccessTokenCommand) RefreshAccessToken(ctx context.Context, input *authservice.RefreshAccessTokenInput) (*authservice.RefreshAccessTokenOutput, error) {
-	hash := domain.HashToken(input.RawRefreshToken)
+	hash := domaintoken.HashToken(input.RawRefreshToken)
 	now := c.config.Now()
 
 	refreshToken, err := c.refreshRepo.FindByTokenHash(ctx, string(hash))
@@ -69,7 +70,7 @@ func (c *RefreshAccessTokenCommand) RefreshAccessToken(ctx context.Context, inpu
 		return nil, fmt.Errorf("create jwt: %w", err)
 	}
 
-	accessToken, err := domain.NewAccessToken(accessID, refreshToken.ID(), refreshToken.UserID(), refreshToken.LoginID(), refreshToken.OrganizationName(), now, accessExpiresAt)
+	accessToken, err := domaintoken.NewAccessToken(accessID, refreshToken.ID(), refreshToken.UserID(), refreshToken.LoginID(), refreshToken.OrganizationName(), now, accessExpiresAt)
 	if err != nil {
 		return nil, fmt.Errorf("new access token: %w", err)
 	}
@@ -87,8 +88,11 @@ func (c *RefreshAccessTokenCommand) RefreshAccessToken(ctx context.Context, inpu
 		return nil, fmt.Errorf("find access token whitelist entries: %w", err)
 	}
 
-	whitelist := domain.NewTokenWhitelist(refreshToken.UserID(), entries, c.config.TokenWhitelistSize)
-	whitelist.Add(domain.WhitelistEntry{ID: accessID, CreatedAt: now})
+	whitelist, err := domaintoken.NewWhitelist(refreshToken.UserID(), entries, c.config.TokenWhitelistSize)
+	if err != nil {
+		return nil, fmt.Errorf("new access token whitelist: %w", err)
+	}
+	whitelist.Add(domaintoken.WhitelistEntry{ID: accessID, CreatedAt: now})
 
 	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {
 		return nil, fmt.Errorf("save access token whitelist: %w", err)

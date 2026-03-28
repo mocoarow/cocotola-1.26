@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
 // --- access token whitelist ---
@@ -28,15 +28,15 @@ func NewAccessTokenWhitelistRepository(db *gorm.DB) *AccessTokenWhitelistReposit
 }
 
 // FindByUserID returns all whitelist entries for the given user.
-func (r *AccessTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error) {
-	return findAndConvertWhitelist(ctx, r.db, userID, func(rec accessTokenWhitelistRecord) domain.WhitelistEntry {
-		return domain.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
+func (r *AccessTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error) {
+	return findAndConvertWhitelist(ctx, r.db, userID, func(rec accessTokenWhitelistRecord) domaintoken.WhitelistEntry {
+		return domaintoken.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
 	}, "access token whitelist entries")
 }
 
 // Save persists the whitelist aggregate by replacing all entries for the user.
-func (r *AccessTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
-	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) accessTokenWhitelistRecord {
+func (r *AccessTokenWhitelistRepository) Save(ctx context.Context, whitelist *domaintoken.Whitelist) error {
+	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domaintoken.WhitelistEntry) accessTokenWhitelistRecord {
 		return accessTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
 	}, "access token whitelist entries")
 }
@@ -60,15 +60,15 @@ func NewRefreshTokenWhitelistRepository(db *gorm.DB) *RefreshTokenWhitelistRepos
 }
 
 // FindByUserID returns all whitelist entries for the given user.
-func (r *RefreshTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error) {
-	return findAndConvertWhitelist(ctx, r.db, userID, func(rec refreshTokenWhitelistRecord) domain.WhitelistEntry {
-		return domain.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
+func (r *RefreshTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error) {
+	return findAndConvertWhitelist(ctx, r.db, userID, func(rec refreshTokenWhitelistRecord) domaintoken.WhitelistEntry {
+		return domaintoken.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
 	}, "refresh token whitelist entries")
 }
 
 // Save persists the whitelist aggregate by replacing all entries for the user.
-func (r *RefreshTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
-	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) refreshTokenWhitelistRecord {
+func (r *RefreshTokenWhitelistRepository) Save(ctx context.Context, whitelist *domaintoken.Whitelist) error {
+	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domaintoken.WhitelistEntry) refreshTokenWhitelistRecord {
 		return refreshTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
 	}, "refresh token whitelist entries")
 }
@@ -92,15 +92,15 @@ func NewSessionTokenWhitelistRepository(db *gorm.DB) *SessionTokenWhitelistRepos
 }
 
 // FindByUserID returns all whitelist entries for the given user.
-func (r *SessionTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domain.WhitelistEntry, error) {
-	return findAndConvertWhitelist(ctx, r.db, userID, func(rec sessionTokenWhitelistRecord) domain.WhitelistEntry {
-		return domain.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
+func (r *SessionTokenWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error) {
+	return findAndConvertWhitelist(ctx, r.db, userID, func(rec sessionTokenWhitelistRecord) domaintoken.WhitelistEntry {
+		return domaintoken.WhitelistEntry{ID: rec.TokenID, CreatedAt: rec.CreatedAt}
 	}, "session token whitelist entries")
 }
 
 // Save persists the whitelist aggregate by replacing all entries for the user.
-func (r *SessionTokenWhitelistRepository) Save(ctx context.Context, whitelist *domain.TokenWhitelist) error {
-	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domain.WhitelistEntry) sessionTokenWhitelistRecord {
+func (r *SessionTokenWhitelistRepository) Save(ctx context.Context, whitelist *domaintoken.Whitelist) error {
+	return saveWhitelist(ctx, r.db, whitelist, func(userID int, e domaintoken.WhitelistEntry) sessionTokenWhitelistRecord {
 		return sessionTokenWhitelistRecord{UserID: userID, TokenID: e.ID, CreatedAt: e.CreatedAt}
 	}, "session token whitelist entries")
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -53,7 +53,7 @@ func (c *RevokeTokenCommand) RevokeToken(ctx context.Context, input *authservice
 		return c.revokeAccessToken(ctx, jti)
 	}
 
-	hash := string(domain.HashToken(input.Token))
+	hash := string(domaintoken.HashToken(input.Token))
 	refreshToken, err := c.refreshRepo.FindByTokenHash(ctx, hash)
 	if err != nil {
 		return fmt.Errorf("find refresh token: %w", err)
@@ -77,19 +77,13 @@ func (c *RevokeTokenCommand) revokeAccessToken(ctx context.Context, jti string) 
 	c.cache.DeleteAccessToken(jti)
 
 	// TX2: Remove from access token whitelist
-	entries, err := c.accessWhitelistRepo.FindByUserID(ctx, accessToken.UserID())
-	if err != nil {
-		return fmt.Errorf("find access token whitelist: %w", err)
-	}
-	whitelist := domain.NewTokenWhitelist(accessToken.UserID(), entries, c.config.TokenWhitelistSize)
-	whitelist.Remove([]string{jti})
-	if err := c.accessWhitelistRepo.Save(ctx, whitelist); err != nil {
-		return fmt.Errorf("save access token whitelist: %w", err)
+	if err := c.removeFromWhitelist(ctx, c.accessWhitelistRepo, accessToken.UserID(), []string{jti}); err != nil {
+		return fmt.Errorf("remove access token from whitelist: %w", err)
 	}
 	return nil
 }
 
-func (c *RevokeTokenCommand) revokeRefreshToken(ctx context.Context, refreshToken *domain.RefreshToken) error {
+func (c *RevokeTokenCommand) revokeRefreshToken(ctx context.Context, refreshToken *domaintoken.RefreshToken) error {
 	accessTokens, err := c.accessRepo.FindByRefreshTokenID(ctx, refreshToken.ID())
 	if err != nil {
 		return fmt.Errorf("find access tokens by refresh token id: %w", err)
@@ -117,28 +111,32 @@ func (c *RevokeTokenCommand) revokeRefreshToken(ctx context.Context, refreshToke
 	}
 
 	// TX5: Remove refresh token from whitelist
-	refreshEntries, err := c.refreshWhitelistRepo.FindByUserID(ctx, refreshToken.UserID())
-	if err != nil {
-		return fmt.Errorf("find refresh token whitelist: %w", err)
-	}
-	refreshWhitelist := domain.NewTokenWhitelist(refreshToken.UserID(), refreshEntries, c.config.TokenWhitelistSize)
-	refreshWhitelist.Remove([]string{refreshToken.ID()})
-	if err := c.refreshWhitelistRepo.Save(ctx, refreshWhitelist); err != nil {
-		return fmt.Errorf("save refresh token whitelist: %w", err)
+	if err := c.removeFromWhitelist(ctx, c.refreshWhitelistRepo, refreshToken.UserID(), []string{refreshToken.ID()}); err != nil {
+		return fmt.Errorf("remove refresh token from whitelist: %w", err)
 	}
 
 	// TX6: Remove access tokens from whitelist
 	if len(revokedAccessIDs) > 0 {
-		accessEntries, err := c.accessWhitelistRepo.FindByUserID(ctx, refreshToken.UserID())
-		if err != nil {
-			return fmt.Errorf("find access token whitelist: %w", err)
-		}
-		accessWhitelist := domain.NewTokenWhitelist(refreshToken.UserID(), accessEntries, c.config.TokenWhitelistSize)
-		accessWhitelist.Remove(revokedAccessIDs)
-		if err := c.accessWhitelistRepo.Save(ctx, accessWhitelist); err != nil {
-			return fmt.Errorf("save access token whitelist: %w", err)
+		if err := c.removeFromWhitelist(ctx, c.accessWhitelistRepo, refreshToken.UserID(), revokedAccessIDs); err != nil {
+			return fmt.Errorf("remove access tokens from whitelist: %w", err)
 		}
 	}
 
+	return nil
+}
+
+func (c *RevokeTokenCommand) removeFromWhitelist(ctx context.Context, repo WhitelistRepository, userID int, ids []string) error {
+	entries, err := repo.FindByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("find whitelist entries: %w", err)
+	}
+	whitelist, err := domaintoken.NewWhitelist(userID, entries, c.config.TokenWhitelistSize)
+	if err != nil {
+		return fmt.Errorf("new whitelist: %w", err)
+	}
+	whitelist.Remove(ids)
+	if err := repo.Save(ctx, whitelist); err != nil {
+		return fmt.Errorf("save whitelist: %w", err)
+	}
 	return nil
 }

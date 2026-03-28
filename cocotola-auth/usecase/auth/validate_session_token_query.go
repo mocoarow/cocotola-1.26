@@ -6,11 +6,12 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 type validateSessionTokenRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error)
+	FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error)
 }
 
 // ValidateSessionTokenQuery validates a raw session token and returns user info.
@@ -38,7 +39,7 @@ func NewValidateSessionTokenQuery(
 
 // ValidateSessionToken validates a raw session token and returns user info.
 func (q *ValidateSessionTokenQuery) ValidateSessionToken(ctx context.Context, input *authservice.ValidateSessionTokenInput) (*authservice.ValidateSessionTokenOutput, error) {
-	hash := string(domain.HashToken(input.RawToken))
+	hash := string(domaintoken.HashToken(input.RawToken))
 	now := q.config.Now()
 
 	token, ok := q.cache.GetSessionToken(hash)
@@ -54,7 +55,10 @@ func (q *ValidateSessionTokenQuery) ValidateSessionToken(ctx context.Context, in
 		if err != nil {
 			return nil, fmt.Errorf("find session token whitelist: %w", err)
 		}
-		whitelist := domain.NewTokenWhitelist(token.UserID(), entries, q.config.TokenWhitelistSize)
+		whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, q.config.TokenWhitelistSize)
+		if err != nil {
+			return nil, fmt.Errorf("new session token whitelist: %w", err)
+		}
 		if !whitelist.ContainsToken(token.ID()) {
 			return nil, domain.ErrTokenNotFound
 		}

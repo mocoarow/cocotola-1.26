@@ -9,6 +9,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	userservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user"
 	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
 )
@@ -23,7 +25,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 
-	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -35,7 +37,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	hasherMock.On("Hash", newPassword).Return(hashedPassword, nil)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionChangePassword(), domainrbac.ResourceUser(userID)).Return(true, nil)
 
 	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
 	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
@@ -58,7 +60,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnForbidden_whenNotAuth
 	orgID := 1
 	newPassword := "newpassword123"
 
-	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -67,7 +69,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnForbidden_whenNotAuth
 	hasherMock := newMockpasswordHasher(t)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(false, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionChangePassword(), domainrbac.ResourceUser(userID)).Return(false, nil)
 
 	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
 	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
@@ -117,7 +119,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	orgID := 1
 	newPassword := "short"
 
-	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -126,7 +128,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	hasherMock := newMockpasswordHasher(t)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionChangePassword(), domainrbac.ResourceUser(userID)).Return(true, nil)
 
 	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
 	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}
@@ -135,7 +137,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	output, err := cmd.ChangePassword(context.Background(), input)
 
 	// then
-	require.ErrorIs(t, err, domain.ErrPasswordTooShort)
+	require.ErrorIs(t, err, domainuser.ErrPasswordTooShort)
 	require.Nil(t, output)
 	saverMock.AssertNotCalled(t, "Save")
 }
@@ -151,7 +153,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	hashedPassword := "$2a$10$newhash"
 	saveErr := errors.New("db error")
 
-	user := domain.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -163,7 +165,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	hasherMock.On("Hash", newPassword).Return(hashedPassword, nil)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionChangePassword(), domain.ResourceUser(userID)).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionChangePassword(), domainrbac.ResourceUser(userID)).Return(true, nil)
 
 	cmd := userusecase.NewChangePasswordCommand(finderMock, saverMock, hasherMock, authCheckerMock)
 	input := &userservice.ChangePasswordInput{OperatorID: operatorID, AppUserID: userID, NewPassword: newPassword}

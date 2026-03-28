@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 )
 
 type appUserRecord struct {
@@ -33,12 +34,12 @@ func (appUserRecord) TableName() string {
 	return "app_user"
 }
 
-func toAppUserDomain(r *appUserRecord) *domain.AppUser {
+func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	var hashedPw string
 	if r.HashedPassword != nil {
 		hashedPw = *r.HashedPassword
 	}
-	return domain.ReconstructAppUser(r.ID, r.OrganizationID, domain.LoginID(r.LoginID), hashedPw, r.Enabled)
+	return domainuser.ReconstructAppUser(r.ID, r.OrganizationID, domain.LoginID(r.LoginID), hashedPw, r.Enabled)
 }
 
 // AppUserRepository implements app user persistence using MySQL via GORM.
@@ -52,7 +53,7 @@ func NewAppUserRepository(db *gorm.DB) *AppUserRepository {
 }
 
 // Save persists an app user record (upsert: insert or update).
-func (r *AppUserRepository) Save(ctx context.Context, user *domain.AppUser) error {
+func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) error {
 	hp := user.HashedPassword()
 	var hashedPw *string
 	if hp != "" {
@@ -109,7 +110,7 @@ func (r *AppUserRepository) Create(ctx context.Context, organizationID int, logi
 }
 
 // FindByID looks up an app user by its ID.
-func (r *AppUserRepository) FindByID(ctx context.Context, id int) (*domain.AppUser, error) {
+func (r *AppUserRepository) FindByID(ctx context.Context, id int) (*domainuser.AppUser, error) {
 	var record appUserRecord
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -121,7 +122,7 @@ func (r *AppUserRepository) FindByID(ctx context.Context, id int) (*domain.AppUs
 }
 
 // FindByLoginID looks up an app user by organization ID and login ID.
-func (r *AppUserRepository) FindByLoginID(ctx context.Context, organizationID int, loginID string) (*domain.AppUser, error) {
+func (r *AppUserRepository) FindByLoginID(ctx context.Context, organizationID int, loginID string) (*domainuser.AppUser, error) {
 	var record appUserRecord
 	if err := r.db.WithContext(ctx).
 		Where("organization_id = ? AND login_id = ?", organizationID, loginID).

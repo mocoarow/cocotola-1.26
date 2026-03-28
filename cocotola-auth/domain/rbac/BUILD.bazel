@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "rbac",
+    srcs = ["authorization.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "rbac_test",
+    srcs = ["authorization_s_test.go"],
+    deps = [
+        ":rbac",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

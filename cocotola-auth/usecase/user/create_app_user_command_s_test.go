@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	userservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user"
 	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
 )
@@ -41,7 +42,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldCreateUser_whenOrganizationHa
 	hasherMock.On("Hash", password).Return(hashedPassword, nil)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny()).Return(true, nil)
 
 	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
 	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationName: orgName, LoginID: loginID, Password: password}
@@ -81,7 +82,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnForbidden_whenNotAuthor
 	hasherMock := newMockpasswordHasher(t)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(false, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny()).Return(false, nil)
 
 	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
 	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationName: orgName, LoginID: loginID, Password: password}
@@ -152,7 +153,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenCreateAppUser
 	hasherMock.On("Hash", password).Return(hashedPassword, nil)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny()).Return(true, nil)
 
 	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
 	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationName: orgName, LoginID: loginID, Password: password}
@@ -191,7 +192,7 @@ func Test_CreateAppUserCommand_CreateAppUser_shouldReturnError_whenHasherFails(t
 	hasherMock.On("Hash", password).Return("", hashErr)
 
 	authCheckerMock := newMockauthorizationChecker(t)
-	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domain.ActionCreateUser(), domain.ResourceAny()).Return(true, nil)
+	authCheckerMock.On("IsAllowed", mock.Anything, orgID, operatorID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny()).Return(true, nil)
 
 	cmd := userusecase.NewCreateAppUserCommand(appUserRepoMock, orgRepoMock, publisherMock, hasherMock, authCheckerMock)
 	input := &userservice.CreateAppUserInput{OperatorID: operatorID, OrganizationName: orgName, LoginID: loginID, Password: password}

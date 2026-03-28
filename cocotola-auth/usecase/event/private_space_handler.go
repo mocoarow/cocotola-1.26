@@ -6,6 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 )
 
 type spaceCreator interface {
@@ -13,7 +15,7 @@ type spaceCreator interface {
 }
 
 type userPolicyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action domain.RBACAction, resource domain.RBACResource, effect domain.RBACEffect) error
+	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error
 }
 
 // PrivateSpaceHandler creates a private space when a new app user is created.
@@ -43,22 +45,22 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
-	keyName := domain.PrivateSpaceKeyName(e.LoginID)
-	spaceName := fmt.Sprintf("Private(%s)", e.LoginID)
+	keyName := domainspace.PrivateSpaceKeyName(e.LoginID())
+	spaceName := fmt.Sprintf("Private(%s)", e.LoginID())
 
-	spaceID, err := h.spaceRepo.Create(ctx, e.OrganizationID, e.AppUserID, keyName, spaceName, domain.SpaceTypePrivate().Value(), e.AppUserID)
+	spaceID, err := h.spaceRepo.Create(ctx, e.OrganizationID(), e.AppUserID(), keyName, spaceName, domainspace.TypePrivate().Value(), e.AppUserID())
 	if err != nil {
-		return fmt.Errorf("create private space for user %d: %w", e.AppUserID, err)
+		return fmt.Errorf("create private space for user %d: %w", e.AppUserID(), err)
 	}
 
-	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID, e.AppUserID, domain.ActionViewSpace(), domain.ResourceSpace(spaceID), domain.EffectAllow()); err != nil {
-		return fmt.Errorf("add view_space policy for user %d on space %d: %w", e.AppUserID, spaceID, err)
+	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(spaceID), domainrbac.EffectAllow()); err != nil {
+		return fmt.Errorf("add view_space policy for user %d on space %d: %w", e.AppUserID(), spaceID, err)
 	}
 
 	h.logger.InfoContext(ctx, "private space created for user",
-		slog.Int("user_id", e.AppUserID),
+		slog.Int("user_id", e.AppUserID()),
 		slog.Int("space_id", spaceID),
-		slog.Int("organization_id", e.OrganizationID),
+		slog.Int("organization_id", e.OrganizationID()),
 	)
 
 	return nil

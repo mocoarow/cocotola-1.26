@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
 // --- refresh token ---
@@ -27,8 +28,8 @@ type refreshTokenRecord struct {
 
 func (refreshTokenRecord) TableName() string { return "refresh_token" }
 
-func toRefreshTokenDomain(r *refreshTokenRecord) *domain.RefreshToken {
-	return domain.ReconstructRefreshToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toRefreshTokenDomain(r *refreshTokenRecord) *domaintoken.RefreshToken {
+	return domaintoken.ReconstructRefreshToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // RefreshTokenRepository implements refresh token persistence using MySQL via GORM.
@@ -40,7 +41,7 @@ func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
 }
 
 // Save persists a refresh token record (upsert: insert or update).
-func (r *RefreshTokenRepository) Save(ctx context.Context, token *domain.RefreshToken) error {
+func (r *RefreshTokenRepository) Save(ctx context.Context, token *domaintoken.RefreshToken) error {
 	record := refreshTokenRecord{
 		ID:               token.ID(),
 		Version:          1,
@@ -60,7 +61,7 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, token *domain.Refresh
 }
 
 // FindByTokenHash looks up a refresh token by its SHA256 hash.
-func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domain.RefreshToken, error) {
+func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error) {
 	record, err := findRecordByHash[refreshTokenRecord](ctx, r.db, hash, "refresh token")
 	if err != nil {
 		return nil, err
@@ -85,8 +86,8 @@ type sessionTokenRecord struct {
 
 func (sessionTokenRecord) TableName() string { return "session_token" }
 
-func toSessionTokenDomain(r *sessionTokenRecord) *domain.SessionToken {
-	return domain.ReconstructSessionToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toSessionTokenDomain(r *sessionTokenRecord) *domaintoken.SessionToken {
+	return domaintoken.ReconstructSessionToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // SessionTokenRepository implements session token persistence using MySQL via GORM.
@@ -98,7 +99,7 @@ func NewSessionTokenRepository(db *gorm.DB) *SessionTokenRepository {
 }
 
 // Save persists a session token record (upsert: insert or update).
-func (r *SessionTokenRepository) Save(ctx context.Context, token *domain.SessionToken) error {
+func (r *SessionTokenRepository) Save(ctx context.Context, token *domaintoken.SessionToken) error {
 	record := sessionTokenRecord{
 		ID:               token.ID(),
 		Version:          1,
@@ -118,7 +119,7 @@ func (r *SessionTokenRepository) Save(ctx context.Context, token *domain.Session
 }
 
 // FindByTokenHash looks up a session token by its SHA256 hash.
-func (r *SessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domain.SessionToken, error) {
+func (r *SessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error) {
 	record, err := findRecordByHash[sessionTokenRecord](ctx, r.db, hash, "session token")
 	if err != nil {
 		return nil, err

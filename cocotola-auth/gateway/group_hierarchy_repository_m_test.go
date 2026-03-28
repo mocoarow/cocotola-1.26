@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -22,11 +22,11 @@ func Test_GroupHierarchyRepository_Save_shouldInsertEdges_whenEdgesExist(t *test
 	orgID := setupOrganization(ctx, t, tx, "hierarchy-save-org")
 	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-save-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
-	edges := []domain.HierarchyEdge{
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
+	edges := []domaingroup.HierarchyEdge{
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
 	}
-	hierarchy, err := domain.NewGroupHierarchy(orgID, edges)
+	hierarchy, err := domaingroup.NewHierarchy(orgID, edges)
 	require.NoError(t, err)
 
 	// when
@@ -45,11 +45,11 @@ func Test_GroupHierarchyRepository_FindByOrganizationID_shouldReturnHierarchy_wh
 	orgID := setupOrganization(ctx, t, tx, "hierarchy-find-org")
 	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-find-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
-	edges := []domain.HierarchyEdge{
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
+	edges := []domaingroup.HierarchyEdge{
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
 	}
-	hierarchy, err := domain.NewGroupHierarchy(orgID, edges)
+	hierarchy, err := domaingroup.NewHierarchy(orgID, edges)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, hierarchy))
 
@@ -90,19 +90,19 @@ func Test_GroupHierarchyRepository_Save_shouldReplaceEdges_whenCalledTwice(t *te
 	groupIDs := setupGroups(ctx, t, tx, orgID, "hierarchy-replace-org", 3)
 	repo := gateway.NewGroupHierarchyRepository(tx)
 
-	edges1 := []domain.HierarchyEdge{
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
-		domain.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
+	edges1 := []domaingroup.HierarchyEdge{
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[1]),
+		domaingroup.ReconstructHierarchyEdge(groupIDs[0], groupIDs[2]),
 	}
-	h1, err := domain.NewGroupHierarchy(orgID, edges1)
+	h1, err := domaingroup.NewHierarchy(orgID, edges1)
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, h1))
 
 	// when: save with only one edge
-	edges2 := []domain.HierarchyEdge{
-		domain.ReconstructHierarchyEdge(groupIDs[1], groupIDs[2]),
+	edges2 := []domaingroup.HierarchyEdge{
+		domaingroup.ReconstructHierarchyEdge(groupIDs[1], groupIDs[2]),
 	}
-	h2, err := domain.NewGroupHierarchy(orgID, edges2)
+	h2, err := domaingroup.NewHierarchy(orgID, edges2)
 	require.NoError(t, err)
 	err = repo.Save(ctx, h2)
 
