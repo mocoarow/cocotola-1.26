@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 )
@@ -22,7 +23,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	jti := "access-token-id"
 
 	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domain.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)
@@ -59,7 +60,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	userID := 1
 
 	userInfo, _ := authservice.NewUserInfo(userID, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domain.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)
@@ -72,7 +73,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	repoMock.On("FindByID", mock.Anything, jti).Return(accessToken, nil)
 
 	whitelistRepoMock := NewMockWhitelistRepository(t)
-	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domain.WhitelistEntry{
+	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domaintoken.WhitelistEntry{
 		{ID: jti, CreatedAt: now},
 	}, nil)
 
@@ -101,7 +102,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnErrTokenRevok
 	jti := "access-token-id"
 
 	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domain.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), &revokedAt)
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), &revokedAt)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)
@@ -135,7 +136,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnErrSessionExp
 	jti := "access-token-id"
 
 	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domain.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-2*time.Hour), now.Add(-1*time.Hour), nil)
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-2*time.Hour), now.Add(-1*time.Hour), nil)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)

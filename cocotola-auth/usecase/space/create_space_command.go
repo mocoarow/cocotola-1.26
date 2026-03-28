@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 	spaceservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space"
 )
 
@@ -23,7 +25,7 @@ type eventPublisher interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CreateSpaceCommand creates a new space within an organization.
@@ -56,7 +58,7 @@ func (c *CreateSpaceCommand) CreateSpace(ctx context.Context, input *spaceservic
 		return nil, fmt.Errorf("find organization: %w", err)
 	}
 
-	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionCreateSpace(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionCreateSpace(), domainrbac.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
@@ -64,14 +66,14 @@ func (c *CreateSpaceCommand) CreateSpace(ctx context.Context, input *spaceservic
 		return nil, domain.ErrForbidden
 	}
 
-	st, err := domain.NewSpaceType(input.SpaceType)
+	st, err := domainspace.NewType(input.SpaceType)
 	if err != nil {
 		return nil, fmt.Errorf("new space type: %w", err)
 	}
 
 	var keyName string
 	if st.IsPublic() {
-		keyName = domain.PublicSpaceKeyName(input.OrganizationName)
+		keyName = domainspace.PublicSpaceKeyName(input.OrganizationName)
 	} else {
 		return nil, errors.New("private spaces must be created via event handler")
 	}

@@ -47,7 +47,7 @@ func (h *ActiveUserListHandler) Handle(ctx context.Context, event domain.Event) 
 
 	return handleActiveListEvent[domain.ActiveUserList](
 		ctx, h.orgRepo, h.activeUserRepo,
-		e.OrganizationID, e.AppUserID,
+		e.OrganizationID(), e.AppUserID(),
 		func(org *domain.Organization) int { return org.MaxActiveUsers() },
 		"user", h.logger,
 	)

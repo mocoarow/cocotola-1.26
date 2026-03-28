@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
 type userNGroupRecord struct {
@@ -32,7 +32,7 @@ func NewGroupUsersRepository(db *gorm.DB) *GroupUsersRepository {
 }
 
 // FindByGroupID returns the group users aggregate for the given group.
-func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (*domain.GroupUsers, error) {
+func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (*domaingroup.Users, error) {
 	var records []userNGroupRecord
 	if err := r.db.WithContext(ctx).Where("group_id = ?", groupID).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find group users by group id: %w", err)
@@ -43,7 +43,7 @@ func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (
 		userIDs[i] = records[i].UserID
 	}
 
-	gu, err := domain.NewGroupUsers(groupID, userIDs)
+	gu, err := domaingroup.NewUsers(groupID, userIDs)
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct group users: %w", err)
 	}
@@ -51,7 +51,7 @@ func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (
 }
 
 // Save persists the group users aggregate by replacing all entries for the group.
-func (r *GroupUsersRepository) Save(ctx context.Context, gu *domain.GroupUsers) error {
+func (r *GroupUsersRepository) Save(ctx context.Context, gu *domaingroup.Users) error {
 	userIDs := gu.UserIDs()
 	records := make([]userNGroupRecord, len(userIDs))
 	for i, userID := range userIDs {

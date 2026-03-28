@@ -8,6 +8,8 @@ import (
 	"context"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -39,23 +41,23 @@ func (_m *mockappUserFinder) EXPECT() *mockappUserFinder_Expecter {
 }
 
 // FindByID provides a mock function for the type mockappUserFinder
-func (_mock *mockappUserFinder) FindByID(ctx context.Context, id int) (*domain.AppUser, error) {
+func (_mock *mockappUserFinder) FindByID(ctx context.Context, id int) (*domainuser.AppUser, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
 	}
 
-	var r0 *domain.AppUser
+	var r0 *domainuser.AppUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (*domain.AppUser, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) (*domainuser.AppUser, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) *domain.AppUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) *domainuser.AppUser); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domain.AppUser)
+			r0 = ret.Get(0).(*domainuser.AppUser)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
@@ -96,12 +98,12 @@ func (_c *mockappUserFinder_FindByID_Call) Run(run func(ctx context.Context, id 
 	return _c
 }
 
-func (_c *mockappUserFinder_FindByID_Call) Return(appUser *domain.AppUser, err error) *mockappUserFinder_FindByID_Call {
+func (_c *mockappUserFinder_FindByID_Call) Return(appUser *domainuser.AppUser, err error) *mockappUserFinder_FindByID_Call {
 	_c.Call.Return(appUser, err)
 	return _c
 }
 
-func (_c *mockappUserFinder_FindByID_Call) RunAndReturn(run func(ctx context.Context, id int) (*domain.AppUser, error)) *mockappUserFinder_FindByID_Call {
+func (_c *mockappUserFinder_FindByID_Call) RunAndReturn(run func(ctx context.Context, id int) (*domainuser.AppUser, error)) *mockappUserFinder_FindByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -134,7 +136,7 @@ func (_m *mockappUserSaver) EXPECT() *mockappUserSaver_Expecter {
 }
 
 // Save provides a mock function for the type mockappUserSaver
-func (_mock *mockappUserSaver) Save(ctx context.Context, user *domain.AppUser) error {
+func (_mock *mockappUserSaver) Save(ctx context.Context, user *domainuser.AppUser) error {
 	ret := _mock.Called(ctx, user)
 
 	if len(ret) == 0 {
@@ -142,7 +144,7 @@ func (_mock *mockappUserSaver) Save(ctx context.Context, user *domain.AppUser) e
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domain.AppUser) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *domainuser.AppUser) error); ok {
 		r0 = returnFunc(ctx, user)
 	} else {
 		r0 = ret.Error(0)
@@ -157,20 +159,20 @@ type mockappUserSaver_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - user *domain.AppUser
+//   - user *domainuser.AppUser
 func (_e *mockappUserSaver_Expecter) Save(ctx interface{}, user interface{}) *mockappUserSaver_Save_Call {
 	return &mockappUserSaver_Save_Call{Call: _e.mock.On("Save", ctx, user)}
 }
 
-func (_c *mockappUserSaver_Save_Call) Run(run func(ctx context.Context, user *domain.AppUser)) *mockappUserSaver_Save_Call {
+func (_c *mockappUserSaver_Save_Call) Run(run func(ctx context.Context, user *domainuser.AppUser)) *mockappUserSaver_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domain.AppUser
+		var arg1 *domainuser.AppUser
 		if args[1] != nil {
-			arg1 = args[1].(*domain.AppUser)
+			arg1 = args[1].(*domainuser.AppUser)
 		}
 		run(
 			arg0,
@@ -185,7 +187,7 @@ func (_c *mockappUserSaver_Save_Call) Return(err error) *mockappUserSaver_Save_C
 	return _c
 }
 
-func (_c *mockappUserSaver_Save_Call) RunAndReturn(run func(ctx context.Context, user *domain.AppUser) error) *mockappUserSaver_Save_Call {
+func (_c *mockappUserSaver_Save_Call) RunAndReturn(run func(ctx context.Context, user *domainuser.AppUser) error) *mockappUserSaver_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -629,7 +631,7 @@ func (_m *mockauthorizationChecker) EXPECT() *mockauthorizationChecker_Expecter 
 }
 
 // IsAllowed provides a mock function for the type mockauthorizationChecker
-func (_mock *mockauthorizationChecker) IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource) (bool, error) {
+func (_mock *mockauthorizationChecker) IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error) {
 	ret := _mock.Called(ctx, organizationID, operatorID, action, resource)
 
 	if len(ret) == 0 {
@@ -638,15 +640,15 @@ func (_mock *mockauthorizationChecker) IsAllowed(ctx context.Context, organizati
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, domain.RBACAction, domain.RBACResource) (bool, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, domainrbac.Action, domainrbac.Resource) (bool, error)); ok {
 		return returnFunc(ctx, organizationID, operatorID, action, resource)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, domain.RBACAction, domain.RBACResource) bool); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, domainrbac.Action, domainrbac.Resource) bool); ok {
 		r0 = returnFunc(ctx, organizationID, operatorID, action, resource)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, domain.RBACAction, domain.RBACResource) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, domainrbac.Action, domainrbac.Resource) error); ok {
 		r1 = returnFunc(ctx, organizationID, operatorID, action, resource)
 	} else {
 		r1 = ret.Error(1)
@@ -663,13 +665,13 @@ type mockauthorizationChecker_IsAllowed_Call struct {
 //   - ctx context.Context
 //   - organizationID int
 //   - operatorID int
-//   - action domain.RBACAction
-//   - resource domain.RBACResource
+//   - action domainrbac.Action
+//   - resource domainrbac.Resource
 func (_e *mockauthorizationChecker_Expecter) IsAllowed(ctx interface{}, organizationID interface{}, operatorID interface{}, action interface{}, resource interface{}) *mockauthorizationChecker_IsAllowed_Call {
 	return &mockauthorizationChecker_IsAllowed_Call{Call: _e.mock.On("IsAllowed", ctx, organizationID, operatorID, action, resource)}
 }
 
-func (_c *mockauthorizationChecker_IsAllowed_Call) Run(run func(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource)) *mockauthorizationChecker_IsAllowed_Call {
+func (_c *mockauthorizationChecker_IsAllowed_Call) Run(run func(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource)) *mockauthorizationChecker_IsAllowed_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -683,13 +685,13 @@ func (_c *mockauthorizationChecker_IsAllowed_Call) Run(run func(ctx context.Cont
 		if args[2] != nil {
 			arg2 = args[2].(int)
 		}
-		var arg3 domain.RBACAction
+		var arg3 domainrbac.Action
 		if args[3] != nil {
-			arg3 = args[3].(domain.RBACAction)
+			arg3 = args[3].(domainrbac.Action)
 		}
-		var arg4 domain.RBACResource
+		var arg4 domainrbac.Resource
 		if args[4] != nil {
-			arg4 = args[4].(domain.RBACResource)
+			arg4 = args[4].(domainrbac.Resource)
 		}
 		run(
 			arg0,
@@ -707,7 +709,7 @@ func (_c *mockauthorizationChecker_IsAllowed_Call) Return(b bool, err error) *mo
 	return _c
 }
 
-func (_c *mockauthorizationChecker_IsAllowed_Call) RunAndReturn(run func(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource) (bool, error)) *mockauthorizationChecker_IsAllowed_Call {
+func (_c *mockauthorizationChecker_IsAllowed_Call) RunAndReturn(run func(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)) *mockauthorizationChecker_IsAllowed_Call {
 	_c.Call.Return(run)
 	return _c
 }

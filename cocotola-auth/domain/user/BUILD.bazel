@@ -1,0 +1,28 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "user",
+    srcs = [
+        "app_user.go",
+        "guest.go",
+        "password_hasher.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
+)
+
+smart_go_test(
+    name = "user_test",
+    srcs = [
+        "app_user_s_test.go",
+        "password_hasher_s_test.go",
+    ],
+    deps = [
+        ":user",
+        "//cocotola-auth/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

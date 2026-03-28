@@ -11,7 +11,11 @@ go_library(
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event",
     visibility = ["//visibility:public"],
-    deps = ["//cocotola-auth/domain"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
+    ],
 )
 
 smart_go_test(
@@ -24,6 +28,8 @@ smart_go_test(
     deps = [
         ":event",
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
     ],

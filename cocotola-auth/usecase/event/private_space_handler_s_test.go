@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
 )
 
@@ -25,13 +27,13 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 
 	spaceRepoMock := newMockspaceCreator(t)
 	spaceRepoMock.On("Create", mock.Anything, orgID, appUserID,
-		domain.PrivateSpaceKeyName(loginID), "Private(user@example.com)",
-		domain.SpaceTypePrivate().Value(), appUserID,
+		domainspace.PrivateSpaceKeyName(loginID), "Private(user@example.com)",
+		domainspace.TypePrivate().Value(), appUserID,
 	).Return(expectedSpaceID, nil)
 
 	policyRepoMock := newMockuserPolicyAdder(t)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+		domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(expectedSpaceID), domainrbac.EffectAllow(),
 	).Return(nil)
 
 	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
@@ -43,11 +45,11 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 	// then
 	require.NoError(t, err)
 	spaceRepoMock.AssertCalled(t, "Create", mock.Anything, orgID, appUserID,
-		domain.PrivateSpaceKeyName(loginID), "Private(user@example.com)",
-		domain.SpaceTypePrivate().Value(), appUserID,
+		domainspace.PrivateSpaceKeyName(loginID), "Private(user@example.com)",
+		domainspace.TypePrivate().Value(), appUserID,
 	)
 	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+		domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(expectedSpaceID), domainrbac.EffectAllow(),
 	)
 }
 
@@ -95,7 +97,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddPolicyFails(t *tes
 
 	policyRepoMock := newMockuserPolicyAdder(t)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domain.ActionViewSpace(), domain.ResourceSpace(expectedSpaceID), domain.EffectAllow(),
+		domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(expectedSpaceID), domainrbac.EffectAllow(),
 	).Return(addErr)
 
 	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())

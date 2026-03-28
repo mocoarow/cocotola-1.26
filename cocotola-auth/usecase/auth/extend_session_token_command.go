@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -34,7 +35,7 @@ func NewExtendSessionTokenCommand(
 
 // ExtendSessionToken extends the expiry of a session token (sliding window).
 func (c *ExtendSessionTokenCommand) ExtendSessionToken(ctx context.Context, input *authservice.ExtendSessionTokenInput) error {
-	hash := string(domain.HashToken(input.RawToken))
+	hash := string(domaintoken.HashToken(input.RawToken))
 	now := c.config.Now()
 
 	token, ok := c.cache.GetSessionToken(hash)
@@ -50,7 +51,10 @@ func (c *ExtendSessionTokenCommand) ExtendSessionToken(ctx context.Context, inpu
 		if err != nil {
 			return fmt.Errorf("find session token whitelist: %w", err)
 		}
-		whitelist := domain.NewTokenWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
+		whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
+		if err != nil {
+			return fmt.Errorf("new session token whitelist: %w", err)
+		}
 		if !whitelist.ContainsToken(token.ID()) {
 			return domain.ErrTokenNotFound
 		}

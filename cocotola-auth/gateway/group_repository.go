@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
 type groupRecord struct {
@@ -27,8 +28,8 @@ func (groupRecord) TableName() string {
 	return "group"
 }
 
-func toGroupDomain(r *groupRecord) *domain.Group {
-	return domain.ReconstructGroup(r.ID, r.OrganizationID, r.Name, r.Enabled)
+func toGroupDomain(r *groupRecord) *domaingroup.Group {
+	return domaingroup.ReconstructGroup(r.ID, r.OrganizationID, r.Name, r.Enabled)
 }
 
 // GroupRepository implements group persistence using MySQL via GORM.
@@ -42,7 +43,7 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 }
 
 // Save persists a group record (upsert: insert or update).
-func (r *GroupRepository) Save(ctx context.Context, group *domain.Group) error {
+func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) error {
 	record := groupRecord{
 		ID:             group.ID(),
 		Version:        0,
@@ -80,7 +81,7 @@ func (r *GroupRepository) Create(ctx context.Context, organizationID int, name s
 }
 
 // FindByID looks up a group by its ID.
-func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domain.Group, error) {
+func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domaingroup.Group, error) {
 	var record groupRecord
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -92,7 +93,7 @@ func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domain.Group, 
 }
 
 // FindByName looks up a group by organization ID and name.
-func (r *GroupRepository) FindByName(ctx context.Context, organizationID int, name string) (*domain.Group, error) {
+func (r *GroupRepository) FindByName(ctx context.Context, organizationID int, name string) (*domaingroup.Group, error) {
 	var record groupRecord
 	if err := r.db.WithContext(ctx).
 		Where("organization_id = ? AND name = ?", organizationID, name).

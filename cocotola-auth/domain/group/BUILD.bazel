@@ -1,0 +1,35 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "group",
+    srcs = [
+        "group.go",
+        "group_child_groups.go",
+        "group_hierarchy.go",
+        "group_users.go",
+        "member_set_base.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/internal/idset",
+    ],
+)
+
+smart_go_test(
+    name = "group_test",
+    srcs = [
+        "group_child_groups_s_test.go",
+        "group_hierarchy_s_test.go",
+        "group_s_test.go",
+        "group_users_s_test.go",
+    ],
+    deps = [
+        ":group",
+        "//cocotola-auth/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

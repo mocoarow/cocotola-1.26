@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -31,7 +33,7 @@ func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgNa
 
 	for i := range count {
 		loginID := domain.LoginID(fmt.Sprintf("%s-user-%d", orgName, i))
-		user := domain.ReconstructAppUser(0, orgID, loginID, "", true)
+		user := domainuser.ReconstructAppUser(0, orgID, loginID, "", true)
 		require.NoError(t, userRepo.Save(ctx, user))
 		var userRec gateway.AppUserRecordForTest
 		require.NoError(t, tx.Where("login_id = ?", string(loginID)).First(&userRec).Error)
@@ -47,7 +49,7 @@ func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgN
 
 	for i := range count {
 		name := fmt.Sprintf("%s-group-%d", orgName, i)
-		group := domain.ReconstructGroup(0, orgID, name, true)
+		group := domaingroup.ReconstructGroup(0, orgID, name, true)
 		require.NoError(t, groupRepo.Save(ctx, group))
 		var groupRec gateway.GroupRecordForTest
 		require.NoError(t, tx.Table("`group`").Where("name = ? AND organization_id = ?", name, orgID).First(&groupRec).Error)

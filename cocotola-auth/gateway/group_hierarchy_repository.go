@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
 type groupNGroupRecord struct {
@@ -33,18 +33,18 @@ func NewGroupHierarchyRepository(db *gorm.DB) *GroupHierarchyRepository {
 }
 
 // FindByOrganizationID returns the group hierarchy for the given organization.
-func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, organizationID int) (*domain.GroupHierarchy, error) {
+func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, organizationID int) (*domaingroup.Hierarchy, error) {
 	var records []groupNGroupRecord
 	if err := r.db.WithContext(ctx).Where("organization_id = ?", organizationID).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find group hierarchy by organization id: %w", err)
 	}
 
-	edges := make([]domain.HierarchyEdge, len(records))
+	edges := make([]domaingroup.HierarchyEdge, len(records))
 	for i := range records {
-		edges[i] = domain.ReconstructHierarchyEdge(records[i].ParentGroupID, records[i].ChildGroupID)
+		edges[i] = domaingroup.ReconstructHierarchyEdge(records[i].ParentGroupID, records[i].ChildGroupID)
 	}
 
-	hierarchy, err := domain.NewGroupHierarchy(organizationID, edges)
+	hierarchy, err := domaingroup.NewHierarchy(organizationID, edges)
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct group hierarchy: %w", err)
 	}
@@ -52,7 +52,7 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 }
 
 // Save persists the group hierarchy by replacing all entries for the organization.
-func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domain.GroupHierarchy) error {
+func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domaingroup.Hierarchy) error {
 	edges := hierarchy.Edges()
 	records := make([]groupNGroupRecord, len(edges))
 	for i, edge := range edges {

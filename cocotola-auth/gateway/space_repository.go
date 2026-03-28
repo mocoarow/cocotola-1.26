@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 )
 
 type spaceRecord struct {
@@ -30,12 +31,12 @@ func (spaceRecord) TableName() string {
 	return "space"
 }
 
-func toSpaceDomain(r *spaceRecord) (*domain.Space, error) {
-	st, err := domain.NewSpaceType(r.SpaceType)
+func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
+	st, err := domainspace.NewType(r.SpaceType)
 	if err != nil {
 		return nil, fmt.Errorf("invalid space type %q: %w", r.SpaceType, err)
 	}
-	return domain.ReconstructSpace(r.ID, r.OrganizationID, r.OwnerID, r.KeyName, r.Name, st, r.Deleted), nil
+	return domainspace.ReconstructSpace(r.ID, r.OrganizationID, r.OwnerID, r.KeyName, r.Name, st, r.Deleted), nil
 }
 
 // SpaceRepository implements space persistence using MySQL via GORM.
@@ -71,7 +72,7 @@ func (r *SpaceRepository) Create(ctx context.Context, organizationID int, ownerI
 }
 
 // FindByID looks up a space by its ID.
-func (r *SpaceRepository) FindByID(ctx context.Context, id int) (*domain.Space, error) {
+func (r *SpaceRepository) FindByID(ctx context.Context, id int) (*domainspace.Space, error) {
 	var record spaceRecord
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -87,7 +88,7 @@ func (r *SpaceRepository) FindByID(ctx context.Context, id int) (*domain.Space, 
 }
 
 // FindByKeyName looks up a space by organization ID and key name.
-func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int, keyName string) (*domain.Space, error) {
+func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int, keyName string) (*domainspace.Space, error) {
 	var record spaceRecord
 	if err := r.db.WithContext(ctx).
 		Where("organization_id = ? AND key_name = ?", organizationID, keyName).
@@ -105,14 +106,14 @@ func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int,
 }
 
 // FindByOrganizationID returns all spaces for the given organization.
-func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID int) ([]domain.Space, error) {
+func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID int) ([]domainspace.Space, error) {
 	var records []spaceRecord
 	if err := r.db.WithContext(ctx).
 		Where("organization_id = ? AND deleted = 0", organizationID).
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find spaces by organization id: %w", err)
 	}
-	spaces := make([]domain.Space, len(records))
+	spaces := make([]domainspace.Space, len(records))
 	for i := range records {
 		space, err := toSpaceDomain(&records[i])
 		if err != nil {
@@ -124,7 +125,7 @@ func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organization
 }
 
 // Save persists a space record (upsert: insert or update).
-func (r *SpaceRepository) Save(ctx context.Context, space *domain.Space) error {
+func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
 	record := spaceRecord{
 		ID:             space.ID(),
 		Version:        0,

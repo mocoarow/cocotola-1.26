@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	groupservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group"
 )
 
@@ -22,7 +23,7 @@ type eventPublisher interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.RBACAction, resource domain.RBACResource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CreateGroupCommand creates a new group within an organization.
@@ -57,7 +58,7 @@ func (c *CreateGroupCommand) CreateGroup(ctx context.Context, input *groupservic
 	}
 
 	// Authorization check.
-	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domain.ActionCreateGroup(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionCreateGroup(), domainrbac.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

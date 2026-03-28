@@ -57,8 +57,8 @@ func Test_EventBus_shouldDispatchEvents_whenHandlersRegistered(t *testing.T) {
 	got, ok := received[0].(domain.AppUserCreated)
 	mu.Unlock()
 	require.True(t, ok)
-	assert.Equal(t, 42, got.AppUserID)
-	assert.Equal(t, 1, got.OrganizationID)
+	assert.Equal(t, 42, got.AppUserID())
+	assert.Equal(t, 1, got.OrganizationID())
 
 	cancel()
 	wg.Wait()

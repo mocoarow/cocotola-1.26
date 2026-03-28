@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 type revokeSessionTokenCache interface {
-	GetSessionToken(hash string) (*domain.SessionToken, bool)
+	GetSessionToken(hash string) (*domaintoken.SessionToken, bool)
 	DeleteSessionToken(hash string)
 }
 
@@ -38,7 +39,7 @@ func NewRevokeSessionTokenCommand(
 
 // RevokeSessionToken revokes a session token.
 func (c *RevokeSessionTokenCommand) RevokeSessionToken(ctx context.Context, input *authservice.RevokeSessionTokenInput) error {
-	hash := string(domain.HashToken(input.RawToken))
+	hash := string(domaintoken.HashToken(input.RawToken))
 
 	token, ok := c.cache.GetSessionToken(hash)
 	if !ok {
@@ -68,7 +69,10 @@ func (c *RevokeSessionTokenCommand) RevokeSessionToken(ctx context.Context, inpu
 		return fmt.Errorf("find session token whitelist: %w", err)
 	}
 
-	whitelist := domain.NewTokenWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
+	whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
+	if err != nil {
+		return fmt.Errorf("new session token whitelist: %w", err)
+	}
 	whitelist.Remove([]string{token.ID()})
 
 	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {

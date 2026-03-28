@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
 type accessTokenRecord struct {
@@ -28,8 +29,8 @@ func (accessTokenRecord) TableName() string {
 	return "access_token"
 }
 
-func toAccessTokenDomain(r *accessTokenRecord) *domain.AccessToken {
-	return domain.ReconstructAccessToken(r.ID, r.RefreshTokenID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toAccessTokenDomain(r *accessTokenRecord) *domaintoken.AccessToken {
+	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // AccessTokenRepository implements access token persistence using MySQL via GORM.
@@ -43,7 +44,7 @@ func NewAccessTokenRepository(db *gorm.DB) *AccessTokenRepository {
 }
 
 // Save persists an access token record (upsert: insert or update).
-func (r *AccessTokenRepository) Save(ctx context.Context, token *domain.AccessToken) error {
+func (r *AccessTokenRepository) Save(ctx context.Context, token *domaintoken.AccessToken) error {
 	record := accessTokenRecord{
 		ID:               token.ID(),
 		Version:          1,
@@ -63,7 +64,7 @@ func (r *AccessTokenRepository) Save(ctx context.Context, token *domain.AccessTo
 }
 
 // FindByID looks up an access token by its ID (= JWT JTI).
-func (r *AccessTokenRepository) FindByID(ctx context.Context, id string) (*domain.AccessToken, error) {
+func (r *AccessTokenRepository) FindByID(ctx context.Context, id string) (*domaintoken.AccessToken, error) {
 	var record accessTokenRecord
 	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -75,14 +76,14 @@ func (r *AccessTokenRepository) FindByID(ctx context.Context, id string) (*domai
 }
 
 // FindByRefreshTokenID returns all access tokens that belong to the given refresh token.
-func (r *AccessTokenRepository) FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]domain.AccessToken, error) {
+func (r *AccessTokenRepository) FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]domaintoken.AccessToken, error) {
 	var records []accessTokenRecord
 	if err := r.db.WithContext(ctx).
 		Where("refresh_token_id = ?", refreshTokenID).
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find access tokens by refresh token id: %w", err)
 	}
-	tokens := make([]domain.AccessToken, len(records))
+	tokens := make([]domaintoken.AccessToken, len(records))
 	for i := range records {
 		tokens[i] = *toAccessTokenDomain(&records[i])
 	}

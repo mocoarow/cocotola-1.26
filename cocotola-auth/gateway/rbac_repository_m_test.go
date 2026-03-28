@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -23,16 +23,16 @@ func randOrgID(t *testing.T) int {
 	return int(n.Int64()) + 1
 }
 
-func mustGroup(t *testing.T, name string) domain.RBACGroup {
+func mustGroup(t *testing.T, name string) domainrbac.Group {
 	t.Helper()
-	g, err := domain.NewRBACGroup(name)
+	g, err := domainrbac.NewGroup(name)
 	require.NoError(t, err)
 	return g
 }
 
-func mustResource(t *testing.T, name string) domain.RBACResource {
+func mustResource(t *testing.T, name string) domainrbac.Resource {
 	t.Helper()
-	r, err := domain.NewRBACResource(name)
+	r, err := domainrbac.NewResource(name)
 	require.NoError(t, err)
 	return r
 }
@@ -53,24 +53,24 @@ func Test_RBACRepository_AddPolicy_shouldEnforceDirectPolicy_whenUserHasNoGroup(
 	data2 := mustResource(t, fmt.Sprintf("org:%d,data:2", orgID))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, aliceGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, aliceGroup, domain.ActionViewUser(), data1, domain.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, aliceGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
 
 	bobGroup := mustGroup(t, fmt.Sprintf("org:%d,bob_group", orgID))
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, bobID, bobGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, bobGroup, domain.ActionCreateUser(), data2, domain.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, bobGroup, domainrbac.ActionCreateUser(), data2, domainrbac.EffectAllow()))
 
 	tests := []struct {
 		userID   int
-		action   domain.RBACAction
-		resource domain.RBACResource
+		action   domainrbac.Action
+		resource domainrbac.Resource
 		want     bool
 	}{
-		{userID: aliceID, action: domain.ActionViewUser(), resource: data1, want: true},
-		{userID: aliceID, action: domain.ActionCreateUser(), resource: data1, want: false},
-		{userID: aliceID, action: domain.ActionViewUser(), resource: data2, want: false},
-		{userID: bobID, action: domain.ActionCreateUser(), resource: data2, want: true},
-		{userID: bobID, action: domain.ActionViewUser(), resource: data2, want: false},
-		{userID: bobID, action: domain.ActionCreateUser(), resource: data1, want: false},
+		{userID: aliceID, action: domainrbac.ActionViewUser(), resource: data1, want: true},
+		{userID: aliceID, action: domainrbac.ActionCreateUser(), resource: data1, want: false},
+		{userID: aliceID, action: domainrbac.ActionViewUser(), resource: data2, want: false},
+		{userID: bobID, action: domainrbac.ActionCreateUser(), resource: data2, want: true},
+		{userID: bobID, action: domainrbac.ActionViewUser(), resource: data2, want: false},
+		{userID: bobID, action: domainrbac.ActionCreateUser(), resource: data1, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("user:%d,%s,%s,want:%v", tt.userID, tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
@@ -101,23 +101,23 @@ func Test_RBACRepository_AssignGroupToUser_shouldInheritPolicies_whenGroupHasPol
 	data1 := mustResource(t, fmt.Sprintf("org:%d,data:1", orgID))
 	data2 := mustResource(t, fmt.Sprintf("org:%d,data:2", orgID))
 
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domain.ActionViewUser(), data1, domain.EffectAllow()))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, writerGroup, domain.ActionCreateUser(), data2, domain.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, writerGroup, domainrbac.ActionCreateUser(), data2, domainrbac.EffectAllow()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, bobID, writerGroup))
 
 	tests := []struct {
 		userID   int
-		action   domain.RBACAction
-		resource domain.RBACResource
+		action   domainrbac.Action
+		resource domainrbac.Resource
 		want     bool
 	}{
-		{userID: aliceID, action: domain.ActionViewUser(), resource: data1, want: true},
-		{userID: aliceID, action: domain.ActionCreateUser(), resource: data1, want: false},
-		{userID: aliceID, action: domain.ActionViewUser(), resource: data2, want: false},
-		{userID: bobID, action: domain.ActionCreateUser(), resource: data2, want: true},
-		{userID: bobID, action: domain.ActionViewUser(), resource: data1, want: false},
+		{userID: aliceID, action: domainrbac.ActionViewUser(), resource: data1, want: true},
+		{userID: aliceID, action: domainrbac.ActionCreateUser(), resource: data1, want: false},
+		{userID: aliceID, action: domainrbac.ActionViewUser(), resource: data2, want: false},
+		{userID: bobID, action: domainrbac.ActionCreateUser(), resource: data2, want: true},
+		{userID: bobID, action: domainrbac.ActionViewUser(), resource: data1, want: false},
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("user:%d,%s,%s,want:%v", tt.userID, tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
@@ -144,11 +144,11 @@ func Test_RBACRepository_AddObjectGroupingPolicy_shouldInheritAccess_whenResourc
 	child1 := mustResource(t, fmt.Sprintf("org:%d,child:1", orgID))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domain.ActionViewUser(), data1, domain.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
 	require.NoError(t, rbacRepo.AddObjectGroupingPolicy(ctx, orgID, child1, data1))
 
 	tests := []struct {
-		resource domain.RBACResource
+		resource domainrbac.Resource
 		want     bool
 	}{
 		{resource: data1, want: true},
@@ -157,7 +157,7 @@ func Test_RBACRepository_AddObjectGroupingPolicy_shouldInheritAccess_whenResourc
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s,want:%v", tt.resource.Value(), tt.want), func(t *testing.T) {
 			t.Parallel()
-			ok, err := rbacRepo.Enforce(orgID, aliceID, domain.ActionViewUser(), tt.resource)
+			ok, err := rbacRepo.Enforce(orgID, aliceID, domainrbac.ActionViewUser(), tt.resource)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, ok)
 		})
@@ -178,14 +178,14 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	aliceID := 100
 	readerGroup := mustGroup(t, fmt.Sprintf("org:%d,reader", orgID))
 
-	resources := make([]domain.RBACResource, 5)
+	resources := make([]domainrbac.Resource, 5)
 	for i := range 5 {
 		resources[i] = mustResource(t, fmt.Sprintf("org:%d,data:%d", orgID, i+1))
 	}
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domain.ActionViewUser(), resources[1], domain.EffectAllow()))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domain.ActionViewUser(), resources[3], domain.EffectDeny()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), resources[1], domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), resources[3], domainrbac.EffectDeny()))
 
 	// Build hierarchy: data:2 is child of data:1, data:3 of data:2, etc.
 	for i := 1; i < 5; i++ {
@@ -193,7 +193,7 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	}
 
 	tests := []struct {
-		resource domain.RBACResource
+		resource domainrbac.Resource
 		want     bool
 	}{
 		{resource: resources[0], want: false},
@@ -205,7 +205,7 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("%s,want:%v", tt.resource.Value(), tt.want), func(t *testing.T) {
 			t.Parallel()
-			ok, err := rbacRepo.Enforce(orgID, aliceID, domain.ActionViewUser(), tt.resource)
+			ok, err := rbacRepo.Enforce(orgID, aliceID, domainrbac.ActionViewUser(), tt.resource)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, ok)
 		})
@@ -225,11 +225,11 @@ func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnTrue_whenUserHasPermi
 	adminGroup := mustGroup(t, fmt.Sprintf("org:%d,admin", orgID))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, adminGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, adminGroup, domain.ActionCreateUser(), domain.ResourceAny(), domain.EffectAllow()))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, adminGroup, domain.ActionViewUser(), domain.ResourceAny(), domain.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, adminGroup, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, adminGroup, domainrbac.ActionViewUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
 
 	// when
-	ok, err := checker.IsAllowed(ctx, orgID, userID, domain.ActionCreateUser(), domain.ResourceAny())
+	ok, err := checker.IsAllowed(ctx, orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
 
 	// then
 	require.NoError(t, err)
@@ -248,7 +248,7 @@ func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnFalse_whenUserLacksPe
 	userID := 100
 
 	// when (no group assigned)
-	ok, err := checker.IsAllowed(ctx, orgID, userID, domain.ActionCreateUser(), domain.ResourceAny())
+	ok, err := checker.IsAllowed(ctx, orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
 
 	// then
 	require.NoError(t, err)

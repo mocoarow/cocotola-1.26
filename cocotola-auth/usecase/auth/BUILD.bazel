@@ -23,6 +23,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/token",
         "//cocotola-auth/service/auth",
         "@com_github_google_uuid//:uuid",
     ],
@@ -38,6 +39,7 @@ smart_go_test(
     deps = [
         ":auth",
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/token",
         "//cocotola-auth/service/auth",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",

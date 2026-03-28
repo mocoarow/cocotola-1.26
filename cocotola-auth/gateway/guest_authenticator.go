@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -24,7 +25,7 @@ func NewGuestAuthenticator(db *gorm.DB) *GuestAuthenticator {
 
 // Authenticate finds the guest user for the given organization and returns user info.
 func (a *GuestAuthenticator) Authenticate(ctx context.Context, organizationName string) (*authservice.UserInfo, error) {
-	loginID := domain.NewGuestLoginID(organizationName)
+	loginID := domainuser.NewGuestLoginID(organizationName)
 
 	var record userRecord
 	err := a.db.WithContext(ctx).

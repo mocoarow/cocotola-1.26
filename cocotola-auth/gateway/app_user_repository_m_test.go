@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -21,7 +22,7 @@ func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T)
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-save-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "testuser@example.com", "", true)
+	user := domainuser.ReconstructAppUser(0, orgID, "testuser@example.com", "", true)
 
 	// when
 	err := repo.Save(ctx, user)
@@ -38,7 +39,7 @@ func Test_AppUserRepository_FindByID_shouldReturnAppUser_whenUserExists(t *testi
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "findbyid@example.com", "", true)
+	user := domainuser.ReconstructAppUser(0, orgID, "findbyid@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
@@ -78,7 +79,7 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnAppUser_whenLoginIDExists(
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyloginid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "login@example.com", "", true)
+	user := domainuser.ReconstructAppUser(0, orgID, "login@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	// when
@@ -115,7 +116,7 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	hashedPw := "$2a$10$abcdefghij"
 
 	repo := gateway.NewAppUserRepository(tx)
-	user := domain.ReconstructAppUser(0, orgID, "pw-test@example.com", hashedPw, true)
+	user := domainuser.ReconstructAppUser(0, orgID, "pw-test@example.com", hashedPw, true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
@@ -123,7 +124,7 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 
 	// when
 	newHashedPw := "$2a$10$newhashedpw"
-	updated := domain.ReconstructAppUser(inserted.ID, orgID, "pw-test@example.com", newHashedPw, false)
+	updated := domainuser.ReconstructAppUser(inserted.ID, orgID, "pw-test@example.com", newHashedPw, false)
 	err := repo.Save(ctx, updated)
 
 	// then

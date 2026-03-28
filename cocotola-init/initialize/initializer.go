@@ -10,6 +10,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -84,7 +87,7 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 	return nil
 }
 
-func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domain.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
 	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, orgID, logger)
 	if err != nil {
 		return fmt.Errorf("find or create system owner: %w", err)
@@ -135,7 +138,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	return org, nil
 }
 
-func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domain.PasswordHasher, orgID int, loginID string, rawPassword string, logger *slog.Logger) (int, error) {
+func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, loginID string, rawPassword string, logger *slog.Logger) (int, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, loginID)
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
@@ -148,7 +151,7 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 		return 0, fmt.Errorf("find user by login id: %w", err)
 	}
 
-	hashedPassword, err := domain.HashPassword(rawPassword, hasher)
+	hashedPassword, err := domainuser.HashPassword(rawPassword, hasher)
 	if err != nil {
 		return 0, fmt.Errorf("hash password: %w", err)
 	}
@@ -166,7 +169,7 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 }
 
 func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID int, logger *slog.Logger) (int, error) {
-	guestLoginID := domain.NewGuestLoginID(organizationName)
+	guestLoginID := domainuser.NewGuestLoginID(organizationName)
 
 	user, err := repo.FindByLoginID(ctx, orgID, guestLoginID)
 	if err == nil {
@@ -194,7 +197,7 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 
 const systemOwnerLoginID = "__system_owner"
 
-func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domain.PasswordHasher, orgID int, logger *slog.Logger) (int, error) {
+func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, logger *slog.Logger) (int, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, systemOwnerLoginID)
 	if err == nil {
 		logger.InfoContext(ctx, "system owner user already exists",
@@ -209,7 +212,7 @@ func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepositor
 
 	// SystemOwner uses a random long password since it cannot login.
 	dummyPassword := "system_owner_no_login_00000000"
-	hashedPassword, err := domain.HashPassword(dummyPassword, hasher)
+	hashedPassword, err := domainuser.HashPassword(dummyPassword, hasher)
 	if err != nil {
 		return 0, fmt.Errorf("hash password: %w", err)
 	}
@@ -249,27 +252,27 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 }
 
 func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
-	adminGroup, err := domain.NewRBACGroup("admin")
+	adminGroup, err := domainrbac.NewGroup("admin")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
 	}
 
-	actions := []domain.RBACAction{
-		domain.ActionCreateUser(),
-		domain.ActionViewUser(),
-		domain.ActionDisableUser(),
-		domain.ActionChangePassword(),
-		domain.ActionCreateGroup(),
-		domain.ActionViewGroup(),
-		domain.ActionDisableGroup(),
-		domain.ActionAddUserToGroup(),
-		domain.ActionRemoveUserFromGroup(),
-		domain.ActionCreateSpace(),
-		domain.ActionViewSpace(),
+	actions := []domainrbac.Action{
+		domainrbac.ActionCreateUser(),
+		domainrbac.ActionViewUser(),
+		domainrbac.ActionDisableUser(),
+		domainrbac.ActionChangePassword(),
+		domainrbac.ActionCreateGroup(),
+		domainrbac.ActionViewGroup(),
+		domainrbac.ActionDisableGroup(),
+		domainrbac.ActionAddUserToGroup(),
+		domainrbac.ActionRemoveUserFromGroup(),
+		domainrbac.ActionCreateSpace(),
+		domainrbac.ActionViewSpace(),
 	}
 
 	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, adminGroup, action, domain.ResourceAny(), domain.EffectAllow()); err != nil {
+		if err := repo.AddPolicy(ctx, orgID, adminGroup, action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
 			return fmt.Errorf("add policy %s: %w", action.Value(), err)
 		}
 	}
@@ -282,28 +285,28 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 }
 
 func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
-	systemOwnerGroup, err := domain.NewRBACGroup("system_owner")
+	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
 	}
 
-	actions := []domain.RBACAction{
-		domain.ActionCreateUser(),
-		domain.ActionViewUser(),
-		domain.ActionDisableUser(),
-		domain.ActionChangePassword(),
-		domain.ActionCreateGroup(),
-		domain.ActionViewGroup(),
-		domain.ActionDisableGroup(),
-		domain.ActionAddUserToGroup(),
-		domain.ActionRemoveUserFromGroup(),
-		domain.ActionCreateOrganization(),
-		domain.ActionCreateSpace(),
-		domain.ActionViewSpace(),
+	actions := []domainrbac.Action{
+		domainrbac.ActionCreateUser(),
+		domainrbac.ActionViewUser(),
+		domainrbac.ActionDisableUser(),
+		domainrbac.ActionChangePassword(),
+		domainrbac.ActionCreateGroup(),
+		domainrbac.ActionViewGroup(),
+		domainrbac.ActionDisableGroup(),
+		domainrbac.ActionAddUserToGroup(),
+		domainrbac.ActionRemoveUserFromGroup(),
+		domainrbac.ActionCreateOrganization(),
+		domainrbac.ActionCreateSpace(),
+		domainrbac.ActionViewSpace(),
 	}
 
 	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, domain.ResourceAny(), domain.EffectAllow()); err != nil {
+		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
 			return fmt.Errorf("add system owner policy %s: %w", action.Value(), err)
 		}
 	}
@@ -316,7 +319,7 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 }
 
 func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
-	adminGroup, err := domain.NewRBACGroup("admin")
+	adminGroup, err := domainrbac.NewGroup("admin")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
 	}
@@ -333,7 +336,7 @@ func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID i
 }
 
 func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID int, systemOwnerID int, logger *slog.Logger) error {
-	keyName := domain.PublicSpaceKeyName(organizationName)
+	keyName := domainspace.PublicSpaceKeyName(organizationName)
 
 	_, err := repo.FindByKeyName(ctx, orgID, keyName)
 	if err == nil {
@@ -344,7 +347,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 		return fmt.Errorf("find public space by key name: %w", err)
 	}
 
-	spaceID, err := repo.Create(ctx, orgID, systemOwnerID, keyName, "Public", domain.SpaceTypePublic().Value(), systemOwnerID)
+	spaceID, err := repo.Create(ctx, orgID, systemOwnerID, keyName, "Public", domainspace.TypePublic().Value(), systemOwnerID)
 	if err != nil {
 		return fmt.Errorf("create public space: %w", err)
 	}
@@ -357,7 +360,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 }
 
 func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
-	systemOwnerGroup, err := domain.NewRBACGroup("system_owner")
+	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
 	}

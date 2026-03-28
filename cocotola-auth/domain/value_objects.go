@@ -6,16 +6,16 @@ import (
 	"fmt"
 )
 
-// tokenHashLength is the expected length of a SHA256 hex digest.
-const tokenHashLength = 64
+// TokenHashLength is the expected length of a SHA256 hex digest.
+const TokenHashLength = 64
 
 // TokenHash represents a SHA256 hex digest of a raw token.
 type TokenHash string
 
 // NewTokenHash creates a validated TokenHash.
 func NewTokenHash(hash string) (TokenHash, error) {
-	if len(hash) != tokenHashLength {
-		return "", fmt.Errorf("token hash must be %d characters, got %d", tokenHashLength, len(hash))
+	if len(hash) != TokenHashLength {
+		return "", fmt.Errorf("token hash must be %d characters, got %d", TokenHashLength, len(hash))
 	}
 	if _, err := hex.DecodeString(hash); err != nil {
 		return "", fmt.Errorf("token hash must be valid hex: %w", err)

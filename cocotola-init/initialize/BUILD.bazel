@@ -7,6 +7,9 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
+        "//cocotola-auth/domain/user",
         "//cocotola-auth/gateway",
         "@io_gorm_gorm//:gorm",
     ],
