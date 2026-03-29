@@ -9,12 +9,8 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	sloggorm "github.com/orandin/slog-gorm"
 	gormmysql "gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/plugin/opentelemetry/tracing"
-
-	"github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
 const mysqlMaxAllowedPacket = 64 << 20 // 64 MiB
@@ -52,53 +48,12 @@ func initDBMySQL(ctx context.Context, cfg DBConfig, logLevel slog.Level, appName
 		return nil, nil, fmt.Errorf("open mysql: %w", err)
 	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		return nil, nil, fmt.Errorf("get db: %w", err)
-	}
-
-	if err := sqlDB.PingContext(ctx); err != nil {
-		if closeErr := sqlDB.Close(); closeErr != nil {
-			slog.Error("close sqlDB after ping failure", slog.Any("error", closeErr))
-		}
-
-		return nil, nil, fmt.Errorf("ping: %w", err)
-	}
-
-	dbc := DBConnection{
-		DriverName: cfg.DriverName,
-		Dialect:    &DialectMySQL{},
-		DB:         db,
-	}
-	return &dbc, sqlDB, nil
+	return initDBDriver(ctx, cfg.DriverName, &DialectMySQL{}, db)
 }
 
 // OpenMySQLWithDSN opens a GORM MySQL connection using a raw DSN string.
 func OpenMySQLWithDSN(dsn string, logLevel slog.Level, appName string) (*gorm.DB, error) {
-	gormDialector := gormmysql.Open(dsn)
-
-	options := []sloggorm.Option{
-		sloggorm.WithHandler(slog.Default().With(slog.String(logging.LoggerNameKey, appName+"-gorm")).Handler()),
-	}
-	if logLevel == slog.LevelDebug {
-		options = append(options, sloggorm.WithTraceAll()) // trace all messages
-	}
-
-	gormConfig := gorm.Config{ //nolint:exhaustruct
-		Logger:  sloggorm.New(options...),
-		NowFunc: func() time.Time { return time.Now().UTC() },
-	}
-
-	db, err := gorm.Open(gormDialector, &gormConfig)
-	if err != nil {
-		return nil, fmt.Errorf("open mysql: %w", err)
-	}
-
-	if err := db.Use(tracing.NewPlugin()); err != nil {
-		return nil, fmt.Errorf("use tracing plugin: %w", err)
-	}
-
-	return db, nil
+	return openGormDB(gormmysql.Open(dsn), logLevel, appName)
 }
 
 // OpenMySQL opens a GORM MySQL connection using the given config.

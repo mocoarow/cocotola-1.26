@@ -32,7 +32,7 @@ func toGroupDomain(r *groupRecord) *domaingroup.Group {
 	return domaingroup.ReconstructGroup(r.ID, r.OrganizationID, r.Name, r.Enabled)
 }
 
-// GroupRepository implements group persistence using MySQL via GORM.
+// GroupRepository implements group persistence using GORM.
 type GroupRepository struct {
 	db *gorm.DB
 }

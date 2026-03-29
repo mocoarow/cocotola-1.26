@@ -1,0 +1,25 @@
+---
+services:
+  local-postgres:
+    extends:
+      service: local-postgres-base
+      file: ./compose.common-postgres.yml
+    networks:
+      - cocotola
+
+  local-lgtm:
+    extends:
+      service: local-lgtm-base
+      file: ./compose.common-lgtm.yml
+    ports:
+      - 127.0.0.1:3000:3000
+      - 127.0.0.1:4040:4040
+      - 127.0.0.1:4317:4317
+      - 127.0.0.1:4318:4318
+      - 127.0.0.1:9090:9090
+    networks:
+      - cocotola
+
+networks:
+  cocotola:
+    driver: bridge

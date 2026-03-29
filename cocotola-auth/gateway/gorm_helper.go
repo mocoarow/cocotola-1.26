@@ -14,7 +14,7 @@ import (
 // replaceRecords deletes all records matching the where clause, then inserts new records,
 // all within a single transaction.
 // It first queries existing records via snapshot read (no locks), then deletes only if
-// records exist, using primary-key-based deletion to avoid InnoDB gap locks.
+// records exist, using primary-key-based deletion to avoid row-level lock conflicts.
 func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string, whereArg any, newRecords []R, label string) error {
 	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var existing []R

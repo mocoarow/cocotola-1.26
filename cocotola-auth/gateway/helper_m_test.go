@@ -52,7 +52,7 @@ func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgN
 		group := domaingroup.ReconstructGroup(0, orgID, name, true)
 		require.NoError(t, groupRepo.Save(ctx, group))
 		var groupRec gateway.GroupRecordForTest
-		require.NoError(t, tx.Table("`group`").Where("name = ? AND organization_id = ?", name, orgID).First(&groupRec).Error)
+		require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", name, orgID).First(&groupRec).Error)
 		groupIDs[i] = groupRec.ID
 	}
 	return groupIDs

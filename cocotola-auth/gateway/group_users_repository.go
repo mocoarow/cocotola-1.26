@@ -21,7 +21,7 @@ func (userNGroupRecord) TableName() string {
 	return "user_n_group"
 }
 
-// GroupUsersRepository implements group-user association persistence using MySQL via GORM.
+// GroupUsersRepository implements group-user association persistence using GORM.
 type GroupUsersRepository struct {
 	db *gorm.DB
 }

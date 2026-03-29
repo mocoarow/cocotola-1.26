@@ -32,13 +32,13 @@ server:
     gracePeriodSec: ${APP_SHUTDOWN_GRACE_PERIOD_SEC:-1}
     shutdownTimeSec: ${APP_SHUTDOWN_TIME_SEC:-1}
 db:
-  driverName: ${APP_DB_DRIVER_NAME:-mysql}
-  mysql:
-    username: ${APP_MYSQL_USERNAME}
-    password: ${APP_MYSQL_PASSWORD}
-    host: ${APP_MYSQL_HOST:-127.0.0.1}
-    port: ${APP_MYSQL_PORT:-3306}
-    database: ${APP_MYSQL_DATABASE:-local}
+  driverName: ${APP_DB_DRIVER_NAME:-postgres}
+  postgres:
+    username: ${APP_POSTGRES_USERNAME}
+    password: ${APP_POSTGRES_PASSWORD}
+    host: ${APP_POSTGRES_HOST:-127.0.0.1}
+    port: ${APP_POSTGRES_PORT:-5432}
+    database: ${APP_POSTGRES_DATABASE:-local}
 trace:
   exporter: ${TRACE_EXPORTER:-none}
   otlp:
