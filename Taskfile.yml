@@ -20,6 +20,11 @@ tasks:
       - go work init
       - go work use -r .
 
+  aqua-policy-allow:
+    desc: "Allow aqua local registry policy"
+    cmds:
+      - aqua policy allow .aqua-policy.yaml
+
   gazelle:
     cmds:
       - bazelisk run //:gazelle -- -build_tags=small,medium,large

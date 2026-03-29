@@ -1,0 +1,53 @@
+---
+name: Deploy
+on:
+  push:
+    tags:
+      - "20[0-9][0-9].*"
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    strategy:
+      matrix:
+        service:
+          - cocotola-auth
+          - cocotola-empty
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
+        with:
+          bazelisk-version: 1.x
+
+      - name: Push image to Artifact Registry
+        run: bazelisk run //${{ matrix.service }}:push -- --tag ${{ github.sha }} --tag latest
+
+      - name: Deploy to Cloud Run
+        env:
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          SERVICE: ${{ matrix.service }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          gcloud run services update "${SERVICE}" \
+            --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${SERVICE}/${SERVICE}:${IMAGE_TAG}" \
+            --region us-central1
