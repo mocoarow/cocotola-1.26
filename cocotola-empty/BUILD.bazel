@@ -1,0 +1,50 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "cocotola-empty_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-empty",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "//cocotola-lib/gateway",
+        "//cocotola-lib/logging",
+        "//cocotola-lib/process",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+go_binary(
+    name = "cocotola-empty",
+    embed = [":cocotola-empty_lib"],
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "pkg",
+    srcs = [":cocotola-empty"],
+)
+
+oci_image(
+    name = "image",
+    # base = "@distroless_static_debian12_linux_amd64",
+    base = "@distroless_static_debian12_debug",
+    entrypoint = ["/cocotola-empty"],
+    tars = [":pkg"],
+)
+
+oci_load(
+    name = "load",
+    image = ":image",
+    repo_tags = ["cocotola-empty:latest"],
+)
+
+oci_push(
+    name = "push",
+    image = ":image",
+    remote_tags = ["latest"],
+    repository = "us-central1-docker.pkg.dev/mocoarow-cocotola/cocotola-empty/cocotola-empty",
+)
