@@ -32,7 +32,7 @@ func toRefreshTokenDomain(r *refreshTokenRecord) *domaintoken.RefreshToken {
 	return domaintoken.ReconstructRefreshToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
-// RefreshTokenRepository implements refresh token persistence using MySQL via GORM.
+// RefreshTokenRepository implements refresh token persistence using GORM.
 type RefreshTokenRepository struct{ db *gorm.DB }
 
 // NewRefreshTokenRepository returns a new RefreshTokenRepository.
@@ -90,7 +90,7 @@ func toSessionTokenDomain(r *sessionTokenRecord) *domaintoken.SessionToken {
 	return domaintoken.ReconstructSessionToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
-// SessionTokenRepository implements session token persistence using MySQL via GORM.
+// SessionTokenRepository implements session token persistence using GORM.
 type SessionTokenRepository struct{ db *gorm.DB }
 
 // NewSessionTokenRepository returns a new SessionTokenRepository.

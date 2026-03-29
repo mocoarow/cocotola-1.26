@@ -39,7 +39,7 @@ func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
 	return domainspace.ReconstructSpace(r.ID, r.OrganizationID, r.OwnerID, r.KeyName, r.Name, st, r.Deleted), nil
 }
 
-// SpaceRepository implements space persistence using MySQL via GORM.
+// SpaceRepository implements space persistence using GORM.
 type SpaceRepository struct {
 	db *gorm.DB
 }
@@ -109,7 +109,7 @@ func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int,
 func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID int) ([]domainspace.Space, error) {
 	var records []spaceRecord
 	if err := r.db.WithContext(ctx).
-		Where("organization_id = ? AND deleted = 0", organizationID).
+		Where("organization_id = ? AND deleted = ?", organizationID, false).
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find spaces by organization id: %w", err)
 	}

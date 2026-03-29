@@ -20,7 +20,7 @@ type activeGroupRecord struct {
 
 func (activeGroupRecord) TableName() string { return "active_group" }
 
-// ActiveGroupListRepository implements active group list persistence using MySQL via GORM.
+// ActiveGroupListRepository implements active group list persistence using GORM.
 type ActiveGroupListRepository struct{ db *gorm.DB }
 
 // NewActiveGroupListRepository returns a new ActiveGroupListRepository.
@@ -69,7 +69,7 @@ type activeUserRecord struct {
 
 func (activeUserRecord) TableName() string { return "active_user" }
 
-// ActiveUserListRepository implements active user list persistence using MySQL via GORM.
+// ActiveUserListRepository implements active user list persistence using GORM.
 type ActiveUserListRepository struct{ db *gorm.DB }
 
 // NewActiveUserListRepository returns a new ActiveUserListRepository.

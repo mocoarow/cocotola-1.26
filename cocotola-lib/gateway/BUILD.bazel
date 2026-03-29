@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "db.go",
         "db_mysql.go",
+        "db_postgres.go",
         "doc.go",
         "log.go",
         "log_otlp.go",
@@ -28,6 +29,7 @@ go_library(
         "@com_github_mocoarow_slogotel//:slogotel",
         "@com_github_orandin_slog_gorm//:slog-gorm",
         "@io_gorm_driver_mysql//:mysql",
+        "@io_gorm_driver_postgres//:postgres",
         "@io_gorm_gorm//:gorm",
         "@io_gorm_plugin_opentelemetry//tracing",
         "@io_opentelemetry_go_contrib_bridges_otelslog//:otelslog",

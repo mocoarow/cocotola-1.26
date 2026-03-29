@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.18.0
 	golang.org/x/sync v0.20.0
 	gorm.io/driver/mysql v1.6.0
+	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 	gorm.io/plugin/opentelemetry v0.1.16
 )
@@ -115,5 +116,4 @@ require (
 	google.golang.org/grpc v1.79.3 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gorm.io/driver/clickhouse v0.7.0 // indirect
-	gorm.io/driver/postgres v1.6.0 // indirect
 )

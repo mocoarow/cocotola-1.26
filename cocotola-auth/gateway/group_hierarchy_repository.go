@@ -22,7 +22,7 @@ func (groupNGroupRecord) TableName() string {
 	return "group_n_group"
 }
 
-// GroupHierarchyRepository implements group hierarchy persistence using MySQL via GORM.
+// GroupHierarchyRepository implements group hierarchy persistence using GORM.
 type GroupHierarchyRepository struct {
 	db *gorm.DB
 }

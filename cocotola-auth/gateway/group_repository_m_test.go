@@ -43,7 +43,7 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	require.NoError(t, repo.Save(ctx, group))
 
 	var inserted gateway.GroupRecordForTest
-	require.NoError(t, tx.Table("`group`").Where("name = ? AND organization_id = ?", "findbyid-group", orgID).First(&inserted).Error)
+	require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", "findbyid-group", orgID).First(&inserted).Error)
 
 	// when
 	found, err := repo.FindByID(ctx, inserted.ID)

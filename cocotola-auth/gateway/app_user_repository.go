@@ -42,7 +42,7 @@ func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	return domainuser.ReconstructAppUser(r.ID, r.OrganizationID, domain.LoginID(r.LoginID), hashedPw, r.Enabled)
 }
 
-// AppUserRepository implements app user persistence using MySQL via GORM.
+// AppUserRepository implements app user persistence using GORM.
 type AppUserRepository struct {
 	db *gorm.DB
 }

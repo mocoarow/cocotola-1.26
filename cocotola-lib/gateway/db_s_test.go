@@ -37,6 +37,36 @@ func Test_DialectMySQL_BoolDefaultValue_shouldReturnZero(t *testing.T) {
 	}
 }
 
+func Test_DialectPostgres_Name_shouldReturnPostgres(t *testing.T) {
+	t.Parallel()
+
+	// given
+	dialect := &gateway.DialectPostgres{}
+
+	// when
+	name := dialect.Name()
+
+	// then
+	if name != "postgres" {
+		t.Fatalf("expected 'postgres', got %q", name)
+	}
+}
+
+func Test_DialectPostgres_BoolDefaultValue_shouldReturnFalse(t *testing.T) {
+	t.Parallel()
+
+	// given
+	dialect := &gateway.DialectPostgres{}
+
+	// when
+	value := dialect.BoolDefaultValue()
+
+	// then
+	if value != "false" {
+		t.Fatalf("expected 'false', got %q", value)
+	}
+}
+
 func Test_InitDB_shouldReturnError_whenDriverNameIsInvalid(t *testing.T) {
 	t.Parallel()
 
@@ -44,6 +74,7 @@ func Test_InitDB_shouldReturnError_whenDriverNameIsInvalid(t *testing.T) {
 	dbConfig := gateway.DBConfig{
 		DriverName: "invalid_driver",
 		MySQL:      nil,
+		Postgres:   nil,
 	}
 	logConfig := gateway.LogConfig{
 		Level:    "warn",

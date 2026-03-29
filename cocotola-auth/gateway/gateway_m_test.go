@@ -24,32 +24,33 @@ func getEnv(key, defaultValue string) string {
 }
 
 func TestMain(m *testing.M) {
-	host := getEnv("TEST_MYSQL_HOST", "127.0.0.1")
-	portStr := getEnv("TEST_MYSQL_PORT", "3307")
+	host := getEnv("TEST_POSTGRES_HOST", "127.0.0.1")
+	portStr := getEnv("TEST_POSTGRES_PORT", "5433")
 	port, err := strconv.Atoi(portStr)
 	if err != nil {
-		log.Fatalf("invalid TEST_MYSQL_PORT: %v", err)
+		log.Fatalf("invalid TEST_POSTGRES_PORT: %v", err)
 	}
-	username := getEnv("TEST_MYSQL_USERNAME", "username")
-	password := getEnv("TEST_MYSQL_PASSWORD", "password")
-	database := getEnv("TEST_MYSQL_DATABASE", "test")
+	username := getEnv("TEST_POSTGRES_USERNAME", "username")
+	password := getEnv("TEST_POSTGRES_PASSWORD", "password")
+	database := getEnv("TEST_POSTGRES_DATABASE", "test")
 	logLevelStr := getEnv("TEST_LOG_LEVEL", "INFO")
 	logLevel := slog.LevelInfo
 	if logLevelStr == "DEBUG" {
 		logLevel = slog.LevelDebug
 	}
-	config := libgateway.MySQLConfig{
+	config := libgateway.PostgresConfig{
 		Username: username,
 		Password: password,
 		Host:     host,
 		Port:     port,
 		Database: database,
+		SSLMode:  "disable",
 	}
 
 	// Initialize the database connection.
-	db, err := libgateway.OpenMySQL(&config, logLevel, "gateway_test")
+	db, err := libgateway.OpenPostgres(&config, logLevel, "gateway_test")
 	if err != nil {
-		log.Fatalf("open mysql: %v", err)
+		log.Fatalf("open postgres: %v", err)
 	}
 	testDB = db
 

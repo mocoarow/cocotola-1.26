@@ -1,20 +1,21 @@
 ---
+# Shared PostgreSQL service configuration
 services:
-  test-postgres:
+  local-postgres-base:
     image: postgres:17
-    container_name: test-postgres
+    container_name: local-postgres
     environment:
       POSTGRES_USER: username
       # kics-scan ignore-line
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: test
+      POSTGRES_DB: local
       TZ: Etc/GMT
     ports:
-      - 127.0.0.1:${TEST_POSTGRES_PORT:-5433}:5432
+      - 127.0.0.1:${POSTGRES_PORT:-5432}:5432
     volumes:
       - ./init-postgres:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U username -d test"]
+      test: ["CMD-SHELL", "pg_isready -U username -d local"]
       interval: 5s
       timeout: 30s
       retries: 6

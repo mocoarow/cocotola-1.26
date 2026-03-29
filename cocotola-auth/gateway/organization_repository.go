@@ -31,7 +31,7 @@ func toOrganizationDomain(r *organizationRecord) *domain.Organization {
 	return domain.ReconstructOrganization(r.ID, r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
 }
 
-// OrganizationRepository implements organization persistence using MySQL via GORM.
+// OrganizationRepository implements organization persistence using GORM.
 type OrganizationRepository struct {
 	db *gorm.DB
 }

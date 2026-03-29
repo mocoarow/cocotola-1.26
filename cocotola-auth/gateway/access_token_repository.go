@@ -33,7 +33,7 @@ func toAccessTokenDomain(r *accessTokenRecord) *domaintoken.AccessToken {
 	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
-// AccessTokenRepository implements access token persistence using MySQL via GORM.
+// AccessTokenRepository implements access token persistence using GORM.
 type AccessTokenRepository struct {
 	db *gorm.DB
 }

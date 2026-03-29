@@ -190,7 +190,7 @@ tasks:
   run-cocotola-auth:
     desc: "Run cocotola-auth with local infrastructure"
     cmds:
-      - docker compose -f compose.local.mysql-lgtm.yml up -d --wait
+      - docker compose -f compose.local.postgres-lgtm.yml up -d --wait
       - bazelisk run //cocotola-auth:cocotola-auth
 
   run-cocotola-empty:
