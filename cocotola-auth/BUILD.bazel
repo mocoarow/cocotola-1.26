@@ -10,6 +10,7 @@ go_library(
     deps = [
         "//cocotola-auth/config",
         "//cocotola-auth/controller/handler/auth",
+        "//cocotola-auth/controller/handler/health",
         "//cocotola-auth/controller/middleware",
         "//cocotola-auth/domain",
         "//cocotola-auth/gateway",

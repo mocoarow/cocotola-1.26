@@ -17,6 +17,7 @@ go_library(
         "group_repository.go",
         "group_users_repository.go",
         "guest_authenticator.go",
+        "health_repository.go",
         "opaque_token_repository.go",
         "organization_repository.go",
         "rbac_repository.go",

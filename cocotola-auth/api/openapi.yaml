@@ -15,9 +15,12 @@ info:
 tags:
   - name: auth
   - name: group
+  - name: health
   - name: space
   - name: user
 paths:
+  /api/v1/auth/health:
+    $ref: 'paths/health.yaml#/health'
   /api/v1/auth/password/authenticate:
     $ref: 'paths/auth.yaml#/password-authenticate'
   /api/v1/auth/guest/authenticate:
@@ -68,6 +71,8 @@ components:
       $ref: 'schemas/user.yaml#/CreateUserRequest'
     CreateUserResponse:
       $ref: 'schemas/user.yaml#/CreateUserResponse'
+    HealthCheckResponse:
+      $ref: 'schemas/health.yaml#/HealthCheckResponse'
     ErrorResponse:
       $ref: 'schemas/common.yaml#/ErrorResponse'
   responses: {}
