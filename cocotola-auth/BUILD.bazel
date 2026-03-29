@@ -27,6 +27,7 @@ go_library(
 go_binary(
     name = "cocotola-auth",
     embed = [":cocotola-auth_lib"],
+    pure = "on",
     visibility = ["//visibility:public"],
 )
 
