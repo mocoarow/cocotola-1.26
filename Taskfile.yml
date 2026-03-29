@@ -180,6 +180,33 @@ tasks:
         vars:
           GO_PROJECT: "{{ .ITEM }}"
 
+  supabase-init:
+    desc: "Initialize Supabase project (run once)"
+    cmds:
+      - supabase init
+
+  supabase-copy:
+    desc: "Copy migration files from init-postgres to supabase/migrations"
+    cmds:
+      - mkdir -p supabase/migrations
+      - |
+        for f in init-postgres/*.up.sql; do
+          case "$(basename "$f")" in
+            2999*) continue ;;
+          esac
+          cp "$f" "supabase/migrations/$(basename "$f")"
+        done
+
+  supabase-push:
+    desc: "Push migrations to linked Supabase project"
+    cmds:
+      - supabase db push
+
+  supabase-reset:
+    desc: "Reset linked Supabase database and re-apply all migrations"
+    cmds:
+      - supabase db reset --linked
+
   run-hello-world:
     cmds:
       - bazelisk run //hello-world:hello-world
@@ -197,3 +224,7 @@ tasks:
     desc: "Run cocotola-empty with local infrastructure"
     cmds:
       - bazelisk run //cocotola-empty:cocotola-empty
+
+  clear-local-infra:
+    cmds:
+      - docker compose -f compose.test.yml down -v --remove-orphans

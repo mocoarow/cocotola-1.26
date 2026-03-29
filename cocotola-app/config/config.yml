@@ -39,6 +39,7 @@ db:
     host: ${APP_POSTGRES_HOST:-127.0.0.1}
     port: ${APP_POSTGRES_PORT:-5432}
     database: ${APP_POSTGRES_DATABASE:-local}
+    sslMode: ${APP_POSTGRES_SSL_MODE:-disable}
 trace:
   exporter: ${TRACE_EXPORTER:-none}
   otlp:
