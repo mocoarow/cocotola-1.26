@@ -3,6 +3,7 @@ go 1.26.1
 use (
 	./cocotola-app
 	./cocotola-auth
+	./cocotola-empty
 	./cocotola-init
 	./cocotola-lib
 	./hello-world

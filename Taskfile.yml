@@ -9,8 +9,10 @@ vars:
     - third-party-library
     - cocotola-lib
     - cocotola-auth
+    - cocotola-empty
   GO_APPS:
     - cocotola-auth
+    - cocotola-empty
 
 tasks:
   init:
@@ -185,3 +187,8 @@ tasks:
     cmds:
       - docker compose -f compose.local.mysql-lgtm.yml up -d --wait
       - bazelisk run //cocotola-auth:cocotola-auth
+
+  run-cocotola-empty:
+    desc: "Run cocotola-empty with local infrastructure"
+    cmds:
+      - bazelisk run //cocotola-empty:cocotola-empty
