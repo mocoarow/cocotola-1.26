@@ -10,6 +10,7 @@ db:
     host: ${AUTH_POSTGRES_HOST:-127.0.0.1}
     port: ${AUTH_POSTGRES_PORT:-5432}
     database: ${AUTH_POSTGRES_DATABASE:-local}
+    sslMode: ${AUTH_POSTGRES_SSL_MODE:-disable}
 log:
   level: ${LOG_LEVEL:-info}
   exporter: ${LOG_EXPORTER:-none}

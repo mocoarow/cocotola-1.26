@@ -40,3 +40,8 @@ docs/
 # based on the name of the directory bazel is cloned into.
 /bazel-*
 kics-results/
+
+# Supabase
+supabase/.env
+supabase/.temp/
+supabase/migrations/
