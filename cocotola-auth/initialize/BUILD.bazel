@@ -9,6 +9,7 @@ go_library(
         "//cocotola-auth/config",
         "//cocotola-auth/controller/handler/auth",
         "//cocotola-auth/controller/handler/group",
+        "//cocotola-auth/controller/handler/health",
         "//cocotola-auth/controller/handler/space",
         "//cocotola-auth/controller/handler/user",
         "//cocotola-auth/controller/middleware",

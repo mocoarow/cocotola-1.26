@@ -14,6 +14,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
 	grouphandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group"
+	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health"
 	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
@@ -99,6 +100,11 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	// controller layer
 	api := parent.Group("api")
 	v1 := api.Group("v1")
+
+	// health check
+	healthRepo := gateway.NewHealthRepository(db)
+	checkHandler := healthhandler.NewCheckHandler(healthRepo)
+	healthhandler.InitRouter(checkHandler, v1)
 
 	authMiddleware := middleware.NewAuthMiddleware(authUsecase, authConfig.Cookie, authConfig.SessionTokenTTLMin)
 	authenticateHandler := authhandler.NewPasswordAuthenticateHandler(authUsecase, authConfig.Cookie, authConfig.SessionTokenTTLMin)

@@ -1,0 +1,9 @@
+---
+HealthCheckResponse:
+  type: object
+  properties:
+    status:
+      type: string
+      pattern: ^.*$
+  required:
+    - status

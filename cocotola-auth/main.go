@@ -18,6 +18,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
+	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
@@ -128,6 +129,13 @@ func run() (int, error) {
 
 	// v1
 	v1 := api.Group("v1")
+
+	// health check
+	{
+		healthRepo := gateway.NewHealthRepository(dbConn.DB)
+		checkHandler := healthhandler.NewCheckHandler(healthRepo)
+		healthhandler.InitRouter(checkHandler, v1)
+	}
 
 	authMiddleware := middleware.NewAuthMiddleware(authUsecase, cfg.Auth.Cookie, cfg.Auth.SessionTokenTTLMin)
 	{

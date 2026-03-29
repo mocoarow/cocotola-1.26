@@ -97,6 +97,11 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// HealthCheckResponse defines model for HealthCheckResponse.
+type HealthCheckResponse struct {
+	Status string `json:"status"`
+}
+
 // GetMeResponse defines model for GetMeResponse.
 type GetMeResponse struct {
 	LoginID          string `json:"loginId"`
