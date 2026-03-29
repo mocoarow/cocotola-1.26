@@ -1,0 +1,19 @@
+---
+packages:
+  - type: github_release
+    repo_owner: k1LoW
+    repo_name: calver
+    description: calver provides the ability to work with Calendar Versioning in Go
+    asset: calver_{{.Version}}_{{.OS}}_{{.Arch}}.{{.Format}}
+    format: tar.gz
+    overrides:
+      - goos: darwin
+        format: zip
+    supported_envs:
+      - darwin
+      - linux
+      - windows/amd64
+    checksum:
+      type: github_release
+      asset: checksums.txt
+      algorithm: sha256

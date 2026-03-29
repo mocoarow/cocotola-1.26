@@ -2,6 +2,14 @@
 registries:
   - type: standard
     ref: v4.486.0
+  - name: local
+    type: local
+    path: .registry.yaml
+checksum:
+  enabled: true
 packages:
   - name: suzuki-shunsuke/pinact
     version: v3.9.0
+  - name: k1LoW/calver
+    registry: local
+    version: v1.0.1
