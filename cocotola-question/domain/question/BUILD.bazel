@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "question",
+    srcs = [
+        "question.go",
+        "question_type.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "question_test",
+    srcs = [
+        "question_s_test.go",
+        "question_type_s_test.go",
+    ],
+    deps = [
+        ":question",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

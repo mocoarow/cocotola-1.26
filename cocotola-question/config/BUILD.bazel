@@ -1,0 +1,11 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "config",
+    srcs = [
+        "config.go",
+        "doc.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/config",
+    visibility = ["//visibility:public"],
+)

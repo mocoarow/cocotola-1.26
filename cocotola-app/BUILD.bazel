@@ -13,6 +13,7 @@ go_library(
         "//cocotola-lib/gateway",
         "//cocotola-lib/logging",
         "//cocotola-lib/process",
+        "//cocotola-question/initialize",
     ],
 )
 

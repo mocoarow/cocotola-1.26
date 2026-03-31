@@ -14,6 +14,7 @@ go_library(
         "//cocotola-auth/controller/handler/user",
         "//cocotola-auth/controller/middleware",
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
         "//cocotola-auth/gateway",
         "//cocotola-auth/usecase/auth",
         "//cocotola-auth/usecase/event",

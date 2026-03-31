@@ -1,0 +1,87 @@
+---
+ShareWorkbookResponse:
+  type: object
+  properties:
+    referenceId:
+      type: string
+      x-go-name: ReferenceID
+      pattern: ^.*$
+    workbookId:
+      type: string
+      x-go-name: WorkbookID
+      pattern: ^.*$
+    addedAt:
+      type: string
+      format: date-time
+  required:
+    - referenceId
+    - workbookId
+    - addedAt
+
+SharedItemResponse:
+  type: object
+  properties:
+    referenceId:
+      type: string
+      x-go-name: ReferenceID
+      pattern: ^.*$
+    workbookId:
+      type: string
+      x-go-name: WorkbookID
+      pattern: ^.*$
+    addedAt:
+      type: string
+      format: date-time
+  required:
+    - referenceId
+    - workbookId
+    - addedAt
+
+ListSharedResponse:
+  type: object
+  properties:
+    references:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/SharedItemResponse'
+  required:
+    - references
+
+PublicWorkbookResponse:
+  type: object
+  properties:
+    workbookId:
+      type: string
+      x-go-name: WorkbookID
+      pattern: ^.*$
+    ownerId:
+      type: integer
+      x-go-name: OwnerID
+      format: int32
+    title:
+      type: string
+      pattern: ^.*$
+    description:
+      type: string
+      pattern: ^.*$
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - workbookId
+    - ownerId
+    - title
+    - description
+    - createdAt
+
+ListPublicResponse:
+  type: object
+  properties:
+    workbooks:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/PublicWorkbookResponse'
+  required:
+    - workbooks

@@ -1,0 +1,167 @@
+---
+share:
+  post:
+    summary: Share a workbook
+    deprecated: false
+    description: Share a workbook by creating a reference to it
+    operationId: shareWorkbook
+    tags:
+      - sharing
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '201':
+        description: Successfully shared
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/sharing.yaml#/ShareWorkbookResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Workbook reference already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+shared:
+  get:
+    summary: List shared workbooks
+    deprecated: false
+    description: List workbook references shared with the authenticated user
+    operationId: listShared
+    tags:
+      - sharing
+    parameters: []
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/sharing.yaml#/ListSharedResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+unshare:
+  delete:
+    summary: Unshare a workbook
+    deprecated: false
+    description: Remove a shared workbook reference
+    operationId: unshare
+    tags:
+      - sharing
+    parameters:
+      - name: refId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '204':
+        description: Successfully unshared
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Reference not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+public:
+  get:
+    summary: List public workbooks
+    deprecated: false
+    description: List all publicly visible workbooks
+    operationId: listPublic
+    tags:
+      - sharing
+    parameters: []
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/sharing.yaml#/ListPublicResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

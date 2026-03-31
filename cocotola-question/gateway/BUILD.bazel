@@ -1,0 +1,26 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "gateway",
+    srcs = [
+        "doc.go",
+        "firestore_client.go",
+        "health_repository.go",
+        "question_repository.go",
+        "reference_repository.go",
+        "workbook_repository.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "//cocotola-question/domain/reference",
+        "//cocotola-question/domain/workbook",
+        "@com_google_cloud_go_firestore//:firestore",
+        "@org_golang_google_api//iterator",
+        "@org_golang_google_api//option",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+    ],
+)

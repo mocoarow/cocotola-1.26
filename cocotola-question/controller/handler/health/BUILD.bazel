@@ -1,0 +1,14 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "health",
+    srcs = ["health.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/logging",
+        "//cocotola-question/api",
+        "//cocotola-question/controller",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)

@@ -6,6 +6,7 @@ use (
 	./cocotola-empty
 	./cocotola-init
 	./cocotola-lib
+	./cocotola-question
 	./hello-world
 	./third-party-library
 )

@@ -1,0 +1,229 @@
+---
+workbook:
+  post:
+    summary: Create a workbook
+    deprecated: false
+    description: Create a new workbook within the operator's space
+    operationId: createWorkbook
+    tags:
+      - workbook
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workbook.yaml#/CreateWorkbookRequest'
+          examples: {}
+      required: true
+    responses:
+      '201':
+        description: Successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+  get:
+    summary: List workbooks
+    deprecated: false
+    description: List workbooks accessible by the authenticated user
+    operationId: listWorkbooks
+    tags:
+      - workbook
+    parameters: []
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/ListWorkbooksResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+workbook-by-id:
+  get:
+    summary: Get a workbook
+    deprecated: false
+    description: Get a specific workbook by ID
+    operationId: getWorkbook
+    tags:
+      - workbook
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+  put:
+    summary: Update a workbook
+    deprecated: false
+    description: Update an existing workbook
+    operationId: updateWorkbook
+    tags:
+      - workbook
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workbook.yaml#/UpdateWorkbookRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully updated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+  delete:
+    summary: Delete a workbook
+    deprecated: false
+    description: Delete an existing workbook
+    operationId: deleteWorkbook
+    tags:
+      - workbook
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '204':
+        description: Successfully deleted
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

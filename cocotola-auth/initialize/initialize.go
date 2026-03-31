@@ -19,6 +19,7 @@ import (
 	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
@@ -32,10 +33,34 @@ import (
 
 const eventBusBufferSize = 100
 
+// AuthorizationChecker checks if an action is allowed by RBAC policy.
+type AuthorizationChecker interface {
+	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+}
+
+// OrganizationFinder finds organizations by name.
+type OrganizationFinder interface {
+	FindByName(ctx context.Context, name string) (*domain.Organization, error)
+}
+
+// InitResult holds the results of auth module initialization for use by other modules.
+type InitResult struct {
+	// EventBusStart is the RunProcessFunc for the event bus.
+	EventBusStart libprocess.RunProcessFunc
+	// AuthMiddleware is the Gin middleware for authenticating requests.
+	AuthMiddleware gin.HandlerFunc
+	// V1RouterGroup is the /api/v1 router group for registering additional routes.
+	V1RouterGroup gin.IRouter
+	// AuthzChecker is the RBAC authorization checker for use by other modules.
+	AuthzChecker AuthorizationChecker
+	// OrgFinder finds organizations by name for use by other modules.
+	OrgFinder OrganizationFinder
+}
+
 // Initialize sets up the cocotola-auth module: gateway, usecase, and controller layers.
 // It registers all auth-related routes under the given parent router group and returns
-// a RunProcessFunc for the event bus that the caller should pass to libprocess.Run.
-func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig) (libprocess.RunProcessFunc, error) {
+// an InitResult containing shared resources for use by other modules.
+func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig) (*InitResult, error) {
 	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(authConfig.SigningKey),
@@ -132,5 +157,11 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, v1, authMiddleware)
 
-	return eventBus.Start, nil
+	return &InitResult{
+		EventBusStart:  eventBus.Start,
+		AuthMiddleware: authMiddleware,
+		V1RouterGroup:  v1,
+		AuthzChecker:   authzChecker,
+		OrgFinder:      orgRepo,
+	}, nil
 }

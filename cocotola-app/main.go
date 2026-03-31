@@ -9,6 +9,7 @@ import (
 	"time"
 
 	authinit "github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize"
+	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
 
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
@@ -67,10 +68,24 @@ func run() (int, error) {
 	}
 
 	// initialize auth module
-	authEventBusStart, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth)
+	authResult, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth)
 	if err != nil {
 		return 1, fmt.Errorf("initialize auth: %w", err)
 	}
+
+	// initialize question module
+	orgResolver := func(ctx context.Context, name string) (int, error) {
+		org, err := authResult.OrgFinder.FindByName(ctx, name)
+		if err != nil {
+			return 0, fmt.Errorf("find organization by name %s: %w", name, err)
+		}
+		return org.ID(), nil
+	}
+	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authResult.AuthMiddleware, authResult.AuthzChecker, orgResolver)
+	if err != nil {
+		return 1, fmt.Errorf("initialize question: %w", err)
+	}
+	defer questionCleanup()
 
 	// run
 	readHeaderTimeout := time.Duration(cfg.Server.ReadHeaderTimeoutSec) * time.Second
@@ -79,7 +94,7 @@ func run() (int, error) {
 		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, readHeaderTimeout, shutdownTime),
 		libcontroller.WithMetricsServerProcess(cfg.Server.MetricsPort, readHeaderTimeout, shutdownTime),
 		libgateway.WithSignalWatchProcess(),
-		authEventBusStart,
+		authResult.EventBusStart,
 	)
 
 	gracefulShutdownTime := time.Duration(cfg.Server.Shutdown.GracePeriodSec) * time.Second

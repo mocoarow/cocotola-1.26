@@ -29,6 +29,7 @@ use_repo(
     "com_github_prometheus_client_golang",
     "com_github_samber_slog_gin",
     "com_github_stretchr_testify",
+    "com_google_cloud_go_firestore",
     "in_yaml_go_yaml_v4",
     "io_gorm_driver_mysql",
     "io_gorm_driver_postgres",
@@ -46,6 +47,8 @@ use_repo(
     "io_opentelemetry_go_otel_log",
     "io_opentelemetry_go_otel_sdk",
     "io_opentelemetry_go_otel_sdk_log",
+    "org_golang_google_api",
+    "org_golang_google_grpc",
     "org_golang_x_crypto",
     "org_golang_x_sync",
 )

@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "workbook",
+    srcs = [
+        "create_workbook_handler.go",
+        "delete_workbook_handler.go",
+        "get_workbook_handler.go",
+        "list_workbooks_handler.go",
+        "update_workbook_handler.go",
+        "workbook.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/logging",
+        "//cocotola-question/api",
+        "//cocotola-question/controller",
+        "//cocotola-question/controller/handler",
+        "//cocotola-question/domain",
+        "//cocotola-question/service/workbook",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
