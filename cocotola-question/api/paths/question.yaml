@@ -13,6 +13,7 @@ question:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     requestBody:
       content:
         application/json:
@@ -72,6 +73,7 @@ question:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '200':
         description: Successfully retrieved
@@ -119,11 +121,13 @@ question-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '200':
         description: Successfully retrieved
@@ -169,11 +173,13 @@ question-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
+          pattern: ^.*$
     requestBody:
       content:
         application/json:
@@ -233,11 +239,13 @@ question-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '204':
         description: Successfully deleted

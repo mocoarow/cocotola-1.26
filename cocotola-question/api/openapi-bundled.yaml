@@ -141,6 +141,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '200':
           description: Successfully retrieved
@@ -186,6 +187,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       requestBody:
         content:
           application/json:
@@ -245,6 +247,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '204':
           description: Successfully deleted
@@ -287,6 +290,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       requestBody:
         content:
           application/json:
@@ -346,6 +350,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '200':
           description: Successfully retrieved
@@ -392,11 +397,13 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '200':
           description: Successfully retrieved
@@ -442,11 +449,13 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
+            pattern: ^.*$
       requestBody:
         content:
           application/json:
@@ -506,11 +515,13 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '204':
           description: Successfully deleted
@@ -553,6 +564,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '201':
           description: Successfully shared
@@ -640,6 +652,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
       responses:
         '204':
           description: Successfully unshared
@@ -830,7 +843,7 @@ components:
           x-oapi-codegen-extra-tags:
             binding: required,max=10000
           maxLength: 10000
-          pattern: ^[\s\S]*$
+          pattern: ^.*$
         orderIndex:
           type: integer
           format: int32
@@ -848,7 +861,7 @@ components:
           x-oapi-codegen-extra-tags:
             binding: required,max=10000
           maxLength: 10000
-          pattern: ^[\s\S]*$
+          pattern: ^.*$
         orderIndex:
           type: integer
           format: int32
@@ -869,7 +882,7 @@ components:
           pattern: ^.*$
         content:
           type: string
-          pattern: ^[\s\S]*$
+          pattern: ^.*$
         orderIndex:
           type: integer
           format: int32

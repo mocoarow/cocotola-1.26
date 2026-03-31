@@ -13,6 +13,7 @@ share:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '201':
         description: Successfully shared
@@ -102,6 +103,7 @@ unshare:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '204':
         description: Successfully unshared

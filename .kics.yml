@@ -12,3 +12,5 @@ exclude-queries:
   - 698ed579-b239-4f8f-a388-baa4bcb13ef8
   # Security Field On Operations Has An Empty Array (v3) - auth endpoints intentionally public
   - 663c442d-f918-4f62-b096-0bf5dcbeb655
+  # Media Type Object Without Schema - false positive: KICS confuses schema property named "content" with OpenAPI media type content
+  - f79b9d26-e945-44e7-98a1-b93f0f7a68a0

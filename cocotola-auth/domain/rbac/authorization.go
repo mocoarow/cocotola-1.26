@@ -119,12 +119,12 @@ func ResourceSpace(spaceID int) Resource {
 
 // ResourceWorkbook returns a resource representing a specific workbook.
 func ResourceWorkbook(workbookID string) Resource {
-	return Resource{value: fmt.Sprintf("workbook:%s", workbookID)}
+	return Resource{value: "workbook:" + workbookID}
 }
 
 // ResourceQuestion returns a resource representing a specific question.
 func ResourceQuestion(questionID string) Resource {
-	return Resource{value: fmt.Sprintf("question:%s", questionID)}
+	return Resource{value: "question:" + questionID}
 }
 
 // Group represents a named group for authorization.

@@ -95,6 +95,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '200':
         description: Successfully retrieved
@@ -140,6 +141,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     requestBody:
       content:
         application/json:
@@ -199,6 +201,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
+          pattern: ^.*$
     responses:
       '204':
         description: Successfully deleted
