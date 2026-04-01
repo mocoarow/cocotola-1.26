@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "sharing",
+    srcs = [
+        "command.go",
+        "list_public_query.go",
+        "list_shared_query.go",
+        "share_workbook_command.go",
+        "shared_interfaces.go",
+        "unshare_command.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/reference",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/reference",
+    ],
+)

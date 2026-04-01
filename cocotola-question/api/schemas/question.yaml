@@ -1,0 +1,83 @@
+---
+AddQuestionRequest:
+  type: object
+  properties:
+    questionType:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required
+      pattern: ^.*$
+    content:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=10000
+      maxLength: 10000
+      pattern: ^.*$
+    orderIndex:
+      type: integer
+      format: int32
+      x-oapi-codegen-extra-tags:
+        binding: gte=0
+  required:
+    - questionType
+    - content
+    - orderIndex
+
+UpdateQuestionRequest:
+  type: object
+  properties:
+    content:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=10000
+      maxLength: 10000
+      pattern: ^.*$
+    orderIndex:
+      type: integer
+      format: int32
+      x-oapi-codegen-extra-tags:
+        binding: gte=0
+  required:
+    - content
+    - orderIndex
+
+QuestionResponse:
+  type: object
+  properties:
+    questionId:
+      type: string
+      x-go-name: QuestionID
+      pattern: ^.*$
+    questionType:
+      type: string
+      pattern: ^.*$
+    content:
+      type: string
+      pattern: ^.*$
+    orderIndex:
+      type: integer
+      format: int32
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - questionId
+    - questionType
+    - content
+    - orderIndex
+    - createdAt
+    - updatedAt
+
+ListQuestionsResponse:
+  type: object
+  properties:
+    questions:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/QuestionResponse'
+  required:
+    - questions

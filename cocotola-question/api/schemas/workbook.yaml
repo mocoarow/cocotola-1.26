@@ -1,0 +1,117 @@
+---
+CreateWorkbookRequest:
+  type: object
+  properties:
+    spaceId:
+      type: integer
+      x-go-name: SpaceID
+      format: int32
+      x-oapi-codegen-extra-tags:
+        binding: required
+    title:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=200
+      maxLength: 200
+      pattern: ^.*$
+    description:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: max=1000
+      maxLength: 1000
+      pattern: ^.*$
+    visibility:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,oneof=private public
+      enum:
+        - private
+        - public
+  required:
+    - spaceId
+    - title
+    - visibility
+
+UpdateWorkbookRequest:
+  type: object
+  properties:
+    title:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=200
+      maxLength: 200
+      pattern: ^.*$
+    description:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: max=1000
+      maxLength: 1000
+      pattern: ^.*$
+    visibility:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,oneof=private public
+      enum:
+        - private
+        - public
+  required:
+    - title
+    - visibility
+
+WorkbookResponse:
+  type: object
+  properties:
+    workbookId:
+      type: string
+      x-go-name: WorkbookID
+      pattern: ^.*$
+    spaceId:
+      type: integer
+      x-go-name: SpaceID
+      format: int32
+    ownerId:
+      type: integer
+      x-go-name: OwnerID
+      format: int32
+    organizationId:
+      type: integer
+      x-go-name: OrganizationID
+      format: int32
+    title:
+      type: string
+      pattern: ^.*$
+    description:
+      type: string
+      pattern: ^.*$
+    visibility:
+      type: string
+      enum:
+        - private
+        - public
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - workbookId
+    - spaceId
+    - ownerId
+    - organizationId
+    - title
+    - description
+    - visibility
+    - createdAt
+    - updatedAt
+
+ListWorkbooksResponse:
+  type: object
+  properties:
+    workbooks:
+      type: array
+      maxItems: 1000
+      items:
+        $ref: '#/WorkbookResponse'
+  required:
+    - workbooks

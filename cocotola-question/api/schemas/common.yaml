@@ -1,0 +1,13 @@
+---
+ErrorResponse:
+  type: object
+  properties:
+    code:
+      type: string
+      pattern: ^.*$
+    message:
+      type: string
+      pattern: ^.*$
+  required:
+    - code
+    - message

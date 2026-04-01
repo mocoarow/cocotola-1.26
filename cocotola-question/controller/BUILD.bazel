@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "controller",
+    srcs = [
+        "context.go",
+        "doc.go",
+        "error.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/controller",
+        "//cocotola-question/api",
+    ],
+)

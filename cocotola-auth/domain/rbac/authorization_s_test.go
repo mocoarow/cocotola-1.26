@@ -87,6 +87,26 @@ func Test_ResourceSpace_shouldFormatWithSpacePrefix(t *testing.T) {
 	assert.Equal(t, "space:5", resource.Value())
 }
 
+func Test_ResourceWorkbook_shouldFormatWithWorkbookPrefix(t *testing.T) {
+	t.Parallel()
+
+	// when
+	resource := rbac.ResourceWorkbook("abc123")
+
+	// then
+	assert.Equal(t, "workbook:abc123", resource.Value())
+}
+
+func Test_ResourceQuestion_shouldFormatWithQuestionPrefix(t *testing.T) {
+	t.Parallel()
+
+	// when
+	resource := rbac.ResourceQuestion("q456")
+
+	// then
+	assert.Equal(t, "question:q456", resource.Value())
+}
+
 func Test_ResourceAny_shouldReturnWildcard(t *testing.T) {
 	t.Parallel()
 
@@ -154,6 +174,14 @@ func Test_PredefinedActions_shouldHaveCorrectValues(t *testing.T) {
 		{name: "ActionRemoveUserFromGroup", action: rbac.ActionRemoveUserFromGroup(), want: "remove_user_from_group"},
 		{name: "ActionCreateSpace", action: rbac.ActionCreateSpace(), want: "create_space"},
 		{name: "ActionViewSpace", action: rbac.ActionViewSpace(), want: "view_space"},
+		{name: "ActionCreateWorkbook", action: rbac.ActionCreateWorkbook(), want: "create_workbook"},
+		{name: "ActionViewWorkbook", action: rbac.ActionViewWorkbook(), want: "view_workbook"},
+		{name: "ActionUpdateWorkbook", action: rbac.ActionUpdateWorkbook(), want: "update_workbook"},
+		{name: "ActionDeleteWorkbook", action: rbac.ActionDeleteWorkbook(), want: "delete_workbook"},
+		{name: "ActionImportWorkbook", action: rbac.ActionImportWorkbook(), want: "import_workbook"},
+		{name: "ActionCreateQuestion", action: rbac.ActionCreateQuestion(), want: "create_question"},
+		{name: "ActionUpdateQuestion", action: rbac.ActionUpdateQuestion(), want: "update_question"},
+		{name: "ActionDeleteQuestion", action: rbac.ActionDeleteQuestion(), want: "delete_question"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

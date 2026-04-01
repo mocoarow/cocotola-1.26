@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "question",
+    srcs = [
+        "add_question_command.go",
+        "command.go",
+        "delete_question_command.go",
+        "get_question_query.go",
+        "list_questions_query.go",
+        "shared_interfaces.go",
+        "update_question_command.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/question",
+    ],
+)

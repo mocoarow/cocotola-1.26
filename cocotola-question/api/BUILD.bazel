@@ -1,0 +1,11 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "api",
+    srcs = [
+        "doc.go",
+        "types.gen.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/api",
+    visibility = ["//visibility:public"],
+)

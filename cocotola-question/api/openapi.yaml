@@ -1,0 +1,84 @@
+---
+openapi: 3.0.1
+info:
+  title: cocotola-question
+  description: cocotola-question
+  version: '1.0'
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: API Support
+    url: http://www.swagger.io/support
+    email: support@swagger.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+tags:
+  - name: health
+  - name: workbook
+  - name: question
+  - name: sharing
+paths:
+  /api/v1/question/health:
+    $ref: 'paths/health.yaml#/health'
+  /api/v1/workbook:
+    $ref: 'paths/workbook.yaml#/workbook'
+  /api/v1/workbook/{workbookId}:
+    $ref: 'paths/workbook.yaml#/workbook-by-id'
+  /api/v1/workbook/{workbookId}/question:
+    $ref: 'paths/question.yaml#/question'
+  /api/v1/workbook/{workbookId}/question/{questionId}:
+    $ref: 'paths/question.yaml#/question-by-id'
+  /api/v1/workbook/{workbookId}/share:
+    $ref: 'paths/sharing.yaml#/share'
+  /api/v1/workbook/shared:
+    $ref: 'paths/sharing.yaml#/shared'
+  /api/v1/workbook/shared/{refId}:
+    $ref: 'paths/sharing.yaml#/unshare'
+  /api/v1/workbook/public:
+    $ref: 'paths/sharing.yaml#/public'
+components:
+  schemas:
+    CreateWorkbookRequest:
+      $ref: 'schemas/workbook.yaml#/CreateWorkbookRequest'
+    UpdateWorkbookRequest:
+      $ref: 'schemas/workbook.yaml#/UpdateWorkbookRequest'
+    WorkbookResponse:
+      $ref: 'schemas/workbook.yaml#/WorkbookResponse'
+    ListWorkbooksResponse:
+      $ref: 'schemas/workbook.yaml#/ListWorkbooksResponse'
+    AddQuestionRequest:
+      $ref: 'schemas/question.yaml#/AddQuestionRequest'
+    UpdateQuestionRequest:
+      $ref: 'schemas/question.yaml#/UpdateQuestionRequest'
+    QuestionResponse:
+      $ref: 'schemas/question.yaml#/QuestionResponse'
+    ListQuestionsResponse:
+      $ref: 'schemas/question.yaml#/ListQuestionsResponse'
+    ShareWorkbookResponse:
+      $ref: 'schemas/sharing.yaml#/ShareWorkbookResponse'
+    SharedItemResponse:
+      $ref: 'schemas/sharing.yaml#/SharedItemResponse'
+    ListSharedResponse:
+      $ref: 'schemas/sharing.yaml#/ListSharedResponse'
+    PublicWorkbookResponse:
+      $ref: 'schemas/sharing.yaml#/PublicWorkbookResponse'
+    ListPublicResponse:
+      $ref: 'schemas/sharing.yaml#/ListPublicResponse'
+    HealthCheckResponse:
+      $ref: 'schemas/health.yaml#/HealthCheckResponse'
+    ErrorResponse:
+      $ref: 'schemas/common.yaml#/ErrorResponse'
+  responses: {}
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: session_token
+servers: []
+security:
+  - BearerAuth: []
+  - CookieAuth: []

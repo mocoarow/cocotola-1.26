@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "initialize",
+    srcs = ["initialize.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-lib/logging",
+        "//cocotola-question/config",
+        "//cocotola-question/controller",
+        "//cocotola-question/controller/handler/health",
+        "//cocotola-question/controller/handler/question",
+        "//cocotola-question/controller/handler/sharing",
+        "//cocotola-question/controller/handler/workbook",
+        "//cocotola-question/gateway",
+        "//cocotola-question/usecase/question",
+        "//cocotola-question/usecase/sharing",
+        "//cocotola-question/usecase/workbook",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)

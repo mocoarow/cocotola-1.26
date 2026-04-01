@@ -1,0 +1,9 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "reference",
+    srcs = ["reference.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-question/domain"],
+)

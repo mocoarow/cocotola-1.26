@@ -1,0 +1,3 @@
+---
+question:
+  firestoreProjectId: ${QUESTION_FIRESTORE_PROJECT_ID:-cocotola-local}

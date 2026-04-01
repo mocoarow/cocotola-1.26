@@ -1,0 +1,26 @@
+---
+health:
+  get:
+    summary: Health check
+    deprecated: false
+    description: Check the health of the cocotola-question service by verifying Firestore connectivity
+    operationId: healthCheck
+    tags:
+      - health
+    parameters: []
+    responses:
+      '200':
+        description: Service is healthy
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/health.yaml#/HealthCheckResponse'
+        headers: {}
+      '503':
+        description: Service is unhealthy
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []

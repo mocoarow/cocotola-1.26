@@ -1,5 +1,7 @@
 ---
 app:
+  question:
+    firestoreProjectId: ${APP_QUESTION_FIRESTORE_PROJECT_ID:-local}
   auth:
     signingKey: ${APP_AUTH_SIGNING_KEY}
     accessTokenTtlMin: ${APP_AUTH_ACCESS_TOKEN_TTL_MIN:-60}

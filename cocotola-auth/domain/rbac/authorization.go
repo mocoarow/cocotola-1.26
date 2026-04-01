@@ -59,6 +59,30 @@ func ActionCreateSpace() Action { return Action{value: "create_space"} }
 // ActionViewSpace returns the action for viewing a space.
 func ActionViewSpace() Action { return Action{value: "view_space"} }
 
+// ActionCreateWorkbook returns the action for creating a workbook.
+func ActionCreateWorkbook() Action { return Action{value: "create_workbook"} }
+
+// ActionViewWorkbook returns the action for viewing a workbook.
+func ActionViewWorkbook() Action { return Action{value: "view_workbook"} }
+
+// ActionUpdateWorkbook returns the action for updating a workbook.
+func ActionUpdateWorkbook() Action { return Action{value: "update_workbook"} }
+
+// ActionDeleteWorkbook returns the action for deleting a workbook.
+func ActionDeleteWorkbook() Action { return Action{value: "delete_workbook"} }
+
+// ActionImportWorkbook returns the action for importing (referencing) a workbook.
+func ActionImportWorkbook() Action { return Action{value: "import_workbook"} }
+
+// ActionCreateQuestion returns the action for creating a question.
+func ActionCreateQuestion() Action { return Action{value: "create_question"} }
+
+// ActionUpdateQuestion returns the action for updating a question.
+func ActionUpdateQuestion() Action { return Action{value: "update_question"} }
+
+// ActionDeleteQuestion returns the action for deleting a question.
+func ActionDeleteQuestion() Action { return Action{value: "delete_question"} }
+
 // Resource represents a target resource for authorization.
 type Resource struct {
 	value string
@@ -91,6 +115,16 @@ func ResourceGroup(groupID int) Resource {
 // ResourceSpace returns a resource representing a specific space.
 func ResourceSpace(spaceID int) Resource {
 	return Resource{value: fmt.Sprintf("space:%d", spaceID)}
+}
+
+// ResourceWorkbook returns a resource representing a specific workbook.
+func ResourceWorkbook(workbookID string) Resource {
+	return Resource{value: "workbook:" + workbookID}
+}
+
+// ResourceQuestion returns a resource representing a specific question.
+func ResourceQuestion(questionID string) Resource {
+	return Resource{value: "question:" + questionID}
 }
 
 // Group represents a named group for authorization.

@@ -10,6 +10,7 @@ import (
 	"go.yaml.in/yaml/v4"
 
 	authconfig "github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
+	questionconfig "github.com/mocoarow/cocotola-1.26/cocotola-question/config"
 
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
@@ -17,7 +18,8 @@ import (
 
 // AppConfig holds application-level configuration for included microservices.
 type AppConfig struct {
-	Auth authconfig.AuthConfig `yaml:"auth" validate:"required"`
+	Auth     authconfig.AuthConfig         `yaml:"auth" validate:"required"`
+	Question questionconfig.QuestionConfig `yaml:"question" validate:"required"`
 }
 
 // Config holds the complete application configuration.
