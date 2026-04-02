@@ -1,0 +1,29 @@
+---
+# Shared Firestore emulator configuration
+services:
+  local-firestore-base:
+    image: google/cloud-sdk:emulators
+    container_name: local-firestore
+    command:
+      - gcloud
+      - emulators
+      - firestore
+      - start
+      - --host-port=0.0.0.0:8681
+      - --project=test-project
+    environment:
+      TZ: Etc/GMT
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8681/"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT

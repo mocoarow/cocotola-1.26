@@ -24,13 +24,15 @@ func InitWorkbookRouter(
 	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
 ) {
-	workbookGroup := parentRouterGroup.Group("workbook", middleware...)
+	workbookGroup := parentRouterGroup.Group("workbook")
+	workbookGroup.Use(authMiddleware)
+	workbookGroup.Use(middleware...)
 
-	workbookGroup.POST("", authMiddleware, createHandler.CreateWorkbook)
-	workbookGroup.GET("", authMiddleware, listHandler.ListWorkbooks)
-	workbookGroup.GET("/:workbookId", authMiddleware, getHandler.GetWorkbook)
-	workbookGroup.PUT("/:workbookId", authMiddleware, updateHandler.UpdateWorkbook)
-	workbookGroup.DELETE("/:workbookId", authMiddleware, deleteHandler.DeleteWorkbook)
+	workbookGroup.POST("", createHandler.CreateWorkbook)
+	workbookGroup.GET("", listHandler.ListWorkbooks)
+	workbookGroup.GET("/:workbookId", getHandler.GetWorkbook)
+	workbookGroup.PUT("/:workbookId", updateHandler.UpdateWorkbook)
+	workbookGroup.DELETE("/:workbookId", deleteHandler.DeleteWorkbook)
 }
 
 func handleWorkbookError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {

@@ -53,8 +53,25 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 		return fmt.Errorf("create private space for user %d: %w", e.AppUserID(), err)
 	}
 
+	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
+		return fmt.Errorf("add list_spaces policy for user %d: %w", e.AppUserID(), err)
+	}
+
 	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(spaceID), domainrbac.EffectAllow()); err != nil {
 		return fmt.Errorf("add view_space policy for user %d on space %d: %w", e.AppUserID(), spaceID, err)
+	}
+
+	workbookActions := []domainrbac.Action{
+		domainrbac.ActionCreateWorkbook(),
+		domainrbac.ActionViewWorkbook(),
+		domainrbac.ActionUpdateWorkbook(),
+		domainrbac.ActionDeleteWorkbook(),
+		domainrbac.ActionImportWorkbook(),
+	}
+	for _, action := range workbookActions {
+		if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
+			return fmt.Errorf("add %s policy for user %d: %w", action.Value(), e.AppUserID(), err)
+		}
 	}
 
 	h.logger.InfoContext(ctx, "private space created for user",
