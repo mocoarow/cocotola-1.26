@@ -173,6 +173,7 @@ func Test_PredefinedActions_shouldHaveCorrectValues(t *testing.T) {
 		{name: "ActionAddUserToGroup", action: rbac.ActionAddUserToGroup(), want: "add_user_to_group"},
 		{name: "ActionRemoveUserFromGroup", action: rbac.ActionRemoveUserFromGroup(), want: "remove_user_from_group"},
 		{name: "ActionCreateSpace", action: rbac.ActionCreateSpace(), want: "create_space"},
+		{name: "ActionListSpaces", action: rbac.ActionListSpaces(), want: "list_spaces"},
 		{name: "ActionViewSpace", action: rbac.ActionViewSpace(), want: "view_space"},
 		{name: "ActionCreateWorkbook", action: rbac.ActionCreateWorkbook(), want: "create_workbook"},
 		{name: "ActionViewWorkbook", action: rbac.ActionViewWorkbook(), want: "view_workbook"},

@@ -24,13 +24,15 @@ func InitQuestionRouter(
 	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
 ) {
-	questionGroup := parentRouterGroup.Group("workbook/:workbookId/question", middleware...)
+	questionGroup := parentRouterGroup.Group("workbook/:workbookId/question")
+	questionGroup.Use(authMiddleware)
+	questionGroup.Use(middleware...)
 
-	questionGroup.POST("", authMiddleware, addHandler.AddQuestion)
-	questionGroup.GET("", authMiddleware, listHandler.ListQuestions)
-	questionGroup.GET("/:questionId", authMiddleware, getHandler.GetQuestion)
-	questionGroup.PUT("/:questionId", authMiddleware, updateHandler.UpdateQuestion)
-	questionGroup.DELETE("/:questionId", authMiddleware, deleteHandler.DeleteQuestion)
+	questionGroup.POST("", addHandler.AddQuestion)
+	questionGroup.GET("", listHandler.ListQuestions)
+	questionGroup.GET("/:questionId", getHandler.GetQuestion)
+	questionGroup.PUT("/:questionId", updateHandler.UpdateQuestion)
+	questionGroup.DELETE("/:questionId", deleteHandler.DeleteQuestion)
 }
 
 func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {

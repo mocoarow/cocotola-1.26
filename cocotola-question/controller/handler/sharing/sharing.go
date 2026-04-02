@@ -23,12 +23,14 @@ func InitSharingRouter(
 	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
 ) {
-	sharingGroup := parentRouterGroup.Group("workbook", middleware...)
+	sharingGroup := parentRouterGroup.Group("workbook")
+	sharingGroup.Use(authMiddleware)
+	sharingGroup.Use(middleware...)
 
-	sharingGroup.POST("/:workbookId/share", authMiddleware, shareHandler.ShareWorkbook)
-	sharingGroup.GET("/shared", authMiddleware, listSharedHandler.ListShared)
-	sharingGroup.DELETE("/shared/:refId", authMiddleware, unshareHandler.Unshare)
-	sharingGroup.GET("/public", authMiddleware, listPublicHandler.ListPublic)
+	sharingGroup.POST("/:workbookId/share", shareHandler.ShareWorkbook)
+	sharingGroup.GET("/shared", listSharedHandler.ListShared)
+	sharingGroup.DELETE("/shared/:refId", unshareHandler.Unshare)
+	sharingGroup.GET("/public", listPublicHandler.ListPublic)
 }
 
 func handleSharingError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {

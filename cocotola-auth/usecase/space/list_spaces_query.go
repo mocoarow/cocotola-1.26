@@ -42,7 +42,7 @@ func (q *ListSpacesQuery) ListSpaces(ctx context.Context, input *spaceservice.Li
 		return nil, fmt.Errorf("find organization: %w", err)
 	}
 
-	allowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceAny())
+	allowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionListSpaces(), domainrbac.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

@@ -1,0 +1,110 @@
+---
+desc: ユーザーが自身のプライベートスペースにワークブックを作成し、一覧で確認する
+runners:
+  req: http://localhost:8000
+vars:
+  OWNER_LOGIN_ID: ${OWNER_LOGIN_ID}
+  OWNER_PASSWORD: ${OWNER_PASSWORD}
+  ORGANIZATION_NAME: ${ORGANIZATION_NAME}
+  NEW_USER_LOGIN_ID: ${NEW_USER_LOGIN_ID}
+  NEW_USER_PASSWORD: ${NEW_USER_PASSWORD}
+steps:
+  ownerAuth:
+    desc: オーナーのアクセストークンを発行する
+    req:
+      /api/v1/auth/authenticate:
+        post:
+          body:
+            application/json:
+              loginId: "{{ vars.OWNER_LOGIN_ID }}"
+              password: "{{ vars.OWNER_PASSWORD }}"
+              organizationName: "{{ vars.ORGANIZATION_NAME }}"
+    test: |
+      current.res.status == 200
+    bind:
+      ownerAccessToken: current.res.body.accessToken
+
+  createUser:
+    desc: オーナーが新しいユーザーを作成する
+    req:
+      /api/v1/user:
+        post:
+          headers:
+            authorization: "Bearer {{ ownerAccessToken }}"
+          body:
+            application/json:
+              loginId: "{{ vars.NEW_USER_LOGIN_ID }}"
+              password: "{{ vars.NEW_USER_PASSWORD }}"
+    test: |
+      current.res.status == 201
+
+  wait:
+    desc: プライベートスペース作成イベントの処理を待つ
+    req:
+      /api/v1/auth/health:
+        get: {}
+    test: |
+      current.res.status == 200
+    loop:
+      count: 3
+      interval: 500ms
+
+  userAuth:
+    desc: 作成したユーザーでログインする
+    req:
+      /api/v1/auth/authenticate:
+        post:
+          body:
+            application/json:
+              loginId: "{{ vars.NEW_USER_LOGIN_ID }}"
+              password: "{{ vars.NEW_USER_PASSWORD }}"
+              organizationName: "{{ vars.ORGANIZATION_NAME }}"
+    test: |
+      current.res.status == 200
+    bind:
+      userAccessToken: current.res.body.accessToken
+
+  listSpaces:
+    desc: ユーザーの自身のスペースを取得する
+    req:
+      /api/v1/space:
+        get:
+          headers:
+            authorization: "Bearer {{ userAccessToken }}"
+    test: |
+      current.res.status == 200
+      && len(current.res.body.spaces) > 0
+    bind:
+      privateSpaceID: current.res.body.spaces[0].spaceId
+
+  createWorkbook:
+    desc: プライベートスペースにワークブックを作成する
+    req:
+      /api/v1/workbook:
+        post:
+          headers:
+            authorization: "Bearer {{ userAccessToken }}"
+          body:
+            application/json:
+              spaceId: "{{ privateSpaceID }}"
+              title: "テスト用ワークブック"
+              description: ""
+              visibility: "private"
+    test: |
+      current.res.status == 201
+      && current.res.body.title == "テスト用ワークブック"
+      && current.res.body.visibility == "private"
+      && current.res.body.workbookId != ""
+    bind:
+      workbookID: current.res.body.workbookId
+
+  listWorkbooks:
+    desc: ワークブック一覧を取得し、作成したワークブックが存在することを確認する
+    req:
+      /api/v1/workbook?spaceId={{ privateSpaceID }}:
+        get:
+          headers:
+            authorization: "Bearer {{ userAccessToken }}"
+    test: |
+      current.res.status == 200
+      && len(current.res.body.workbooks) > 0

@@ -268,6 +268,7 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 		domainrbac.ActionAddUserToGroup(),
 		domainrbac.ActionRemoveUserFromGroup(),
 		domainrbac.ActionCreateSpace(),
+		domainrbac.ActionListSpaces(),
 		domainrbac.ActionViewSpace(),
 	}
 
@@ -302,6 +303,7 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 		domainrbac.ActionRemoveUserFromGroup(),
 		domainrbac.ActionCreateOrganization(),
 		domainrbac.ActionCreateSpace(),
+		domainrbac.ActionListSpaces(),
 		domainrbac.ActionViewSpace(),
 	}
 

@@ -56,6 +56,9 @@ func ActionCreateOrganization() Action { return Action{value: "create_organizati
 // ActionCreateSpace returns the action for creating a space.
 func ActionCreateSpace() Action { return Action{value: "create_space"} }
 
+// ActionListSpaces returns the action for listing spaces (metadata only).
+func ActionListSpaces() Action { return Action{value: "list_spaces"} }
+
 // ActionViewSpace returns the action for viewing a space.
 func ActionViewSpace() Action { return Action{value: "view_space"} }
 
