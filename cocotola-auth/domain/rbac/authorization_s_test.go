@@ -164,10 +164,12 @@ func Test_PredefinedActions_shouldHaveCorrectValues(t *testing.T) {
 		want   string
 	}{
 		{name: "ActionCreateUser", action: rbac.ActionCreateUser(), want: "create_user"},
+		{name: "ActionListUsers", action: rbac.ActionListUsers(), want: "list_users"},
 		{name: "ActionViewUser", action: rbac.ActionViewUser(), want: "view_user"},
 		{name: "ActionDisableUser", action: rbac.ActionDisableUser(), want: "disable_user"},
 		{name: "ActionChangePassword", action: rbac.ActionChangePassword(), want: "change_password"},
 		{name: "ActionCreateGroup", action: rbac.ActionCreateGroup(), want: "create_group"},
+		{name: "ActionListGroups", action: rbac.ActionListGroups(), want: "list_groups"},
 		{name: "ActionViewGroup", action: rbac.ActionViewGroup(), want: "view_group"},
 		{name: "ActionDisableGroup", action: rbac.ActionDisableGroup(), want: "disable_group"},
 		{name: "ActionAddUserToGroup", action: rbac.ActionAddUserToGroup(), want: "add_user_to_group"},

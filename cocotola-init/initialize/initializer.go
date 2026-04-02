@@ -259,10 +259,12 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateUser(),
+		domainrbac.ActionListUsers(),
 		domainrbac.ActionViewUser(),
 		domainrbac.ActionDisableUser(),
 		domainrbac.ActionChangePassword(),
 		domainrbac.ActionCreateGroup(),
+		domainrbac.ActionListGroups(),
 		domainrbac.ActionViewGroup(),
 		domainrbac.ActionDisableGroup(),
 		domainrbac.ActionAddUserToGroup(),
@@ -293,10 +295,12 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateUser(),
+		domainrbac.ActionListUsers(),
 		domainrbac.ActionViewUser(),
 		domainrbac.ActionDisableUser(),
 		domainrbac.ActionChangePassword(),
 		domainrbac.ActionCreateGroup(),
+		domainrbac.ActionListGroups(),
 		domainrbac.ActionViewGroup(),
 		domainrbac.ActionDisableGroup(),
 		domainrbac.ActionAddUserToGroup(),
