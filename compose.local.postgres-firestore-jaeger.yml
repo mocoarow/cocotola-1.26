@@ -6,6 +6,14 @@ services:
       file: ./compose.common-postgres.yml
     networks:
       - cocotola
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT
 
   local-firestore:
     extends:
@@ -15,6 +23,14 @@ services:
       - 127.0.0.1:${FIRESTORE_PORT:-8681}:8681
     networks:
       - cocotola
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT
 
   local-jaeger:
     extends:
@@ -28,6 +44,14 @@ services:
       - 127.0.0.1:13133:13133
     networks:
       - cocotola
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT
 
 networks:
   cocotola:
