@@ -231,6 +231,12 @@ tasks:
       - docker compose -f compose.local.postgres-lgtm.yml up -d --wait
       - bazelisk run //cocotola-auth:cocotola-auth
 
+  run-cocotola-auth-production:
+    desc: "Run cocotola-auth with production infrastructure"
+    dotenv: ['.env.production']
+    cmds:
+      - bazelisk run //cocotola-auth:cocotola-auth
+
   run-cocotola-app:
     desc: "Run cocotola-app with local infrastructure (auth + question)"
     cmds:

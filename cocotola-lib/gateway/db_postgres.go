@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,12 +28,13 @@ func (*DialectPostgres) BoolDefaultValue() string {
 
 // PostgresConfig holds PostgreSQL connection parameters.
 type PostgresConfig struct {
-	Username string `yaml:"username" validate:"required"`
-	Password string `yaml:"password" validate:"required"`
-	Host     string `yaml:"host" validate:"required"`
-	Port     int    `yaml:"port" validate:"required"`
-	Database string `yaml:"database" validate:"required"`
-	SSLMode  string `yaml:"sslMode"`
+	Username string            `yaml:"username" validate:"required"`
+	Password string            `yaml:"password" validate:"required"`
+	Host     string            `yaml:"host" validate:"required"`
+	Port     int               `yaml:"port" validate:"required"`
+	Database string            `yaml:"database" validate:"required"`
+	SSLMode  string            `yaml:"sslMode"`
+	Params   map[string]string `yaml:"params"`
 }
 
 func initDBPostgres(ctx context.Context, cfg DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
@@ -53,15 +55,27 @@ func OpenPostgresWithDSN(dsn string, logLevel slog.Level, appName string) (*gorm
 	return openGormDB(gormpostgres.Open(dsn), logLevel, appName)
 }
 
-// OpenPostgres opens a GORM PostgreSQL connection using the given config.
-func OpenPostgres(cfg *PostgresConfig, logLevel slog.Level, appName string) (*gorm.DB, error) {
+// BuildPostgresDSN builds a PostgreSQL DSN string from the given config.
+func BuildPostgresDSN(cfg *PostgresConfig) string {
 	sslMode := cfg.SSLMode
 	if sslMode == "" {
 		sslMode = "disable"
 	}
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=UTC",
+	var b strings.Builder
+	fmt.Fprintf(&b, "host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=UTC",
 		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, sslMode)
 
-	return OpenPostgresWithDSN(dsn, logLevel, appName)
+	for k, v := range cfg.Params {
+		if v != "" {
+			fmt.Fprintf(&b, " %s='%s'", k, v)
+		}
+	}
+
+	return b.String()
+}
+
+// OpenPostgres opens a GORM PostgreSQL connection using the given config.
+func OpenPostgres(cfg *PostgresConfig, logLevel slog.Level, appName string) (*gorm.DB, error) {
+	return OpenPostgresWithDSN(BuildPostgresDSN(cfg), logLevel, appName)
 }

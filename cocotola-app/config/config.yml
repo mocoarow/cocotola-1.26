@@ -42,6 +42,8 @@ db:
     port: ${APP_POSTGRES_PORT:-5432}
     database: ${APP_POSTGRES_DATABASE:-local}
     sslMode: ${APP_POSTGRES_SSL_MODE:-disable}
+    params:
+      default_query_exec_mode: ${APP_POSTGRES_DEFAULT_QUERY_EXEC_MODE:-}
 trace:
   exporter: ${TRACE_EXPORTER:-none}
   otlp:
