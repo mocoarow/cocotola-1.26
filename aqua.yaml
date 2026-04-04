@@ -13,3 +13,7 @@ packages:
   - name: k1LoW/calver
     registry: local
     version: v1.0.1
+  - name: stoplightio/spectral
+    version: v6.15.0
+  - name: pnpm/pnpm
+    version: v10.33.0
