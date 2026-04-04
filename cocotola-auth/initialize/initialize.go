@@ -141,21 +141,22 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 
 	// group usecase + controller
 	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+	authV1 := v1.Group("auth")
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
-	grouphandler.InitGroupRouter(createGroupHandler, v1, authMiddleware)
+	grouphandler.InitGroupRouter(createGroupHandler, authV1, authMiddleware)
 
 	// space usecase + controller
 	spaceCommand := spaceusecase.NewCommand(spaceRepo, spaceRepo, orgRepo, eventBus, authzChecker)
 	createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
 	listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
-	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, v1, authMiddleware)
+	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
 
 	// user usecase + controller
 	appUserRepo := gateway.NewAppUserRepository(db)
 	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
-	userhandler.InitUserRouter(createUserHandler, v1, authMiddleware)
+	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 
 	return &InitResult{
 		EventBusStart:  eventBus.Start,

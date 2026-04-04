@@ -27,7 +27,7 @@ steps:
   createUser:
     desc: オーナーが新しいユーザーを作成する
     req:
-      /api/v1/user:
+      /api/v1/auth/user:
         post:
           headers:
             authorization: "Bearer {{ ownerAccessToken }}"
@@ -67,7 +67,7 @@ steps:
   listSpaces:
     desc: ユーザーの自身のスペースを取得する
     req:
-      /api/v1/space:
+      /api/v1/auth/space:
         get:
           headers:
             authorization: "Bearer {{ userAccessToken }}"
