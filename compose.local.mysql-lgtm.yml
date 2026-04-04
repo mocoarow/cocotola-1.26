@@ -6,14 +6,6 @@ services:
       file: ./compose.common-mysql.yml
     networks:
       - cocotola
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - AUDIT_WRITE
-      - MKNOD
-      - NET_RAW
-      - SETFCAP
-      - SYS_CHROOT
 
   local-lgtm:
     extends:
@@ -27,14 +19,6 @@ services:
       - 127.0.0.1:9090:9090
     networks:
       - cocotola
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - AUDIT_WRITE
-      - MKNOD
-      - NET_RAW
-      - SETFCAP
-      - SYS_CHROOT
 
 networks:
   cocotola:
