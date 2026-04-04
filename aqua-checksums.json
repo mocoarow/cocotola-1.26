@@ -1,6 +1,11 @@
 {
   "checksums": [
     {
+      "id": "github_release/github.com/biomejs/biome/@biomejs/biome@2.4.10/biome-linux-x64",
+      "checksum": "FB9423A99EA4BE5036F4EE95667FCC5A67E8FF72BD6D23E392033A70FB755D90",
+      "algorithm": "sha256"
+    },
+    {
       "id": "github_release/github.com/k1LoW/calver/v1.0.1/calver_v1.0.1_darwin_amd64.zip",
       "checksum": "16F7872F844F08E4F9F0D29979104E38CBF081BEDF192EDEF5F3DF5BD1B9EE8B",
       "algorithm": "sha256"
@@ -108,6 +113,11 @@
     {
       "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.486.0/registry.yaml",
       "checksum": "63B62E674B5BB399FEE5226F40638AB93CEA74254EEB535152AB27ACB2A33BE3C92013D5B7C32617DAD9B51A3E090F973810EC38D7A12D0ADAC4063E87DC6F52",
+      "algorithm": "sha512"
+    },
+    {
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.492.0/registry.yaml",
+      "checksum": "A0FAAA0CDBA0C23349E000D45D7DFE48185519CA72A0D5618A4C6198F2BCBA9EE10FA209351D44437495541A3BCECD987D65D176BBF59CF23271FC30D53DA90E",
       "algorithm": "sha512"
     }
   ]
