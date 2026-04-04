@@ -61,7 +61,12 @@ func run() (int, error) {
 
 	// auth HTTP client for communicating with cocotola-auth
 	authTimeout := time.Duration(cfg.Auth.TimeoutSec) * time.Second
-	httpClient := &http.Client{Timeout: authTimeout}
+	httpClient := &http.Client{
+		Transport:     nil,
+		CheckRedirect: nil,
+		Jar:           nil,
+		Timeout:       authTimeout,
+	}
 
 	// auth middleware (validates tokens via cocotola-auth API)
 	authMiddleware := gateway.NewAuthMiddleware(cfg.Auth.BaseURL, httpClient)

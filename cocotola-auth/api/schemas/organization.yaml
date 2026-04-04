@@ -1,0 +1,14 @@
+---
+FindOrganizationResponse:
+  type: object
+  properties:
+    id:
+      type: integer
+      x-go-name: ID
+      format: int32
+    name:
+      type: string
+      pattern: ^.*$
+  required:
+    - id
+    - name

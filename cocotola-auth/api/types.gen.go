@@ -41,6 +41,11 @@ type AuthenticateResponse struct {
 	RefreshToken *string `json:"refreshToken,omitempty"`
 }
 
+// AuthzCheckResponse defines model for AuthzCheckResponse.
+type AuthzCheckResponse struct {
+	Allowed bool `json:"allowed"`
+}
+
 // CreateGroupRequest defines model for CreateGroupRequest.
 type CreateGroupRequest struct {
 	Name string `binding:"required,max=255" json:"name"`
@@ -97,9 +102,10 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-// HealthCheckResponse defines model for HealthCheckResponse.
-type HealthCheckResponse struct {
-	Status string `json:"status"`
+// FindOrganizationResponse defines model for FindOrganizationResponse.
+type FindOrganizationResponse struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 // GetMeResponse defines model for GetMeResponse.
@@ -112,6 +118,11 @@ type GetMeResponse struct {
 // GuestAuthRequest defines model for GuestAuthRequest.
 type GuestAuthRequest struct {
 	OrganizationName string `binding:"required,max=20" json:"organizationName"`
+}
+
+// HealthCheckResponse defines model for HealthCheckResponse.
+type HealthCheckResponse struct {
+	Status string `json:"status"`
 }
 
 // ListSpacesResponse defines model for ListSpacesResponse.
@@ -157,6 +168,27 @@ type SpaceItem struct {
 // SpaceItemSpaceType defines model for SpaceItem.SpaceType.
 type SpaceItemSpaceType string
 
+// CheckAuthorizationParams defines parameters for CheckAuthorization.
+type CheckAuthorizationParams struct {
+	// Org Organization ID
+	Org int `form:"org" json:"org"`
+
+	// User User ID
+	User int `form:"user" json:"user"`
+
+	// Action Action to check (e.g. create_workbook, view_workbook)
+	Action string `form:"action" json:"action"`
+
+	// Resource Resource to check (e.g. *, workbook:123)
+	Resource string `form:"resource" json:"resource"`
+}
+
+// FindOrganizationParams defines parameters for FindOrganization.
+type FindOrganizationParams struct {
+	// Name Organization name to look up
+	Name string `form:"name" json:"name"`
+}
+
 // PasswordAuthenticationParams defines parameters for PasswordAuthentication.
 type PasswordAuthenticationParams struct {
 	// XTokenDelivery Token delivery method (json or cookie)
@@ -165,6 +197,9 @@ type PasswordAuthenticationParams struct {
 
 // PasswordAuthenticationParamsXTokenDelivery defines parameters for PasswordAuthentication.
 type PasswordAuthenticationParamsXTokenDelivery string
+
+// CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
+type CreateGroupJSONRequestBody = CreateGroupRequest
 
 // GuestAuthenticationJSONRequestBody defines body for GuestAuthentication for application/json ContentType.
 type GuestAuthenticationJSONRequestBody = GuestAuthRequest
@@ -177,9 +212,6 @@ type RefreshTokenJSONRequestBody = RefreshRequest
 
 // RevokeTokenJSONRequestBody defines body for RevokeToken for application/json ContentType.
 type RevokeTokenJSONRequestBody = RevokeRequest
-
-// CreateGroupJSONRequestBody defines body for CreateGroup for application/json ContentType.
-type CreateGroupJSONRequestBody = CreateGroupRequest
 
 // CreateSpaceJSONRequestBody defines body for CreateSpace for application/json ContentType.
 type CreateSpaceJSONRequestBody = CreateSpaceRequest

@@ -1,0 +1,49 @@
+---
+organization:
+  get:
+    summary: Find an organization by name
+    deprecated: false
+    description: Look up an organization by its name and return its ID
+    operationId: findOrganization
+    tags:
+      - organization
+    parameters:
+      - name: name
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+        description: Organization name to look up
+    responses:
+      '200':
+        description: Organization found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/organization.yaml#/FindOrganizationResponse'
+        headers: {}
+      '400':
+        description: Missing name parameter
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Organization not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

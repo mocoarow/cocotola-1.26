@@ -13,8 +13,10 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
+	authzhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz"
 	grouphandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group"
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health"
+	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
 	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
@@ -157,6 +159,14 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
+
+	// organization lookup + controller
+	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
+	orghandler.InitOrganizationRouter(findOrgHandler, authV1, authMiddleware)
+
+	// authz check + controller
+	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
+	authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
 
 	return &InitResult{
 		EventBusStart:  eventBus.Start,

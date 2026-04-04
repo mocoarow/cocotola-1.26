@@ -85,20 +85,14 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 }
 
 // AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves
-// organization names by calling cocotola-auth's API.
-// NOTE: cocotola-auth currently returns the organization name but not the ID
-// via the /auth/me endpoint. This resolver uses a simple mapping approach.
-// When cocotola-auth adds a dedicated org lookup API, this should be updated.
+// organization names by calling cocotola-auth's GET /api/v1/auth/organization endpoint.
 func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client) func(ctx context.Context, name string) (int, error) {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "OrgResolver"))
 
 	return func(ctx context.Context, name string) (int, error) {
-		// Call cocotola-auth to resolve organization name to ID.
-		// Uses a hypothetical endpoint: GET /api/v1/organizations?name=<name>
-		// Until this API exists, we return an error to indicate the need for implementation.
 		params := url.Values{}
 		params.Set("name", name)
-		reqURL := authBaseURL + "/api/v1/organizations?" + params.Encode()
+		reqURL := authBaseURL + "/api/v1/auth/organization?" + params.Encode()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 		if err != nil {
@@ -146,17 +140,15 @@ func NewAuthServiceAuthorizationChecker(authBaseURL string, httpClient *http.Cli
 	}
 }
 
-// IsAllowed checks if the given action on the resource is allowed.
-// NOTE: cocotola-auth does not yet have a dedicated authz check API.
-// Until that API is available, this delegates to a hypothetical endpoint:
-// GET /api/v1/authz/check?org=<orgID>&user=<userID>&action=<action>&resource=<resource>
+// IsAllowed checks if the given action on the resource is allowed
+// by calling cocotola-auth's GET /api/v1/auth/authz/check endpoint.
 func (c *AuthServiceAuthorizationChecker) IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error) {
 	params := url.Values{}
 	params.Set("org", strconv.Itoa(organizationID))
 	params.Set("user", strconv.Itoa(operatorID))
 	params.Set("action", action.Value())
 	params.Set("resource", resource.Value())
-	reqURL := c.authBaseURL + "/api/v1/authz/check?" + params.Encode()
+	reqURL := c.authBaseURL + "/api/v1/auth/authz/check?" + params.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

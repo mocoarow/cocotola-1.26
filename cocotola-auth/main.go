@@ -18,7 +18,9 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
+	authzhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz"
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health"
+	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
@@ -145,6 +147,21 @@ func run() (int, error) {
 		revokeHandler := authhandler.NewRevokeHandler(authUsecase, cfg.Auth.Cookie)
 		getMeHandler := authhandler.NewGetMeHandler()
 		authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+	}
+
+	authV1 := v1.Group("auth")
+
+	// organization lookup
+	{
+		findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
+		orghandler.InitOrganizationRouter(findOrgHandler, authV1, authMiddleware)
+	}
+
+	// authz check
+	{
+		authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+		authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
+		authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
 	}
 
 	// run

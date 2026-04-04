@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -798,7 +798,7 @@ func (_m *mockuserPolicyAdder) EXPECT() *mockuserPolicyAdder_Expecter {
 }
 
 // AddPolicyForUser provides a mock function for the type mockuserPolicyAdder
-func (_mock *mockuserPolicyAdder) AddPolicyForUser(ctx context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error {
+func (_mock *mockuserPolicyAdder) AddPolicyForUser(ctx context.Context, organizationID int, userID int, action rbac.Action, resource rbac.Resource, effect rbac.Effect) error {
 	ret := _mock.Called(ctx, organizationID, userID, action, resource, effect)
 
 	if len(ret) == 0 {
@@ -806,7 +806,7 @@ func (_mock *mockuserPolicyAdder) AddPolicyForUser(ctx context.Context, organiza
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, domainrbac.Action, domainrbac.Resource, domainrbac.Effect) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, rbac.Action, rbac.Resource, rbac.Effect) error); ok {
 		r0 = returnFunc(ctx, organizationID, userID, action, resource, effect)
 	} else {
 		r0 = ret.Error(0)
@@ -823,14 +823,14 @@ type mockuserPolicyAdder_AddPolicyForUser_Call struct {
 //   - ctx context.Context
 //   - organizationID int
 //   - userID int
-//   - action domainrbac.Action
-//   - resource domainrbac.Resource
-//   - effect domainrbac.Effect
+//   - action rbac.Action
+//   - resource rbac.Resource
+//   - effect rbac.Effect
 func (_e *mockuserPolicyAdder_Expecter) AddPolicyForUser(ctx interface{}, organizationID interface{}, userID interface{}, action interface{}, resource interface{}, effect interface{}) *mockuserPolicyAdder_AddPolicyForUser_Call {
 	return &mockuserPolicyAdder_AddPolicyForUser_Call{Call: _e.mock.On("AddPolicyForUser", ctx, organizationID, userID, action, resource, effect)}
 }
 
-func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect)) *mockuserPolicyAdder_AddPolicyForUser_Call {
+func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Context, organizationID int, userID int, action rbac.Action, resource rbac.Resource, effect rbac.Effect)) *mockuserPolicyAdder_AddPolicyForUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -844,17 +844,17 @@ func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Co
 		if args[2] != nil {
 			arg2 = args[2].(int)
 		}
-		var arg3 domainrbac.Action
+		var arg3 rbac.Action
 		if args[3] != nil {
-			arg3 = args[3].(domainrbac.Action)
+			arg3 = args[3].(rbac.Action)
 		}
-		var arg4 domainrbac.Resource
+		var arg4 rbac.Resource
 		if args[4] != nil {
-			arg4 = args[4].(domainrbac.Resource)
+			arg4 = args[4].(rbac.Resource)
 		}
-		var arg5 domainrbac.Effect
+		var arg5 rbac.Effect
 		if args[5] != nil {
-			arg5 = args[5].(domainrbac.Effect)
+			arg5 = args[5].(rbac.Effect)
 		}
 		run(
 			arg0,
@@ -873,7 +873,7 @@ func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) Return(err error) *mockuser
 	return _c
 }
 
-func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) RunAndReturn(run func(ctx context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error) *mockuserPolicyAdder_AddPolicyForUser_Call {
+func (_c *mockuserPolicyAdder_AddPolicyForUser_Call) RunAndReturn(run func(ctx context.Context, organizationID int, userID int, action rbac.Action, resource rbac.Resource, effect rbac.Effect) error) *mockuserPolicyAdder_AddPolicyForUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

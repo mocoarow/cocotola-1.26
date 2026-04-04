@@ -14,8 +14,10 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 tags:
   - name: auth
+  - name: authz
   - name: group
   - name: health
+  - name: organization
   - name: space
   - name: user
 paths:
@@ -39,6 +41,10 @@ paths:
     $ref: 'paths/space.yaml#/space'
   /api/v1/auth/user:
     $ref: 'paths/user.yaml#/user'
+  /api/v1/auth/organization:
+    $ref: 'paths/organization.yaml#/organization'
+  /api/v1/auth/authz/check:
+    $ref: 'paths/authz.yaml#/check'
 components:
   schemas:
     PasswordAuthRequest:
@@ -73,6 +79,10 @@ components:
       $ref: 'schemas/user.yaml#/CreateUserResponse'
     HealthCheckResponse:
       $ref: 'schemas/health.yaml#/HealthCheckResponse'
+    FindOrganizationResponse:
+      $ref: 'schemas/organization.yaml#/FindOrganizationResponse'
+    AuthzCheckResponse:
+      $ref: 'schemas/authz.yaml#/AuthzCheckResponse'
     ErrorResponse:
       $ref: 'schemas/common.yaml#/ErrorResponse'
   responses: {}

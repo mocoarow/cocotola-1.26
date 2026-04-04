@@ -1,0 +1,59 @@
+---
+check:
+  get:
+    summary: Check authorization
+    deprecated: false
+    description: Check if a user is allowed to perform an action on a resource within an organization
+    operationId: checkAuthorization
+    tags:
+      - authz
+    parameters:
+      - name: org
+        in: query
+        required: true
+        schema:
+          type: integer
+        description: Organization ID
+      - name: user
+        in: query
+        required: true
+        schema:
+          type: integer
+        description: User ID
+      - name: action
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+        description: Action to check (e.g. create_workbook, view_workbook)
+      - name: resource
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+        description: Resource to check (e.g. *, workbook:123)
+    responses:
+      '200':
+        description: Authorization check result
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/authz.yaml#/AuthzCheckResponse'
+        headers: {}
+      '400':
+        description: Missing or invalid parameters
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security: []
