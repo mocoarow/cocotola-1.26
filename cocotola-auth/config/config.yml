@@ -27,6 +27,8 @@ db:
     port: ${AUTH_POSTGRES_PORT:-5432}
     database: ${AUTH_POSTGRES_DATABASE:-local}
     sslMode: ${AUTH_POSTGRES_SSL_MODE:-disable}
+    params:
+      default_query_exec_mode: ${AUTH_POSTGRES_DEFAULT_QUERY_EXEC_MODE:-}
 trace:
   exporter: ${TRACE_EXPORTER:-none}
   otlp:
