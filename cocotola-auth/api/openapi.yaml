@@ -33,11 +33,11 @@ paths:
     $ref: 'paths/auth.yaml#/revoke'
   /api/v1/auth/me:
     $ref: 'paths/auth.yaml#/me'
-  /api/v1/group:
+  /api/v1/auth/group:
     $ref: 'paths/group.yaml#/group'
-  /api/v1/space:
+  /api/v1/auth/space:
     $ref: 'paths/space.yaml#/space'
-  /api/v1/user:
+  /api/v1/auth/user:
     $ref: 'paths/user.yaml#/user'
 components:
   schemas:

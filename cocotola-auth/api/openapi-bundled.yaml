@@ -268,7 +268,7 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
-  /api/v1/group:
+  /api/v1/auth/group:
     post:
       summary: Create a group
       deprecated: false
@@ -323,7 +323,7 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
-  /api/v1/space:
+  /api/v1/auth/space:
     post:
       summary: Create a space
       deprecated: false
@@ -404,7 +404,7 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
-  /api/v1/user:
+  /api/v1/auth/user:
     post:
       summary: Create a user
       deprecated: false
