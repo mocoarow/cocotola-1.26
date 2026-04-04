@@ -26,6 +26,9 @@ func (a Action) Value() string { return a.value }
 // ActionCreateUser returns the action for creating a user.
 func ActionCreateUser() Action { return Action{value: "create_user"} }
 
+// ActionListUsers returns the action for listing users (metadata only).
+func ActionListUsers() Action { return Action{value: "list_users"} }
+
 // ActionViewUser returns the action for viewing a user.
 func ActionViewUser() Action { return Action{value: "view_user"} }
 
@@ -37,6 +40,9 @@ func ActionChangePassword() Action { return Action{value: "change_password"} }
 
 // ActionCreateGroup returns the action for creating a group.
 func ActionCreateGroup() Action { return Action{value: "create_group"} }
+
+// ActionListGroups returns the action for listing groups (metadata only).
+func ActionListGroups() Action { return Action{value: "list_groups"} }
 
 // ActionViewGroup returns the action for viewing a group.
 func ActionViewGroup() Action { return Action{value: "view_group"} }
