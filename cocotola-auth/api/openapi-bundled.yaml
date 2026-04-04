@@ -17,10 +17,38 @@ security:
   - CookieAuth: []
 tags:
   - name: auth
+  - name: authz
   - name: group
+  - name: health
+  - name: organization
   - name: space
   - name: user
 paths:
+  /api/v1/auth/health:
+    get:
+      summary: Health check
+      deprecated: false
+      description: Check the health of the service by verifying database connectivity with SELECT 1
+      operationId: healthCheck
+      tags:
+        - health
+      parameters: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+          headers: {}
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security: []
   /api/v1/auth/password/authenticate:
     post:
       summary: Password authentication
@@ -459,6 +487,109 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/auth/organization:
+    get:
+      summary: Find an organization by name
+      deprecated: false
+      description: Look up an organization by its name and return its ID
+      operationId: findOrganization
+      tags:
+        - organization
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Organization name to look up
+      responses:
+        '200':
+          description: Organization found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FindOrganizationResponse'
+          headers: {}
+        '400':
+          description: Missing name parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+  /api/v1/auth/authz/check:
+    get:
+      summary: Check authorization
+      deprecated: false
+      description: Check if a user is allowed to perform an action on a resource within an organization
+      operationId: checkAuthorization
+      tags:
+        - authz
+      parameters:
+        - name: org
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: Organization ID
+        - name: user
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: User ID
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Action to check (e.g. create_workbook, view_workbook)
+        - name: resource
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Resource to check (e.g. *, workbook:123)
+      responses:
+        '200':
+          description: Authorization check result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthzCheckResponse'
+          headers: {}
+        '400':
+          description: Missing or invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security: []
 components:
   schemas:
     PasswordAuthRequest:
@@ -732,6 +863,33 @@ components:
         - organizationId
         - loginId
         - enabled
+    HealthCheckResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          pattern: ^.*$
+      required:
+        - status
+    FindOrganizationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          x-go-name: ID
+          format: int32
+        name:
+          type: string
+      required:
+        - id
+        - name
+    AuthzCheckResponse:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+      required:
+        - allowed
     ErrorResponse:
       type: object
       properties:
