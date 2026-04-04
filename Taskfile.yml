@@ -61,7 +61,14 @@ tasks:
 
   misspell:
     cmds:
-      - misspell -locale US -i "$(paste -sd, .misspell-ignore)" -error .
+      - |
+        find . -type f \
+          -not -path '*/node_modules/*' \
+          -not -path '*/.git/*' \
+          -not -path '*/build/*' \
+          -not -path '*/.react-router/*' \
+          -not -name 'pnpm-lock.yaml' \
+          | xargs misspell -locale US -i "$(paste -sd, .misspell-ignore)" -error
 
   markdownlint:
     cmds:

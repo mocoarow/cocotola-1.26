@@ -1,1 +1,3 @@
 bazel-*/
+node_modules/
+cocotola-web/node_modules/

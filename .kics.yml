@@ -14,3 +14,5 @@ exclude-queries:
   - 663c442d-f918-4f62-b096-0bf5dcbeb655
   # Media Type Object Without Schema - false positive: KICS confuses schema property named "content" with OpenAPI media type content
   - f79b9d26-e945-44e7-98a1-b93f0f7a68a0
+  # NPM Install Command Without Pinned Version - false positive: pnpm install --frozen-lockfile pins versions via lockfile
+  - e36d8880-3f78-4546-b9a1-12f0745ca0d5
