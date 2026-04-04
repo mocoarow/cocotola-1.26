@@ -501,6 +501,7 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
           description: Organization name to look up
       responses:
         '200':
@@ -560,12 +561,14 @@ paths:
           required: true
           schema:
             type: string
+            pattern: ^.*$
           description: Action to check (e.g. create_workbook, view_workbook)
         - name: resource
           in: query
           required: true
           schema:
             type: string
+            pattern: ^.*$
           description: Resource to check (e.g. *, workbook:123)
       responses:
         '200':
@@ -880,6 +883,7 @@ components:
           format: int32
         name:
           type: string
+          pattern: ^.*$
       required:
         - id
         - name

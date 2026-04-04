@@ -13,6 +13,7 @@ organization:
         required: true
         schema:
           type: string
+          pattern: ^.*$
         description: Organization name to look up
     responses:
       '200':

@@ -17,19 +17,19 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// OrganizationFinder finds an organization by name.
-type OrganizationFinder interface {
+// Finder finds an organization by name.
+type Finder interface {
 	FindByName(ctx context.Context, name string) (*domain.Organization, error)
 }
 
 // FindOrganizationHandler handles the GET /auth/organization endpoint.
 type FindOrganizationHandler struct {
-	orgFinder OrganizationFinder
+	orgFinder Finder
 	logger    *slog.Logger
 }
 
 // NewFindOrganizationHandler returns a new FindOrganizationHandler.
-func NewFindOrganizationHandler(orgFinder OrganizationFinder) *FindOrganizationHandler {
+func NewFindOrganizationHandler(orgFinder Finder) *FindOrganizationHandler {
 	return &FindOrganizationHandler{
 		orgFinder: orgFinder,
 		logger:    slog.Default().With(slog.String(liblogging.LoggerNameKey, "FindOrganizationHandler")),

@@ -18,7 +18,7 @@ func Test_CheckHandler_Check_shouldReturnAllowedTrue_whenUserHasPermission(t *te
 	ctx := context.Background()
 
 	// given
-	authzChecker := newMockAuthorizationChecker(t)
+	authzChecker := NewMockAuthorizationChecker(t)
 	authzChecker.On("IsAllowed", mock.Anything, 1, 42, domainrbac.ActionCreateWorkbook(), domainrbac.ResourceAny()).Return(true, nil)
 	r := initAuthzRouter(ctx, t, authzChecker, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()
@@ -44,7 +44,7 @@ func Test_CheckHandler_Check_shouldReturnAllowedFalse_whenUserLacksPermission(t 
 	ctx := context.Background()
 
 	// given
-	authzChecker := newMockAuthorizationChecker(t)
+	authzChecker := NewMockAuthorizationChecker(t)
 	authzChecker.On("IsAllowed", mock.Anything, 1, 99, domainrbac.ActionCreateWorkbook(), domainrbac.ResourceAny()).Return(false, nil)
 	r := initAuthzRouter(ctx, t, authzChecker, fakeAuthMiddleware(99, "user99", "test-org"))
 	w := httptest.NewRecorder()
@@ -70,7 +70,7 @@ func Test_CheckHandler_Check_shouldReturn400_whenOrgMissing(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	authzChecker := newMockAuthorizationChecker(t)
+	authzChecker := NewMockAuthorizationChecker(t)
 	r := initAuthzRouter(ctx, t, authzChecker, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()
 
@@ -90,7 +90,7 @@ func Test_CheckHandler_Check_shouldReturn400_whenOrgNotInteger(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	authzChecker := newMockAuthorizationChecker(t)
+	authzChecker := NewMockAuthorizationChecker(t)
 	r := initAuthzRouter(ctx, t, authzChecker, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()
 

@@ -27,6 +27,12 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization:
+    config:
+      all: true
   github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user:
     config:
       all: true

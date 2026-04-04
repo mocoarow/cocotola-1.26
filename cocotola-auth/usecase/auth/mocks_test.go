@@ -7,7 +7,7 @@ package auth_test
 import (
 	"context"
 
-	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -40,16 +40,16 @@ func (_m *mockcreateSessionTokenRepo) EXPECT() *mockcreateSessionTokenRepo_Expec
 }
 
 // Save provides a mock function for the type mockcreateSessionTokenRepo
-func (_mock *mockcreateSessionTokenRepo) Save(ctx context.Context, token *domaintoken.SessionToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *mockcreateSessionTokenRepo) Save(ctx context.Context, token1 *token.SessionToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.SessionToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.SessionToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -63,20 +63,20 @@ type mockcreateSessionTokenRepo_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.SessionToken
-func (_e *mockcreateSessionTokenRepo_Expecter) Save(ctx interface{}, token interface{}) *mockcreateSessionTokenRepo_Save_Call {
-	return &mockcreateSessionTokenRepo_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.SessionToken
+func (_e *mockcreateSessionTokenRepo_Expecter) Save(ctx interface{}, token1 interface{}) *mockcreateSessionTokenRepo_Save_Call {
+	return &mockcreateSessionTokenRepo_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *mockcreateSessionTokenRepo_Save_Call) Run(run func(ctx context.Context, token *domaintoken.SessionToken)) *mockcreateSessionTokenRepo_Save_Call {
+func (_c *mockcreateSessionTokenRepo_Save_Call) Run(run func(ctx context.Context, token1 *token.SessionToken)) *mockcreateSessionTokenRepo_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.SessionToken
+		var arg1 *token.SessionToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.SessionToken)
+			arg1 = args[1].(*token.SessionToken)
 		}
 		run(
 			arg0,
@@ -91,7 +91,7 @@ func (_c *mockcreateSessionTokenRepo_Save_Call) Return(err error) *mockcreateSes
 	return _c
 }
 
-func (_c *mockcreateSessionTokenRepo_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.SessionToken) error) *mockcreateSessionTokenRepo_Save_Call {
+func (_c *mockcreateSessionTokenRepo_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.SessionToken) error) *mockcreateSessionTokenRepo_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -124,8 +124,8 @@ func (_m *mockcreateSessionTokenCache) EXPECT() *mockcreateSessionTokenCache_Exp
 }
 
 // SetSessionToken provides a mock function for the type mockcreateSessionTokenCache
-func (_mock *mockcreateSessionTokenCache) SetSessionToken(hash string, token *domaintoken.SessionToken) {
-	_mock.Called(hash, token)
+func (_mock *mockcreateSessionTokenCache) SetSessionToken(hash string, token1 *token.SessionToken) {
+	_mock.Called(hash, token1)
 	return
 }
 
@@ -136,20 +136,20 @@ type mockcreateSessionTokenCache_SetSessionToken_Call struct {
 
 // SetSessionToken is a helper method to define mock.On call
 //   - hash string
-//   - token *domaintoken.SessionToken
-func (_e *mockcreateSessionTokenCache_Expecter) SetSessionToken(hash interface{}, token interface{}) *mockcreateSessionTokenCache_SetSessionToken_Call {
-	return &mockcreateSessionTokenCache_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token)}
+//   - token1 *token.SessionToken
+func (_e *mockcreateSessionTokenCache_Expecter) SetSessionToken(hash interface{}, token1 interface{}) *mockcreateSessionTokenCache_SetSessionToken_Call {
+	return &mockcreateSessionTokenCache_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token1)}
 }
 
-func (_c *mockcreateSessionTokenCache_SetSessionToken_Call) Run(run func(hash string, token *domaintoken.SessionToken)) *mockcreateSessionTokenCache_SetSessionToken_Call {
+func (_c *mockcreateSessionTokenCache_SetSessionToken_Call) Run(run func(hash string, token1 *token.SessionToken)) *mockcreateSessionTokenCache_SetSessionToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.SessionToken
+		var arg1 *token.SessionToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.SessionToken)
+			arg1 = args[1].(*token.SessionToken)
 		}
 		run(
 			arg0,
@@ -164,7 +164,7 @@ func (_c *mockcreateSessionTokenCache_SetSessionToken_Call) Return() *mockcreate
 	return _c
 }
 
-func (_c *mockcreateSessionTokenCache_SetSessionToken_Call) RunAndReturn(run func(hash string, token *domaintoken.SessionToken)) *mockcreateSessionTokenCache_SetSessionToken_Call {
+func (_c *mockcreateSessionTokenCache_SetSessionToken_Call) RunAndReturn(run func(hash string, token1 *token.SessionToken)) *mockcreateSessionTokenCache_SetSessionToken_Call {
 	_c.Run(run)
 	return _c
 }
@@ -197,16 +197,16 @@ func (_m *mockcreateTokenPairRefreshRepo) EXPECT() *mockcreateTokenPairRefreshRe
 }
 
 // Save provides a mock function for the type mockcreateTokenPairRefreshRepo
-func (_mock *mockcreateTokenPairRefreshRepo) Save(ctx context.Context, token *domaintoken.RefreshToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *mockcreateTokenPairRefreshRepo) Save(ctx context.Context, token1 *token.RefreshToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.RefreshToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.RefreshToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -220,20 +220,20 @@ type mockcreateTokenPairRefreshRepo_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.RefreshToken
-func (_e *mockcreateTokenPairRefreshRepo_Expecter) Save(ctx interface{}, token interface{}) *mockcreateTokenPairRefreshRepo_Save_Call {
-	return &mockcreateTokenPairRefreshRepo_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.RefreshToken
+func (_e *mockcreateTokenPairRefreshRepo_Expecter) Save(ctx interface{}, token1 interface{}) *mockcreateTokenPairRefreshRepo_Save_Call {
+	return &mockcreateTokenPairRefreshRepo_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *mockcreateTokenPairRefreshRepo_Save_Call) Run(run func(ctx context.Context, token *domaintoken.RefreshToken)) *mockcreateTokenPairRefreshRepo_Save_Call {
+func (_c *mockcreateTokenPairRefreshRepo_Save_Call) Run(run func(ctx context.Context, token1 *token.RefreshToken)) *mockcreateTokenPairRefreshRepo_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.RefreshToken
+		var arg1 *token.RefreshToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.RefreshToken)
+			arg1 = args[1].(*token.RefreshToken)
 		}
 		run(
 			arg0,
@@ -248,7 +248,7 @@ func (_c *mockcreateTokenPairRefreshRepo_Save_Call) Return(err error) *mockcreat
 	return _c
 }
 
-func (_c *mockcreateTokenPairRefreshRepo_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.RefreshToken) error) *mockcreateTokenPairRefreshRepo_Save_Call {
+func (_c *mockcreateTokenPairRefreshRepo_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.RefreshToken) error) *mockcreateTokenPairRefreshRepo_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -376,23 +376,23 @@ func (_m *MockSessionTokenRepository) EXPECT() *MockSessionTokenRepository_Expec
 }
 
 // FindByTokenHash provides a mock function for the type MockSessionTokenRepository
-func (_mock *MockSessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error) {
+func (_mock *MockSessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*token.SessionToken, error) {
 	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByTokenHash")
 	}
 
-	var r0 *domaintoken.SessionToken
+	var r0 *token.SessionToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.SessionToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.SessionToken, error)); ok {
 		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.SessionToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.SessionToken); ok {
 		r0 = returnFunc(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.SessionToken)
+			r0 = ret.Get(0).(*token.SessionToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -433,27 +433,27 @@ func (_c *MockSessionTokenRepository_FindByTokenHash_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockSessionTokenRepository_FindByTokenHash_Call) Return(sessionToken *domaintoken.SessionToken, err error) *MockSessionTokenRepository_FindByTokenHash_Call {
+func (_c *MockSessionTokenRepository_FindByTokenHash_Call) Return(sessionToken *token.SessionToken, err error) *MockSessionTokenRepository_FindByTokenHash_Call {
 	_c.Call.Return(sessionToken, err)
 	return _c
 }
 
-func (_c *MockSessionTokenRepository_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*domaintoken.SessionToken, error)) *MockSessionTokenRepository_FindByTokenHash_Call {
+func (_c *MockSessionTokenRepository_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*token.SessionToken, error)) *MockSessionTokenRepository_FindByTokenHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockSessionTokenRepository
-func (_mock *MockSessionTokenRepository) Save(ctx context.Context, token *domaintoken.SessionToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *MockSessionTokenRepository) Save(ctx context.Context, token1 *token.SessionToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.SessionToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.SessionToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -467,20 +467,20 @@ type MockSessionTokenRepository_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.SessionToken
-func (_e *MockSessionTokenRepository_Expecter) Save(ctx interface{}, token interface{}) *MockSessionTokenRepository_Save_Call {
-	return &MockSessionTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.SessionToken
+func (_e *MockSessionTokenRepository_Expecter) Save(ctx interface{}, token1 interface{}) *MockSessionTokenRepository_Save_Call {
+	return &MockSessionTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *MockSessionTokenRepository_Save_Call) Run(run func(ctx context.Context, token *domaintoken.SessionToken)) *MockSessionTokenRepository_Save_Call {
+func (_c *MockSessionTokenRepository_Save_Call) Run(run func(ctx context.Context, token1 *token.SessionToken)) *MockSessionTokenRepository_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.SessionToken
+		var arg1 *token.SessionToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.SessionToken)
+			arg1 = args[1].(*token.SessionToken)
 		}
 		run(
 			arg0,
@@ -495,7 +495,7 @@ func (_c *MockSessionTokenRepository_Save_Call) Return(err error) *MockSessionTo
 	return _c
 }
 
-func (_c *MockSessionTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.SessionToken) error) *MockSessionTokenRepository_Save_Call {
+func (_c *MockSessionTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.SessionToken) error) *MockSessionTokenRepository_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -528,23 +528,23 @@ func (_m *MockRefreshTokenRepository) EXPECT() *MockRefreshTokenRepository_Expec
 }
 
 // FindByTokenHash provides a mock function for the type MockRefreshTokenRepository
-func (_mock *MockRefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error) {
+func (_mock *MockRefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*token.RefreshToken, error) {
 	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByTokenHash")
 	}
 
-	var r0 *domaintoken.RefreshToken
+	var r0 *token.RefreshToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.RefreshToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.RefreshToken, error)); ok {
 		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.RefreshToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.RefreshToken); ok {
 		r0 = returnFunc(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.RefreshToken)
+			r0 = ret.Get(0).(*token.RefreshToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -585,27 +585,27 @@ func (_c *MockRefreshTokenRepository_FindByTokenHash_Call) Run(run func(ctx cont
 	return _c
 }
 
-func (_c *MockRefreshTokenRepository_FindByTokenHash_Call) Return(refreshToken *domaintoken.RefreshToken, err error) *MockRefreshTokenRepository_FindByTokenHash_Call {
+func (_c *MockRefreshTokenRepository_FindByTokenHash_Call) Return(refreshToken *token.RefreshToken, err error) *MockRefreshTokenRepository_FindByTokenHash_Call {
 	_c.Call.Return(refreshToken, err)
 	return _c
 }
 
-func (_c *MockRefreshTokenRepository_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*domaintoken.RefreshToken, error)) *MockRefreshTokenRepository_FindByTokenHash_Call {
+func (_c *MockRefreshTokenRepository_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*token.RefreshToken, error)) *MockRefreshTokenRepository_FindByTokenHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockRefreshTokenRepository
-func (_mock *MockRefreshTokenRepository) Save(ctx context.Context, token *domaintoken.RefreshToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *MockRefreshTokenRepository) Save(ctx context.Context, token1 *token.RefreshToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.RefreshToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.RefreshToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -619,20 +619,20 @@ type MockRefreshTokenRepository_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.RefreshToken
-func (_e *MockRefreshTokenRepository_Expecter) Save(ctx interface{}, token interface{}) *MockRefreshTokenRepository_Save_Call {
-	return &MockRefreshTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.RefreshToken
+func (_e *MockRefreshTokenRepository_Expecter) Save(ctx interface{}, token1 interface{}) *MockRefreshTokenRepository_Save_Call {
+	return &MockRefreshTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *MockRefreshTokenRepository_Save_Call) Run(run func(ctx context.Context, token *domaintoken.RefreshToken)) *MockRefreshTokenRepository_Save_Call {
+func (_c *MockRefreshTokenRepository_Save_Call) Run(run func(ctx context.Context, token1 *token.RefreshToken)) *MockRefreshTokenRepository_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.RefreshToken
+		var arg1 *token.RefreshToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.RefreshToken)
+			arg1 = args[1].(*token.RefreshToken)
 		}
 		run(
 			arg0,
@@ -647,7 +647,7 @@ func (_c *MockRefreshTokenRepository_Save_Call) Return(err error) *MockRefreshTo
 	return _c
 }
 
-func (_c *MockRefreshTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.RefreshToken) error) *MockRefreshTokenRepository_Save_Call {
+func (_c *MockRefreshTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.RefreshToken) error) *MockRefreshTokenRepository_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -680,23 +680,23 @@ func (_m *MockAccessTokenRepository) EXPECT() *MockAccessTokenRepository_Expecte
 }
 
 // FindByID provides a mock function for the type MockAccessTokenRepository
-func (_mock *MockAccessTokenRepository) FindByID(ctx context.Context, id string) (*domaintoken.AccessToken, error) {
+func (_mock *MockAccessTokenRepository) FindByID(ctx context.Context, id string) (*token.AccessToken, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
 	}
 
-	var r0 *domaintoken.AccessToken
+	var r0 *token.AccessToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.AccessToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.AccessToken, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.AccessToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.AccessToken); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.AccessToken)
+			r0 = ret.Get(0).(*token.AccessToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -737,34 +737,34 @@ func (_c *MockAccessTokenRepository_FindByID_Call) Run(run func(ctx context.Cont
 	return _c
 }
 
-func (_c *MockAccessTokenRepository_FindByID_Call) Return(accessToken *domaintoken.AccessToken, err error) *MockAccessTokenRepository_FindByID_Call {
+func (_c *MockAccessTokenRepository_FindByID_Call) Return(accessToken *token.AccessToken, err error) *MockAccessTokenRepository_FindByID_Call {
 	_c.Call.Return(accessToken, err)
 	return _c
 }
 
-func (_c *MockAccessTokenRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*domaintoken.AccessToken, error)) *MockAccessTokenRepository_FindByID_Call {
+func (_c *MockAccessTokenRepository_FindByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*token.AccessToken, error)) *MockAccessTokenRepository_FindByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FindByRefreshTokenID provides a mock function for the type MockAccessTokenRepository
-func (_mock *MockAccessTokenRepository) FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]domaintoken.AccessToken, error) {
+func (_mock *MockAccessTokenRepository) FindByRefreshTokenID(ctx context.Context, refreshTokenID string) ([]token.AccessToken, error) {
 	ret := _mock.Called(ctx, refreshTokenID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByRefreshTokenID")
 	}
 
-	var r0 []domaintoken.AccessToken
+	var r0 []token.AccessToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]domaintoken.AccessToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) ([]token.AccessToken, error)); ok {
 		return returnFunc(ctx, refreshTokenID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []domaintoken.AccessToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) []token.AccessToken); ok {
 		r0 = returnFunc(ctx, refreshTokenID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domaintoken.AccessToken)
+			r0 = ret.Get(0).([]token.AccessToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -805,27 +805,27 @@ func (_c *MockAccessTokenRepository_FindByRefreshTokenID_Call) Run(run func(ctx 
 	return _c
 }
 
-func (_c *MockAccessTokenRepository_FindByRefreshTokenID_Call) Return(accessTokens []domaintoken.AccessToken, err error) *MockAccessTokenRepository_FindByRefreshTokenID_Call {
+func (_c *MockAccessTokenRepository_FindByRefreshTokenID_Call) Return(accessTokens []token.AccessToken, err error) *MockAccessTokenRepository_FindByRefreshTokenID_Call {
 	_c.Call.Return(accessTokens, err)
 	return _c
 }
 
-func (_c *MockAccessTokenRepository_FindByRefreshTokenID_Call) RunAndReturn(run func(ctx context.Context, refreshTokenID string) ([]domaintoken.AccessToken, error)) *MockAccessTokenRepository_FindByRefreshTokenID_Call {
+func (_c *MockAccessTokenRepository_FindByRefreshTokenID_Call) RunAndReturn(run func(ctx context.Context, refreshTokenID string) ([]token.AccessToken, error)) *MockAccessTokenRepository_FindByRefreshTokenID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockAccessTokenRepository
-func (_mock *MockAccessTokenRepository) Save(ctx context.Context, token *domaintoken.AccessToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *MockAccessTokenRepository) Save(ctx context.Context, token1 *token.AccessToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.AccessToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.AccessToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -839,20 +839,20 @@ type MockAccessTokenRepository_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.AccessToken
-func (_e *MockAccessTokenRepository_Expecter) Save(ctx interface{}, token interface{}) *MockAccessTokenRepository_Save_Call {
-	return &MockAccessTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.AccessToken
+func (_e *MockAccessTokenRepository_Expecter) Save(ctx interface{}, token1 interface{}) *MockAccessTokenRepository_Save_Call {
+	return &MockAccessTokenRepository_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *MockAccessTokenRepository_Save_Call) Run(run func(ctx context.Context, token *domaintoken.AccessToken)) *MockAccessTokenRepository_Save_Call {
+func (_c *MockAccessTokenRepository_Save_Call) Run(run func(ctx context.Context, token1 *token.AccessToken)) *MockAccessTokenRepository_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.AccessToken
+		var arg1 *token.AccessToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.AccessToken)
+			arg1 = args[1].(*token.AccessToken)
 		}
 		run(
 			arg0,
@@ -867,7 +867,7 @@ func (_c *MockAccessTokenRepository_Save_Call) Return(err error) *MockAccessToke
 	return _c
 }
 
-func (_c *MockAccessTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.AccessToken) error) *MockAccessTokenRepository_Save_Call {
+func (_c *MockAccessTokenRepository_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.AccessToken) error) *MockAccessTokenRepository_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -900,23 +900,23 @@ func (_m *MockWhitelistRepository) EXPECT() *MockWhitelistRepository_Expecter {
 }
 
 // FindByUserID provides a mock function for the type MockWhitelistRepository
-func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error) {
+func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]token.WhitelistEntry, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByUserID")
 	}
 
-	var r0 []domaintoken.WhitelistEntry
+	var r0 []token.WhitelistEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]domaintoken.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]token.WhitelistEntry, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []domaintoken.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []token.WhitelistEntry); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domaintoken.WhitelistEntry)
+			r0 = ret.Get(0).([]token.WhitelistEntry)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
@@ -957,18 +957,18 @@ func (_c *MockWhitelistRepository_FindByUserID_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) Return(whitelistEntrys []domaintoken.WhitelistEntry, err error) *MockWhitelistRepository_FindByUserID_Call {
+func (_c *MockWhitelistRepository_FindByUserID_Call) Return(whitelistEntrys []token.WhitelistEntry, err error) *MockWhitelistRepository_FindByUserID_Call {
 	_c.Call.Return(whitelistEntrys, err)
 	return _c
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error)) *MockWhitelistRepository_FindByUserID_Call {
+func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]token.WhitelistEntry, error)) *MockWhitelistRepository_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Save provides a mock function for the type MockWhitelistRepository
-func (_mock *MockWhitelistRepository) Save(ctx context.Context, whitelist *domaintoken.Whitelist) error {
+func (_mock *MockWhitelistRepository) Save(ctx context.Context, whitelist *token.Whitelist) error {
 	ret := _mock.Called(ctx, whitelist)
 
 	if len(ret) == 0 {
@@ -976,7 +976,7 @@ func (_mock *MockWhitelistRepository) Save(ctx context.Context, whitelist *domai
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.Whitelist) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.Whitelist) error); ok {
 		r0 = returnFunc(ctx, whitelist)
 	} else {
 		r0 = ret.Error(0)
@@ -991,20 +991,20 @@ type MockWhitelistRepository_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - whitelist *domaintoken.Whitelist
+//   - whitelist *token.Whitelist
 func (_e *MockWhitelistRepository_Expecter) Save(ctx interface{}, whitelist interface{}) *MockWhitelistRepository_Save_Call {
 	return &MockWhitelistRepository_Save_Call{Call: _e.mock.On("Save", ctx, whitelist)}
 }
 
-func (_c *MockWhitelistRepository_Save_Call) Run(run func(ctx context.Context, whitelist *domaintoken.Whitelist)) *MockWhitelistRepository_Save_Call {
+func (_c *MockWhitelistRepository_Save_Call) Run(run func(ctx context.Context, whitelist *token.Whitelist)) *MockWhitelistRepository_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.Whitelist
+		var arg1 *token.Whitelist
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.Whitelist)
+			arg1 = args[1].(*token.Whitelist)
 		}
 		run(
 			arg0,
@@ -1019,7 +1019,7 @@ func (_c *MockWhitelistRepository_Save_Call) Return(err error) *MockWhitelistRep
 	return _c
 }
 
-func (_c *MockWhitelistRepository_Save_Call) RunAndReturn(run func(ctx context.Context, whitelist *domaintoken.Whitelist) error) *MockWhitelistRepository_Save_Call {
+func (_c *MockWhitelistRepository_Save_Call) RunAndReturn(run func(ctx context.Context, whitelist *token.Whitelist) error) *MockWhitelistRepository_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1412,23 +1412,23 @@ func (_c *MockTokenCache_DeleteSessionToken_Call) RunAndReturn(run func(hash str
 }
 
 // GetAccessToken provides a mock function for the type MockTokenCache
-func (_mock *MockTokenCache) GetAccessToken(jti string) (*domaintoken.AccessToken, bool) {
+func (_mock *MockTokenCache) GetAccessToken(jti string) (*token.AccessToken, bool) {
 	ret := _mock.Called(jti)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAccessToken")
 	}
 
-	var r0 *domaintoken.AccessToken
+	var r0 *token.AccessToken
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (*domaintoken.AccessToken, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*token.AccessToken, bool)); ok {
 		return returnFunc(jti)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *domaintoken.AccessToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *token.AccessToken); ok {
 		r0 = returnFunc(jti)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.AccessToken)
+			r0 = ret.Get(0).(*token.AccessToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
@@ -1463,34 +1463,34 @@ func (_c *MockTokenCache_GetAccessToken_Call) Run(run func(jti string)) *MockTok
 	return _c
 }
 
-func (_c *MockTokenCache_GetAccessToken_Call) Return(accessToken *domaintoken.AccessToken, b bool) *MockTokenCache_GetAccessToken_Call {
+func (_c *MockTokenCache_GetAccessToken_Call) Return(accessToken *token.AccessToken, b bool) *MockTokenCache_GetAccessToken_Call {
 	_c.Call.Return(accessToken, b)
 	return _c
 }
 
-func (_c *MockTokenCache_GetAccessToken_Call) RunAndReturn(run func(jti string) (*domaintoken.AccessToken, bool)) *MockTokenCache_GetAccessToken_Call {
+func (_c *MockTokenCache_GetAccessToken_Call) RunAndReturn(run func(jti string) (*token.AccessToken, bool)) *MockTokenCache_GetAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // GetSessionToken provides a mock function for the type MockTokenCache
-func (_mock *MockTokenCache) GetSessionToken(hash string) (*domaintoken.SessionToken, bool) {
+func (_mock *MockTokenCache) GetSessionToken(hash string) (*token.SessionToken, bool) {
 	ret := _mock.Called(hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSessionToken")
 	}
 
-	var r0 *domaintoken.SessionToken
+	var r0 *token.SessionToken
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (*domaintoken.SessionToken, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*token.SessionToken, bool)); ok {
 		return returnFunc(hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *domaintoken.SessionToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *token.SessionToken); ok {
 		r0 = returnFunc(hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.SessionToken)
+			r0 = ret.Get(0).(*token.SessionToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
@@ -1525,19 +1525,19 @@ func (_c *MockTokenCache_GetSessionToken_Call) Run(run func(hash string)) *MockT
 	return _c
 }
 
-func (_c *MockTokenCache_GetSessionToken_Call) Return(sessionToken *domaintoken.SessionToken, b bool) *MockTokenCache_GetSessionToken_Call {
+func (_c *MockTokenCache_GetSessionToken_Call) Return(sessionToken *token.SessionToken, b bool) *MockTokenCache_GetSessionToken_Call {
 	_c.Call.Return(sessionToken, b)
 	return _c
 }
 
-func (_c *MockTokenCache_GetSessionToken_Call) RunAndReturn(run func(hash string) (*domaintoken.SessionToken, bool)) *MockTokenCache_GetSessionToken_Call {
+func (_c *MockTokenCache_GetSessionToken_Call) RunAndReturn(run func(hash string) (*token.SessionToken, bool)) *MockTokenCache_GetSessionToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetAccessToken provides a mock function for the type MockTokenCache
-func (_mock *MockTokenCache) SetAccessToken(jti string, token *domaintoken.AccessToken) {
-	_mock.Called(jti, token)
+func (_mock *MockTokenCache) SetAccessToken(jti string, token1 *token.AccessToken) {
+	_mock.Called(jti, token1)
 	return
 }
 
@@ -1548,20 +1548,20 @@ type MockTokenCache_SetAccessToken_Call struct {
 
 // SetAccessToken is a helper method to define mock.On call
 //   - jti string
-//   - token *domaintoken.AccessToken
-func (_e *MockTokenCache_Expecter) SetAccessToken(jti interface{}, token interface{}) *MockTokenCache_SetAccessToken_Call {
-	return &MockTokenCache_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token)}
+//   - token1 *token.AccessToken
+func (_e *MockTokenCache_Expecter) SetAccessToken(jti interface{}, token1 interface{}) *MockTokenCache_SetAccessToken_Call {
+	return &MockTokenCache_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token1)}
 }
 
-func (_c *MockTokenCache_SetAccessToken_Call) Run(run func(jti string, token *domaintoken.AccessToken)) *MockTokenCache_SetAccessToken_Call {
+func (_c *MockTokenCache_SetAccessToken_Call) Run(run func(jti string, token1 *token.AccessToken)) *MockTokenCache_SetAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.AccessToken
+		var arg1 *token.AccessToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.AccessToken)
+			arg1 = args[1].(*token.AccessToken)
 		}
 		run(
 			arg0,
@@ -1576,14 +1576,14 @@ func (_c *MockTokenCache_SetAccessToken_Call) Return() *MockTokenCache_SetAccess
 	return _c
 }
 
-func (_c *MockTokenCache_SetAccessToken_Call) RunAndReturn(run func(jti string, token *domaintoken.AccessToken)) *MockTokenCache_SetAccessToken_Call {
+func (_c *MockTokenCache_SetAccessToken_Call) RunAndReturn(run func(jti string, token1 *token.AccessToken)) *MockTokenCache_SetAccessToken_Call {
 	_c.Run(run)
 	return _c
 }
 
 // SetSessionToken provides a mock function for the type MockTokenCache
-func (_mock *MockTokenCache) SetSessionToken(hash string, token *domaintoken.SessionToken) {
-	_mock.Called(hash, token)
+func (_mock *MockTokenCache) SetSessionToken(hash string, token1 *token.SessionToken) {
+	_mock.Called(hash, token1)
 	return
 }
 
@@ -1594,20 +1594,20 @@ type MockTokenCache_SetSessionToken_Call struct {
 
 // SetSessionToken is a helper method to define mock.On call
 //   - hash string
-//   - token *domaintoken.SessionToken
-func (_e *MockTokenCache_Expecter) SetSessionToken(hash interface{}, token interface{}) *MockTokenCache_SetSessionToken_Call {
-	return &MockTokenCache_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token)}
+//   - token1 *token.SessionToken
+func (_e *MockTokenCache_Expecter) SetSessionToken(hash interface{}, token1 interface{}) *MockTokenCache_SetSessionToken_Call {
+	return &MockTokenCache_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token1)}
 }
 
-func (_c *MockTokenCache_SetSessionToken_Call) Run(run func(hash string, token *domaintoken.SessionToken)) *MockTokenCache_SetSessionToken_Call {
+func (_c *MockTokenCache_SetSessionToken_Call) Run(run func(hash string, token1 *token.SessionToken)) *MockTokenCache_SetSessionToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.SessionToken
+		var arg1 *token.SessionToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.SessionToken)
+			arg1 = args[1].(*token.SessionToken)
 		}
 		run(
 			arg0,
@@ -1622,7 +1622,7 @@ func (_c *MockTokenCache_SetSessionToken_Call) Return() *MockTokenCache_SetSessi
 	return _c
 }
 
-func (_c *MockTokenCache_SetSessionToken_Call) RunAndReturn(run func(hash string, token *domaintoken.SessionToken)) *MockTokenCache_SetSessionToken_Call {
+func (_c *MockTokenCache_SetSessionToken_Call) RunAndReturn(run func(hash string, token1 *token.SessionToken)) *MockTokenCache_SetSessionToken_Call {
 	_c.Run(run)
 	return _c
 }
@@ -1655,23 +1655,23 @@ func (_m *mockrefreshAccessTokenRefreshRepo) EXPECT() *mockrefreshAccessTokenRef
 }
 
 // FindByTokenHash provides a mock function for the type mockrefreshAccessTokenRefreshRepo
-func (_mock *mockrefreshAccessTokenRefreshRepo) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error) {
+func (_mock *mockrefreshAccessTokenRefreshRepo) FindByTokenHash(ctx context.Context, hash string) (*token.RefreshToken, error) {
 	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByTokenHash")
 	}
 
-	var r0 *domaintoken.RefreshToken
+	var r0 *token.RefreshToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.RefreshToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.RefreshToken, error)); ok {
 		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.RefreshToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.RefreshToken); ok {
 		r0 = returnFunc(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.RefreshToken)
+			r0 = ret.Get(0).(*token.RefreshToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -1712,12 +1712,12 @@ func (_c *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call) Run(run func(c
 	return _c
 }
 
-func (_c *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call) Return(refreshToken *domaintoken.RefreshToken, err error) *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call {
+func (_c *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call) Return(refreshToken *token.RefreshToken, err error) *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call {
 	_c.Call.Return(refreshToken, err)
 	return _c
 }
 
-func (_c *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*domaintoken.RefreshToken, error)) *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call {
+func (_c *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*token.RefreshToken, error)) *mockrefreshAccessTokenRefreshRepo_FindByTokenHash_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1790,23 +1790,23 @@ func (_c *mockrevokeSessionTokenCache_DeleteSessionToken_Call) RunAndReturn(run 
 }
 
 // GetSessionToken provides a mock function for the type mockrevokeSessionTokenCache
-func (_mock *mockrevokeSessionTokenCache) GetSessionToken(hash string) (*domaintoken.SessionToken, bool) {
+func (_mock *mockrevokeSessionTokenCache) GetSessionToken(hash string) (*token.SessionToken, bool) {
 	ret := _mock.Called(hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSessionToken")
 	}
 
-	var r0 *domaintoken.SessionToken
+	var r0 *token.SessionToken
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (*domaintoken.SessionToken, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*token.SessionToken, bool)); ok {
 		return returnFunc(hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *domaintoken.SessionToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *token.SessionToken); ok {
 		r0 = returnFunc(hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.SessionToken)
+			r0 = ret.Get(0).(*token.SessionToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
@@ -1841,12 +1841,12 @@ func (_c *mockrevokeSessionTokenCache_GetSessionToken_Call) Run(run func(hash st
 	return _c
 }
 
-func (_c *mockrevokeSessionTokenCache_GetSessionToken_Call) Return(sessionToken *domaintoken.SessionToken, b bool) *mockrevokeSessionTokenCache_GetSessionToken_Call {
+func (_c *mockrevokeSessionTokenCache_GetSessionToken_Call) Return(sessionToken *token.SessionToken, b bool) *mockrevokeSessionTokenCache_GetSessionToken_Call {
 	_c.Call.Return(sessionToken, b)
 	return _c
 }
 
-func (_c *mockrevokeSessionTokenCache_GetSessionToken_Call) RunAndReturn(run func(hash string) (*domaintoken.SessionToken, bool)) *mockrevokeSessionTokenCache_GetSessionToken_Call {
+func (_c *mockrevokeSessionTokenCache_GetSessionToken_Call) RunAndReturn(run func(hash string) (*token.SessionToken, bool)) *mockrevokeSessionTokenCache_GetSessionToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1946,16 +1946,16 @@ func (_m *mockaccessTokenSaver) EXPECT() *mockaccessTokenSaver_Expecter {
 }
 
 // Save provides a mock function for the type mockaccessTokenSaver
-func (_mock *mockaccessTokenSaver) Save(ctx context.Context, token *domaintoken.AccessToken) error {
-	ret := _mock.Called(ctx, token)
+func (_mock *mockaccessTokenSaver) Save(ctx context.Context, token1 *token.AccessToken) error {
+	ret := _mock.Called(ctx, token1)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Save")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, *domaintoken.AccessToken) error); ok {
-		r0 = returnFunc(ctx, token)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, *token.AccessToken) error); ok {
+		r0 = returnFunc(ctx, token1)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1969,20 +1969,20 @@ type mockaccessTokenSaver_Save_Call struct {
 
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
-//   - token *domaintoken.AccessToken
-func (_e *mockaccessTokenSaver_Expecter) Save(ctx interface{}, token interface{}) *mockaccessTokenSaver_Save_Call {
-	return &mockaccessTokenSaver_Save_Call{Call: _e.mock.On("Save", ctx, token)}
+//   - token1 *token.AccessToken
+func (_e *mockaccessTokenSaver_Expecter) Save(ctx interface{}, token1 interface{}) *mockaccessTokenSaver_Save_Call {
+	return &mockaccessTokenSaver_Save_Call{Call: _e.mock.On("Save", ctx, token1)}
 }
 
-func (_c *mockaccessTokenSaver_Save_Call) Run(run func(ctx context.Context, token *domaintoken.AccessToken)) *mockaccessTokenSaver_Save_Call {
+func (_c *mockaccessTokenSaver_Save_Call) Run(run func(ctx context.Context, token1 *token.AccessToken)) *mockaccessTokenSaver_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 *domaintoken.AccessToken
+		var arg1 *token.AccessToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.AccessToken)
+			arg1 = args[1].(*token.AccessToken)
 		}
 		run(
 			arg0,
@@ -1997,7 +1997,7 @@ func (_c *mockaccessTokenSaver_Save_Call) Return(err error) *mockaccessTokenSave
 	return _c
 }
 
-func (_c *mockaccessTokenSaver_Save_Call) RunAndReturn(run func(ctx context.Context, token *domaintoken.AccessToken) error) *mockaccessTokenSaver_Save_Call {
+func (_c *mockaccessTokenSaver_Save_Call) RunAndReturn(run func(ctx context.Context, token1 *token.AccessToken) error) *mockaccessTokenSaver_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2230,8 +2230,8 @@ func (_m *mockaccessTokenCacheSetter) EXPECT() *mockaccessTokenCacheSetter_Expec
 }
 
 // SetAccessToken provides a mock function for the type mockaccessTokenCacheSetter
-func (_mock *mockaccessTokenCacheSetter) SetAccessToken(jti string, token *domaintoken.AccessToken) {
-	_mock.Called(jti, token)
+func (_mock *mockaccessTokenCacheSetter) SetAccessToken(jti string, token1 *token.AccessToken) {
+	_mock.Called(jti, token1)
 	return
 }
 
@@ -2242,20 +2242,20 @@ type mockaccessTokenCacheSetter_SetAccessToken_Call struct {
 
 // SetAccessToken is a helper method to define mock.On call
 //   - jti string
-//   - token *domaintoken.AccessToken
-func (_e *mockaccessTokenCacheSetter_Expecter) SetAccessToken(jti interface{}, token interface{}) *mockaccessTokenCacheSetter_SetAccessToken_Call {
-	return &mockaccessTokenCacheSetter_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token)}
+//   - token1 *token.AccessToken
+func (_e *mockaccessTokenCacheSetter_Expecter) SetAccessToken(jti interface{}, token1 interface{}) *mockaccessTokenCacheSetter_SetAccessToken_Call {
+	return &mockaccessTokenCacheSetter_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token1)}
 }
 
-func (_c *mockaccessTokenCacheSetter_SetAccessToken_Call) Run(run func(jti string, token *domaintoken.AccessToken)) *mockaccessTokenCacheSetter_SetAccessToken_Call {
+func (_c *mockaccessTokenCacheSetter_SetAccessToken_Call) Run(run func(jti string, token1 *token.AccessToken)) *mockaccessTokenCacheSetter_SetAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.AccessToken
+		var arg1 *token.AccessToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.AccessToken)
+			arg1 = args[1].(*token.AccessToken)
 		}
 		run(
 			arg0,
@@ -2270,7 +2270,7 @@ func (_c *mockaccessTokenCacheSetter_SetAccessToken_Call) Return() *mockaccessTo
 	return _c
 }
 
-func (_c *mockaccessTokenCacheSetter_SetAccessToken_Call) RunAndReturn(run func(jti string, token *domaintoken.AccessToken)) *mockaccessTokenCacheSetter_SetAccessToken_Call {
+func (_c *mockaccessTokenCacheSetter_SetAccessToken_Call) RunAndReturn(run func(jti string, token1 *token.AccessToken)) *mockaccessTokenCacheSetter_SetAccessToken_Call {
 	_c.Run(run)
 	return _c
 }
@@ -2303,23 +2303,23 @@ func (_m *mockwhitelistFinder) EXPECT() *mockwhitelistFinder_Expecter {
 }
 
 // FindByUserID provides a mock function for the type mockwhitelistFinder
-func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error) {
+func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID int) ([]token.WhitelistEntry, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByUserID")
 	}
 
-	var r0 []domaintoken.WhitelistEntry
+	var r0 []token.WhitelistEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]domaintoken.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]token.WhitelistEntry, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []domaintoken.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []token.WhitelistEntry); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]domaintoken.WhitelistEntry)
+			r0 = ret.Get(0).([]token.WhitelistEntry)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
@@ -2360,12 +2360,12 @@ func (_c *mockwhitelistFinder_FindByUserID_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) Return(whitelistEntrys []domaintoken.WhitelistEntry, err error) *mockwhitelistFinder_FindByUserID_Call {
+func (_c *mockwhitelistFinder_FindByUserID_Call) Return(whitelistEntrys []token.WhitelistEntry, err error) *mockwhitelistFinder_FindByUserID_Call {
 	_c.Call.Return(whitelistEntrys, err)
 	return _c
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error)) *mockwhitelistFinder_FindByUserID_Call {
+func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]token.WhitelistEntry, error)) *mockwhitelistFinder_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2398,23 +2398,23 @@ func (_m *mocksessionTokenCacheReadWriter) EXPECT() *mocksessionTokenCacheReadWr
 }
 
 // GetSessionToken provides a mock function for the type mocksessionTokenCacheReadWriter
-func (_mock *mocksessionTokenCacheReadWriter) GetSessionToken(hash string) (*domaintoken.SessionToken, bool) {
+func (_mock *mocksessionTokenCacheReadWriter) GetSessionToken(hash string) (*token.SessionToken, bool) {
 	ret := _mock.Called(hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetSessionToken")
 	}
 
-	var r0 *domaintoken.SessionToken
+	var r0 *token.SessionToken
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (*domaintoken.SessionToken, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*token.SessionToken, bool)); ok {
 		return returnFunc(hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *domaintoken.SessionToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *token.SessionToken); ok {
 		r0 = returnFunc(hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.SessionToken)
+			r0 = ret.Get(0).(*token.SessionToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
@@ -2449,19 +2449,19 @@ func (_c *mocksessionTokenCacheReadWriter_GetSessionToken_Call) Run(run func(has
 	return _c
 }
 
-func (_c *mocksessionTokenCacheReadWriter_GetSessionToken_Call) Return(sessionToken *domaintoken.SessionToken, b bool) *mocksessionTokenCacheReadWriter_GetSessionToken_Call {
+func (_c *mocksessionTokenCacheReadWriter_GetSessionToken_Call) Return(sessionToken *token.SessionToken, b bool) *mocksessionTokenCacheReadWriter_GetSessionToken_Call {
 	_c.Call.Return(sessionToken, b)
 	return _c
 }
 
-func (_c *mocksessionTokenCacheReadWriter_GetSessionToken_Call) RunAndReturn(run func(hash string) (*domaintoken.SessionToken, bool)) *mocksessionTokenCacheReadWriter_GetSessionToken_Call {
+func (_c *mocksessionTokenCacheReadWriter_GetSessionToken_Call) RunAndReturn(run func(hash string) (*token.SessionToken, bool)) *mocksessionTokenCacheReadWriter_GetSessionToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetSessionToken provides a mock function for the type mocksessionTokenCacheReadWriter
-func (_mock *mocksessionTokenCacheReadWriter) SetSessionToken(hash string, token *domaintoken.SessionToken) {
-	_mock.Called(hash, token)
+func (_mock *mocksessionTokenCacheReadWriter) SetSessionToken(hash string, token1 *token.SessionToken) {
+	_mock.Called(hash, token1)
 	return
 }
 
@@ -2472,20 +2472,20 @@ type mocksessionTokenCacheReadWriter_SetSessionToken_Call struct {
 
 // SetSessionToken is a helper method to define mock.On call
 //   - hash string
-//   - token *domaintoken.SessionToken
-func (_e *mocksessionTokenCacheReadWriter_Expecter) SetSessionToken(hash interface{}, token interface{}) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
-	return &mocksessionTokenCacheReadWriter_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token)}
+//   - token1 *token.SessionToken
+func (_e *mocksessionTokenCacheReadWriter_Expecter) SetSessionToken(hash interface{}, token1 interface{}) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
+	return &mocksessionTokenCacheReadWriter_SetSessionToken_Call{Call: _e.mock.On("SetSessionToken", hash, token1)}
 }
 
-func (_c *mocksessionTokenCacheReadWriter_SetSessionToken_Call) Run(run func(hash string, token *domaintoken.SessionToken)) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
+func (_c *mocksessionTokenCacheReadWriter_SetSessionToken_Call) Run(run func(hash string, token1 *token.SessionToken)) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.SessionToken
+		var arg1 *token.SessionToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.SessionToken)
+			arg1 = args[1].(*token.SessionToken)
 		}
 		run(
 			arg0,
@@ -2500,7 +2500,7 @@ func (_c *mocksessionTokenCacheReadWriter_SetSessionToken_Call) Return() *mockse
 	return _c
 }
 
-func (_c *mocksessionTokenCacheReadWriter_SetSessionToken_Call) RunAndReturn(run func(hash string, token *domaintoken.SessionToken)) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
+func (_c *mocksessionTokenCacheReadWriter_SetSessionToken_Call) RunAndReturn(run func(hash string, token1 *token.SessionToken)) *mocksessionTokenCacheReadWriter_SetSessionToken_Call {
 	_c.Run(run)
 	return _c
 }
@@ -2533,23 +2533,23 @@ func (_m *mockvalidateAccessTokenRepo) EXPECT() *mockvalidateAccessTokenRepo_Exp
 }
 
 // FindByID provides a mock function for the type mockvalidateAccessTokenRepo
-func (_mock *mockvalidateAccessTokenRepo) FindByID(ctx context.Context, id string) (*domaintoken.AccessToken, error) {
+func (_mock *mockvalidateAccessTokenRepo) FindByID(ctx context.Context, id string) (*token.AccessToken, error) {
 	ret := _mock.Called(ctx, id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
 	}
 
-	var r0 *domaintoken.AccessToken
+	var r0 *token.AccessToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.AccessToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.AccessToken, error)); ok {
 		return returnFunc(ctx, id)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.AccessToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.AccessToken); ok {
 		r0 = returnFunc(ctx, id)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.AccessToken)
+			r0 = ret.Get(0).(*token.AccessToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -2590,12 +2590,12 @@ func (_c *mockvalidateAccessTokenRepo_FindByID_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *mockvalidateAccessTokenRepo_FindByID_Call) Return(accessToken *domaintoken.AccessToken, err error) *mockvalidateAccessTokenRepo_FindByID_Call {
+func (_c *mockvalidateAccessTokenRepo_FindByID_Call) Return(accessToken *token.AccessToken, err error) *mockvalidateAccessTokenRepo_FindByID_Call {
 	_c.Call.Return(accessToken, err)
 	return _c
 }
 
-func (_c *mockvalidateAccessTokenRepo_FindByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*domaintoken.AccessToken, error)) *mockvalidateAccessTokenRepo_FindByID_Call {
+func (_c *mockvalidateAccessTokenRepo_FindByID_Call) RunAndReturn(run func(ctx context.Context, id string) (*token.AccessToken, error)) *mockvalidateAccessTokenRepo_FindByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2668,23 +2668,23 @@ func (_c *mockvalidateAccessTokenCache_DeleteAccessToken_Call) RunAndReturn(run 
 }
 
 // GetAccessToken provides a mock function for the type mockvalidateAccessTokenCache
-func (_mock *mockvalidateAccessTokenCache) GetAccessToken(jti string) (*domaintoken.AccessToken, bool) {
+func (_mock *mockvalidateAccessTokenCache) GetAccessToken(jti string) (*token.AccessToken, bool) {
 	ret := _mock.Called(jti)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAccessToken")
 	}
 
-	var r0 *domaintoken.AccessToken
+	var r0 *token.AccessToken
 	var r1 bool
-	if returnFunc, ok := ret.Get(0).(func(string) (*domaintoken.AccessToken, bool)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) (*token.AccessToken, bool)); ok {
 		return returnFunc(jti)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string) *domaintoken.AccessToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(string) *token.AccessToken); ok {
 		r0 = returnFunc(jti)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.AccessToken)
+			r0 = ret.Get(0).(*token.AccessToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string) bool); ok {
@@ -2719,19 +2719,19 @@ func (_c *mockvalidateAccessTokenCache_GetAccessToken_Call) Run(run func(jti str
 	return _c
 }
 
-func (_c *mockvalidateAccessTokenCache_GetAccessToken_Call) Return(accessToken *domaintoken.AccessToken, b bool) *mockvalidateAccessTokenCache_GetAccessToken_Call {
+func (_c *mockvalidateAccessTokenCache_GetAccessToken_Call) Return(accessToken *token.AccessToken, b bool) *mockvalidateAccessTokenCache_GetAccessToken_Call {
 	_c.Call.Return(accessToken, b)
 	return _c
 }
 
-func (_c *mockvalidateAccessTokenCache_GetAccessToken_Call) RunAndReturn(run func(jti string) (*domaintoken.AccessToken, bool)) *mockvalidateAccessTokenCache_GetAccessToken_Call {
+func (_c *mockvalidateAccessTokenCache_GetAccessToken_Call) RunAndReturn(run func(jti string) (*token.AccessToken, bool)) *mockvalidateAccessTokenCache_GetAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // SetAccessToken provides a mock function for the type mockvalidateAccessTokenCache
-func (_mock *mockvalidateAccessTokenCache) SetAccessToken(jti string, token *domaintoken.AccessToken) {
-	_mock.Called(jti, token)
+func (_mock *mockvalidateAccessTokenCache) SetAccessToken(jti string, token1 *token.AccessToken) {
+	_mock.Called(jti, token1)
 	return
 }
 
@@ -2742,20 +2742,20 @@ type mockvalidateAccessTokenCache_SetAccessToken_Call struct {
 
 // SetAccessToken is a helper method to define mock.On call
 //   - jti string
-//   - token *domaintoken.AccessToken
-func (_e *mockvalidateAccessTokenCache_Expecter) SetAccessToken(jti interface{}, token interface{}) *mockvalidateAccessTokenCache_SetAccessToken_Call {
-	return &mockvalidateAccessTokenCache_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token)}
+//   - token1 *token.AccessToken
+func (_e *mockvalidateAccessTokenCache_Expecter) SetAccessToken(jti interface{}, token1 interface{}) *mockvalidateAccessTokenCache_SetAccessToken_Call {
+	return &mockvalidateAccessTokenCache_SetAccessToken_Call{Call: _e.mock.On("SetAccessToken", jti, token1)}
 }
 
-func (_c *mockvalidateAccessTokenCache_SetAccessToken_Call) Run(run func(jti string, token *domaintoken.AccessToken)) *mockvalidateAccessTokenCache_SetAccessToken_Call {
+func (_c *mockvalidateAccessTokenCache_SetAccessToken_Call) Run(run func(jti string, token1 *token.AccessToken)) *mockvalidateAccessTokenCache_SetAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 *domaintoken.AccessToken
+		var arg1 *token.AccessToken
 		if args[1] != nil {
-			arg1 = args[1].(*domaintoken.AccessToken)
+			arg1 = args[1].(*token.AccessToken)
 		}
 		run(
 			arg0,
@@ -2770,7 +2770,7 @@ func (_c *mockvalidateAccessTokenCache_SetAccessToken_Call) Return() *mockvalida
 	return _c
 }
 
-func (_c *mockvalidateAccessTokenCache_SetAccessToken_Call) RunAndReturn(run func(jti string, token *domaintoken.AccessToken)) *mockvalidateAccessTokenCache_SetAccessToken_Call {
+func (_c *mockvalidateAccessTokenCache_SetAccessToken_Call) RunAndReturn(run func(jti string, token1 *token.AccessToken)) *mockvalidateAccessTokenCache_SetAccessToken_Call {
 	_c.Run(run)
 	return _c
 }
@@ -2803,23 +2803,23 @@ func (_m *mockvalidateSessionTokenRepo) EXPECT() *mockvalidateSessionTokenRepo_E
 }
 
 // FindByTokenHash provides a mock function for the type mockvalidateSessionTokenRepo
-func (_mock *mockvalidateSessionTokenRepo) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error) {
+func (_mock *mockvalidateSessionTokenRepo) FindByTokenHash(ctx context.Context, hash string) (*token.SessionToken, error) {
 	ret := _mock.Called(ctx, hash)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByTokenHash")
 	}
 
-	var r0 *domaintoken.SessionToken
+	var r0 *token.SessionToken
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*domaintoken.SessionToken, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (*token.SessionToken, error)); ok {
 		return returnFunc(ctx, hash)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *domaintoken.SessionToken); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) *token.SessionToken); ok {
 		r0 = returnFunc(ctx, hash)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*domaintoken.SessionToken)
+			r0 = ret.Get(0).(*token.SessionToken)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
@@ -2860,12 +2860,12 @@ func (_c *mockvalidateSessionTokenRepo_FindByTokenHash_Call) Run(run func(ctx co
 	return _c
 }
 
-func (_c *mockvalidateSessionTokenRepo_FindByTokenHash_Call) Return(sessionToken *domaintoken.SessionToken, err error) *mockvalidateSessionTokenRepo_FindByTokenHash_Call {
+func (_c *mockvalidateSessionTokenRepo_FindByTokenHash_Call) Return(sessionToken *token.SessionToken, err error) *mockvalidateSessionTokenRepo_FindByTokenHash_Call {
 	_c.Call.Return(sessionToken, err)
 	return _c
 }
 
-func (_c *mockvalidateSessionTokenRepo_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*domaintoken.SessionToken, error)) *mockvalidateSessionTokenRepo_FindByTokenHash_Call {
+func (_c *mockvalidateSessionTokenRepo_FindByTokenHash_Call) RunAndReturn(run func(ctx context.Context, hash string) (*token.SessionToken, error)) *mockvalidateSessionTokenRepo_FindByTokenHash_Call {
 	_c.Call.Return(run)
 	return _c
 }

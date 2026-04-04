@@ -8,6 +8,7 @@ FindOrganizationResponse:
       format: int32
     name:
       type: string
+      pattern: ^.*$
   required:
     - id
     - name

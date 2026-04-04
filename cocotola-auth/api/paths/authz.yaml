@@ -25,12 +25,14 @@ check:
         required: true
         schema:
           type: string
+          pattern: ^.*$
         description: Action to check (e.g. create_workbook, view_workbook)
       - name: resource
         in: query
         required: true
         schema:
           type: string
+          pattern: ^.*$
         description: Resource to check (e.g. *, workbook:123)
     responses:
       '200':

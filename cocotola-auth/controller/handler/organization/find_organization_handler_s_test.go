@@ -19,7 +19,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn200_whenOrganizat
 
 	// given
 	org := domain.ReconstructOrganization(1, "test-org", 100, 50)
-	orgFinder := newMockOrganizationFinder(t)
+	orgFinder := NewMockFinder(t)
 	orgFinder.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()
@@ -50,7 +50,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn400_whenNameMissi
 	ctx := context.Background()
 
 	// given
-	orgFinder := newMockOrganizationFinder(t)
+	orgFinder := NewMockFinder(t)
 	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()
 
@@ -70,7 +70,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn404_whenOrganizat
 	ctx := context.Background()
 
 	// given
-	orgFinder := newMockOrganizationFinder(t)
+	orgFinder := NewMockFinder(t)
 	orgFinder.On("FindByName", mock.Anything, "nonexistent").Return(nil, domain.ErrOrganizationNotFound)
 	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
 	w := httptest.NewRecorder()

@@ -43,7 +43,7 @@ func Test_ExpandEnvWithDefaults_shouldReturnEmpty_whenNoDefaultAndEnvNotSet(t *t
 	result := config.ExpandEnvWithDefaults(varName)
 
 	// then
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func Test_ExpandEnvWithDefaults_shouldReturnEmptyDefault_whenDefaultIsEmpty(t *testing.T) {
@@ -56,7 +56,7 @@ func Test_ExpandEnvWithDefaults_shouldReturnEmptyDefault_whenDefaultIsEmpty(t *t
 	result := config.ExpandEnvWithDefaults(varName)
 
 	// then
-	assert.Equal(t, "", result)
+	assert.Empty(t, result)
 }
 
 func Test_ExpandEnvWithDefaults_shouldReturnDefaultWithColonDash_whenDefaultContainsSeparator(t *testing.T) {

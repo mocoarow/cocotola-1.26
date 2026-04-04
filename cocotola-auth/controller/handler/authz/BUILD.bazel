@@ -1,0 +1,40 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "authz",
+    srcs = ["check_handler.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/api",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-lib/logging",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "authz_test",
+    srcs = [
+        "authz_s_test.go",
+        "check_handler_s_test.go",
+        "helper_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":authz",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_ohler55_ojg//jp",
+        "@com_github_ohler55_ojg//oj",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

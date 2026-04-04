@@ -14,15 +14,9 @@ import (
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
-
-func noopMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Next()
-	}
-}
 
 func fakeAuthMiddleware(userID int, loginID string, organizationName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -33,7 +27,7 @@ func fakeAuthMiddleware(userID int, loginID string, organizationName string) gin
 	}
 }
 
-func initOrgRouter(_ context.Context, t *testing.T, orgFinder *mockOrganizationFinder, authMiddleware gin.HandlerFunc) *gin.Engine {
+func initOrgRouter(_ context.Context, t *testing.T, orgFinder *MockFinder, authMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(context.Background(), serverConfig, domain.AppName)
