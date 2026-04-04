@@ -89,14 +89,14 @@ tasks:
     desc: "Bundle OpenAPI spec and generate Go types for cocotola-auth"
     dir: cocotola-auth/api
     cmds:
-      - npx --yes @redocly/cli@latest bundle openapi.yaml -o openapi-bundled.yaml
+      - pnpm redocly bundle openapi.yaml -o openapi-bundled.yaml
       - oapi-codegen --config oapi-codegen.yaml openapi-bundled.yaml
 
   generate-openapi-question:
     desc: "Bundle OpenAPI spec and generate Go types for cocotola-question"
     dir: cocotola-question/api
     cmds:
-      - npx --yes @redocly/cli@latest bundle openapi.yaml -o openapi-bundled.yaml
+      - pnpm redocly bundle openapi.yaml -o openapi-bundled.yaml
       - oapi-codegen --config oapi-codegen.yaml openapi-bundled.yaml
 
   generate-openapi:

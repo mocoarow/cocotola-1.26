@@ -46,3 +46,5 @@ kics-results/
 supabase/.env
 supabase/.temp/
 supabase/migrations/
+
+node_modules/
