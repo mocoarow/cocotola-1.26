@@ -205,9 +205,6 @@ tasks:
       - mkdir -p supabase/migrations
       - |
         for f in init-postgres/*.up.sql; do
-          case "$(basename "$f")" in
-            2999*) continue ;;
-          esac
           cp "$f" "supabase/migrations/$(basename "$f")"
         done
 
