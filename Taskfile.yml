@@ -82,9 +82,16 @@ tasks:
     cmds:
       - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
 
+  lint-web:
+    desc: "Run Biome lint and format check for cocotola-web"
+    dir: cocotola-web
+    cmds:
+      - pnpm run check:biome
+
   check:
     cmds:
       - task: lint
+      - task: lint-web
       - task: kics
       - task: yamllint
       - task: misspell

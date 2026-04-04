@@ -1,7 +1,7 @@
 ---
 registries:
   - type: standard
-    ref: v4.486.0
+    ref: v4.492.0
   - name: local
     type: local
     path: .registry.yaml
@@ -17,3 +17,5 @@ packages:
     version: v6.15.0
   - name: pnpm/pnpm
     version: v10.33.0
+  - name: biomejs/biome
+    version: "@biomejs/biome@2.4.10"
