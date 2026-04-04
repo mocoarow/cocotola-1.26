@@ -9,8 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	authcontroller "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
@@ -30,9 +29,7 @@ import (
 type OrganizationIDResolver func(ctx context.Context, name string) (int, error)
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
-type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
-}
+type AuthorizationChecker = domain.AuthorizationChecker
 
 // Initialize sets up the cocotola-question module: gateway, usecase, and controller layers.
 // It registers all question-related routes under the given parent router group and returns
@@ -103,7 +100,7 @@ func newOrganizationResolverMiddleware(resolver OrganizationIDResolver, logger *
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
 
-		orgName := c.GetString(authcontroller.ContextFieldOrganizationName{})
+		orgName := c.GetString(controller.ContextFieldOrganizationName{})
 		if orgName == "" {
 			logger.WarnContext(ctx, "missing organization name in context")
 			c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))

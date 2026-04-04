@@ -1,0 +1,53 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+go_library(
+    name = "cocotola-question_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "//cocotola-lib/gateway",
+        "//cocotola-lib/logging",
+        "//cocotola-lib/process",
+        "//cocotola-question/config",
+        "//cocotola-question/domain",
+        "//cocotola-question/gateway",
+        "//cocotola-question/initialize",
+    ],
+)
+
+go_binary(
+    name = "cocotola-question",
+    embed = [":cocotola-question_lib"],
+    pure = "on",
+    visibility = ["//visibility:public"],
+)
+
+pkg_tar(
+    name = "pkg",
+    srcs = [":cocotola-question"],
+)
+
+oci_image(
+    name = "image",
+    base = "@distroless_static_debian12_linux_amd64",
+    entrypoint = ["/cocotola-question"],
+    tars = [":pkg"],
+)
+
+oci_load(
+    name = "load",
+    image = ":image",
+    repo_tags = ["cocotola-question:latest"],
+)
+
+oci_push(
+    name = "push",
+    image = ":image",
+    remote_tags = ["latest"],
+    repository = "us-central1-docker.pkg.dev/mocoarow-cocotola/cocotola-question/cocotola-question",
+)

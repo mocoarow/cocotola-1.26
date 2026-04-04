@@ -52,6 +52,7 @@ go_library(
 smart_go_test(
     name = "gateway_test",
     srcs = [
+        "db_postgres_s_test.go",
         "db_s_test.go",
         "export_test.go",
         "log_test.go",

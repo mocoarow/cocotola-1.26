@@ -13,7 +13,6 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing",
     visibility = ["//visibility:public"],
     deps = [
-        "//cocotola-auth/domain/rbac",
         "//cocotola-question/domain",
         "//cocotola-question/domain/reference",
         "//cocotola-question/domain/workbook",

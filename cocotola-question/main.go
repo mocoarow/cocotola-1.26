@@ -1,15 +1,13 @@
-// Package main is the entry point for cocotola-app.
+// Package main is the entry point for the standalone cocotola-question microservice.
 package main
 
 import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
-
-	authinit "github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize"
-	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
 
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
@@ -17,10 +15,11 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 	libprocess "github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-app/config"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
+	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
 )
-
-const appName = "cocotola-app"
 
 func main() {
 	exitCode, err := run()
@@ -38,51 +37,46 @@ func run() (int, error) {
 		return 1, fmt.Errorf("load config: %w", err)
 	}
 
-	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, appName+"-main"))
+	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-main"))
 
 	// init log
-	shutdownLog, err := libgateway.InitLog(ctx, cfg.Log, appName)
+	shutdownLog, err := libgateway.InitLog(ctx, cfg.Log, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init log: %w", err)
 	}
 	defer shutdownLog()
 
 	// init tracer
-	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, appName)
+	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init trace: %w", err)
 	}
 	defer shutdownTrace()
 
-	// init db
-	dbConn, shutdownDB, err := libgateway.InitDB(ctx, cfg.DB, cfg.Log, appName)
-	if err != nil {
-		return 1, fmt.Errorf("init db: %w", err)
-	}
-	defer shutdownDB()
-
 	// init gin
-	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server, appName)
+	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init router: %w", err)
 	}
 
-	// initialize auth module
-	authResult, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth)
-	if err != nil {
-		return 1, fmt.Errorf("initialize auth: %w", err)
-	}
+	// auth HTTP client for communicating with cocotola-auth
+	authTimeout := time.Duration(cfg.Auth.TimeoutSec) * time.Second
+	httpClient := &http.Client{Timeout: authTimeout}
+
+	// auth middleware (validates tokens via cocotola-auth API)
+	authMiddleware := gateway.NewAuthMiddleware(cfg.Auth.BaseURL, httpClient)
+
+	// authorization checker (checks RBAC via cocotola-auth API)
+	authzChecker := gateway.NewAuthServiceAuthorizationChecker(cfg.Auth.BaseURL, httpClient)
+
+	// organization resolver (resolves org name to ID via cocotola-auth API)
+	orgResolver := gateway.AuthServiceOrganizationResolver(cfg.Auth.BaseURL, httpClient)
 
 	// initialize question module
-	orgResolver := func(ctx context.Context, name string) (int, error) {
-		org, err := authResult.OrgFinder.FindByName(ctx, name)
-		if err != nil {
-			return 0, fmt.Errorf("find organization by name %s: %w", name, err)
-		}
-		return org.ID(), nil
-	}
-	authzAdapter := &authorizationCheckerAdapter{inner: authResult.AuthzChecker}
-	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authResult.AuthMiddleware, authzAdapter, orgResolver)
+	api := router.Group("api")
+	v1 := api.Group("v1")
+
+	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, authzChecker, orgResolver)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}
@@ -95,7 +89,6 @@ func run() (int, error) {
 		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, readHeaderTimeout, shutdownTime),
 		libcontroller.WithMetricsServerProcess(cfg.Server.MetricsPort, readHeaderTimeout, shutdownTime),
 		libgateway.WithSignalWatchProcess(),
-		authResult.EventBusStart,
 	)
 
 	gracefulShutdownTime := time.Duration(cfg.Server.Shutdown.GracePeriodSec) * time.Second
