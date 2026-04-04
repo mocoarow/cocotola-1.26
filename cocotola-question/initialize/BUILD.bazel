@@ -6,9 +6,8 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize",
     visibility = ["//visibility:public"],
     deps = [
-        "//cocotola-auth/controller",
-        "//cocotola-auth/domain/rbac",
         "//cocotola-lib/logging",
+        "//cocotola-question/domain",
         "//cocotola-question/config",
         "//cocotola-question/controller",
         "//cocotola-question/controller/handler/health",

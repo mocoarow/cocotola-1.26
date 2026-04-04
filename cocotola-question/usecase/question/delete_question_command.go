@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
@@ -27,7 +26,7 @@ func NewDeleteQuestionCommand(questionDeleter questionDeleter, workbookRepo work
 
 // DeleteQuestion deletes a question from a workbook.
 func (c *DeleteQuestionCommand) DeleteQuestion(ctx context.Context, input *questionservice.DeleteQuestionInput) error {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionDeleteQuestion(), domainrbac.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteQuestion(), domain.ResourceAny())
 	if err != nil {
 		return fmt.Errorf("authorization check: %w", err)
 	}

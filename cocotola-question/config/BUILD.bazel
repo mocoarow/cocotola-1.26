@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "config",
@@ -6,6 +7,22 @@ go_library(
         "config.go",
         "doc.go",
     ],
+    embedsrcs = ["config.yml"],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/config",
     visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/controller",
+        "//cocotola-lib/gateway",
+        "//cocotola-question/domain",
+        "@in_yaml_go_yaml_v4//:yaml",
+    ],
+)
+
+smart_go_test(
+    name = "config_test",
+    srcs = ["config_s_test.go"],
+    deps = [
+        ":config",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

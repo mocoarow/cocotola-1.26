@@ -14,6 +14,7 @@ vars:
   GO_APPS:
     - cocotola-auth
     - cocotola-empty
+    - cocotola-question
 
 tasks:
   init:
@@ -236,6 +237,18 @@ tasks:
     dotenv: ['.env.production']
     cmds:
       - bazelisk run //cocotola-auth:cocotola-auth
+
+  run-cocotola-question:
+    desc: "Run cocotola-question with local infrastructure"
+    cmds:
+      - docker compose -f compose.local.postgres-firestore-jaeger.yml up -d --wait
+      - bazelisk run //cocotola-question:cocotola-question
+
+  run-cocotola-question-production:
+    desc: "Run cocotola-question with production infrastructure"
+    dotenv: ['.env.production']
+    cmds:
+      - bazelisk run //cocotola-question:cocotola-question
 
   run-cocotola-app:
     desc: "Run cocotola-app with local infrastructure (auth + question)"

@@ -1,3 +1,40 @@
 ---
+server:
+  httpPort: ${QUESTION_HTTP_PORT:-8090}
+  metricsPort: ${QUESTION_METRICS_PORT:-8091}
+  readHeaderTimeoutSec: ${QUESTION_READ_HEADER_TIMEOUT_SEC:-30}
+  cors:
+    allowOrigins: ${CORS_ALLOW_ORIGINS:-'*'}
+    allowMethods: ${CORS_ALLOW_METHODS:-'GET,POST,PUT,DELETE,OPTIONS'}
+    allowHeaders: ${CORS_ALLOW_HEADERS:-'Content-Type,Authorization,X-Token-Delivery'}
+    allowCredentials: ${CORS_ALLOW_CREDENTIALS:-false}
+  log:
+    accessLog: ${GIN_LOG_ACCESS_LOG:-true}
+    accessLogRequestBody: ${GIN_LOG_ACCESS_LOG_REQUEST_BODY:-false}
+    accessLogResponseBody: ${GIN_LOG_ACCESS_LOG_RESPONSE_BODY:-false}
+  debug:
+    gin: ${GIN_DEBUG_GIN:-false}
+    wait: ${GIN_DEBUG_WAIT:-false}
+  shutdown:
+    gracePeriodSec: ${SHUTDOWN_GRACE_PERIOD_SEC:-1}
+    shutdownTimeSec: ${SHUTDOWN_TIME_SEC:-1}
 question:
   firestoreProjectId: ${QUESTION_FIRESTORE_PROJECT_ID:-cocotola-local}
+auth:
+  baseUrl: ${AUTH_BASE_URL:-http://localhost:8080}
+  timeoutSec: ${AUTH_TIMEOUT_SEC:-10}
+trace:
+  exporter: ${TRACE_EXPORTER:-none}
+  otlp:
+    endpoint: ${TRACE_OTLP_ENDPOINT:-localhost:4317}
+    insecure: ${TRACE_OTLP_INSECURE:-true}
+  uptrace:
+log:
+  level: ${LOG_LEVEL:-info}
+  exporter: ${LOG_EXPORTER:-none}
+  otlp:
+    endpoint: ${LOG_OTLP_ENDPOINT:-localhost:4318}
+    insecure: ${LOG_OTLP_INSECURE:-true}
+  uptrace:
+    endpoint: ${LOG_UPTRACE_ENDPOINT:-api.uptrace.dev}
+    dsn: ${LOG_UPTRACE_DSN:-dummy}

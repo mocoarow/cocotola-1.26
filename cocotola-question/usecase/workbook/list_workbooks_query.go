@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 )
@@ -25,7 +24,7 @@ func NewListWorkbooksQuery(workbookRepo workbookFinder, authChecker authorizatio
 
 // ListWorkbooks returns all workbooks in a space.
 func (q *ListWorkbooksQuery) ListWorkbooks(ctx context.Context, input *workbookservice.ListWorkbooksInput) (*workbookservice.ListWorkbooksOutput, error) {
-	allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionViewWorkbook(), domainrbac.ResourceAny())
+	allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

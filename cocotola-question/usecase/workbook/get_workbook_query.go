@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 )
@@ -32,7 +31,7 @@ func (q *GetWorkbookQuery) GetWorkbook(ctx context.Context, input *workbookservi
 
 	// Public workbooks are accessible to all
 	if !wb.Visibility().IsPublic() {
-		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionViewWorkbook(), domainrbac.ResourceAny())
+		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceAny())
 		if err != nil {
 			return nil, fmt.Errorf("authorization check: %w", err)
 		}

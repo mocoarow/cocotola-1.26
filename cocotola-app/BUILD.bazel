@@ -2,17 +2,22 @@ load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
     name = "cocotola-app_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "authz_adapter.go",
+        "main.go",
+    ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-app",
     visibility = ["//visibility:private"],
     deps = [
         "//cocotola-app/config",
+        "//cocotola-auth/domain/rbac",
         "//cocotola-auth/initialize",
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
         "//cocotola-lib/gateway",
         "//cocotola-lib/logging",
         "//cocotola-lib/process",
+        "//cocotola-question/domain",
         "//cocotola-question/initialize",
     ],
 )

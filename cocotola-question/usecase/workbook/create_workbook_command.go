@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
@@ -27,7 +26,7 @@ func NewCreateWorkbookCommand(workbookRepo workbookCreator, authChecker authoriz
 
 // CreateWorkbook creates a new workbook.
 func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workbookservice.CreateWorkbookInput) (*workbookservice.CreateWorkbookOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionCreateWorkbook(), domainrbac.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

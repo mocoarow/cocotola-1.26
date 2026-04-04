@@ -3,7 +3,7 @@ package question
 import (
 	"context"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
@@ -30,5 +30,5 @@ type workbookFinder interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 )
@@ -27,7 +26,7 @@ func NewDeleteWorkbookCommand(workbookFinder workbookFinder, workbookDeleter wor
 
 // DeleteWorkbook deletes a workbook.
 func (c *DeleteWorkbookCommand) DeleteWorkbook(ctx context.Context, input *workbookservice.DeleteWorkbookInput) error {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionDeleteWorkbook(), domainrbac.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny())
 	if err != nil {
 		return fmt.Errorf("authorization check: %w", err)
 	}

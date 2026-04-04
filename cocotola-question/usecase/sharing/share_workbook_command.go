@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	referenceservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference"
 )
@@ -28,7 +27,7 @@ func NewShareWorkbookCommand(referenceRepo referenceCreator, workbookRepo workbo
 
 // ShareWorkbook creates a reference to a workbook.
 func (c *ShareWorkbookCommand) ShareWorkbook(ctx context.Context, input *referenceservice.ShareWorkbookInput) (*referenceservice.ShareWorkbookOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domainrbac.ActionImportWorkbook(), domainrbac.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionImportWorkbook(), domain.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
