@@ -6,7 +6,17 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["app/**/*.ts", "app/**/*.tsx", "*.ts"]
+    "includes": [
+      "app/**/*.ts",
+      "app/**/*.tsx",
+      "*.ts",
+      "!node_modules",
+      "!dist",
+      "!build",
+      "!app/components/ui/*.tsx",
+      "!app/lib/utils.ts",
+      "!app/hooks/use-mobile.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
