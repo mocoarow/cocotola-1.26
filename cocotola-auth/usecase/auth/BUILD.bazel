@@ -16,6 +16,7 @@ go_library(
         "revoke_session_token_command.go",
         "revoke_token_command.go",
         "shared_interfaces.go",
+        "supabase_exchange_query.go",
         "validate_access_token_query.go",
         "validate_session_token_query.go",
     ],
@@ -24,6 +25,7 @@ go_library(
     deps = [
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/token",
+        "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",
         "@com_github_google_uuid//:uuid",
     ],
@@ -34,12 +36,14 @@ smart_go_test(
     srcs = [
         "mocks_test.go",
         "revoke_session_token_command_s_test.go",
+        "supabase_exchange_query_s_test.go",
         "validate_access_token_query_s_test.go",
     ],
     deps = [
         ":auth",
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/token",
+        "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",

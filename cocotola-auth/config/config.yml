@@ -6,7 +6,7 @@ server:
   cors:
     allowOrigins: ${CORS_ALLOW_ORIGINS:-'*'}
     allowMethods: ${CORS_ALLOW_METHODS:-'GET,POST,PUT,DELETE,OPTIONS'}
-    allowHeaders: ${CORS_ALLOW_HEADERS:-'Content-Type,Authorization,X-Token-Delivery'}
+    allowHeaders: ${CORS_ALLOW_HEADERS:-'Content-Type,Authorization,X-Token-Delivery,X-Service-Api-Key'}
     allowCredentials: ${CORS_ALLOW_CREDENTIALS:-false}
   log:
     accessLog: ${GIN_LOG_ACCESS_LOG:-true}
@@ -56,3 +56,7 @@ auth:
     path: ${AUTH_COOKIE_PATH:-/}
     secure: ${AUTH_COOKIE_SECURE:-true}
     sameSite: ${AUTH_COOKIE_SAME_SITE:-Lax}
+  supabase:
+    jwtSecret: ${AUTH_SUPABASE_JWT_SECRET}
+internal:
+  apiKey: ${INTERNAL_API_KEY}

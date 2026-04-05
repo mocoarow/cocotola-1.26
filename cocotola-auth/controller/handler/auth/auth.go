@@ -24,3 +24,14 @@ func InitAuthRouter(
 	authGroup.POST("/revoke", authMiddleware, revokeHandler.Revoke)
 	authGroup.GET("/me", authMiddleware, getMeHandler.GetMe)
 }
+
+// InitInternalAuthRouter sets up the routes for internal (service-to-service) auth operations.
+// These routes are protected by API key middleware applied at the parent group level.
+func InitInternalAuthRouter(
+	supabaseExchangeHandler *SupabaseExchangeHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	authGroup := parentRouterGroup.Group("auth")
+
+	authGroup.POST("/supabase/exchange", supabaseExchangeHandler.Exchange)
+}

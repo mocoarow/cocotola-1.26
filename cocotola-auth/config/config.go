@@ -15,6 +15,11 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
 
+// SupabaseConfig holds the Supabase JWT secret for token verification.
+type SupabaseConfig struct {
+	JWTSecret string `yaml:"jwtSecret" validate:"required,min=32"`
+}
+
 // AuthConfig holds JWT signing key, token TTL, and cookie delivery settings.
 type AuthConfig struct {
 	SigningKey         string                  `yaml:"signingKey" validate:"required,min=32"`
@@ -24,15 +29,22 @@ type AuthConfig struct {
 	SessionMaxTTLMin   int                     `yaml:"sessionMaxTtlMin" validate:"gte=1"`
 	TokenWhitelistSize int                     `yaml:"tokenWhitelistSize" validate:"gte=1"`
 	Cookie             controller.CookieConfig `yaml:"cookie" validate:"required"`
+	Supabase           SupabaseConfig          `yaml:"supabase" validate:"required"`
+}
+
+// InternalConfig holds the shared API key for service-to-service authentication.
+type InternalConfig struct {
+	APIKey string `yaml:"apiKey" validate:"required,min=32"`
 }
 
 // Config holds all configuration for the cocotola-auth service.
 type Config struct {
-	Server libcontroller.ServerConfig `yaml:"server" validate:"required"`
-	DB     libgateway.DBConfig        `yaml:"db" validate:"required"`
-	Trace  libgateway.TraceConfig     `yaml:"trace" validate:"required"`
-	Log    libgateway.LogConfig       `yaml:"log" validate:"required"`
-	Auth   AuthConfig                 `yaml:"auth" validate:"required"`
+	Server   libcontroller.ServerConfig `yaml:"server" validate:"required"`
+	DB       libgateway.DBConfig        `yaml:"db" validate:"required"`
+	Trace    libgateway.TraceConfig     `yaml:"trace" validate:"required"`
+	Log      libgateway.LogConfig       `yaml:"log" validate:"required"`
+	Auth     AuthConfig                 `yaml:"auth" validate:"required"`
+	Internal InternalConfig             `yaml:"internal" validate:"required"`
 }
 
 //go:embed config.yml

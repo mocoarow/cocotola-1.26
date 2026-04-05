@@ -15,6 +15,7 @@ info:
 tags:
   - name: auth
   - name: authz
+  - name: internal
   - name: group
   - name: health
   - name: organization
@@ -33,6 +34,8 @@ paths:
     $ref: 'paths/auth.yaml#/refresh'
   /api/v1/auth/revoke:
     $ref: 'paths/auth.yaml#/revoke'
+  /api/v1/internal/auth/supabase/exchange:
+    $ref: 'paths/auth.yaml#/supabase-exchange'
   /api/v1/auth/me:
     $ref: 'paths/auth.yaml#/me'
   /api/v1/auth/group:
@@ -59,6 +62,8 @@ components:
       $ref: 'schemas/auth.yaml#/RefreshResponse'
     RevokeRequest:
       $ref: 'schemas/auth.yaml#/RevokeRequest'
+    SupabaseExchangeRequest:
+      $ref: 'schemas/auth.yaml#/SupabaseExchangeRequest'
     GetMeResponse:
       $ref: 'schemas/auth.yaml#/GetMeResponse'
     CreateGroupRequest:
@@ -95,6 +100,10 @@ components:
       type: apiKey
       in: cookie
       name: session_token
+    ServiceApiKey:
+      type: apiKey
+      in: header
+      name: X-Service-Api-Key
 servers: []
 security:
   - BearerAuth: []

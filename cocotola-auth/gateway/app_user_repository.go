@@ -134,3 +134,42 @@ func (r *AppUserRepository) FindByLoginID(ctx context.Context, organizationID in
 	}
 	return toAppUserDomain(&record), nil
 }
+
+// FindByProviderID looks up an app user by organization, provider, and provider ID.
+func (r *AppUserRepository) FindByProviderID(ctx context.Context, organizationID int, provider string, providerID string) (*domainuser.AppUser, error) {
+	var record appUserRecord
+	if err := r.db.WithContext(ctx).
+		Where("organization_id = ? AND provider = ? AND provider_id = ?", organizationID, provider, providerID).
+		First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrAppUserNotFound
+		}
+		return nil, fmt.Errorf("find app user by provider id: %w", err)
+	}
+	return toAppUserDomain(&record), nil
+}
+
+// CreateWithProvider inserts a new app user with external provider info and returns the auto-generated ID.
+func (r *AppUserRepository) CreateWithProvider(ctx context.Context, organizationID int, loginID string, provider string, providerID string) (int, error) {
+	record := appUserRecord{
+		ID:                            0,
+		Version:                       0,
+		CreatedAt:                     time.Time{},
+		UpdatedAt:                     time.Time{},
+		CreatedBy:                     0,
+		UpdatedBy:                     0,
+		OrganizationID:                organizationID,
+		LoginID:                       loginID,
+		HashedPassword:                nil,
+		Username:                      nil,
+		Provider:                      &provider,
+		ProviderID:                    &providerID,
+		EncryptedProviderAccessToken:  nil,
+		EncryptedProviderRefreshToken: nil,
+		Enabled:                       true,
+	}
+	if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
+		return 0, fmt.Errorf("create app user with provider: %w", err)
+	}
+	return record.ID, nil
+}

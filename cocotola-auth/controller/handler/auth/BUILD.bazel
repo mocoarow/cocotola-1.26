@@ -10,6 +10,7 @@ go_library(
         "guest_authenticate_handler.go",
         "password_authenticate_handler.go",
         "revoke_handler.go",
+        "supabase_exchange_handler.go",
         "token_handler.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth",
@@ -28,11 +29,13 @@ smart_go_test(
     name = "auth_test",
     srcs = [
         "auth_s_test.go",
+        "combined_mocks_test.go",
         "get_me_handler_s_test.go",
         "helper_test.go",
         "mocks_test.go",
         "password_authenticate_handler_s_test.go",
         "revoke_handler_s_test.go",
+        "supabase_exchange_handler_s_test.go",
         "token_handler_s_test.go",
     ],
     deps = [

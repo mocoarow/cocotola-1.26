@@ -22,6 +22,7 @@ go_library(
         "organization_repository.go",
         "rbac_repository.go",
         "space_repository.go",
+        "supabase_verifier.go",
         "token_cache.go",
         "token_whitelist_repository.go",
         "user_authenticator.go",
@@ -63,6 +64,7 @@ smart_go_test(
         "organization_repository_m_test.go",
         "rbac_repository_m_test.go",
         "repository_s_test.go",
+        "supabase_verifier_s_test.go",
     ],
     embed = [":gateway"],
     deps = [

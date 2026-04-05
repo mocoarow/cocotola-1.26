@@ -112,6 +112,8 @@ func run() (int, error) {
 		TokenWhitelistSize: cfg.Auth.TokenWhitelistSize,
 		ClockFunc:          nil,
 	}
+	supabaseVerifier := gateway.NewSupabaseVerifier(cfg.Auth.Supabase.JWTSecret)
+	appUserRepo := gateway.NewAppUserRepository(dbConn.DB)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
 		guestAuthenticator,
@@ -124,6 +126,10 @@ func run() (int, error) {
 		jwtManager,
 		tokenCache,
 		usecaseConfig,
+		supabaseVerifier,
+		appUserRepo,
+		appUserRepo,
+		orgRepo,
 	)
 
 	// api
@@ -147,6 +153,14 @@ func run() (int, error) {
 		revokeHandler := authhandler.NewRevokeHandler(authUsecase, cfg.Auth.Cookie)
 		getMeHandler := authhandler.NewGetMeHandler()
 		authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
+	}
+
+	// internal (service-to-service) routes protected by API key
+	{
+		apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Internal.APIKey)
+		internalV1 := api.Group("v1/internal", apiKeyMiddleware)
+		supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
+		authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
 	}
 
 	authV1 := v1.Group("auth")

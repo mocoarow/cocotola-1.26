@@ -65,6 +65,11 @@ func initAuthRouterWithMiddleware(ctx context.Context, t *testing.T, usecase *Mo
 	getMeHandler := authhandler.NewGetMeHandler()
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
+	// internal routes (no API key middleware in tests)
+	internalV1 := api.Group("v1/internal")
+	supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(usecase)
+	authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
+
 	return router
 }
 

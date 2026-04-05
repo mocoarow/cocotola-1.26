@@ -19,6 +19,7 @@ import (
 // AppConfig holds application-level configuration for included microservices.
 type AppConfig struct {
 	Auth     authconfig.AuthConfig         `yaml:"auth" validate:"required"`
+	Internal authconfig.InternalConfig     `yaml:"internal" validate:"required"`
 	Question questionconfig.QuestionConfig `yaml:"question" validate:"required"`
 }
 

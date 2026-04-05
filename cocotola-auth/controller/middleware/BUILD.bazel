@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "middleware",
     srcs = [
+        "api_key_middleware.go",
         "auth_middleware.go",
         "doc.go",
         "trace.go",
@@ -24,6 +25,7 @@ go_library(
 smart_go_test(
     name = "middleware_test",
     srcs = [
+        "api_key_middleware_s_test.go",
         "auth_middleware_s_test.go",
         "mocks_test.go",
     ],

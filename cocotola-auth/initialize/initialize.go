@@ -62,7 +62,7 @@ type InitResult struct {
 // Initialize sets up the cocotola-auth module: gateway, usecase, and controller layers.
 // It registers all auth-related routes under the given parent router group and returns
 // an InitResult containing shared resources for use by other modules.
-func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig) (*InitResult, error) {
+func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig, internalConfig config.InternalConfig) (*InitResult, error) {
 	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(authConfig.SigningKey),
@@ -110,6 +110,8 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 		TokenWhitelistSize: authConfig.TokenWhitelistSize,
 		ClockFunc:          nil,
 	}
+	supabaseVerifier := gateway.NewSupabaseVerifier(authConfig.Supabase.JWTSecret)
+	appUserRepo := gateway.NewAppUserRepository(db)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
 		guestAuthenticator,
@@ -122,6 +124,10 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 		jwtManager,
 		tokenCache,
 		usecaseConfig,
+		supabaseVerifier,
+		appUserRepo,
+		appUserRepo,
+		orgRepo,
 	)
 
 	// controller layer
@@ -141,6 +147,12 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	getMeHandler := authhandler.NewGetMeHandler()
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
+	// internal (service-to-service) routes protected by API key
+	apiKeyMiddleware := middleware.NewAPIKeyMiddleware(internalConfig.APIKey)
+	internalV1 := api.Group("v1/internal", apiKeyMiddleware)
+	supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
+	authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
+
 	// group usecase + controller
 	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 	authV1 := v1.Group("auth")
@@ -155,7 +167,6 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
 
 	// user usecase + controller
-	appUserRepo := gateway.NewAppUserRepository(db)
 	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
