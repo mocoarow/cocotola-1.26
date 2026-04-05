@@ -57,12 +57,14 @@ type InitResult struct {
 	AuthzChecker AuthorizationChecker
 	// OrgFinder finds organizations by name for use by other modules.
 	OrgFinder OrganizationFinder
+	// Close releases resources held by the auth module.
+	Close func()
 }
 
 // Initialize sets up the cocotola-auth module: gateway, usecase, and controller layers.
 // It registers all auth-related routes under the given parent router group and returns
 // an InitResult containing shared resources for use by other modules.
-func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig, internalConfig config.InternalConfig) (*InitResult, error) {
+func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig, internalConfig config.InternalConfig) (*InitResult, error) {
 	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(authConfig.SigningKey),
@@ -110,7 +112,10 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 		TokenWhitelistSize: authConfig.TokenWhitelistSize,
 		ClockFunc:          nil,
 	}
-	supabaseVerifier := gateway.NewSupabaseVerifier(authConfig.Supabase.JWTSecret)
+	supabaseVerifier, err := gateway.NewSupabaseVerifier(ctx, authConfig.Supabase.JWKSURL)
+	if err != nil {
+		return nil, fmt.Errorf("new supabase verifier: %w", err)
+	}
 	appUserRepo := gateway.NewAppUserRepository(db)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
@@ -185,5 +190,6 @@ func Initialize(_ context.Context, parent gin.IRouter, db *gorm.DB, authConfig c
 		V1RouterGroup:  v1,
 		AuthzChecker:   authzChecker,
 		OrgFinder:      orgRepo,
+		Close:          supabaseVerifier.Close,
 	}, nil
 }

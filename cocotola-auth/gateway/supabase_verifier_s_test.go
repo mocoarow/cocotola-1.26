@@ -2,8 +2,16 @@ package gateway_test
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/json"
+	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"encoding/base64"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
@@ -12,10 +20,44 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
-func makeSupabaseJWT(t *testing.T, secret string, claims jwt.MapClaims) string {
+const testKeyID = "test-key-id"
+
+func generateTestKey(t *testing.T) *rsa.PrivateKey {
 	t.Helper()
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, err := token.SignedString([]byte(secret))
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	return key
+}
+
+func serveJWKS(t *testing.T, key *rsa.PrivateKey) *httptest.Server {
+	t.Helper()
+	jwks := map[string]any{
+		"keys": []map[string]any{
+			{
+				"kty": "RSA",
+				"kid": testKeyID,
+				"use": "sig",
+				"alg": "RS256",
+				"n":   base64.RawURLEncoding.EncodeToString(key.N.Bytes()),
+				"e":   base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes()),
+			},
+		},
+	}
+	data, err := json.Marshal(jwks)
+	require.NoError(t, err)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(data)
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func makeRSAJWT(t *testing.T, key *rsa.PrivateKey, claims jwt.MapClaims) string {
+	t.Helper()
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = testKeyID
+	signed, err := token.SignedString(key)
 	require.NoError(t, err)
 	return signed
 }
@@ -24,9 +66,13 @@ func Test_SupabaseVerifier_Verify_shouldReturnSubAndEmail_whenTokenIsValid(t *te
 	t.Parallel()
 
 	// given
-	secret := "test-secret-must-be-at-least-32-chars"
-	verifier := gateway.NewSupabaseVerifier(secret)
-	tokenStr := makeSupabaseJWT(t, secret, jwt.MapClaims{
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
 		"sub":   "user-uuid-123",
 		"email": "test@example.com",
 		"exp":   time.Now().Add(1 * time.Hour).Unix(),
@@ -45,35 +91,45 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenTokenIsExpired(t *testin
 	t.Parallel()
 
 	// given
-	secret := "test-secret-must-be-at-least-32-chars"
-	verifier := gateway.NewSupabaseVerifier(secret)
-	tokenStr := makeSupabaseJWT(t, secret, jwt.MapClaims{
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
 		"sub":   "user-uuid-123",
 		"email": "test@example.com",
 		"exp":   time.Now().Add(-1 * time.Hour).Unix(),
 	})
 
 	// when
-	_, _, err := verifier.Verify(context.Background(), tokenStr)
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "parse supabase token")
 }
 
-func Test_SupabaseVerifier_Verify_shouldReturnError_whenSecretIsWrong(t *testing.T) {
+func Test_SupabaseVerifier_Verify_shouldReturnError_whenKeyIsWrong(t *testing.T) {
 	t.Parallel()
 
 	// given
-	verifier := gateway.NewSupabaseVerifier("correct-secret-at-least-32-chars-long")
-	tokenStr := makeSupabaseJWT(t, "wrong-secret-at-least-32-chars-long!!", jwt.MapClaims{
+	key := generateTestKey(t)
+	wrongKey := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, wrongKey, jwt.MapClaims{
 		"sub":   "user-uuid-123",
 		"email": "test@example.com",
 		"exp":   time.Now().Add(1 * time.Hour).Unix(),
 	})
 
 	// when
-	_, _, err := verifier.Verify(context.Background(), tokenStr)
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
 	require.Error(t, err)
@@ -84,15 +140,19 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenSubIsMissing(t *testing.
 	t.Parallel()
 
 	// given
-	secret := "test-secret-must-be-at-least-32-chars"
-	verifier := gateway.NewSupabaseVerifier(secret)
-	tokenStr := makeSupabaseJWT(t, secret, jwt.MapClaims{
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
 		"email": "test@example.com",
 		"exp":   time.Now().Add(1 * time.Hour).Unix(),
 	})
 
 	// when
-	_, _, err := verifier.Verify(context.Background(), tokenStr)
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
 	require.Error(t, err)
@@ -103,28 +163,35 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailIsMissing(t *testin
 	t.Parallel()
 
 	// given
-	secret := "test-secret-must-be-at-least-32-chars"
-	verifier := gateway.NewSupabaseVerifier(secret)
-	tokenStr := makeSupabaseJWT(t, secret, jwt.MapClaims{
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
 		"sub": "user-uuid-123",
 		"exp": time.Now().Add(1 * time.Hour).Unix(),
 	})
 
 	// when
-	_, _, err := verifier.Verify(context.Background(), tokenStr)
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing email")
 }
 
-func Test_SupabaseVerifier_Verify_shouldReturnError_whenSigningMethodIsNotHMAC(t *testing.T) {
+func Test_SupabaseVerifier_Verify_shouldReturnError_whenSigningMethodIsNotRSA(t *testing.T) {
 	t.Parallel()
 
 	// given
-	secret := "test-secret-must-be-at-least-32-chars"
-	verifier := gateway.NewSupabaseVerifier(secret)
-	// Use "none" algorithm
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
 	token := jwt.NewWithClaims(jwt.SigningMethodNone, jwt.MapClaims{
 		"sub":   "user-uuid-123",
 		"email": "test@example.com",

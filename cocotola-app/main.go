@@ -72,6 +72,7 @@ func run() (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("initialize auth: %w", err)
 	}
+	defer authResult.Close()
 
 	// initialize question module
 	orgResolver := func(ctx context.Context, name string) (int, error) {

@@ -17,6 +17,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.session) {
+    console.error("auth.callback: exchangeCodeForSession failed", error);
     return redirect("/login");
   }
 
@@ -24,7 +25,8 @@ export async function loader({ request }: Route.LoaderArgs) {
   let tokens: Awaited<ReturnType<typeof exchangeSupabaseToken>>;
   try {
     tokens = await exchangeSupabaseToken(data.session.access_token, organizationName);
-  } catch {
+  } catch (e) {
+    console.error("auth.callback: exchangeSupabaseToken failed", e);
     return redirect("/login");
   }
 

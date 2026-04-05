@@ -57,6 +57,6 @@ auth:
     secure: ${AUTH_COOKIE_SECURE:-true}
     sameSite: ${AUTH_COOKIE_SAME_SITE:-Lax}
   supabase:
-    jwtSecret: ${AUTH_SUPABASE_JWT_SECRET}
+    jwksUrl: ${AUTH_SUPABASE_JWKS_URL}
 internal:
   apiKey: ${INTERNAL_API_KEY}

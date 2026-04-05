@@ -28,6 +28,7 @@ export async function action({ request }: Route.ActionArgs) {
 
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
+    console.error("signup: signUp failed", error);
     return { error: error.message };
   }
   if (!data.session) {
@@ -38,7 +39,8 @@ export async function action({ request }: Route.ActionArgs) {
   let tokens: Awaited<ReturnType<typeof exchangeSupabaseToken>>;
   try {
     tokens = await exchangeSupabaseToken(data.session.access_token, organizationName);
-  } catch {
+  } catch (e) {
+    console.error("signup: exchangeSupabaseToken failed", e);
     return { error: "Authentication service is temporarily unavailable." };
   }
 

@@ -5,27 +5,32 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// SupabaseVerifier verifies Supabase JWT tokens using the shared JWT secret.
+// SupabaseVerifier verifies Supabase JWT tokens using JWKS.
 type SupabaseVerifier struct {
-	secret []byte
+	jwks   keyfunc.Keyfunc
+	cancel context.CancelFunc
 }
 
-// NewSupabaseVerifier returns a new SupabaseVerifier.
-func NewSupabaseVerifier(jwtSecret string) *SupabaseVerifier {
-	return &SupabaseVerifier{secret: []byte(jwtSecret)}
+// NewSupabaseVerifier fetches the JWKS from the given URL and returns a new SupabaseVerifier.
+func NewSupabaseVerifier(ctx context.Context, jwksURL string) (*SupabaseVerifier, error) {
+	ctx, cancel := context.WithCancel(ctx)
+
+	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{jwksURL})
+	if err != nil {
+		cancel()
+		return nil, fmt.Errorf("fetch JWKS from %s: %w", jwksURL, err)
+	}
+
+	return &SupabaseVerifier{jwks: jwks, cancel: cancel}, nil
 }
 
 // Verify parses and validates a Supabase JWT, returning the user's sub (UUID) and email.
-func (v *SupabaseVerifier) Verify(_ context.Context, tokenString string) (string, string, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return v.secret, nil
-	})
+func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (string, string, error) {
+	token, err := jwt.Parse(tokenString, v.jwks.KeyfuncCtx(ctx))
 	if err != nil {
 		return "", "", fmt.Errorf("parse supabase token: %w", err)
 	}
@@ -46,4 +51,9 @@ func (v *SupabaseVerifier) Verify(_ context.Context, tokenString string) (string
 	}
 
 	return sub, email, nil
+}
+
+// Close shuts down the background JWKS refresh goroutine.
+func (v *SupabaseVerifier) Close() {
+	v.cancel()
 }
