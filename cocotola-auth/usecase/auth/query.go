@@ -4,7 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
@@ -72,12 +74,33 @@ func (c UsecaseConfig) Now() time.Time {
 	return time.Now()
 }
 
+// SupabaseVerifier verifies Supabase JWT tokens and returns the user's sub (UUID) and email.
+type SupabaseVerifier interface {
+	Verify(ctx context.Context, tokenString string) (sub string, email string, err error)
+}
+
+// AppUserProviderFinder finds an app user by external provider ID.
+type AppUserProviderFinder interface {
+	FindByProviderID(ctx context.Context, organizationID int, provider string, providerID string) (*domainuser.AppUser, error)
+}
+
+// AppUserProviderCreator creates an app user with external provider info.
+type AppUserProviderCreator interface {
+	CreateWithProvider(ctx context.Context, organizationID int, loginID string, provider string, providerID string) (int, error)
+}
+
+// OrganizationFinder finds an organization by name.
+type OrganizationFinder interface {
+	FindByName(ctx context.Context, name string) (*domain.Organization, error)
+}
+
 // Query composes all authentication Query structs.
 type Query struct {
 	*PasswordAuthenticateQuery
 	*GuestAuthenticateQuery
 	*ValidateSessionTokenQuery
 	*ValidateAccessTokenQuery
+	*SupabaseExchangeQuery
 }
 
 // NewQuery returns a new Query with the given dependencies.
@@ -91,11 +114,16 @@ func NewQuery(
 	jwtManager JWTManager,
 	tokenCache TokenCache,
 	config UsecaseConfig,
+	supabaseVerifier SupabaseVerifier,
+	appUserFinder AppUserProviderFinder,
+	appUserCreator AppUserProviderCreator,
+	organizationFinder OrganizationFinder,
 ) *Query {
 	return &Query{
 		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserCreator, organizationFinder),
 	}
 }

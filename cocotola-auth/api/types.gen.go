@@ -168,6 +168,12 @@ type SpaceItem struct {
 // SpaceItemSpaceType defines model for SpaceItem.SpaceType.
 type SpaceItemSpaceType string
 
+// SupabaseExchangeRequest defines model for SupabaseExchangeRequest.
+type SupabaseExchangeRequest struct {
+	OrganizationName string `binding:"required,max=20" json:"organizationName"`
+	SupabaseJWT      string `binding:"required" json:"supabaseJwt"`
+}
+
 // CheckAuthorizationParams defines parameters for CheckAuthorization.
 type CheckAuthorizationParams struct {
 	// Org Organization ID
@@ -215,6 +221,9 @@ type RevokeTokenJSONRequestBody = RevokeRequest
 
 // CreateSpaceJSONRequestBody defines body for CreateSpace for application/json ContentType.
 type CreateSpaceJSONRequestBody = CreateSpaceRequest
+
+// SupabaseExchangeJSONRequestBody defines body for SupabaseExchange for application/json ContentType.
+type SupabaseExchangeJSONRequestBody = SupabaseExchangeRequest
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserRequest

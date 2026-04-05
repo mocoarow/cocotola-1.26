@@ -88,6 +88,25 @@ RevokeRequest:
   required:
     - token
 
+SupabaseExchangeRequest:
+  type: object
+  properties:
+    supabaseJwt:
+      type: string
+      x-go-name: SupabaseJWT
+      x-oapi-codegen-extra-tags:
+        binding: required
+      pattern: ^.*$
+    organizationName:
+      type: string
+      x-oapi-codegen-extra-tags:
+        binding: required,max=20
+      maxLength: 20
+      pattern: ^.*$
+  required:
+    - supabaseJwt
+    - organizationName
+
 GetMeResponse:
   type: object
   properties:

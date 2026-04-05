@@ -335,6 +335,46 @@ func NewGuestAuthenticateOutput(userID int, loginID string, organizationName str
 	return m, nil
 }
 
+// --- SupabaseExchange ---
+
+// SupabaseExchangeInput holds the Supabase JWT and organization name for token exchange.
+type SupabaseExchangeInput struct {
+	SupabaseJWT      string `validate:"required"`
+	OrganizationName string `validate:"required"`
+}
+
+// NewSupabaseExchangeInput creates a validated SupabaseExchangeInput.
+func NewSupabaseExchangeInput(supabaseJWT string, organizationName string) (*SupabaseExchangeInput, error) {
+	m := &SupabaseExchangeInput{
+		SupabaseJWT:      supabaseJWT,
+		OrganizationName: organizationName,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate supabase exchange input: %w", err)
+	}
+	return m, nil
+}
+
+// SupabaseExchangeOutput holds the authenticated user's identity after Supabase token exchange.
+type SupabaseExchangeOutput struct {
+	UserID           int    `validate:"required,gt=0"`
+	LoginID          string `validate:"required"`
+	OrganizationName string `validate:"required"`
+}
+
+// NewSupabaseExchangeOutput creates a validated SupabaseExchangeOutput.
+func NewSupabaseExchangeOutput(userID int, loginID string, organizationName string) (*SupabaseExchangeOutput, error) {
+	m := &SupabaseExchangeOutput{
+		UserID:           userID,
+		LoginID:          loginID,
+		OrganizationName: organizationName,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate supabase exchange output: %w", err)
+	}
+	return m, nil
+}
+
 // --- RevokeToken ---
 
 // RevokeTokenInput holds the token string to revoke.

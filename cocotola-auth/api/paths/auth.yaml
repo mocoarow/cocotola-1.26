@@ -215,6 +215,61 @@ revoke:
       - BearerAuth: []
       - CookieAuth: []
 
+supabase-exchange:
+  post:
+    summary: Exchange Supabase JWT for internal tokens
+    deprecated: false
+    description: Verify a Supabase JWT and return internal access and refresh tokens. Creates an AppUser if one does not exist for the Supabase user.
+    operationId: supabaseExchange
+    tags:
+      - internal
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/auth.yaml#/SupabaseExchangeRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully exchanged token
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/auth.yaml#/AuthenticateResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Invalid Supabase JWT or missing API key
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Invalid API key
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - ServiceApiKey: []
+
 me:
   get:
     summary: Get current user
