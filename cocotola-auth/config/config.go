@@ -15,9 +15,9 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
 
-// SupabaseConfig holds the Supabase JWT secret for token verification.
+// SupabaseConfig holds the Supabase JWKS URL for token verification.
 type SupabaseConfig struct {
-	JWTSecret string `yaml:"jwtSecret" validate:"required,min=32"`
+	JWKSURL string `yaml:"jwksUrl" validate:"required,url"`
 }
 
 // AuthConfig holds JWT signing key, token TTL, and cookie delivery settings.

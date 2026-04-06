@@ -112,7 +112,11 @@ func run() (int, error) {
 		TokenWhitelistSize: cfg.Auth.TokenWhitelistSize,
 		ClockFunc:          nil,
 	}
-	supabaseVerifier := gateway.NewSupabaseVerifier(cfg.Auth.Supabase.JWTSecret)
+	supabaseVerifier, err := gateway.NewSupabaseVerifier(ctx, cfg.Auth.Supabase.JWKSURL)
+	if err != nil {
+		return 1, fmt.Errorf("new supabase verifier: %w", err)
+	}
+	defer supabaseVerifier.Close()
 	appUserRepo := gateway.NewAppUserRepository(dbConn.DB)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
