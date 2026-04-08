@@ -5,30 +5,39 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 // SupabaseExchangeQuery handles Supabase JWT exchange for internal user lookup or creation.
 type SupabaseExchangeQuery struct {
-	supabaseVerifier   SupabaseVerifier
-	appUserFinder      AppUserProviderFinder
-	appUserCreator     AppUserProviderCreator
-	organizationFinder OrganizationFinder
+	supabaseVerifier       SupabaseVerifier
+	appUserFinder          AppUserProviderFinder
+	appUserIDProvider      AppUserIDProvider
+	appUserByLoginIDFinder AppUserByLoginIDFinder
+	appUserSaver           AppUserSaver
+	organizationFinder     OrganizationFinder
 }
 
 // NewSupabaseExchangeQuery returns a new SupabaseExchangeQuery.
 func NewSupabaseExchangeQuery(
 	supabaseVerifier SupabaseVerifier,
 	appUserFinder AppUserProviderFinder,
-	appUserCreator AppUserProviderCreator,
+	appUserIDProvider AppUserIDProvider,
+	appUserByLoginIDFinder AppUserByLoginIDFinder,
+	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
 ) *SupabaseExchangeQuery {
 	return &SupabaseExchangeQuery{
-		supabaseVerifier:   supabaseVerifier,
-		appUserFinder:      appUserFinder,
-		appUserCreator:     appUserCreator,
-		organizationFinder: organizationFinder,
+		supabaseVerifier:       supabaseVerifier,
+		appUserFinder:          appUserFinder,
+		appUserIDProvider:      appUserIDProvider,
+		appUserByLoginIDFinder: appUserByLoginIDFinder,
+		appUserSaver:           appUserSaver,
+		organizationFinder:     organizationFinder,
 	}
 }
 
@@ -59,18 +68,52 @@ func (q *SupabaseExchangeQuery) SupabaseExchange(ctx context.Context, input *aut
 }
 
 func (q *SupabaseExchangeQuery) findOrCreateUser(ctx context.Context, orgID int, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
-	userID, err := q.appUserCreator.CreateWithProvider(ctx, orgID, email, provider, providerID)
-	if err == nil {
-		return q.buildOutput(userID, email, orgName)
+	loginID := domain.LoginID(email)
+
+	newUser, createErr := domainuser.Provision(ctx, q.appUserIDProvider, q.appUserSaver, orgID, loginID, "", provider, providerID, true)
+	if createErr == nil {
+		return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
 	}
 
-	// Handle race condition: another request may have created the user concurrently.
-	appUser, retryErr := q.appUserFinder.FindByProviderID(ctx, orgID, provider, providerID)
-	if retryErr != nil {
-		return nil, fmt.Errorf("create app user with provider: %w", err)
+	// Race-condition: another request may have created the same provider mapping concurrently.
+	if appUser, retryErr := q.appUserFinder.FindByProviderID(ctx, orgID, provider, providerID); retryErr == nil {
+		return q.buildOutput(appUser.ID(), string(appUser.LoginID()), orgName)
 	}
 
-	return q.buildOutput(appUser.ID(), string(appUser.LoginID()), orgName)
+	// C2: only attempt to link an existing local account when the create actually failed
+	// because of a duplicate login_id. Any other error (network, CAS failure, driver fault)
+	// must propagate so we do not silently paper over persistence bugs.
+	if !errors.Is(createErr, gorm.ErrDuplicatedKey) {
+		return nil, fmt.Errorf("save new app user with provider: %w", createErr)
+	}
+
+	// Account linking: a user may already exist with the same login ID (e.g. password signup).
+	// Load the aggregate, let the domain enforce the linking invariant, then save it.
+	existing, findErr := q.appUserByLoginIDFinder.FindByLoginID(ctx, orgID, loginID)
+	if findErr != nil {
+		if errors.Is(findErr, domain.ErrAppUserNotFound) {
+			return nil, fmt.Errorf("save new app user with provider: %w", createErr)
+		}
+		return nil, fmt.Errorf("find app user by login id for linking: %w", findErr)
+	}
+
+	// C1: refuse to auto-link an existing password-holding account. SupabaseVerifier
+	// has already confirmed email_verified=true, but an account with a password belongs
+	// to a human who did not opt into linking from the provider side — taking it over
+	// by a Supabase signup would be an account-takeover path.
+	if existing.HashedPassword() != "" {
+		return nil, fmt.Errorf("app user %d login=%s: %w", existing.ID(), email, domain.ErrAppUserAutoLinkRejected)
+	}
+
+	if err := existing.LinkProvider(provider, providerID); err != nil {
+		return nil, fmt.Errorf("link provider to app user %d: %w", existing.ID(), err)
+	}
+
+	if err := q.appUserSaver.Save(ctx, existing); err != nil {
+		return nil, fmt.Errorf("save linked app user %d: %w", existing.ID(), err)
+	}
+
+	return q.buildOutput(existing.ID(), string(existing.LoginID()), orgName)
 }
 
 func (q *SupabaseExchangeQuery) buildOutput(userID int, loginID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {

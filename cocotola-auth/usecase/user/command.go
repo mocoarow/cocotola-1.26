@@ -8,16 +8,16 @@ type Command struct {
 
 // NewCommand returns a new Command with the given dependencies.
 func NewCommand(
-	appUserRepo appUserCreator,
+	idProvider appUserIDProvider,
+	saver appUserSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	appUserFinder appUserFinder,
-	appUserSaver appUserSaver,
 	hasher passwordHasher,
 	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
-		CreateAppUserCommand:  NewCreateAppUserCommand(appUserRepo, orgRepo, publisher, hasher, authChecker),
-		ChangePasswordCommand: NewChangePasswordCommand(appUserFinder, appUserSaver, hasher, authChecker),
+		CreateAppUserCommand:  NewCreateAppUserCommand(idProvider, saver, orgRepo, publisher, hasher, authChecker),
+		ChangePasswordCommand: NewChangePasswordCommand(appUserFinder, saver, hasher, authChecker),
 	}
 }

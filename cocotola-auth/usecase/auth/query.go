@@ -74,7 +74,10 @@ func (c UsecaseConfig) Now() time.Time {
 	return time.Now()
 }
 
-// SupabaseVerifier verifies Supabase JWT tokens and returns the user's sub (UUID) and email.
+// SupabaseVerifier verifies Supabase JWT tokens and returns the user's sub
+// (UUID) and email. Implementations MUST reject tokens whose email has not
+// been verified by Supabase so the exchange flow can trust the returned email
+// as a stable identifier for account linking.
 type SupabaseVerifier interface {
 	Verify(ctx context.Context, tokenString string) (sub string, email string, err error)
 }
@@ -84,9 +87,19 @@ type AppUserProviderFinder interface {
 	FindByProviderID(ctx context.Context, organizationID int, provider string, providerID string) (*domainuser.AppUser, error)
 }
 
-// AppUserProviderCreator creates an app user with external provider info.
-type AppUserProviderCreator interface {
-	CreateWithProvider(ctx context.Context, organizationID int, loginID string, provider string, providerID string) (int, error)
+// AppUserIDProvider reserves a fresh aggregate identifier from the persistence layer.
+type AppUserIDProvider interface {
+	NextID(ctx context.Context) (int, error)
+}
+
+// AppUserByLoginIDFinder finds an existing app user by organization and login ID.
+type AppUserByLoginIDFinder interface {
+	FindByLoginID(ctx context.Context, organizationID int, loginID domain.LoginID) (*domainuser.AppUser, error)
+}
+
+// AppUserSaver persists an app user aggregate as a whole.
+type AppUserSaver interface {
+	Save(ctx context.Context, user *domainuser.AppUser) error
 }
 
 // OrganizationFinder finds an organization by name.
@@ -116,7 +129,9 @@ func NewQuery(
 	config UsecaseConfig,
 	supabaseVerifier SupabaseVerifier,
 	appUserFinder AppUserProviderFinder,
-	appUserCreator AppUserProviderCreator,
+	appUserIDProvider AppUserIDProvider,
+	appUserByLoginIDFinder AppUserByLoginIDFinder,
+	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
 ) *Query {
 	return &Query{
@@ -124,6 +139,6 @@ func NewQuery(
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserCreator, organizationFinder),
+		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserIDProvider, appUserByLoginIDFinder, appUserSaver, organizationFinder),
 	}
 }

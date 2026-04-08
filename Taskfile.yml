@@ -240,6 +240,12 @@ tasks:
     cmds:
       - bazelisk run --config=remote //hello-world:hello-world
 
+  run-cocotola-init:
+    desc: "Run cocotola-init with local infrastructure"
+    cmds:
+      - docker compose -f compose.local.postgres-lgtm.yml up -d --wait
+      - bazelisk run //cocotola-init:cocotola-init
+
   run-cocotola-auth:
     desc: "Run cocotola-auth with local infrastructure"
     cmds:

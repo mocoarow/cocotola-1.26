@@ -20,6 +20,26 @@ var ErrOrganizationNotFound = errors.New("organization not found")
 // ErrAppUserNotFound is returned when an app user cannot be found.
 var ErrAppUserNotFound = errors.New("app user not found")
 
+// ErrAppUserAlreadyLinked is returned when attempting to link a provider to an app user
+// that is already linked to a provider.
+var ErrAppUserAlreadyLinked = errors.New("app user already linked to a provider")
+
+// ErrAppUserConcurrentModification is returned when an optimistic-lock compare-and-swap
+// on the AppUser row version fails, meaning another transaction modified the aggregate
+// after it was loaded. Callers should reload the aggregate and retry.
+var ErrAppUserConcurrentModification = errors.New("app user was modified concurrently")
+
+// ErrAppUserAutoLinkRejected is returned when the supabase exchange flow refuses
+// to automatically link a Supabase identity to an existing local account because
+// the existing account has a password set (and therefore belongs to a human who
+// did not opt into linking from the provider side).
+var ErrAppUserAutoLinkRejected = errors.New("auto-link rejected: existing account has a password")
+
+// ErrSupabaseEmailNotVerified is returned when the Supabase JWT does not carry
+// email_verified=true. The exchange flow MUST refuse to map such a token to
+// any local account to prevent email-spoofing account takeover.
+var ErrSupabaseEmailNotVerified = errors.New("supabase email not verified")
+
 // ErrGroupNotFound is returned when a group cannot be found.
 var ErrGroupNotFound = errors.New("group not found")
 

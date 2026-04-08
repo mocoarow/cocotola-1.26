@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -73,9 +74,10 @@ func Test_SupabaseVerifier_Verify_shouldReturnSubAndEmail_whenTokenIsValid(t *te
 	defer verifier.Close()
 
 	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
-		"sub":   "user-uuid-123",
-		"email": "test@example.com",
-		"exp":   time.Now().Add(1 * time.Hour).Unix(),
+		"sub":            "user-uuid-123",
+		"email":          "test@example.com",
+		"email_verified": true,
+		"exp":            time.Now().Add(1 * time.Hour).Unix(),
 	})
 
 	// when
@@ -180,6 +182,83 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailIsMissing(t *testin
 	// then
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "missing email")
+}
+
+func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailNotVerified(t *testing.T) {
+	t.Parallel()
+
+	// given
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
+		"sub":   "user-uuid-123",
+		"email": "test@example.com",
+		"exp":   time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	// when
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
+
+	// then
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
+}
+
+func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailVerifiedIsFalse(t *testing.T) {
+	t.Parallel()
+
+	// given
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
+		"sub":            "user-uuid-123",
+		"email":          "test@example.com",
+		"email_verified": false,
+		"exp":            time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	// when
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
+
+	// then
+	require.Error(t, err)
+	assert.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
+}
+
+func Test_SupabaseVerifier_Verify_shouldReturnSubAndEmail_whenUserMetadataEmailVerifiedIsTrue(t *testing.T) {
+	t.Parallel()
+
+	// given
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
+		"sub":   "user-uuid-123",
+		"email": "test@example.com",
+		"user_metadata": map[string]any{
+			"email_verified": true,
+		},
+		"exp": time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	// when
+	sub, email, err := verifier.Verify(context.Background(), tokenStr)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "user-uuid-123", sub)
+	assert.Equal(t, "test@example.com", email)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenSigningMethodIsNotRSA(t *testing.T) {
