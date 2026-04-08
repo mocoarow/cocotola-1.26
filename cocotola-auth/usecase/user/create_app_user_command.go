@@ -11,8 +11,8 @@ import (
 	userservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user"
 )
 
-type appUserCreator interface {
-	Create(ctx context.Context, organizationID int, loginID string, hashedPassword string) (int, error)
+type appUserIDProvider interface {
+	NextID(ctx context.Context) (int, error)
 }
 
 type organizationFinderByName interface {
@@ -34,7 +34,8 @@ type authorizationChecker interface {
 
 // CreateAppUserCommand creates a new app user within an organization.
 type CreateAppUserCommand struct {
-	appUserRepo appUserCreator
+	idProvider  appUserIDProvider
+	saver       appUserSaver
 	orgRepo     organizationFinderByName
 	publisher   eventPublisher
 	hasher      passwordHasher
@@ -43,14 +44,16 @@ type CreateAppUserCommand struct {
 
 // NewCreateAppUserCommand returns a new CreateAppUserCommand.
 func NewCreateAppUserCommand(
-	appUserRepo appUserCreator,
+	idProvider appUserIDProvider,
+	saver appUserSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	hasher passwordHasher,
 	authChecker authorizationChecker,
 ) *CreateAppUserCommand {
 	return &CreateAppUserCommand{
-		appUserRepo: appUserRepo,
+		idProvider:  idProvider,
+		saver:       saver,
 		orgRepo:     orgRepo,
 		publisher:   publisher,
 		hasher:      hasher,
@@ -81,11 +84,12 @@ func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userser
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	// TX2: Create app user record.
-	appUserID, err := c.appUserRepo.Create(ctx, org.ID(), input.LoginID, hashedPassword)
+	// TX2: Reserve aggregate ID, build the aggregate via the domain factory, and persist.
+	user, err := domainuser.Provision(ctx, c.idProvider, c.saver, org.ID(), domain.LoginID(input.LoginID), hashedPassword, "", "", true)
 	if err != nil {
-		return nil, fmt.Errorf("create app user: %w", err)
+		return nil, fmt.Errorf("provision app user: %w", err)
 	}
+	appUserID := user.ID()
 
 	// Publish domain event for eventual consistency with ActiveUserList.
 	c.publisher.Publish(domain.NewAppUserCreated(appUserID, org.ID(), input.LoginID, time.Now()))

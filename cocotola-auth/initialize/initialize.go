@@ -132,6 +132,8 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		supabaseVerifier,
 		appUserRepo,
 		appUserRepo,
+		appUserRepo,
+		appUserRepo,
 		orgRepo,
 	)
 
@@ -172,7 +174,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
 
 	// user usecase + controller
-	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, appUserRepo, bcryptHasher, authzChecker)
+	userCommand := userusecase.NewCommand(appUserRepo, appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 

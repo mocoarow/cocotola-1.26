@@ -133,6 +133,8 @@ func run() (int, error) {
 		supabaseVerifier,
 		appUserRepo,
 		appUserRepo,
+		appUserRepo,
+		appUserRepo,
 		orgRepo,
 	)
 

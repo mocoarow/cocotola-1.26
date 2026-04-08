@@ -81,8 +81,9 @@ func openGormDB(dialector gorm.Dialector, logLevel slog.Level, appName string) (
 	}
 
 	gormConfig := gorm.Config{ //nolint:exhaustruct
-		Logger:  sloggorm.New(options...),
-		NowFunc: func() time.Time { return time.Now().UTC() },
+		Logger:         sloggorm.New(options...),
+		NowFunc:        func() time.Time { return time.Now().UTC() },
+		TranslateError: true,
 	}
 
 	db, err := gorm.Open(dialector, &gormConfig)

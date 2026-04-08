@@ -139,7 +139,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 }
 
 func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, loginID string, rawPassword string, logger *slog.Logger) (int, error) {
-	user, err := repo.FindByLoginID(ctx, orgID, loginID)
+	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(loginID))
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
 			slog.Int("user_id", user.ID()),
@@ -156,22 +156,22 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 		return 0, fmt.Errorf("hash password: %w", err)
 	}
 
-	userID, err := repo.Create(ctx, orgID, loginID, hashedPassword)
+	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(loginID), hashedPassword, "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("create user: %w", err)
+		return 0, fmt.Errorf("provision owner user: %w", err)
 	}
 
 	logger.InfoContext(ctx, "owner user created",
-		slog.Int("user_id", userID),
+		slog.Int("user_id", user.ID()),
 		slog.String("login_id", loginID),
 	)
-	return userID, nil
+	return user.ID(), nil
 }
 
 func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID int, logger *slog.Logger) (int, error) {
 	guestLoginID := domainuser.NewGuestLoginID(organizationName)
 
-	user, err := repo.FindByLoginID(ctx, orgID, guestLoginID)
+	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(guestLoginID))
 	if err == nil {
 		logger.InfoContext(ctx, "guest user already exists",
 			slog.Int("user_id", user.ID()),
@@ -183,22 +183,22 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 		return 0, fmt.Errorf("find guest by login id: %w", err)
 	}
 
-	userID, err := repo.Create(ctx, orgID, guestLoginID, "")
+	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(guestLoginID), "", "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("create guest user: %w", err)
+		return 0, fmt.Errorf("provision guest user: %w", err)
 	}
 
 	logger.InfoContext(ctx, "guest user created",
-		slog.Int("user_id", userID),
+		slog.Int("user_id", user.ID()),
 		slog.String("login_id", guestLoginID),
 	)
-	return userID, nil
+	return user.ID(), nil
 }
 
 const systemOwnerLoginID = "__system_owner"
 
 func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, logger *slog.Logger) (int, error) {
-	user, err := repo.FindByLoginID(ctx, orgID, systemOwnerLoginID)
+	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(systemOwnerLoginID))
 	if err == nil {
 		logger.InfoContext(ctx, "system owner user already exists",
 			slog.Int("user_id", user.ID()),
@@ -217,16 +217,16 @@ func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepositor
 		return 0, fmt.Errorf("hash password: %w", err)
 	}
 
-	userID, err := repo.Create(ctx, orgID, systemOwnerLoginID, hashedPassword)
+	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("create system owner: %w", err)
+		return 0, fmt.Errorf("provision system owner: %w", err)
 	}
 
 	logger.InfoContext(ctx, "system owner user created",
-		slog.Int("user_id", userID),
+		slog.Int("user_id", user.ID()),
 		slog.String("login_id", systemOwnerLoginID),
 	)
-	return userID, nil
+	return user.ID(), nil
 }
 
 func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID int, logger *slog.Logger) error {

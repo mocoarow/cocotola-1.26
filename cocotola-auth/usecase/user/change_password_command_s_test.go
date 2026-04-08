@@ -25,7 +25,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 
-	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -60,7 +60,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnForbidden_whenNotAuth
 	orgID := 1
 	newPassword := "newpassword123"
 
-	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -119,7 +119,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	orgID := 1
 	newPassword := "short"
 
-	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)
@@ -153,7 +153,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	hashedPassword := "$2a$10$newhash"
 	saveErr := errors.New("db error")
 
-	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", true)
+	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
 
 	finderMock := newMockappUserFinder(t)
 	finderMock.On("FindByID", mock.Anything, userID).Return(user, nil)

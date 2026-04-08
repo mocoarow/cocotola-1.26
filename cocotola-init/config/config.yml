@@ -3,16 +3,16 @@ app:
   ownerLoginId: ${OWNER_LOGIN_ID}
   ownerPassword: ${OWNER_PASSWORD}
 db:
-  driverName: ${APP_DB_DRIVER_NAME:-postgres}
+  driverName: ${INIT_DB_DRIVER_NAME:-postgres}
   postgres:
-    username: ${AUTH_POSTGRES_USERNAME}
-    password: ${AUTH_POSTGRES_PASSWORD}
-    host: ${AUTH_POSTGRES_HOST:-127.0.0.1}
-    port: ${AUTH_POSTGRES_PORT:-5432}
-    database: ${AUTH_POSTGRES_DATABASE:-local}
-    sslMode: ${AUTH_POSTGRES_SSL_MODE:-disable}
+    username: ${INIT_POSTGRES_USERNAME}
+    password: ${INIT_POSTGRES_PASSWORD}
+    host: ${INIT_POSTGRES_HOST:-127.0.0.1}
+    port: ${INIT_POSTGRES_PORT:-5432}
+    database: ${INIT_POSTGRES_DATABASE:-local}
+    sslMode: ${INIT_POSTGRES_SSL_MODE:-disable}
     params:
-      default_query_exec_mode: ${AUTH_POSTGRES_DEFAULT_QUERY_EXEC_MODE:-}
+      default_query_exec_mode: ${INIT_POSTGRES_DEFAULT_QUERY_EXEC_MODE:-}
 log:
   level: ${LOG_LEVEL:-info}
   exporter: ${LOG_EXPORTER:-none}

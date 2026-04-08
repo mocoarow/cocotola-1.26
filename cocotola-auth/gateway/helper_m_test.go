@@ -33,7 +33,7 @@ func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID int, orgNa
 
 	for i := range count {
 		loginID := domain.LoginID(fmt.Sprintf("%s-user-%d", orgName, i))
-		user := domainuser.ReconstructAppUser(0, orgID, loginID, "", true)
+		user := domainuser.ReconstructAppUser(0, orgID, loginID, "", "", "", true)
 		require.NoError(t, userRepo.Save(ctx, user))
 		var userRec gateway.AppUserRecordForTest
 		require.NoError(t, tx.Where("login_id = ?", string(loginID)).First(&userRec).Error)

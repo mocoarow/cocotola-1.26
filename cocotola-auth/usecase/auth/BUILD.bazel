@@ -28,6 +28,7 @@ go_library(
         "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",
         "@com_github_google_uuid//:uuid",
+        "@io_gorm_gorm//:gorm",
     ],
 )
 
@@ -48,5 +49,6 @@ smart_go_test(
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
+        "@io_gorm_gorm//:gorm",
     ],
 )
