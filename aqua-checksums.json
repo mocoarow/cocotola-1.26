@@ -1,6 +1,11 @@
 {
   "checksums": [
     {
+      "id": "github_release/github.com/aquasecurity/trivy/v0.69.3/trivy_0.69.3_Linux-64bit.tar.gz",
+      "checksum": "1816B632DFE529869C740C0913E36BD1629CB7688BD5634F4A858C1D57C88B75",
+      "algorithm": "sha256"
+    },
+    {
       "id": "github_release/github.com/biomejs/biome/@biomejs/biome@2.4.10/biome-linux-x64",
       "checksum": "FB9423A99EA4BE5036F4EE95667FCC5A67E8FF72BD6D23E392033A70FB755D90",
       "algorithm": "sha256"
