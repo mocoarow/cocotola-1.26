@@ -153,8 +153,9 @@ func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
 	t.Parallel()
 	// given
 	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
+	fixtureGroupIDStr := "00000000-0000-7000-8000-000000000005"
 	record := &gateway.GroupRecordForTest{
-		ID:             5,
+		ID:             fixtureGroupIDStr,
 		Version:        1,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
@@ -165,7 +166,7 @@ func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
 	// when
 	group := gateway.ToGroupDomain(record)
 	// then
-	assert.Equal(t, 5, group.ID())
+	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
 	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), group.OrganizationID())
 	assert.Equal(t, "admins", group.Name())
 	assert.True(t, group.Enabled())
@@ -175,8 +176,9 @@ func Test_toGroupDomain_shouldReconstructDisabledGroup_whenEnabledIsFalse(t *tes
 	t.Parallel()
 	// given
 	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
+	fixtureGroupIDStr := "00000000-0000-7000-8000-000000000006"
 	record := &gateway.GroupRecordForTest{
-		ID:             6,
+		ID:             fixtureGroupIDStr,
 		OrganizationID: fixtureOrgIDStr,
 		Name:           "archived",
 		Enabled:        false,
@@ -184,6 +186,6 @@ func Test_toGroupDomain_shouldReconstructDisabledGroup_whenEnabledIsFalse(t *tes
 	// when
 	group := gateway.ToGroupDomain(record)
 	// then
-	assert.Equal(t, 6, group.ID())
+	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
 	assert.False(t, group.Enabled())
 }

@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	fixtureGroupID1 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000001")
-	fixtureGroupID2 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000002")
-	fixtureGroupID3 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000003")
-	fixtureGroupID4 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000004")
+	fixtureGroupID1  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000001")
+	fixtureGroupID2  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000002")
+	fixtureGroupID3  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000003")
+	fixtureGroupID4  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000004")
 	fixtureGroupID99 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000099")
 )
 

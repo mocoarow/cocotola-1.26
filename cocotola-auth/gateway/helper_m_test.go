@@ -46,18 +46,18 @@ func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.Org
 	return userIDs
 }
 
-func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.OrganizationID, orgName string, count int) []int {
+func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.OrganizationID, orgName string, count int) []domain.GroupID {
 	t.Helper()
 	groupRepo := gateway.NewGroupRepository(tx)
-	groupIDs := make([]int, count)
+	groupIDs := make([]domain.GroupID, count)
 
 	for i := range count {
 		name := fmt.Sprintf("%s-group-%d", orgName, i)
-		group := domaingroup.ReconstructGroup(0, orgID, name, true)
+		group := domaingroup.ReconstructGroup(domain.GroupID{}, orgID, name, true)
 		require.NoError(t, groupRepo.Save(ctx, group))
 		var groupRec gateway.GroupRecordForTest
 		require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", name, orgID.String()).First(&groupRec).Error)
-		groupIDs[i] = groupRec.ID
+		groupIDs[i] = domain.MustParseGroupID(groupRec.ID)
 	}
 	return groupIDs
 }
