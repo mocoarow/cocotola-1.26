@@ -4,13 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -53,17 +51,10 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 		return
 	}
 
-	spaceIDStr := c.Query("spaceId")
-	if spaceIDStr == "" {
+	spaceID := c.Query("spaceId")
+	if spaceID == "" {
 		h.logger.WarnContext(ctx, "missing spaceId query parameter")
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "spaceId query parameter is required"))
-		return
-	}
-
-	spaceID, err := strconv.Atoi(spaceIDStr)
-	if err != nil {
-		h.logger.WarnContext(ctx, "invalid spaceId query parameter", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "spaceId must be a valid integer"))
 		return
 	}
 
@@ -82,15 +73,9 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 
 	items := make([]api.WorkbookResponse, len(output.Workbooks))
 	for i, wb := range output.Workbooks {
-		sid, err := handler.SafeIntToInt32(wb.SpaceID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.WorkbookResponse{
 			WorkbookID:     wb.WorkbookID,
-			SpaceID:        sid,
+			SpaceID:        wb.SpaceID,
 			OwnerID:        wb.OwnerID,
 			OrganizationID: wb.OrganizationID,
 			Title:          wb.Title,

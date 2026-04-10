@@ -9,7 +9,6 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -64,7 +63,7 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		description = *req.Description
 	}
 
-	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, int(req.SpaceID), req.Title, description, string(req.Visibility))
+	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, description, string(req.Visibility))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "invalid create workbook input", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -77,16 +76,9 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		return
 	}
 
-	spaceID, err := handler.SafeIntToInt32(output.SpaceID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.WorkbookResponse{
 		WorkbookID:     output.WorkbookID,
-		SpaceID:        spaceID,
+		SpaceID:        output.SpaceID,
 		OwnerID:        output.OwnerID,
 		OrganizationID: output.OrganizationID,
 		Title:          output.Title,

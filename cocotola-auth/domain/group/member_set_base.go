@@ -1,15 +1,17 @@
 package group
 
-import "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+import (
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+)
 
 // memberSetBase provides common methods for group member set aggregates (users and child groups).
-// group.id remains int in Phase 1 (Phase 2 will migrate it to UUIDv7).
 type memberSetBase[M comparable] struct {
-	set idset.Set[int, M]
+	set idset.Set[domain.GroupID, M]
 }
 
 // GroupID returns the group ID.
-func (b *memberSetBase[M]) GroupID() int { return b.set.OwnerID }
+func (b *memberSetBase[M]) GroupID() domain.GroupID { return b.set.OwnerID }
 
 // Size returns the number of entries in the set.
 func (b *memberSetBase[M]) Size() int { return b.set.Size() }

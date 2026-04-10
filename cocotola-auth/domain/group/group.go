@@ -11,16 +11,15 @@ import (
 const maxGroupNameLength = 255
 
 // Group represents a group belonging to an organization.
-// group.id remains int in Phase 1 (Phase 2 will migrate it to UUIDv7).
 type Group struct {
-	id             int
+	id             domain.GroupID
 	organizationID domain.OrganizationID
 	name           string
 	enabled        bool
 }
 
 // NewGroup creates a validated Group.
-func NewGroup(id int, organizationID domain.OrganizationID, name string, enabled bool) (*Group, error) {
+func NewGroup(id domain.GroupID, organizationID domain.OrganizationID, name string, enabled bool) (*Group, error) {
 	m := &Group{
 		id:             id,
 		organizationID: organizationID,
@@ -34,7 +33,7 @@ func NewGroup(id int, organizationID domain.OrganizationID, name string, enabled
 }
 
 // ReconstructGroup reconstitutes a Group from persistence.
-func ReconstructGroup(id int, organizationID domain.OrganizationID, name string, enabled bool) *Group {
+func ReconstructGroup(id domain.GroupID, organizationID domain.OrganizationID, name string, enabled bool) *Group {
 	return &Group{
 		id:             id,
 		organizationID: organizationID,
@@ -44,8 +43,8 @@ func ReconstructGroup(id int, organizationID domain.OrganizationID, name string,
 }
 
 func (g *Group) validate() error {
-	if g.id <= 0 {
-		return errors.New("group id must be positive")
+	if g.id.IsZero() {
+		return errors.New("group id must not be zero")
 	}
 	if g.organizationID.IsZero() {
 		return errors.New("group organization id must not be zero")
@@ -60,7 +59,7 @@ func (g *Group) validate() error {
 }
 
 // ID returns the group ID.
-func (g *Group) ID() int { return g.id }
+func (g *Group) ID() domain.GroupID { return g.id }
 
 // OrganizationID returns the organization ID.
 func (g *Group) OrganizationID() domain.OrganizationID { return g.organizationID }

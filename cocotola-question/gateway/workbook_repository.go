@@ -18,7 +18,7 @@ import (
 const workbooksCollection = "workbooks"
 
 type workbookRecord struct {
-	SpaceID        int       `firestore:"spaceID"`
+	SpaceID        string    `firestore:"spaceID"`
 	OwnerID        string    `firestore:"ownerID"`
 	OrganizationID string    `firestore:"organizationID"`
 	Title          string    `firestore:"title"`
@@ -47,7 +47,7 @@ func NewWorkbookRepository(client *firestore.Client) *WorkbookRepository {
 }
 
 // Create inserts a new workbook and returns the auto-generated document ID.
-func (r *WorkbookRepository) Create(ctx context.Context, spaceID int, ownerID string, organizationID string, title string, description string, visibility string) (string, error) {
+func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error) {
 	now := time.Now()
 	record := workbookRecord{
 		SpaceID:        spaceID,
@@ -87,7 +87,7 @@ func (r *WorkbookRepository) FindByID(ctx context.Context, id string) (*domainwo
 }
 
 // FindBySpaceID returns all workbooks for the given space.
-func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID int) ([]domainworkbook.Workbook, error) {
+func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).Where("spaceID", "==", spaceID).Documents(ctx)
 	defer iter.Stop()
 

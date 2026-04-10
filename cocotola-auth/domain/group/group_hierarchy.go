@@ -8,17 +8,17 @@ import (
 
 // HierarchyEdge represents a parent-child relationship between groups.
 type HierarchyEdge struct {
-	parentGroupID int
-	childGroupID  int
+	parentGroupID domain.GroupID
+	childGroupID  domain.GroupID
 }
 
 // NewHierarchyEdge creates a validated HierarchyEdge.
-func NewHierarchyEdge(parentGroupID int, childGroupID int) (HierarchyEdge, error) {
-	if parentGroupID <= 0 {
-		return HierarchyEdge{}, errors.New("hierarchy edge parent group id must be positive")
+func NewHierarchyEdge(parentGroupID domain.GroupID, childGroupID domain.GroupID) (HierarchyEdge, error) {
+	if parentGroupID.IsZero() {
+		return HierarchyEdge{}, errors.New("hierarchy edge parent group id must not be zero")
 	}
-	if childGroupID <= 0 {
-		return HierarchyEdge{}, errors.New("hierarchy edge child group id must be positive")
+	if childGroupID.IsZero() {
+		return HierarchyEdge{}, errors.New("hierarchy edge child group id must not be zero")
 	}
 	return HierarchyEdge{
 		parentGroupID: parentGroupID,
@@ -27,7 +27,7 @@ func NewHierarchyEdge(parentGroupID int, childGroupID int) (HierarchyEdge, error
 }
 
 // ReconstructHierarchyEdge reconstitutes a HierarchyEdge from persistence.
-func ReconstructHierarchyEdge(parentGroupID int, childGroupID int) HierarchyEdge {
+func ReconstructHierarchyEdge(parentGroupID domain.GroupID, childGroupID domain.GroupID) HierarchyEdge {
 	return HierarchyEdge{
 		parentGroupID: parentGroupID,
 		childGroupID:  childGroupID,
@@ -35,10 +35,10 @@ func ReconstructHierarchyEdge(parentGroupID int, childGroupID int) HierarchyEdge
 }
 
 // ParentGroupID returns the parent group ID.
-func (e HierarchyEdge) ParentGroupID() int { return e.parentGroupID }
+func (e HierarchyEdge) ParentGroupID() domain.GroupID { return e.parentGroupID }
 
 // ChildGroupID returns the child group ID.
-func (e HierarchyEdge) ChildGroupID() int { return e.childGroupID }
+func (e HierarchyEdge) ChildGroupID() domain.GroupID { return e.childGroupID }
 
 // Hierarchy is an aggregate that manages all parent-child group relationships
 // within an organization. It enforces the acyclic invariant by checking for cycles
@@ -73,12 +73,12 @@ func (h *Hierarchy) Edges() []HierarchyEdge {
 
 // AddEdge adds a parent-child edge. Returns ErrCyclicGroupHierarchy if the edge
 // would create a cycle, or ErrDuplicateEntry if the edge already exists.
-func (h *Hierarchy) AddEdge(parentGroupID int, childGroupID int) error {
-	if parentGroupID == childGroupID {
+func (h *Hierarchy) AddEdge(parentGroupID domain.GroupID, childGroupID domain.GroupID) error {
+	if parentGroupID.Equal(childGroupID) {
 		return domain.ErrCyclicGroupHierarchy
 	}
 	for _, e := range h.edges {
-		if e.parentGroupID == parentGroupID && e.childGroupID == childGroupID {
+		if e.parentGroupID.Equal(parentGroupID) && e.childGroupID.Equal(childGroupID) {
 			return domain.ErrDuplicateEntry
 		}
 	}
@@ -93,10 +93,10 @@ func (h *Hierarchy) AddEdge(parentGroupID int, childGroupID int) error {
 }
 
 // RemoveEdge removes a parent-child edge.
-func (h *Hierarchy) RemoveEdge(parentGroupID int, childGroupID int) {
+func (h *Hierarchy) RemoveEdge(parentGroupID domain.GroupID, childGroupID domain.GroupID) {
 	filtered := make([]HierarchyEdge, 0, len(h.edges))
 	for _, e := range h.edges {
-		if e.parentGroupID != parentGroupID || e.childGroupID != childGroupID {
+		if !e.parentGroupID.Equal(parentGroupID) || !e.childGroupID.Equal(childGroupID) {
 			filtered = append(filtered, e)
 		}
 	}
@@ -104,10 +104,10 @@ func (h *Hierarchy) RemoveEdge(parentGroupID int, childGroupID int) {
 }
 
 // RemoveGroup removes all edges involving the given group ID.
-func (h *Hierarchy) RemoveGroup(groupID int) {
+func (h *Hierarchy) RemoveGroup(groupID domain.GroupID) {
 	filtered := make([]HierarchyEdge, 0, len(h.edges))
 	for _, e := range h.edges {
-		if e.parentGroupID != groupID && e.childGroupID != groupID {
+		if !e.parentGroupID.Equal(groupID) && !e.childGroupID.Equal(groupID) {
 			filtered = append(filtered, e)
 		}
 	}
@@ -116,21 +116,21 @@ func (h *Hierarchy) RemoveGroup(groupID int) {
 
 // hasPath returns true if there is a directed path from `from` to `to`
 // using BFS on the current edges.
-func (h *Hierarchy) hasPath(from int, to int) bool {
-	adj := make(map[int][]int)
+func (h *Hierarchy) hasPath(from domain.GroupID, to domain.GroupID) bool {
+	adj := make(map[domain.GroupID][]domain.GroupID)
 	for _, e := range h.edges {
 		adj[e.parentGroupID] = append(adj[e.parentGroupID], e.childGroupID)
 	}
 
-	visited := make(map[int]bool)
-	queue := []int{from}
+	visited := make(map[domain.GroupID]bool)
+	queue := []domain.GroupID{from}
 	visited[from] = true
 
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
 		for _, child := range adj[current] {
-			if child == to {
+			if child.Equal(to) {
 				return true
 			}
 			if !visited[child] {

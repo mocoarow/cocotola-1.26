@@ -40,7 +40,7 @@ type AddQuestionRequest struct {
 // CreateWorkbookRequest defines model for CreateWorkbookRequest.
 type CreateWorkbookRequest struct {
 	Description *string                         `binding:"max=1000" json:"description,omitempty"`
-	SpaceID     int32                           `binding:"required" json:"spaceId"`
+	SpaceID     string                          `binding:"required" json:"spaceId"`
 	Title       string                          `binding:"required,max=200" json:"title"`
 	Visibility  CreateWorkbookRequestVisibility `binding:"required,oneof=private public" json:"visibility"`
 }
@@ -134,7 +134,7 @@ type WorkbookResponse struct {
 	Description    string                     `json:"description"`
 	OrganizationID string                     `json:"organizationId"`
 	OwnerID        string                     `json:"ownerId"`
-	SpaceID        int32                      `json:"spaceId"`
+	SpaceID        string                     `json:"spaceId"`
 	Title          string                     `json:"title"`
 	UpdatedAt      time.Time                  `json:"updatedAt"`
 	Visibility     WorkbookResponseVisibility `json:"visibility"`

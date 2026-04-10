@@ -721,9 +721,9 @@ components:
       type: object
       properties:
         spaceId:
-          type: integer
+          type: string
           x-go-name: SpaceID
-          format: int32
+          pattern: ^.*$
           x-oapi-codegen-extra-tags:
             binding: required
         title:
@@ -782,9 +782,9 @@ components:
           x-go-name: WorkbookID
           pattern: ^.*$
         spaceId:
-          type: integer
+          type: string
           x-go-name: SpaceID
-          format: int32
+          pattern: ^.*$
         ownerId:
           type: string
           x-go-name: OwnerID

@@ -11,8 +11,8 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
-func validGroupArgs() (int, domain.OrganizationID, string, bool) {
-	return 1, fixtureOrgID, "group1", true
+func validGroupArgs() (domain.GroupID, domain.OrganizationID, string, bool) {
+	return fixtureGroupID1, fixtureOrgID, "group1", true
 }
 
 func Test_NewGroup_shouldReturnGroup_whenAllFieldsAreValid(t *testing.T) {
@@ -39,20 +39,7 @@ func Test_NewGroup_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, orgID, name, enabled := validGroupArgs()
 
 	// when
-	_, err := group.NewGroup(0, orgID, name, enabled)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewGroup_shouldReturnError_whenIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given
-	_, orgID, name, enabled := validGroupArgs()
-
-	// when
-	_, err := group.NewGroup(-1, orgID, name, enabled)
+	_, err := group.NewGroup(domain.GroupID{}, orgID, name, enabled)
 
 	// then
 	require.Error(t, err)
@@ -117,7 +104,7 @@ func Test_Group_Enable_shouldSetEnabledTrue_whenDisabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewGroup(1, fixtureOrgID, "group1", false)
+	g, _ := group.NewGroup(fixtureGroupID1, fixtureOrgID, "group1", false)
 
 	// when
 	g.Enable()
@@ -130,7 +117,7 @@ func Test_Group_Disable_shouldSetEnabledFalse_whenEnabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewGroup(1, fixtureOrgID, "group1", true)
+	g, _ := group.NewGroup(fixtureGroupID1, fixtureOrgID, "group1", true)
 
 	// when
 	g.Disable()

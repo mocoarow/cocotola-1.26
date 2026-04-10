@@ -13,7 +13,7 @@ import (
 )
 
 type groupRecord struct {
-	ID             int       `gorm:"column:id;primaryKey"`
+	ID             string    `gorm:"column:id;primaryKey"`
 	Version        int       `gorm:"column:version;->"`
 	CreatedAt      time.Time `gorm:"column:created_at;->"`
 	UpdatedAt      time.Time `gorm:"column:updated_at;->"`
@@ -29,7 +29,7 @@ func (groupRecord) TableName() string {
 }
 
 func toGroupDomain(r *groupRecord) *domaingroup.Group {
-	return domaingroup.ReconstructGroup(r.ID, domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled)
+	return domaingroup.ReconstructGroup(domain.MustParseGroupID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled)
 }
 
 // GroupRepository implements group persistence using GORM.
@@ -46,7 +46,7 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) error {
 	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
-		ID:             group.ID(),
+		ID:             group.ID().String(),
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
@@ -62,11 +62,15 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 	return nil
 }
 
-// Create inserts a new group record and returns the auto-generated ID.
-func (r *GroupRepository) Create(ctx context.Context, organizationID domain.OrganizationID, name string) (int, error) {
+// Create inserts a new group record and returns the generated ID.
+func (r *GroupRepository) Create(ctx context.Context, organizationID domain.OrganizationID, name string) (domain.GroupID, error) {
+	groupID, err := domain.NewGroupIDV7()
+	if err != nil {
+		return domain.GroupID{}, fmt.Errorf("generate group id: %w", err)
+	}
 	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
-		ID:             0,
+		ID:             groupID.String(),
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
@@ -77,15 +81,15 @@ func (r *GroupRepository) Create(ctx context.Context, organizationID domain.Orga
 		Enabled:        true,
 	}
 	if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-		return 0, fmt.Errorf("create group: %w", err)
+		return domain.GroupID{}, fmt.Errorf("create group: %w", err)
 	}
-	return record.ID, nil
+	return groupID, nil
 }
 
 // FindByID looks up a group by its ID.
-func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domaingroup.Group, error) {
+func (r *GroupRepository) FindByID(ctx context.Context, id domain.GroupID) (*domaingroup.Group, error) {
 	var record groupRecord
-	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrGroupNotFound
 		}

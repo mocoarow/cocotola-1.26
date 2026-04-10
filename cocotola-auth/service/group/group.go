@@ -34,16 +34,18 @@ func NewCreateGroupInput(operatorID domain.AppUserID, organizationName string, g
 }
 
 // CreateGroupOutput holds the result of creating a group.
-// GroupID remains int in Phase 1.
 type CreateGroupOutput struct {
-	GroupID        int `validate:"required,gt=0"`
+	GroupID        domain.GroupID
 	OrganizationID domain.OrganizationID
 	Name           string `validate:"required"`
 	Enabled        bool
 }
 
 // NewCreateGroupOutput creates a validated CreateGroupOutput.
-func NewCreateGroupOutput(groupID int, organizationID domain.OrganizationID, name string, enabled bool) (*CreateGroupOutput, error) {
+func NewCreateGroupOutput(groupID domain.GroupID, organizationID domain.OrganizationID, name string, enabled bool) (*CreateGroupOutput, error) {
+	if groupID.IsZero() {
+		return nil, errors.New("create group output group id must not be zero")
+	}
 	if organizationID.IsZero() {
 		return nil, errors.New("create group output organization id must not be zero")
 	}

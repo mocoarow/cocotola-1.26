@@ -1,5 +1,5 @@
 create table user_n_group (
- group_id int not null
+ group_id uuid not null
 ,user_id uuid not null
 ,created_at timestamp not null default current_timestamp
 ,created_by uuid not null

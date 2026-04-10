@@ -4,7 +4,6 @@ package rbac
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -119,13 +118,13 @@ func ResourceUser(userID domain.AppUserID) Resource {
 }
 
 // ResourceGroup returns a resource representing a specific group.
-func ResourceGroup(groupID int) Resource {
-	return Resource{value: fmt.Sprintf("group:%d", groupID)}
+func ResourceGroup(groupID domain.GroupID) Resource {
+	return Resource{value: "group:" + groupID.String()}
 }
 
 // ResourceSpace returns a resource representing a specific space.
-func ResourceSpace(spaceID int) Resource {
-	return Resource{value: fmt.Sprintf("space:%d", spaceID)}
+func ResourceSpace(spaceID domain.SpaceID) Resource {
+	return Resource{value: "space:" + spaceID.String()}
 }
 
 // ResourceWorkbook returns a resource representing a specific workbook.

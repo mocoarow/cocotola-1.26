@@ -9,7 +9,6 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -72,16 +71,9 @@ func (h *GetWorkbookHandler) GetWorkbook(c *gin.Context) {
 		return
 	}
 
-	spaceID, err := handler.SafeIntToInt32(output.SpaceID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.WorkbookResponse{
 		WorkbookID:     output.WorkbookID,
-		SpaceID:        spaceID,
+		SpaceID:        output.SpaceID,
 		OwnerID:        output.OwnerID,
 		OrganizationID: output.OrganizationID,
 		Title:          output.Title,

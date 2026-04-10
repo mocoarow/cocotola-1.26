@@ -675,22 +675,22 @@ func (_m *mockspaceCreator) EXPECT() *mockspaceCreator_Expecter {
 }
 
 // Create provides a mock function for the type mockspaceCreator
-func (_mock *mockspaceCreator) Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (int, error) {
+func (_mock *mockspaceCreator) Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error) {
 	ret := _mock.Called(ctx, organizationID, ownerID, keyName, name, spaceType, createdBy)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 int
+	var r0 domain.SpaceID
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, string, string, string, domain.AppUserID) (int, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, string, string, string, domain.AppUserID) (domain.SpaceID, error)); ok {
 		return returnFunc(ctx, organizationID, ownerID, keyName, name, spaceType, createdBy)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, string, string, string, domain.AppUserID) int); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, string, string, string, domain.AppUserID) domain.SpaceID); ok {
 		r0 = returnFunc(ctx, organizationID, ownerID, keyName, name, spaceType, createdBy)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Get(0).(domain.SpaceID)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID, domain.AppUserID, string, string, string, domain.AppUserID) error); ok {
 		r1 = returnFunc(ctx, organizationID, ownerID, keyName, name, spaceType, createdBy)
@@ -760,12 +760,12 @@ func (_c *mockspaceCreator_Create_Call) Run(run func(ctx context.Context, organi
 	return _c
 }
 
-func (_c *mockspaceCreator_Create_Call) Return(n int, err error) *mockspaceCreator_Create_Call {
-	_c.Call.Return(n, err)
+func (_c *mockspaceCreator_Create_Call) Return(spaceID domain.SpaceID, err error) *mockspaceCreator_Create_Call {
+	_c.Call.Return(spaceID, err)
 	return _c
 }
 
-func (_c *mockspaceCreator_Create_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (int, error)) *mockspaceCreator_Create_Call {
+func (_c *mockspaceCreator_Create_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)) *mockspaceCreator_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

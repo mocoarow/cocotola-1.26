@@ -14,7 +14,7 @@ import (
 
 type activeGroupRecord struct {
 	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
-	GroupID        int       `gorm:"column:group_id;primaryKey"`
+	GroupID        string    `gorm:"column:group_id;primaryKey"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
 }
 
@@ -31,7 +31,7 @@ func NewActiveGroupListRepository(db *gorm.DB) *ActiveGroupListRepository {
 // FindByOrganizationID returns the active group list for the given organization.
 func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveGroupList, error) {
 	ids, err := findMemberIDs(ctx, r.db, organizationID,
-		func(rec activeGroupRecord) int { return rec.GroupID }, "active groups by organization id")
+		func(rec activeGroupRecord) domain.GroupID { return domain.MustParseGroupID(rec.GroupID) }, "active groups by organization id")
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func (r *ActiveGroupListRepository) Save(ctx context.Context, list *domain.Activ
 	for i, groupID := range entries {
 		records[i] = activeGroupRecord{
 			OrganizationID: orgIDStr,
-			GroupID:        groupID,
+			GroupID:        groupID.String(),
 			CreatedAt:      time.Now(),
 		}
 	}

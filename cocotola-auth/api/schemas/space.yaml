@@ -23,9 +23,9 @@ CreateSpaceResponse:
   type: object
   properties:
     spaceId:
-      type: integer
+      type: string
       x-go-name: SpaceID
-      format: int32
+      format: uuid
     organizationId:
       type: string
       x-go-name: OrganizationID
@@ -60,9 +60,9 @@ SpaceItem:
   type: object
   properties:
     spaceId:
-      type: integer
+      type: string
       x-go-name: SpaceID
-      format: int32
+      format: uuid
     organizationId:
       type: string
       x-go-name: OrganizationID

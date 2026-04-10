@@ -21,17 +21,7 @@ func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsZero(t *testing.T) {
 	t.Parallel()
 
 	// given / when
-	_, err := group.NewUsers(0, nil)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given / when
-	_, err := group.NewUsers(-1, nil)
+	_, err := group.NewUsers(domain.GroupID{}, nil)
 
 	// then
 	require.Error(t, err)
@@ -41,7 +31,7 @@ func Test_GroupUsers_Add_shouldSucceed_whenUserNotInGroup(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
+	g, _ := group.NewUsers(fixtureGroupID1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
 
 	// when
 	err := g.Add(fixtureGroupUser3)
@@ -56,7 +46,7 @@ func Test_GroupUsers_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
+	g, _ := group.NewUsers(fixtureGroupID1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
 
 	// when
 	err := g.Add(fixtureGroupUser2)
@@ -69,7 +59,7 @@ func Test_GroupUsers_Remove_shouldRemoveUser(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2, fixtureGroupUser3})
+	g, _ := group.NewUsers(fixtureGroupID1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2, fixtureGroupUser3})
 
 	// when
 	g.Remove(fixtureGroupUser2)
@@ -83,7 +73,7 @@ func Test_GroupUsers_Remove_shouldDoNothing_whenUserNotInGroup(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
+	g, _ := group.NewUsers(fixtureGroupID1, []domain.AppUserID{fixtureGroupUser1, fixtureGroupUser2})
 
 	// when
 	g.Remove(fixtureGroupUser4)
@@ -96,7 +86,7 @@ func Test_GroupUsers_Contains_shouldReturnFalse_whenEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, nil)
+	g, _ := group.NewUsers(fixtureGroupID1, nil)
 
 	// when
 	result := g.Contains(fixtureGroupUser1)
@@ -109,7 +99,7 @@ func Test_GroupUsers_Add_shouldSucceed_whenAddingToEmptyGroup(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewUsers(1, nil)
+	g, _ := group.NewUsers(fixtureGroupID1, nil)
 
 	// when
 	err := g.Add(fixtureGroupUser1)

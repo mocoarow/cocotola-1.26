@@ -13,7 +13,7 @@ import (
 )
 
 type spaceCreator interface {
-	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)
 }
 
 type organizationFinderByName interface {

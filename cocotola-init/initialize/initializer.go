@@ -366,7 +366,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 	}
 
 	logger.InfoContext(ctx, "public space created",
-		slog.Int("space_id", spaceID),
+		slog.String("space_id", spaceID.String()),
 		slog.String("key_name", keyName),
 	)
 	return nil

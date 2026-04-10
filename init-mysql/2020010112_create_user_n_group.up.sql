@@ -1,5 +1,5 @@
 create table `user_n_group` (
- `group_id` int not null
+ `group_id` char(36) character set ascii not null
 ,`user_id` char(36) character set ascii not null
 ,`created_at` datetime not null default current_timestamp
 ,`created_by` char(36) character set ascii not null

@@ -13,8 +13,8 @@ import (
 
 type groupNGroupRecord struct {
 	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
-	ParentGroupID  int       `gorm:"column:parent_group_id;primaryKey"`
-	ChildGroupID   int       `gorm:"column:child_group_id;primaryKey"`
+	ParentGroupID  string    `gorm:"column:parent_group_id;primaryKey"`
+	ChildGroupID   string    `gorm:"column:child_group_id;primaryKey"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
 	CreatedBy      string    `gorm:"column:created_by"`
 }
@@ -42,7 +42,7 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 
 	edges := make([]domaingroup.HierarchyEdge, len(records))
 	for i := range records {
-		edges[i] = domaingroup.ReconstructHierarchyEdge(records[i].ParentGroupID, records[i].ChildGroupID)
+		edges[i] = domaingroup.ReconstructHierarchyEdge(domain.MustParseGroupID(records[i].ParentGroupID), domain.MustParseGroupID(records[i].ChildGroupID))
 	}
 
 	hierarchy, err := domaingroup.NewHierarchy(organizationID, edges)
@@ -61,8 +61,8 @@ func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domaingr
 	for i, edge := range edges {
 		records[i] = groupNGroupRecord{
 			OrganizationID: orgIDStr,
-			ParentGroupID:  edge.ParentGroupID(),
-			ChildGroupID:   edge.ChildGroupID(),
+			ParentGroupID:  edge.ParentGroupID().String(),
+			ChildGroupID:   edge.ChildGroupID().String(),
 			CreatedAt:      time.Now(),
 			CreatedBy:      systemUserID,
 		}

@@ -74,15 +74,8 @@ func (h *CreateGroupHandler) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	groupID, err := handler.SafeIntToInt32(output.GroupID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert group ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateGroupResponse{
-		GroupID:        groupID,
+		GroupID:        output.GroupID.UUID(),
 		OrganizationID: output.OrganizationID.UUID(),
 		Name:           output.Name,
 		Enabled:        output.Enabled,

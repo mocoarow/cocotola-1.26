@@ -11,7 +11,7 @@ import (
 )
 
 type spaceCreator interface {
-	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)
 }
 
 type userPolicyAdder interface {
@@ -61,7 +61,7 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 	}
 
 	if err := h.policyRepo.AddPolicyForUser(ctx, orgID, userID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(spaceID), domainrbac.EffectAllow()); err != nil {
-		return fmt.Errorf("add view_space policy for user %s on space %d: %w", userID.String(), spaceID, err)
+		return fmt.Errorf("add view_space policy for user %s on space %s: %w", userID.String(), spaceID.String(), err)
 	}
 
 	workbookActions := []domainrbac.Action{
@@ -79,7 +79,7 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 
 	h.logger.InfoContext(ctx, "private space created for user",
 		slog.String("user_id", userID.String()),
-		slog.Int("space_id", spaceID),
+		slog.String("space_id", spaceID.String()),
 		slog.String("organization_id", orgID.String()),
 	)
 

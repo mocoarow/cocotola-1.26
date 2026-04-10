@@ -11,7 +11,7 @@ import (
 )
 
 type groupCreator interface {
-	Create(ctx context.Context, organizationID domain.OrganizationID, name string) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, name string) (domain.GroupID, error)
 }
 
 type organizationFinderByName interface {

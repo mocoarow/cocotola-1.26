@@ -1,5 +1,5 @@
 create table space (
- id serial
+ id uuid not null default gen_random_uuid()
 ,version int not null default 1
 ,created_at timestamp not null default current_timestamp
 ,updated_at timestamp not null default current_timestamp

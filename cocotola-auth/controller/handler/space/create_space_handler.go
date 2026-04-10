@@ -72,15 +72,8 @@ func (h *CreateSpaceHandler) CreateSpace(c *gin.Context) {
 		return
 	}
 
-	spaceID, err := handler.SafeIntToInt32(output.SpaceID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateSpaceResponse{
-		SpaceID:        spaceID,
+		SpaceID:        output.SpaceID.UUID(),
 		OrganizationID: output.OrganizationID.UUID(),
 		OwnerID:        output.OwnerID.UUID(),
 		KeyName:        output.KeyName,

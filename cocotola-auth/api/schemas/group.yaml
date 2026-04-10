@@ -15,9 +15,9 @@ CreateGroupResponse:
   type: object
   properties:
     groupId:
-      type: integer
+      type: string
       x-go-name: GroupID
-      format: int32
+      format: uuid
     organizationId:
       type: string
       x-go-name: OrganizationID

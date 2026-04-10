@@ -8,12 +8,12 @@ import (
 )
 
 type workbookCreator interface {
-	Create(ctx context.Context, spaceID int, ownerID string, organizationID string, title string, description string, visibility string) (string, error)
+	Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error)
 }
 
 type workbookFinder interface {
 	FindByID(ctx context.Context, id string) (*domainworkbook.Workbook, error)
-	FindBySpaceID(ctx context.Context, spaceID int) ([]domainworkbook.Workbook, error)
+	FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error)
 }
 
 type workbookUpdater interface {

@@ -36,9 +36,8 @@ func NewCreateSpaceInput(operatorID domain.AppUserID, organizationName string, n
 }
 
 // CreateSpaceOutput holds the result of creating a space.
-// SpaceID remains int in Phase 1.
 type CreateSpaceOutput struct {
-	SpaceID        int `validate:"required,gt=0"`
+	SpaceID        domain.SpaceID
 	OrganizationID domain.OrganizationID
 	OwnerID        domain.AppUserID
 	KeyName        string `validate:"required"`
@@ -48,7 +47,10 @@ type CreateSpaceOutput struct {
 }
 
 // NewCreateSpaceOutput creates a validated CreateSpaceOutput.
-func NewCreateSpaceOutput(spaceID int, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, deleted bool) (*CreateSpaceOutput, error) {
+func NewCreateSpaceOutput(spaceID domain.SpaceID, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, deleted bool) (*CreateSpaceOutput, error) {
+	if spaceID.IsZero() {
+		return nil, errors.New("create space output space id must not be zero")
+	}
 	if organizationID.IsZero() {
 		return nil, errors.New("create space output organization id must not be zero")
 	}
@@ -95,7 +97,7 @@ func NewListSpacesInput(operatorID domain.AppUserID, organizationName string) (*
 
 // Item represents a single space in a list.
 type Item struct {
-	SpaceID        int
+	SpaceID        domain.SpaceID
 	OrganizationID domain.OrganizationID
 	OwnerID        domain.AppUserID
 	KeyName        string

@@ -67,14 +67,8 @@ func (h *ListSpacesHandler) ListSpaces(c *gin.Context) {
 
 	items := make([]api.SpaceItem, len(output.Spaces))
 	for i, s := range output.Spaces {
-		spaceID, err := handler.SafeIntToInt32(s.SpaceID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.SpaceItem{
-			SpaceID:        spaceID,
+			SpaceID:        s.SpaceID.UUID(),
 			OrganizationID: s.OrganizationID.UUID(),
 			OwnerID:        s.OwnerID.UUID(),
 			KeyName:        s.KeyName,

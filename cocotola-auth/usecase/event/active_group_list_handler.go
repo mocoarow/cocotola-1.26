@@ -40,7 +40,7 @@ func (h *ActiveGroupListHandler) Handle(ctx context.Context, event domain.Event)
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
-	return handleActiveListEvent[domain.ActiveGroupList, int](
+	return handleActiveListEvent[domain.ActiveGroupList, domain.GroupID](
 		ctx, h.orgRepo, h.activeGroupRepo,
 		e.OrganizationID(), e.GroupID(),
 		func(org *domain.Organization) int { return org.MaxActiveGroups() },

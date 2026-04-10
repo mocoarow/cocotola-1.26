@@ -23,7 +23,7 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 	orgID := fixtureOrgID
 	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
-	expectedSpaceID := 10
+	expectedSpaceID := domain.MustParseSpaceID("00000000-0000-7000-8000-100000000010")
 
 	spaceRepoMock := newMockspaceCreator(t)
 	spaceRepoMock.On("Create", mock.Anything, orgID, appUserID,
@@ -101,7 +101,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t 
 	spaceRepoMock := newMockspaceCreator(t)
 	spaceRepoMock.On("Create", mock.Anything, orgID, appUserID,
 		mock.Anything, mock.Anything, mock.Anything, appUserID,
-	).Return(0, createErr)
+	).Return(domain.SpaceID{}, createErr)
 
 	policyRepoMock := newMockuserPolicyAdder(t)
 
@@ -123,7 +123,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddListSpacesPolicyFa
 	orgID := fixtureOrgID
 	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
-	expectedSpaceID := 10
+	expectedSpaceID := domain.MustParseSpaceID("00000000-0000-7000-8000-100000000010")
 	addErr := errors.New("db error")
 
 	spaceRepoMock := newMockspaceCreator(t)
@@ -153,7 +153,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddViewSpacePolicyFai
 	orgID := fixtureOrgID
 	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
-	expectedSpaceID := 10
+	expectedSpaceID := domain.MustParseSpaceID("00000000-0000-7000-8000-100000000010")
 	addErr := errors.New("db error")
 
 	spaceRepoMock := newMockspaceCreator(t)

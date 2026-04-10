@@ -11,9 +11,9 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
-func validWorkbookArgs() (string, int, string, string, string, string, workbook.Visibility, time.Time, time.Time) {
+func validWorkbookArgs() (string, string, string, string, string, string, workbook.Visibility, time.Time, time.Time) {
 	now := time.Now()
-	return "wb-1", 1, "user-1", "org-1", "Test Workbook", "A test workbook", workbook.VisibilityPrivate(), now, now
+	return "wb-1", "space-1", "user-1", "org-1", "Test Workbook", "A test workbook", workbook.VisibilityPrivate(), now, now
 }
 
 func Test_NewWorkbook_shouldReturnWorkbook_whenAllFieldsAreValid(t *testing.T) {
@@ -51,14 +51,14 @@ func Test_NewWorkbook_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	require.Error(t, err)
 }
 
-func Test_NewWorkbook_shouldReturnError_whenSpaceIDIsZero(t *testing.T) {
+func Test_NewWorkbook_shouldReturnError_whenSpaceIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
 	id, _, ownerID, orgID, title, desc, vis, createdAt, updatedAt := validWorkbookArgs()
 
 	// when
-	_, err := workbook.NewWorkbook(id, 0, ownerID, orgID, title, desc, vis, createdAt, updatedAt)
+	_, err := workbook.NewWorkbook(id, "", ownerID, orgID, title, desc, vis, createdAt, updatedAt)
 
 	// then
 	require.Error(t, err)

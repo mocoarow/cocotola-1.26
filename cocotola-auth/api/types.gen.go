@@ -59,7 +59,7 @@ type CreateGroupRequest struct {
 // CreateGroupResponse defines model for CreateGroupResponse.
 type CreateGroupResponse struct {
 	Enabled        bool               `json:"enabled"`
-	GroupID        int32              `json:"groupId"`
+	GroupID        openapi_types.UUID `json:"groupId"`
 	Name           string             `json:"name"`
 	OrganizationID openapi_types.UUID `json:"organizationId"`
 }
@@ -80,7 +80,7 @@ type CreateSpaceResponse struct {
 	Name           string                       `json:"name"`
 	OrganizationID openapi_types.UUID           `json:"organizationId"`
 	OwnerID        openapi_types.UUID           `json:"ownerId"`
-	SpaceID        int32                        `json:"spaceId"`
+	SpaceID        openapi_types.UUID           `json:"spaceId"`
 	SpaceType      CreateSpaceResponseSpaceType `json:"spaceType"`
 }
 
@@ -166,7 +166,7 @@ type SpaceItem struct {
 	Name           string             `json:"name"`
 	OrganizationID openapi_types.UUID `json:"organizationId"`
 	OwnerID        openapi_types.UUID `json:"ownerId"`
-	SpaceID        int32              `json:"spaceId"`
+	SpaceID        openapi_types.UUID `json:"spaceId"`
 	SpaceType      SpaceItemSpaceType `json:"spaceType"`
 }
 

@@ -74,21 +74,27 @@ func Test_ResourceUser_shouldFormatWithUserPrefix(t *testing.T) {
 func Test_ResourceGroup_shouldFormatWithGroupPrefix(t *testing.T) {
 	t.Parallel()
 
+	// given
+	groupID := domain.MustParseGroupID("00000000-0000-7000-8000-000000000010")
+
 	// when
-	resource := rbac.ResourceGroup(10)
+	resource := rbac.ResourceGroup(groupID)
 
 	// then
-	assert.Equal(t, "group:10", resource.Value())
+	assert.Equal(t, "group:"+groupID.String(), resource.Value())
 }
 
 func Test_ResourceSpace_shouldFormatWithSpacePrefix(t *testing.T) {
 	t.Parallel()
 
+	// given
+	spaceID := domain.MustParseSpaceID("00000000-0000-7000-8000-000000000005")
+
 	// when
-	resource := rbac.ResourceSpace(5)
+	resource := rbac.ResourceSpace(spaceID)
 
 	// then
-	assert.Equal(t, "space:5", resource.Value())
+	assert.Equal(t, "space:"+spaceID.String(), resource.Value())
 }
 
 func Test_ResourceWorkbook_shouldFormatWithWorkbookPrefix(t *testing.T) {
