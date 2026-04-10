@@ -16,7 +16,7 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	r := initAuthRouterWithMiddleware(ctx, t, authUsecase, fakeAuthMiddleware(42, "user42", "org1"))
+	r := initAuthRouterWithMiddleware(ctx, t, authUsecase, fakeAuthMiddleware(fixtureAppUserID, "user42", "org1"))
 	w := httptest.NewRecorder()
 
 	// when
@@ -32,7 +32,8 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 	userIDExpr := parseExpr(t, "$.userId")
 	userID := userIDExpr.Get(jsonObj)
 	require.Len(t, userID, 1)
-	assert.EqualValues(t, 42, userID[0])
+	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32, so the handler returns -1 as a placeholder.
+	assert.EqualValues(t, -1, userID[0])
 
 	loginIDExpr := parseExpr(t, "$.loginId")
 	loginID := loginIDExpr.Get(jsonObj)

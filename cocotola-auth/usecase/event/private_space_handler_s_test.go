@@ -20,8 +20,8 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
 	expectedSpaceID := 10
 
@@ -93,8 +93,8 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t 
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
 	createErr := errors.New("db error")
 
@@ -120,8 +120,8 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddListSpacesPolicyFa
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
 	expectedSpaceID := 10
 	addErr := errors.New("db error")
@@ -150,8 +150,8 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddViewSpacePolicyFai
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	loginID := "user@example.com"
 	expectedSpaceID := 10
 	addErr := errors.New("db error")

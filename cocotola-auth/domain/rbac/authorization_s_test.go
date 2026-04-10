@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 )
 
@@ -60,11 +61,14 @@ func Test_NewRBACResource_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 func Test_ResourceUser_shouldFormatWithUserPrefix(t *testing.T) {
 	t.Parallel()
 
+	// given
+	userID := domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+
 	// when
-	resource := rbac.ResourceUser(42)
+	resource := rbac.ResourceUser(userID)
 
 	// then
-	assert.Equal(t, "user:42", resource.Value())
+	assert.Equal(t, "user:"+userID.String(), resource.Value())
 }
 
 func Test_ResourceGroup_shouldFormatWithGroupPrefix(t *testing.T) {

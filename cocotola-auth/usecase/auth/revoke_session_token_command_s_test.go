@@ -22,7 +22,7 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTok
 	rawInput := "raw-session-value"
 	hash := string(domaintoken.HashToken(rawInput))
 	tokenID := "session-token-id"
-	userID := 1
+	userID := fixtureAppUserID
 
 	sessionToken := domaintoken.ReconstructSessionToken(tokenID, userID, "user1", "org1", domain.TokenHash(hash), now, now.Add(30*time.Minute), nil)
 
@@ -69,7 +69,7 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldReturnErrTokenRevok
 	hash := string(domaintoken.HashToken(rawInput))
 	tokenID := "session-token-id"
 
-	sessionToken := domaintoken.ReconstructSessionToken(tokenID, 1, "user1", "org1", domain.TokenHash(hash), now.Add(-1*time.Hour), now.Add(30*time.Minute), &revokedAt)
+	sessionToken := domaintoken.ReconstructSessionToken(tokenID, fixtureAppUserID, "user1", "org1", domain.TokenHash(hash), now.Add(-1*time.Hour), now.Add(30*time.Minute), &revokedAt)
 
 	repoMock := NewMockSessionTokenRepository(t)
 	repoMock.On("FindByTokenHash", mock.Anything, hash).Return(sessionToken, nil)

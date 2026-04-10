@@ -7,11 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 )
 
-func validSpaceArgs() (int, int, int, string, string, space.Type, bool) {
-	return 1, 1, 1, "public@@org", "Public Space", space.TypePublic(), false
+var (
+	fixtureOrgID     = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+	fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+)
+
+func validSpaceArgs() (int, domain.OrganizationID, domain.AppUserID, string, string, space.Type, bool) {
+	return 1, fixtureOrgID, fixtureAppUserID, "public@@org", "Public Space", space.TypePublic(), false
 }
 
 func Test_NewSpace_shouldReturnSpace_whenAllFieldsAreValid(t *testing.T) {
@@ -54,7 +60,7 @@ func Test_NewSpace_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	id, _, ownerID, keyName, name, spaceType, deleted := validSpaceArgs()
 
 	// when
-	_, err := space.NewSpace(id, 0, ownerID, keyName, name, spaceType, deleted)
+	_, err := space.NewSpace(id, domain.OrganizationID{}, ownerID, keyName, name, spaceType, deleted)
 
 	// then
 	require.Error(t, err)
@@ -67,7 +73,7 @@ func Test_NewSpace_shouldReturnError_whenOwnerIDIsZero(t *testing.T) {
 	id, orgID, _, keyName, name, spaceType, deleted := validSpaceArgs()
 
 	// when
-	_, err := space.NewSpace(id, orgID, 0, keyName, name, spaceType, deleted)
+	_, err := space.NewSpace(id, orgID, domain.AppUserID{}, keyName, name, spaceType, deleted)
 
 	// then
 	require.Error(t, err)
@@ -193,7 +199,7 @@ func Test_Space_Delete_shouldSetDeletedTrue(t *testing.T) {
 	t.Parallel()
 
 	// given
-	s, _ := space.NewSpace(1, 1, 1, "key", "name", space.TypePublic(), false)
+	s, _ := space.NewSpace(1, fixtureOrgID, fixtureAppUserID, "key", "name", space.TypePublic(), false)
 
 	// when
 	s.Delete()
@@ -206,7 +212,7 @@ func Test_Space_Restore_shouldSetDeletedFalse(t *testing.T) {
 	t.Parallel()
 
 	// given
-	s, _ := space.NewSpace(1, 1, 1, "key", "name", space.TypePublic(), true)
+	s, _ := space.NewSpace(1, fixtureOrgID, fixtureAppUserID, "key", "name", space.TypePublic(), true)
 
 	// when
 	s.Restore()

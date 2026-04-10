@@ -10,8 +10,8 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
-func validOrganizationArgs() (int, string, int, int) {
-	return 1, "org1", 100, 50
+func validOrganizationArgs() (domain.OrganizationID, string, int, int) {
+	return fixtureOrgID, "org1", 100, 50
 }
 
 func Test_NewOrganization_shouldReturnOrganization_whenAllFieldsAreValid(t *testing.T) {
@@ -38,20 +38,7 @@ func Test_NewOrganization_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, name, maxUsers, maxGroups := validOrganizationArgs()
 
 	// when
-	_, err := domain.NewOrganization(0, name, maxUsers, maxGroups)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewOrganization_shouldReturnError_whenIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given
-	_, name, maxUsers, maxGroups := validOrganizationArgs()
-
-	// when
-	_, err := domain.NewOrganization(-1, name, maxUsers, maxGroups)
+	_, err := domain.NewOrganization(domain.OrganizationID{}, name, maxUsers, maxGroups)
 
 	// then
 	require.Error(t, err)

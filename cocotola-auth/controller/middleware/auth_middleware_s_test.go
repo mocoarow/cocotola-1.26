@@ -15,8 +15,11 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
+
+var fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
 
 func TestMain(m *testing.M) {
 	gin.SetMode(gin.TestMode)
@@ -35,8 +38,9 @@ func setupRouter(t *testing.T, authUsecase middleware.AuthUsecase) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.NewAuthMiddleware(authUsecase, testCookieConfig, 30))
 	r.GET("/protected", func(c *gin.Context) {
-		userID := c.GetInt(controller.ContextFieldUserID{})
-		c.JSON(http.StatusOK, gin.H{"userId": userID})
+		v, _ := c.Get(controller.ContextFieldUserID{})
+		userID, _ := v.(domain.AppUserID)
+		c.JSON(http.StatusOK, gin.H{"userId": userID.String()})
 	})
 	return r
 }
@@ -46,7 +50,7 @@ func Test_AuthMiddleware_shouldReturn200AndSetUserID_whenValidBearerToken(t *tes
 	ctx := context.Background()
 
 	// given
-	output, err := authservice.NewValidateAccessTokenOutput(42, "user42", "org1")
+	output, err := authservice.NewValidateAccessTokenOutput(fixtureAppUserID, "user42", "org1")
 	require.NoError(t, err)
 
 	mockUsecase := NewMockAuthUsecase(t)
@@ -62,7 +66,7 @@ func Test_AuthMiddleware_shouldReturn200AndSetUserID_whenValidBearerToken(t *tes
 
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), `"userId":42`)
+	assert.Contains(t, w.Body.String(), fixtureAppUserID.String())
 }
 
 func Test_AuthMiddleware_shouldReturn401_whenNoTokenProvided(t *testing.T) {
@@ -127,7 +131,7 @@ func Test_AuthMiddleware_shouldReturn200_whenValidSessionCookie(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	output, err := authservice.NewValidateSessionTokenOutput(42, "user42", "org1")
+	output, err := authservice.NewValidateSessionTokenOutput(fixtureAppUserID, "user42", "org1")
 	require.NoError(t, err)
 
 	mockUsecase := NewMockAuthUsecase(t)
@@ -144,7 +148,7 @@ func Test_AuthMiddleware_shouldReturn200_whenValidSessionCookie(t *testing.T) {
 
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), `"userId":42`)
+	assert.Contains(t, w.Body.String(), fixtureAppUserID.String())
 }
 
 func Test_AuthMiddleware_shouldSetNewCookie_whenSessionTokenExtended(t *testing.T) {
@@ -152,7 +156,7 @@ func Test_AuthMiddleware_shouldSetNewCookie_whenSessionTokenExtended(t *testing.
 	ctx := context.Background()
 
 	// given
-	output, err := authservice.NewValidateSessionTokenOutput(42, "user42", "org1")
+	output, err := authservice.NewValidateSessionTokenOutput(fixtureAppUserID, "user42", "org1")
 	require.NoError(t, err)
 
 	mockUsecase := NewMockAuthUsecase(t)
@@ -190,7 +194,7 @@ func Test_AuthMiddleware_shouldPreferBearerOverCookie(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	output, err := authservice.NewValidateAccessTokenOutput(42, "user42", "org1")
+	output, err := authservice.NewValidateAccessTokenOutput(fixtureAppUserID, "user42", "org1")
 	require.NoError(t, err)
 
 	mockUsecase := NewMockAuthUsecase(t)

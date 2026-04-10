@@ -10,6 +10,8 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
+var fixtureOrgID = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+
 func newEdge(parent, child int) group.HierarchyEdge {
 	return group.ReconstructHierarchyEdge(parent, child)
 }
@@ -50,17 +52,7 @@ func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsZero(t *testin
 	t.Parallel()
 
 	// given / when
-	_, err := group.NewHierarchy(0, nil)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given / when
-	_, err := group.NewHierarchy(-1, nil)
+	_, err := group.NewHierarchy(domain.OrganizationID{}, nil)
 
 	// then
 	require.Error(t, err)
@@ -70,7 +62,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenNoCycle(t *testing.T) {
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, nil)
+	h, _ := group.NewHierarchy(fixtureOrgID, nil)
 
 	// when
 	err := h.AddEdge(1, 2)
@@ -84,7 +76,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenSelfLoop(t *testing.T) {
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, nil)
+	h, _ := group.NewHierarchy(fixtureOrgID, nil)
 
 	// when
 	err := h.AddEdge(1, 1)
@@ -97,7 +89,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDirectCycle(t *testing.T)
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 	})
 
@@ -113,7 +105,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenIndirectCycle(t *testing.
 
 	// given
 	// A -> B -> C, then try C -> A
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 		newEdge(2, 3),
 	})
@@ -129,7 +121,7 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenDuplicate(t *testing.T) {
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 	})
 
@@ -145,7 +137,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenMultipleBranches(t *testing.T
 
 	// given
 	// A -> B, A -> C
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 	})
 
@@ -162,7 +154,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenDiamondShape(t *testing.T) {
 
 	// given
 	// A -> B, A -> C, B -> D
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 		newEdge(1, 3),
 		newEdge(2, 4),
@@ -179,7 +171,7 @@ func Test_GroupHierarchy_RemoveEdge_shouldRemoveEdge(t *testing.T) {
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 		newEdge(2, 3),
 	})
@@ -197,7 +189,7 @@ func Test_GroupHierarchy_RemoveEdge_shouldDoNothing_whenEdgeNotFound(t *testing.
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 	})
 
@@ -212,7 +204,7 @@ func Test_GroupHierarchy_RemoveGroup_shouldRemoveAllEdgesForGroup(t *testing.T) 
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 		newEdge(2, 3),
 		newEdge(4, 5),
@@ -231,7 +223,7 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_afterCycleEdgeRemoved(t *testing.
 
 	// given
 	// A -> B -> C
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 		newEdge(2, 3),
 	})
@@ -248,7 +240,7 @@ func Test_GroupHierarchy_Edges_shouldReturnDefensiveCopy(t *testing.T) {
 	t.Parallel()
 
 	// given
-	h, _ := group.NewHierarchy(1, []group.HierarchyEdge{
+	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(1, 2),
 	})
 

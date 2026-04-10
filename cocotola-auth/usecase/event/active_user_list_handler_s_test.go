@@ -17,12 +17,12 @@ func Test_ActiveUserListHandler_Handle_shouldAddUser_whenEventValid(t *testing.T
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	maxActiveUsers := 10
 
 	org := domain.ReconstructOrganization(orgID, "test-org", maxActiveUsers, 5)
-	activeUserList, err := domain.NewActiveUserList(orgID, []int{100, 101})
+	activeUserList, err := domain.NewActiveUserList(orgID, []domain.AppUserID{fixtureUser1, fixtureUser2})
 	require.NoError(t, err)
 
 	orgRepoMock := newMockorganizationFinder(t)
@@ -47,8 +47,8 @@ func Test_ActiveUserListHandler_Handle_shouldReturnError_whenOrganizationNotFoun
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 
 	orgRepoMock := newMockorganizationFinder(t)
 	orgRepoMock.On("FindByID", mock.Anything, orgID).Return(nil, domain.ErrOrganizationNotFound)
@@ -70,12 +70,12 @@ func Test_ActiveUserListHandler_Handle_shouldReturnError_whenActiveUserLimitReac
 	t.Parallel()
 
 	// given
-	orgID := 1
-	appUserID := 42
+	orgID := fixtureOrgID
+	appUserID := fixtureAppUserID
 	maxActiveUsers := 2
 
 	org := domain.ReconstructOrganization(orgID, "test-org", maxActiveUsers, 5)
-	activeUserList, err := domain.NewActiveUserList(orgID, []int{100, 101})
+	activeUserList, err := domain.NewActiveUserList(orgID, []domain.AppUserID{fixtureUser1, fixtureUser2})
 	require.NoError(t, err)
 
 	orgRepoMock := newMockorganizationFinder(t)

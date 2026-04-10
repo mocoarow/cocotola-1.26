@@ -43,7 +43,7 @@ func Test_EventBus_shouldDispatchEvents_whenHandlersRegistered(t *testing.T) {
 
 	// when
 	now := time.Now()
-	event := domain.NewAppUserCreated(42, 1, "user@example.com", now)
+	event := domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "user@example.com", now)
 	bus.Publish(event)
 
 	// then
@@ -57,8 +57,8 @@ func Test_EventBus_shouldDispatchEvents_whenHandlersRegistered(t *testing.T) {
 	got, ok := received[0].(domain.AppUserCreated)
 	mu.Unlock()
 	require.True(t, ok)
-	assert.Equal(t, 42, got.AppUserID())
-	assert.Equal(t, 1, got.OrganizationID())
+	assert.True(t, fixtureAppUserID.Equal(got.AppUserID()))
+	assert.True(t, fixtureOrgID.Equal(got.OrganizationID()))
 
 	cancel()
 	wg.Wait()
@@ -93,7 +93,7 @@ func Test_EventBus_shouldLogError_whenHandlerFails(t *testing.T) {
 	})
 
 	// when
-	bus.Publish(domain.NewAppUserCreated(1, 1, "test", time.Now()))
+	bus.Publish(domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "test", time.Now()))
 
 	// then - second handler still called despite first handler error
 	secondHandlerCalled.Wait()
@@ -122,8 +122,8 @@ func Test_EventBus_shouldDrainEvents_whenContextCanceled(t *testing.T) {
 	})
 
 	// publish events before starting
-	bus.Publish(domain.NewAppUserCreated(1, 1, "a", time.Now()))
-	bus.Publish(domain.NewAppUserCreated(2, 1, "b", time.Now()))
+	bus.Publish(domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "a", time.Now()))
+	bus.Publish(domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "b", time.Now()))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // cancel immediately

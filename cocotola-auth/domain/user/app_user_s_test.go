@@ -10,8 +10,13 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 )
 
-func validAppUserArgs() (int, int, domain.LoginID, string, string, string, bool) {
-	return 1, 1, "user@example.com", "$2a$10$hashedpassword", "", "", true
+var (
+	fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+	fixtureOrgID     = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+)
+
+func validAppUserArgs() (domain.AppUserID, domain.OrganizationID, domain.LoginID, string, string, string, bool) {
+	return fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hashedpassword", "", "", true
 }
 
 func Test_NewAppUser_shouldReturnAppUser_whenAllFieldsAreValid(t *testing.T) {
@@ -25,8 +30,8 @@ func Test_NewAppUser_shouldReturnAppUser_whenAllFieldsAreValid(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, id, u.ID())
-	assert.Equal(t, orgID, u.OrganizationID())
+	assert.True(t, id.Equal(u.ID()))
+	assert.True(t, orgID.Equal(u.OrganizationID()))
 	assert.Equal(t, loginID, u.LoginID())
 	assert.Equal(t, hashedPw, u.HashedPassword())
 	assert.False(t, u.IsLinkedToProvider())
@@ -40,20 +45,7 @@ func Test_NewAppUser_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, orgID, loginID, hashedPw, provider, providerID, enabled := validAppUserArgs()
 
 	// when
-	_, err := user.NewAppUser(0, orgID, loginID, hashedPw, provider, providerID, enabled)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewAppUser_shouldReturnError_whenIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given
-	_, orgID, loginID, hashedPw, provider, providerID, enabled := validAppUserArgs()
-
-	// when
-	_, err := user.NewAppUser(-1, orgID, loginID, hashedPw, provider, providerID, enabled)
+	_, err := user.NewAppUser(domain.AppUserID{}, orgID, loginID, hashedPw, provider, providerID, enabled)
 
 	// then
 	require.Error(t, err)
@@ -66,7 +58,7 @@ func Test_NewAppUser_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	id, _, loginID, hashedPw, provider, providerID, enabled := validAppUserArgs()
 
 	// when
-	_, err := user.NewAppUser(id, 0, loginID, hashedPw, provider, providerID, enabled)
+	_, err := user.NewAppUser(id, domain.OrganizationID{}, loginID, hashedPw, provider, providerID, enabled)
 
 	// then
 	require.Error(t, err)
@@ -89,7 +81,7 @@ func Test_NewAppUser_shouldReturnError_whenProviderSetButProviderIDEmpty(t *test
 	t.Parallel()
 
 	// when
-	_, err := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "supabase", "", true)
+	_, err := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "supabase", "", true)
 
 	// then
 	require.Error(t, err)
@@ -99,7 +91,7 @@ func Test_AppUser_Enable_shouldSetEnabledTrue_whenDisabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", false)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", false)
 
 	// when
 	u.Enable()
@@ -112,7 +104,7 @@ func Test_AppUser_Disable_shouldSetEnabledFalse_whenEnabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 
 	// when
 	u.Disable()
@@ -125,7 +117,7 @@ func Test_AppUser_LinkProvider_shouldSetProvider_whenUserHasNoProvider(t *testin
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 
 	// when
 	err := u.LinkProvider("supabase", "sub-123")
@@ -141,7 +133,7 @@ func Test_AppUser_LinkProvider_shouldReturnError_whenUserAlreadyLinked(t *testin
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "supabase", "sub-existing", true)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "supabase", "sub-existing", true)
 
 	// when
 	err := u.LinkProvider("supabase", "sub-other")
@@ -155,7 +147,7 @@ func Test_AppUser_LinkProvider_shouldReturnError_whenProviderEmpty(t *testing.T)
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 
 	// when
 	err := u.LinkProvider("", "sub-123")
@@ -168,7 +160,7 @@ func Test_AppUser_LinkProvider_shouldReturnError_whenProviderIDEmpty(t *testing.
 	t.Parallel()
 
 	// given
-	u, _ := user.NewAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u, _ := user.NewAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 
 	// when
 	err := u.LinkProvider("supabase", "")

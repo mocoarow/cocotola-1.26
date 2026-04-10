@@ -21,9 +21,10 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	// given
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	jti := "access-token-id"
+	userID := fixtureAppUserID
 
-	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
+	userInfo, _ := authservice.NewUserInfo(userID, "user1", "org1", now.Add(1*time.Hour))
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)
@@ -45,7 +46,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 1, output.UserID)
+	assert.True(t, userID.Equal(output.UserID))
 	assert.Equal(t, "user1", output.LoginID)
 	assert.Equal(t, "org1", output.OrganizationName)
 	repoMock.AssertNotCalled(t, "FindByID")
@@ -57,7 +58,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	// given
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	jti := "access-token-id"
-	userID := 1
+	userID := fixtureAppUserID
 
 	userInfo, _ := authservice.NewUserInfo(userID, "user1", "org1", now.Add(1*time.Hour))
 	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), nil)
@@ -89,7 +90,7 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 1, output.UserID)
+	assert.True(t, userID.Equal(output.UserID))
 	cacheMock.AssertCalled(t, "SetAccessToken", jti, accessToken)
 }
 
@@ -100,9 +101,10 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnErrTokenRevok
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	revokedAt := now.Add(-10 * time.Minute)
 	jti := "access-token-id"
+	userID := fixtureAppUserID
 
-	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), &revokedAt)
+	userInfo, _ := authservice.NewUserInfo(userID, "user1", "org1", now.Add(1*time.Hour))
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-30*time.Minute), now.Add(30*time.Minute), &revokedAt)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)
@@ -134,9 +136,10 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnErrSessionExp
 	// given
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	jti := "access-token-id"
+	userID := fixtureAppUserID
 
-	userInfo, _ := authservice.NewUserInfo(1, "user1", "org1", now.Add(1*time.Hour))
-	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", 1, "user1", "org1", now.Add(-2*time.Hour), now.Add(-1*time.Hour), nil)
+	userInfo, _ := authservice.NewUserInfo(userID, "user1", "org1", now.Add(1*time.Hour))
+	accessToken := domaintoken.ReconstructAccessToken(jti, "refresh-1", userID, "user1", "org1", now.Add(-2*time.Hour), now.Add(-1*time.Hour), nil)
 
 	jwtMock := NewMockJWTManager(t)
 	jwtMock.On("ParseAccessToken", "jwt-string").Return(userInfo, jti, nil)

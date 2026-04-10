@@ -9,21 +9,13 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
+var fixtureOrgID = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+
 func Test_NewActiveGroupList_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	t.Parallel()
 
 	// given / when
-	_, err := domain.NewActiveGroupList(0, nil)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewActiveGroupList_shouldReturnError_whenOrganizationIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given / when
-	_, err := domain.NewActiveGroupList(-1, nil)
+	_, err := domain.NewActiveGroupList(domain.OrganizationID{}, nil)
 
 	// then
 	require.Error(t, err)
@@ -33,7 +25,7 @@ func Test_ActiveGroupList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, []int{1, 2})
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, []int{1, 2})
 
 	// when
 	err := list.Add(3, 5)
@@ -48,7 +40,7 @@ func Test_ActiveGroupList_Add_shouldReturnError_whenAtLimit(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, []int{1, 2, 3})
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, []int{1, 2, 3})
 
 	// when
 	err := list.Add(4, 3)
@@ -61,7 +53,7 @@ func Test_ActiveGroupList_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, []int{1, 2})
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, []int{1, 2})
 
 	// when
 	err := list.Add(2, 5)
@@ -74,7 +66,7 @@ func Test_ActiveGroupList_Remove_shouldRemoveEntry(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, []int{1, 2, 3})
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, []int{1, 2, 3})
 
 	// when
 	list.Remove(2)
@@ -88,7 +80,7 @@ func Test_ActiveGroupList_Remove_shouldDoNothing_whenIDNotFound(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, []int{1, 2})
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, []int{1, 2})
 
 	// when
 	list.Remove(99)
@@ -101,7 +93,7 @@ func Test_ActiveGroupList_Add_shouldSucceed_whenAddingToEmptyList(t *testing.T) 
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveGroupList(1, nil)
+	list, _ := domain.NewActiveGroupList(fixtureOrgID, nil)
 
 	// when
 	err := list.Add(1, 5)

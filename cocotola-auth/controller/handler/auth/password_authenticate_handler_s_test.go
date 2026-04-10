@@ -23,7 +23,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn200_whenValidCred
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	authOutput, err := authservice.NewPasswordAuthenticateOutput(1, "user1", "org1")
+	authOutput, err := authservice.NewPasswordAuthenticateOutput(fixtureAppUserID, "user1", "org1")
 	require.NoError(t, err)
 	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(authOutput, nil).Once()
 
@@ -131,7 +131,7 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldSetCookie_whenXTokenDel
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	authOutput, err := authservice.NewPasswordAuthenticateOutput(1, "user1", "org1")
+	authOutput, err := authservice.NewPasswordAuthenticateOutput(fixtureAppUserID, "user1", "org1")
 	require.NoError(t, err)
 	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(authOutput, nil).Once()
 

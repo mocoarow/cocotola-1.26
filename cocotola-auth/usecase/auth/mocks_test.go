@@ -902,7 +902,7 @@ func (_m *MockWhitelistRepository) EXPECT() *MockWhitelistRepository_Expecter {
 }
 
 // FindByUserID provides a mock function for the type MockWhitelistRepository
-func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID int) ([]token.WhitelistEntry, error) {
+func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
@@ -911,17 +911,17 @@ func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID i
 
 	var r0 []token.WhitelistEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]token.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) ([]token.WhitelistEntry, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []token.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) []token.WhitelistEntry); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]token.WhitelistEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.AppUserID) error); ok {
 		r1 = returnFunc(ctx, userID)
 	} else {
 		r1 = ret.Error(1)
@@ -936,20 +936,20 @@ type MockWhitelistRepository_FindByUserID_Call struct {
 
 // FindByUserID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID int
+//   - userID domain.AppUserID
 func (_e *MockWhitelistRepository_Expecter) FindByUserID(ctx interface{}, userID interface{}) *MockWhitelistRepository_FindByUserID_Call {
 	return &MockWhitelistRepository_FindByUserID_Call{Call: _e.mock.On("FindByUserID", ctx, userID)}
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) Run(run func(ctx context.Context, userID int)) *MockWhitelistRepository_FindByUserID_Call {
+func (_c *MockWhitelistRepository_FindByUserID_Call) Run(run func(ctx context.Context, userID domain.AppUserID)) *MockWhitelistRepository_FindByUserID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 domain.AppUserID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.AppUserID)
 		}
 		run(
 			arg0,
@@ -964,7 +964,7 @@ func (_c *MockWhitelistRepository_FindByUserID_Call) Return(whitelistEntrys []to
 	return _c
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]token.WhitelistEntry, error)) *MockWhitelistRepository_FindByUserID_Call {
+func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error)) *MockWhitelistRepository_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1054,7 +1054,7 @@ func (_m *MockJWTManager) EXPECT() *MockJWTManager_Expecter {
 }
 
 // CreateAccessToken provides a mock function for the type MockJWTManager
-func (_mock *MockJWTManager) CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error) {
+func (_mock *MockJWTManager) CreateAccessToken(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error) {
 	ret := _mock.Called(loginID, userID, organizationName, jti)
 
 	if len(ret) == 0 {
@@ -1063,15 +1063,15 @@ func (_mock *MockJWTManager) CreateAccessToken(loginID string, userID int, organ
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, int, string, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, domain.AppUserID, string, string) (string, error)); ok {
 		return returnFunc(loginID, userID, organizationName, jti)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int, string, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, domain.AppUserID, string, string) string); ok {
 		r0 = returnFunc(loginID, userID, organizationName, jti)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(string, domain.AppUserID, string, string) error); ok {
 		r1 = returnFunc(loginID, userID, organizationName, jti)
 	} else {
 		r1 = ret.Error(1)
@@ -1086,22 +1086,22 @@ type MockJWTManager_CreateAccessToken_Call struct {
 
 // CreateAccessToken is a helper method to define mock.On call
 //   - loginID string
-//   - userID int
+//   - userID domain.AppUserID
 //   - organizationName string
 //   - jti string
 func (_e *MockJWTManager_Expecter) CreateAccessToken(loginID interface{}, userID interface{}, organizationName interface{}, jti interface{}) *MockJWTManager_CreateAccessToken_Call {
 	return &MockJWTManager_CreateAccessToken_Call{Call: _e.mock.On("CreateAccessToken", loginID, userID, organizationName, jti)}
 }
 
-func (_c *MockJWTManager_CreateAccessToken_Call) Run(run func(loginID string, userID int, organizationName string, jti string)) *MockJWTManager_CreateAccessToken_Call {
+func (_c *MockJWTManager_CreateAccessToken_Call) Run(run func(loginID string, userID domain.AppUserID, organizationName string, jti string)) *MockJWTManager_CreateAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 int
+		var arg1 domain.AppUserID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.AppUserID)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -1126,7 +1126,7 @@ func (_c *MockJWTManager_CreateAccessToken_Call) Return(s string, err error) *Mo
 	return _c
 }
 
-func (_c *MockJWTManager_CreateAccessToken_Call) RunAndReturn(run func(loginID string, userID int, organizationName string, jti string) (string, error)) *MockJWTManager_CreateAccessToken_Call {
+func (_c *MockJWTManager_CreateAccessToken_Call) RunAndReturn(run func(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error)) *MockJWTManager_CreateAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1756,7 +1756,7 @@ func (_m *MockAppUserProviderFinder) EXPECT() *MockAppUserProviderFinder_Expecte
 }
 
 // FindByProviderID provides a mock function for the type MockAppUserProviderFinder
-func (_mock *MockAppUserProviderFinder) FindByProviderID(ctx context.Context, organizationID int, provider string, providerID string) (*user.AppUser, error) {
+func (_mock *MockAppUserProviderFinder) FindByProviderID(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*user.AppUser, error) {
 	ret := _mock.Called(ctx, organizationID, provider, providerID)
 
 	if len(ret) == 0 {
@@ -1765,17 +1765,17 @@ func (_mock *MockAppUserProviderFinder) FindByProviderID(ctx context.Context, or
 
 	var r0 *user.AppUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, string, string) (*user.AppUser, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, string, string) (*user.AppUser, error)); ok {
 		return returnFunc(ctx, organizationID, provider, providerID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, string, string) *user.AppUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, string, string) *user.AppUser); ok {
 		r0 = returnFunc(ctx, organizationID, provider, providerID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.AppUser)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID, string, string) error); ok {
 		r1 = returnFunc(ctx, organizationID, provider, providerID)
 	} else {
 		r1 = ret.Error(1)
@@ -1790,22 +1790,22 @@ type MockAppUserProviderFinder_FindByProviderID_Call struct {
 
 // FindByProviderID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationID int
+//   - organizationID domain.OrganizationID
 //   - provider string
 //   - providerID string
 func (_e *MockAppUserProviderFinder_Expecter) FindByProviderID(ctx interface{}, organizationID interface{}, provider interface{}, providerID interface{}) *MockAppUserProviderFinder_FindByProviderID_Call {
 	return &MockAppUserProviderFinder_FindByProviderID_Call{Call: _e.mock.On("FindByProviderID", ctx, organizationID, provider, providerID)}
 }
 
-func (_c *MockAppUserProviderFinder_FindByProviderID_Call) Run(run func(ctx context.Context, organizationID int, provider string, providerID string)) *MockAppUserProviderFinder_FindByProviderID_Call {
+func (_c *MockAppUserProviderFinder_FindByProviderID_Call) Run(run func(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string)) *MockAppUserProviderFinder_FindByProviderID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 domain.OrganizationID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.OrganizationID)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -1830,94 +1830,7 @@ func (_c *MockAppUserProviderFinder_FindByProviderID_Call) Return(appUser *user.
 	return _c
 }
 
-func (_c *MockAppUserProviderFinder_FindByProviderID_Call) RunAndReturn(run func(ctx context.Context, organizationID int, provider string, providerID string) (*user.AppUser, error)) *MockAppUserProviderFinder_FindByProviderID_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// NewMockAppUserIDProvider creates a new instance of MockAppUserIDProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
-// The first argument is typically a *testing.T value.
-func NewMockAppUserIDProvider(t interface {
-	mock.TestingT
-	Cleanup(func())
-}) *MockAppUserIDProvider {
-	mock := &MockAppUserIDProvider{}
-	mock.Mock.Test(t)
-
-	t.Cleanup(func() { mock.AssertExpectations(t) })
-
-	return mock
-}
-
-// MockAppUserIDProvider is an autogenerated mock type for the AppUserIDProvider type
-type MockAppUserIDProvider struct {
-	mock.Mock
-}
-
-type MockAppUserIDProvider_Expecter struct {
-	mock *mock.Mock
-}
-
-func (_m *MockAppUserIDProvider) EXPECT() *MockAppUserIDProvider_Expecter {
-	return &MockAppUserIDProvider_Expecter{mock: &_m.Mock}
-}
-
-// NextID provides a mock function for the type MockAppUserIDProvider
-func (_mock *MockAppUserIDProvider) NextID(ctx context.Context) (int, error) {
-	ret := _mock.Called(ctx)
-
-	if len(ret) == 0 {
-		panic("no return value specified for NextID")
-	}
-
-	var r0 int
-	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) (int, error)); ok {
-		return returnFunc(ctx)
-	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) int); ok {
-		r0 = returnFunc(ctx)
-	} else {
-		r0 = ret.Get(0).(int)
-	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
-	} else {
-		r1 = ret.Error(1)
-	}
-	return r0, r1
-}
-
-// MockAppUserIDProvider_NextID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'NextID'
-type MockAppUserIDProvider_NextID_Call struct {
-	*mock.Call
-}
-
-// NextID is a helper method to define mock.On call
-//   - ctx context.Context
-func (_e *MockAppUserIDProvider_Expecter) NextID(ctx interface{}) *MockAppUserIDProvider_NextID_Call {
-	return &MockAppUserIDProvider_NextID_Call{Call: _e.mock.On("NextID", ctx)}
-}
-
-func (_c *MockAppUserIDProvider_NextID_Call) Run(run func(ctx context.Context)) *MockAppUserIDProvider_NextID_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		var arg0 context.Context
-		if args[0] != nil {
-			arg0 = args[0].(context.Context)
-		}
-		run(
-			arg0,
-		)
-	})
-	return _c
-}
-
-func (_c *MockAppUserIDProvider_NextID_Call) Return(n int, err error) *MockAppUserIDProvider_NextID_Call {
-	_c.Call.Return(n, err)
-	return _c
-}
-
-func (_c *MockAppUserIDProvider_NextID_Call) RunAndReturn(run func(ctx context.Context) (int, error)) *MockAppUserIDProvider_NextID_Call {
+func (_c *MockAppUserProviderFinder_FindByProviderID_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*user.AppUser, error)) *MockAppUserProviderFinder_FindByProviderID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1950,7 +1863,7 @@ func (_m *MockAppUserByLoginIDFinder) EXPECT() *MockAppUserByLoginIDFinder_Expec
 }
 
 // FindByLoginID provides a mock function for the type MockAppUserByLoginIDFinder
-func (_mock *MockAppUserByLoginIDFinder) FindByLoginID(ctx context.Context, organizationID int, loginID domain.LoginID) (*user.AppUser, error) {
+func (_mock *MockAppUserByLoginIDFinder) FindByLoginID(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID) (*user.AppUser, error) {
 	ret := _mock.Called(ctx, organizationID, loginID)
 
 	if len(ret) == 0 {
@@ -1959,17 +1872,17 @@ func (_mock *MockAppUserByLoginIDFinder) FindByLoginID(ctx context.Context, orga
 
 	var r0 *user.AppUser
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, domain.LoginID) (*user.AppUser, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.LoginID) (*user.AppUser, error)); ok {
 		return returnFunc(ctx, organizationID, loginID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, domain.LoginID) *user.AppUser); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.LoginID) *user.AppUser); ok {
 		r0 = returnFunc(ctx, organizationID, loginID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*user.AppUser)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, domain.LoginID) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID, domain.LoginID) error); ok {
 		r1 = returnFunc(ctx, organizationID, loginID)
 	} else {
 		r1 = ret.Error(1)
@@ -1984,21 +1897,21 @@ type MockAppUserByLoginIDFinder_FindByLoginID_Call struct {
 
 // FindByLoginID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationID int
+//   - organizationID domain.OrganizationID
 //   - loginID domain.LoginID
 func (_e *MockAppUserByLoginIDFinder_Expecter) FindByLoginID(ctx interface{}, organizationID interface{}, loginID interface{}) *MockAppUserByLoginIDFinder_FindByLoginID_Call {
 	return &MockAppUserByLoginIDFinder_FindByLoginID_Call{Call: _e.mock.On("FindByLoginID", ctx, organizationID, loginID)}
 }
 
-func (_c *MockAppUserByLoginIDFinder_FindByLoginID_Call) Run(run func(ctx context.Context, organizationID int, loginID domain.LoginID)) *MockAppUserByLoginIDFinder_FindByLoginID_Call {
+func (_c *MockAppUserByLoginIDFinder_FindByLoginID_Call) Run(run func(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID)) *MockAppUserByLoginIDFinder_FindByLoginID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 domain.OrganizationID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.OrganizationID)
 		}
 		var arg2 domain.LoginID
 		if args[2] != nil {
@@ -2018,7 +1931,7 @@ func (_c *MockAppUserByLoginIDFinder_FindByLoginID_Call) Return(appUser *user.Ap
 	return _c
 }
 
-func (_c *MockAppUserByLoginIDFinder_FindByLoginID_Call) RunAndReturn(run func(ctx context.Context, organizationID int, loginID domain.LoginID) (*user.AppUser, error)) *MockAppUserByLoginIDFinder_FindByLoginID_Call {
+func (_c *MockAppUserByLoginIDFinder_FindByLoginID_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID) (*user.AppUser, error)) *MockAppUserByLoginIDFinder_FindByLoginID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2605,7 +2518,7 @@ func (_m *mockjwtCreator) EXPECT() *mockjwtCreator_Expecter {
 }
 
 // CreateAccessToken provides a mock function for the type mockjwtCreator
-func (_mock *mockjwtCreator) CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error) {
+func (_mock *mockjwtCreator) CreateAccessToken(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error) {
 	ret := _mock.Called(loginID, userID, organizationName, jti)
 
 	if len(ret) == 0 {
@@ -2614,15 +2527,15 @@ func (_mock *mockjwtCreator) CreateAccessToken(loginID string, userID int, organ
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(string, int, string, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, domain.AppUserID, string, string) (string, error)); ok {
 		return returnFunc(loginID, userID, organizationName, jti)
 	}
-	if returnFunc, ok := ret.Get(0).(func(string, int, string, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(string, domain.AppUserID, string, string) string); ok {
 		r0 = returnFunc(loginID, userID, organizationName, jti)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(string, int, string, string) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(string, domain.AppUserID, string, string) error); ok {
 		r1 = returnFunc(loginID, userID, organizationName, jti)
 	} else {
 		r1 = ret.Error(1)
@@ -2637,22 +2550,22 @@ type mockjwtCreator_CreateAccessToken_Call struct {
 
 // CreateAccessToken is a helper method to define mock.On call
 //   - loginID string
-//   - userID int
+//   - userID domain.AppUserID
 //   - organizationName string
 //   - jti string
 func (_e *mockjwtCreator_Expecter) CreateAccessToken(loginID interface{}, userID interface{}, organizationName interface{}, jti interface{}) *mockjwtCreator_CreateAccessToken_Call {
 	return &mockjwtCreator_CreateAccessToken_Call{Call: _e.mock.On("CreateAccessToken", loginID, userID, organizationName, jti)}
 }
 
-func (_c *mockjwtCreator_CreateAccessToken_Call) Run(run func(loginID string, userID int, organizationName string, jti string)) *mockjwtCreator_CreateAccessToken_Call {
+func (_c *mockjwtCreator_CreateAccessToken_Call) Run(run func(loginID string, userID domain.AppUserID, organizationName string, jti string)) *mockjwtCreator_CreateAccessToken_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
 			arg0 = args[0].(string)
 		}
-		var arg1 int
+		var arg1 domain.AppUserID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.AppUserID)
 		}
 		var arg2 string
 		if args[2] != nil {
@@ -2677,7 +2590,7 @@ func (_c *mockjwtCreator_CreateAccessToken_Call) Return(s string, err error) *mo
 	return _c
 }
 
-func (_c *mockjwtCreator_CreateAccessToken_Call) RunAndReturn(run func(loginID string, userID int, organizationName string, jti string) (string, error)) *mockjwtCreator_CreateAccessToken_Call {
+func (_c *mockjwtCreator_CreateAccessToken_Call) RunAndReturn(run func(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error)) *mockjwtCreator_CreateAccessToken_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2878,7 +2791,7 @@ func (_m *mockwhitelistFinder) EXPECT() *mockwhitelistFinder_Expecter {
 }
 
 // FindByUserID provides a mock function for the type mockwhitelistFinder
-func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID int) ([]token.WhitelistEntry, error) {
+func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
@@ -2887,17 +2800,17 @@ func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID int) 
 
 	var r0 []token.WhitelistEntry
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) ([]token.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) ([]token.WhitelistEntry, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int) []token.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) []token.WhitelistEntry); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]token.WhitelistEntry)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.AppUserID) error); ok {
 		r1 = returnFunc(ctx, userID)
 	} else {
 		r1 = ret.Error(1)
@@ -2912,20 +2825,20 @@ type mockwhitelistFinder_FindByUserID_Call struct {
 
 // FindByUserID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - userID int
+//   - userID domain.AppUserID
 func (_e *mockwhitelistFinder_Expecter) FindByUserID(ctx interface{}, userID interface{}) *mockwhitelistFinder_FindByUserID_Call {
 	return &mockwhitelistFinder_FindByUserID_Call{Call: _e.mock.On("FindByUserID", ctx, userID)}
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) Run(run func(ctx context.Context, userID int)) *mockwhitelistFinder_FindByUserID_Call {
+func (_c *mockwhitelistFinder_FindByUserID_Call) Run(run func(ctx context.Context, userID domain.AppUserID)) *mockwhitelistFinder_FindByUserID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 domain.AppUserID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.AppUserID)
 		}
 		run(
 			arg0,
@@ -2940,7 +2853,7 @@ func (_c *mockwhitelistFinder_FindByUserID_Call) Return(whitelistEntrys []token.
 	return _c
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID int) ([]token.WhitelistEntry, error)) *mockwhitelistFinder_FindByUserID_Call {
+func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error)) *mockwhitelistFinder_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }

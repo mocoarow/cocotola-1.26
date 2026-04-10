@@ -15,9 +15,9 @@ func validSessionTokenHash() domain.TokenHash {
 	return token.HashToken("test-raw-token-for-session")
 }
 
-func validSessionTokenArgs() (string, int, domain.LoginID, string, domain.TokenHash, time.Time, time.Time) {
+func validSessionTokenArgs() (string, domain.AppUserID, domain.LoginID, string, domain.TokenHash, time.Time, time.Time) {
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	return "st-1", 1, "user@example.com", "org1", validSessionTokenHash(), now, now.Add(30 * time.Minute)
+	return "st-1", fixtureAppUserID, "user@example.com", "org1", validSessionTokenHash(), now, now.Add(30 * time.Minute)
 }
 
 func Test_NewSessionToken_shouldReturnToken_whenAllFieldsAreValid(t *testing.T) {
@@ -61,7 +61,7 @@ func Test_NewSessionToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	id, _, loginID, org, hash, created, expires := validSessionTokenArgs()
 
 	// when
-	_, err := token.NewSessionToken(id, 0, loginID, org, hash, created, expires)
+	_, err := token.NewSessionToken(id, domain.AppUserID{}, loginID, org, hash, created, expires)
 
 	// then
 	require.Error(t, err)
@@ -103,7 +103,7 @@ func Test_SessionToken_RevokedAt_shouldReturnCopy_whenMutated(t *testing.T) {
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	revokedAt := now.Add(10 * time.Minute)
 	hash := validSessionTokenHash()
-	tk := token.ReconstructSessionToken("st-1", 1, "user@example.com", "org1", hash, now, now.Add(30*time.Minute), &revokedAt)
+	tk := token.ReconstructSessionToken("st-1", fixtureAppUserID, "user@example.com", "org1", hash, now, now.Add(30*time.Minute), &revokedAt)
 
 	// when
 	ptr := tk.RevokedAt()
