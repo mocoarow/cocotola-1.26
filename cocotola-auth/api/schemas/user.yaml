@@ -22,13 +22,13 @@ CreateUserResponse:
   type: object
   properties:
     appUserId:
-      type: integer
+      type: string
       x-go-name: AppUserID
-      format: int32
+      format: uuid
     organizationId:
-      type: integer
+      type: string
       x-go-name: OrganizationID
-      format: int32
+      format: uuid
     loginId:
       type: string
       x-go-name: LoginID

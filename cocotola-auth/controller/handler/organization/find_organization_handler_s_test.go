@@ -34,11 +34,10 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn200_whenOrganizat
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	jsonObj := parseJSON(t, respBytes)
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32, so the handler returns -1 as a placeholder.
 	idExpr := parseExpr(t, "$.id")
 	id := idExpr.Get(jsonObj)
 	require.Len(t, id, 1)
-	assert.EqualValues(t, -1, id[0])
+	assert.Equal(t, fixtureOrgID.String(), id[0])
 
 	nameExpr := parseExpr(t, "$.name")
 	name := nameExpr.Get(jsonObj)

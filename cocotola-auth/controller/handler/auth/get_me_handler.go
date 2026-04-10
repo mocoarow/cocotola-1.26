@@ -44,16 +44,8 @@ func (h *GetMeHandler) GetMe(c *gin.Context) {
 
 	organizationName := c.GetString(controller.ContextFieldOrganizationName{})
 
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	userIDInt32, err := handler.BridgeAppUserIDToInt32(userID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert user ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.GetMeResponse{
-		UserID:           userIDInt32,
+		UserID:           userID.UUID(),
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	})

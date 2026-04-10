@@ -81,17 +81,9 @@ func (h *CreateGroupHandler) CreateGroup(c *gin.Context) {
 		return
 	}
 
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	orgID, err := handler.BridgeOrganizationIDToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateGroupResponse{
 		GroupID:        groupID,
-		OrganizationID: orgID,
+		OrganizationID: output.OrganizationID.UUID(),
 		Name:           output.Name,
 		Enabled:        output.Enabled,
 	})

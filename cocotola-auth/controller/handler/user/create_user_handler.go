@@ -74,25 +74,9 @@ func (h *CreateUserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	appUserID, err := handler.BridgeAppUserIDToInt32(output.AppUserID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert app user ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	orgID, err := handler.BridgeOrganizationIDToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateUserResponse{
-		AppUserID:      appUserID,
-		OrganizationID: orgID,
+		AppUserID:      output.AppUserID.UUID(),
+		OrganizationID: output.OrganizationID.UUID(),
 		LoginID:        output.LoginID,
 		Enabled:        output.Enabled,
 	})

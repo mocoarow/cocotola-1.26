@@ -79,26 +79,10 @@ func (h *CreateSpaceHandler) CreateSpace(c *gin.Context) {
 		return
 	}
 
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	orgID, err := handler.BridgeOrganizationIDToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-	ownerID, err := handler.BridgeAppUserIDToInt32(output.OwnerID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateSpaceResponse{
 		SpaceID:        spaceID,
-		OrganizationID: orgID,
-		OwnerID:        ownerID,
+		OrganizationID: output.OrganizationID.UUID(),
+		OwnerID:        output.OwnerID.UUID(),
 		KeyName:        output.KeyName,
 		Name:           output.Name,
 		SpaceType:      api.CreateSpaceResponseSpaceType(output.SpaceType),

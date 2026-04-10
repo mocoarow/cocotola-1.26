@@ -32,8 +32,7 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 	userIDExpr := parseExpr(t, "$.userId")
 	userID := userIDExpr.Get(jsonObj)
 	require.Len(t, userID, 1)
-	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32, so the handler returns -1 as a placeholder.
-	assert.EqualValues(t, -1, userID[0])
+	assert.Equal(t, fixtureAppUserID.String(), userID[0])
 
 	loginIDExpr := parseExpr(t, "$.loginId")
 	loginID := loginIDExpr.Get(jsonObj)

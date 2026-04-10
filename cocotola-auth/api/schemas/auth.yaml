@@ -111,9 +111,9 @@ GetMeResponse:
   type: object
   properties:
     userId:
-      type: integer
+      type: string
       x-go-name: UserID
-      format: int32
+      format: uuid
     loginId:
       type: string
       x-go-name: LoginID

@@ -73,24 +73,10 @@ func (h *ListSpacesHandler) ListSpaces(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 			return
 		}
-		// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-		orgID, err := handler.BridgeOrganizationIDToInt32(s.OrganizationID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
-		ownerID, err := handler.BridgeAppUserIDToInt32(s.OwnerID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.SpaceItem{
 			SpaceID:        spaceID,
-			OrganizationID: orgID,
-			OwnerID:        ownerID,
+			OrganizationID: s.OrganizationID.UUID(),
+			OwnerID:        s.OwnerID.UUID(),
 			KeyName:        s.KeyName,
 			Name:           s.Name,
 			SpaceType:      api.SpaceItemSpaceType(s.SpaceType),

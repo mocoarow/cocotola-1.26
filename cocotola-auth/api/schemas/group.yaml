@@ -19,9 +19,9 @@ CreateGroupResponse:
       x-go-name: GroupID
       format: int32
     organizationId:
-      type: integer
+      type: string
       x-go-name: OrganizationID
-      format: int32
+      format: uuid
     name:
       type: string
       pattern: ^.*$
