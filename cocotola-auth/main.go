@@ -134,7 +134,6 @@ func run() (int, error) {
 		appUserRepo,
 		appUserRepo,
 		appUserRepo,
-		appUserRepo,
 		orgRepo,
 	)
 

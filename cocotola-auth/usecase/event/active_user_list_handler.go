@@ -10,12 +10,12 @@ import (
 )
 
 type activeUserListRepository interface {
-	FindByOrganizationID(ctx context.Context, organizationID int) (*domain.ActiveUserList, error)
+	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveUserList, error)
 	Save(ctx context.Context, list *domain.ActiveUserList) error
 }
 
 type organizationFinder interface {
-	FindByID(ctx context.Context, id int) (*domain.Organization, error)
+	FindByID(ctx context.Context, id domain.OrganizationID) (*domain.Organization, error)
 }
 
 // ActiveUserListHandler adds a newly created user to the organization's active user list.
@@ -45,7 +45,7 @@ func (h *ActiveUserListHandler) Handle(ctx context.Context, event domain.Event) 
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
-	return handleActiveListEvent[domain.ActiveUserList](
+	return handleActiveListEvent[domain.ActiveUserList, domain.AppUserID](
 		ctx, h.orgRepo, h.activeUserRepo,
 		e.OrganizationID(), e.AppUserID(),
 		func(org *domain.Organization) int { return org.MaxActiveUsers() },

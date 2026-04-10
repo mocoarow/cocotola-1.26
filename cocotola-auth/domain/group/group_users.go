@@ -9,21 +9,23 @@ import (
 )
 
 // Users is an aggregate that manages the set of user IDs belonging to a group.
-type Users struct{ memberSetBase }
+type Users struct {
+	memberSetBase[domain.AppUserID]
+}
 
 // NewUsers creates a validated Users aggregate.
-func NewUsers(groupID int, userIDs []int) (*Users, error) {
+func NewUsers(groupID int, userIDs []domain.AppUserID) (*Users, error) {
 	if groupID <= 0 {
 		return nil, errors.New("group users group id must be positive")
 	}
-	return &Users{memberSetBase{idset.New(groupID, userIDs)}}, nil
+	return &Users{memberSetBase[domain.AppUserID]{idset.New[int, domain.AppUserID](groupID, userIDs)}}, nil
 }
 
 // UserIDs returns a copy of the current user IDs as a slice.
-func (g *Users) UserIDs() []int { return g.set.IDs() }
+func (g *Users) UserIDs() []domain.AppUserID { return g.set.IDs() }
 
 // Add adds a user ID to the group. Returns ErrDuplicateEntry if the user ID already exists.
-func (g *Users) Add(userID int) error {
+func (g *Users) Add(userID domain.AppUserID) error {
 	if err := g.set.AddUnique(userID, domain.ErrDuplicateEntry); err != nil {
 		return fmt.Errorf("add user to group: %w", err)
 	}

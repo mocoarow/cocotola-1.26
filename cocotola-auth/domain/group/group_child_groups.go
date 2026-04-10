@@ -9,14 +9,17 @@ import (
 )
 
 // ChildGroups is an aggregate that manages the set of child group IDs belonging to a group.
-type ChildGroups struct{ memberSetBase }
+// group.id remains int in Phase 1 (Phase 2 will migrate it to UUIDv7).
+type ChildGroups struct {
+	memberSetBase[int]
+}
 
 // NewChildGroups creates a validated ChildGroups aggregate.
 func NewChildGroups(groupID int, childGroupIDs []int) (*ChildGroups, error) {
 	if groupID <= 0 {
 		return nil, errors.New("group child groups group id must be positive")
 	}
-	return &ChildGroups{memberSetBase{idset.New(groupID, childGroupIDs)}}, nil
+	return &ChildGroups{memberSetBase[int]{idset.New[int, int](groupID, childGroupIDs)}}, nil
 }
 
 // ChildGroupIDs returns a copy of the current child group IDs as a slice.

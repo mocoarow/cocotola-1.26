@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,14 +12,17 @@ import (
 // UserInfo represents an authenticated user's identity.
 // Used internally by gateway-layer interfaces (JWTManager, UserAuthenticator).
 type UserInfo struct {
-	UserID           int       `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string    `validate:"required"`
 	OrganizationName string    `validate:"required"`
 	ExpiresAt        time.Time `validate:"required"`
 }
 
 // NewUserInfo creates a validated UserInfo.
-func NewUserInfo(userID int, loginID string, organizationName string, expiresAt time.Time) (*UserInfo, error) {
+func NewUserInfo(userID domain.AppUserID, loginID string, organizationName string, expiresAt time.Time) (*UserInfo, error) {
+	if userID.IsZero() {
+		return nil, errors.New("user info user id must not be zero")
+	}
 	m := &UserInfo{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -55,13 +59,16 @@ func NewPasswordAuthenticateInput(loginID string, password string, organizationN
 
 // PasswordAuthenticateOutput holds the authenticated user's identity.
 type PasswordAuthenticateOutput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewPasswordAuthenticateOutput creates a validated PasswordAuthenticateOutput.
-func NewPasswordAuthenticateOutput(userID int, loginID string, organizationName string) (*PasswordAuthenticateOutput, error) {
+func NewPasswordAuthenticateOutput(userID domain.AppUserID, loginID string, organizationName string) (*PasswordAuthenticateOutput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("password authenticate output user id must not be zero")
+	}
 	m := &PasswordAuthenticateOutput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -77,13 +84,16 @@ func NewPasswordAuthenticateOutput(userID int, loginID string, organizationName 
 
 // CreateSessionTokenInput holds the parameters for creating a session token (cookie auth).
 type CreateSessionTokenInput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewCreateSessionTokenInput creates a validated CreateSessionTokenInput.
-func NewCreateSessionTokenInput(userID int, loginID string, organizationName string) (*CreateSessionTokenInput, error) {
+func NewCreateSessionTokenInput(userID domain.AppUserID, loginID string, organizationName string) (*CreateSessionTokenInput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("create session token input user id must not be zero")
+	}
 	m := &CreateSessionTokenInput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -115,13 +125,16 @@ func NewCreateSessionTokenOutput(rawToken string) (*CreateSessionTokenOutput, er
 
 // CreateTokenPairInput holds the parameters for creating an access/refresh token pair (API auth).
 type CreateTokenPairInput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewCreateTokenPairInput creates a validated CreateTokenPairInput.
-func NewCreateTokenPairInput(userID int, loginID string, organizationName string) (*CreateTokenPairInput, error) {
+func NewCreateTokenPairInput(userID domain.AppUserID, loginID string, organizationName string) (*CreateTokenPairInput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("create token pair input user id must not be zero")
+	}
 	m := &CreateTokenPairInput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -171,13 +184,16 @@ func NewValidateSessionTokenInput(rawToken string) (*ValidateSessionTokenInput, 
 
 // ValidateSessionTokenOutput holds the validated session token's user info.
 type ValidateSessionTokenOutput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewValidateSessionTokenOutput creates a validated ValidateSessionTokenOutput.
-func NewValidateSessionTokenOutput(userID int, loginID string, organizationName string) (*ValidateSessionTokenOutput, error) {
+func NewValidateSessionTokenOutput(userID domain.AppUserID, loginID string, organizationName string) (*ValidateSessionTokenOutput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("validate session token output user id must not be zero")
+	}
 	m := &ValidateSessionTokenOutput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -209,13 +225,16 @@ func NewValidateAccessTokenInput(jwtString string) (*ValidateAccessTokenInput, e
 
 // ValidateAccessTokenOutput holds the validated access token's user info.
 type ValidateAccessTokenOutput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewValidateAccessTokenOutput creates a validated ValidateAccessTokenOutput.
-func NewValidateAccessTokenOutput(userID int, loginID string, organizationName string) (*ValidateAccessTokenOutput, error) {
+func NewValidateAccessTokenOutput(userID domain.AppUserID, loginID string, organizationName string) (*ValidateAccessTokenOutput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("validate access token output user id must not be zero")
+	}
 	m := &ValidateAccessTokenOutput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -317,13 +336,16 @@ func NewGuestAuthenticateInput(organizationName string) (*GuestAuthenticateInput
 
 // GuestAuthenticateOutput holds the authenticated guest user's identity.
 type GuestAuthenticateOutput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewGuestAuthenticateOutput creates a validated GuestAuthenticateOutput.
-func NewGuestAuthenticateOutput(userID int, loginID string, organizationName string) (*GuestAuthenticateOutput, error) {
+func NewGuestAuthenticateOutput(userID domain.AppUserID, loginID string, organizationName string) (*GuestAuthenticateOutput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("guest authenticate output user id must not be zero")
+	}
 	m := &GuestAuthenticateOutput{
 		UserID:           userID,
 		LoginID:          loginID,
@@ -357,13 +379,16 @@ func NewSupabaseExchangeInput(supabaseJWT string, organizationName string) (*Sup
 
 // SupabaseExchangeOutput holds the authenticated user's identity after Supabase token exchange.
 type SupabaseExchangeOutput struct {
-	UserID           int    `validate:"required,gt=0"`
+	UserID           domain.AppUserID
 	LoginID          string `validate:"required"`
 	OrganizationName string `validate:"required"`
 }
 
 // NewSupabaseExchangeOutput creates a validated SupabaseExchangeOutput.
-func NewSupabaseExchangeOutput(userID int, loginID string, organizationName string) (*SupabaseExchangeOutput, error) {
+func NewSupabaseExchangeOutput(userID domain.AppUserID, loginID string, organizationName string) (*SupabaseExchangeOutput, error) {
+	if userID.IsZero() {
+		return nil, errors.New("supabase exchange output user id must not be zero")
+	}
 	m := &SupabaseExchangeOutput{
 		UserID:           userID,
 		LoginID:          loginID,

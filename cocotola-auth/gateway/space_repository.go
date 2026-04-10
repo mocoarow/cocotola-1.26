@@ -17,10 +17,10 @@ type spaceRecord struct {
 	Version        int       `gorm:"column:version;->"`
 	CreatedAt      time.Time `gorm:"column:created_at;->"`
 	UpdatedAt      time.Time `gorm:"column:updated_at;->"`
-	CreatedBy      int       `gorm:"column:created_by;<-:create"`
-	UpdatedBy      int       `gorm:"column:updated_by"`
-	OrganizationID int       `gorm:"column:organization_id"`
-	OwnerID        int       `gorm:"column:owner_id"`
+	CreatedBy      string    `gorm:"column:created_by;<-:create"`
+	UpdatedBy      string    `gorm:"column:updated_by"`
+	OrganizationID string    `gorm:"column:organization_id"`
+	OwnerID        string    `gorm:"column:owner_id"`
 	KeyName        string    `gorm:"column:key_name"`
 	Name           string    `gorm:"column:name"`
 	SpaceType      string    `gorm:"column:space_type"`
@@ -36,7 +36,7 @@ func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid space type %q: %w", r.SpaceType, err)
 	}
-	return domainspace.ReconstructSpace(r.ID, r.OrganizationID, r.OwnerID, r.KeyName, r.Name, st, r.Deleted), nil
+	return domainspace.ReconstructSpace(r.ID, domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted), nil
 }
 
 // SpaceRepository implements space persistence using GORM.
@@ -50,16 +50,17 @@ func NewSpaceRepository(db *gorm.DB) *SpaceRepository {
 }
 
 // Create inserts a new space record and returns the auto-generated ID.
-func (r *SpaceRepository) Create(ctx context.Context, organizationID int, ownerID int, keyName string, name string, spaceType string, createdBy int) (int, error) {
+func (r *SpaceRepository) Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (int, error) {
+	createdByStr := createdBy.String()
 	record := spaceRecord{
 		ID:             0,
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
-		CreatedBy:      createdBy,
-		UpdatedBy:      createdBy,
-		OrganizationID: organizationID,
-		OwnerID:        ownerID,
+		CreatedBy:      createdByStr,
+		UpdatedBy:      createdByStr,
+		OrganizationID: organizationID.String(),
+		OwnerID:        ownerID.String(),
 		KeyName:        keyName,
 		Name:           name,
 		SpaceType:      spaceType,
@@ -88,10 +89,10 @@ func (r *SpaceRepository) FindByID(ctx context.Context, id int) (*domainspace.Sp
 }
 
 // FindByKeyName looks up a space by organization ID and key name.
-func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int, keyName string) (*domainspace.Space, error) {
+func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID domain.OrganizationID, keyName string) (*domainspace.Space, error) {
 	var record spaceRecord
 	if err := r.db.WithContext(ctx).
-		Where("organization_id = ? AND key_name = ?", organizationID, keyName).
+		Where("organization_id = ? AND key_name = ?", organizationID.String(), keyName).
 		First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrSpaceNotFound
@@ -106,10 +107,10 @@ func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID int,
 }
 
 // FindByOrganizationID returns all spaces for the given organization.
-func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID int) ([]domainspace.Space, error) {
+func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) ([]domainspace.Space, error) {
 	var records []spaceRecord
 	if err := r.db.WithContext(ctx).
-		Where("organization_id = ? AND deleted = ?", organizationID, false).
+		Where("organization_id = ? AND deleted = ?", organizationID.String(), false).
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find spaces by organization id: %w", err)
 	}
@@ -126,15 +127,16 @@ func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organization
 
 // Save persists a space record (upsert: insert or update).
 func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
+	systemUserID := domain.SystemAppUserID().String()
 	record := spaceRecord{
 		ID:             space.ID(),
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
-		CreatedBy:      0,
-		UpdatedBy:      0,
-		OrganizationID: space.OrganizationID(),
-		OwnerID:        space.OwnerID(),
+		CreatedBy:      systemUserID,
+		UpdatedBy:      systemUserID,
+		OrganizationID: space.OrganizationID().String(),
+		OwnerID:        space.OwnerID().String(),
 		KeyName:        space.KeyName(),
 		Name:           space.Name(),
 		SpaceType:      space.SpaceType().Value(),

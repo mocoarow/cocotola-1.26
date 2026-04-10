@@ -3,6 +3,8 @@ package space
 import (
 	"errors"
 	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
 const (
@@ -11,10 +13,11 @@ const (
 )
 
 // Space represents a space belonging to an organization.
+// space.id remains int in Phase 1 (Phase 2 will migrate it to UUIDv7).
 type Space struct {
 	id             int
-	organizationID int
-	ownerID        int
+	organizationID domain.OrganizationID
+	ownerID        domain.AppUserID
 	keyName        string
 	name           string
 	spaceType      Type
@@ -22,7 +25,7 @@ type Space struct {
 }
 
 // NewSpace creates a validated Space.
-func NewSpace(id int, organizationID int, ownerID int, keyName string, name string, spaceType Type, deleted bool) (*Space, error) {
+func NewSpace(id int, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType Type, deleted bool) (*Space, error) {
 	m := &Space{
 		id:             id,
 		organizationID: organizationID,
@@ -39,7 +42,7 @@ func NewSpace(id int, organizationID int, ownerID int, keyName string, name stri
 }
 
 // ReconstructSpace reconstitutes a Space from persistence.
-func ReconstructSpace(id int, organizationID int, ownerID int, keyName string, name string, spaceType Type, deleted bool) *Space {
+func ReconstructSpace(id int, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType Type, deleted bool) *Space {
 	return &Space{
 		id:             id,
 		organizationID: organizationID,
@@ -55,11 +58,11 @@ func (s *Space) validate() error {
 	if s.id <= 0 {
 		return errors.New("space id must be positive")
 	}
-	if s.organizationID <= 0 {
-		return errors.New("space organization id must be positive")
+	if s.organizationID.IsZero() {
+		return errors.New("space organization id must not be zero")
 	}
-	if s.ownerID <= 0 {
-		return errors.New("space owner id must be positive")
+	if s.ownerID.IsZero() {
+		return errors.New("space owner id must not be zero")
 	}
 	if s.keyName == "" {
 		return errors.New("space key name is required")
@@ -83,10 +86,10 @@ func (s *Space) validate() error {
 func (s *Space) ID() int { return s.id }
 
 // OrganizationID returns the organization ID.
-func (s *Space) OrganizationID() int { return s.organizationID }
+func (s *Space) OrganizationID() domain.OrganizationID { return s.organizationID }
 
 // OwnerID returns the owner user ID.
-func (s *Space) OwnerID() int { return s.ownerID }
+func (s *Space) OwnerID() domain.AppUserID { return s.ownerID }
 
 // KeyName returns the space key name.
 func (s *Space) KeyName() string { return s.keyName }

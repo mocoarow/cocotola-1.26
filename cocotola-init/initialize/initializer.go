@@ -18,10 +18,17 @@ import (
 
 const (
 	organizationName = "cocotola"
-	organizationID   = 2
-	maxActiveUsers   = 100
-	maxActiveGroups  = 100
+	// CocotolaOrganizationIDString is the well-known UUID of the "cocotola" tenant
+	// organization bootstrapped by cocotola-init. It must remain stable across
+	// deployments so that rows referencing it stay valid.
+	CocotolaOrganizationIDString = "00000000-0000-7000-8000-000000000100"
+	maxActiveUsers               = 100
+	maxActiveGroups              = 100
 )
+
+func cocotolaOrganizationID() domain.OrganizationID {
+	return domain.MustParseOrganizationID(CocotolaOrganizationIDString)
+}
 
 // Initialize bootstraps the cocotola tenant organization, creates the first owner user,
 // adds them to the active user list, sets up RBAC policies, and assigns the admin group.
@@ -80,14 +87,14 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 	}
 
 	logger.InfoContext(ctx, "initialization completed successfully",
-		slog.Int("organization_id", org.ID()),
-		slog.Int("owner_user_id", ownerUserID),
-		slog.Int("guest_user_id", guestUserID),
+		slog.String("organization_id", org.ID().String()),
+		slog.String("owner_user_id", ownerUserID.String()),
+		slog.String("guest_user_id", guestUserID.String()),
 	)
 	return nil
 }
 
-func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, orgID, logger)
 	if err != nil {
 		return fmt.Errorf("find or create system owner: %w", err)
@@ -113,7 +120,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	org, err := repo.FindByName(ctx, organizationName)
 	if err == nil {
 		logger.InfoContext(ctx, "organization already exists",
-			slog.Int("id", org.ID()),
+			slog.String("id", org.ID().String()),
 			slog.String("name", org.Name()),
 		)
 		return org, nil
@@ -122,7 +129,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 		return nil, fmt.Errorf("find organization by name: %w", err)
 	}
 
-	org, err = domain.NewOrganization(organizationID, organizationName, maxActiveUsers, maxActiveGroups)
+	org, err = domain.NewOrganization(cocotolaOrganizationID(), organizationName, maxActiveUsers, maxActiveGroups)
 	if err != nil {
 		return nil, fmt.Errorf("new organization: %w", err)
 	}
@@ -132,64 +139,64 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	}
 
 	logger.InfoContext(ctx, "organization created",
-		slog.Int("id", org.ID()),
+		slog.String("id", org.ID().String()),
 		slog.String("name", org.Name()),
 	)
 	return org, nil
 }
 
-func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, loginID string, rawPassword string, logger *slog.Logger) (int, error) {
+func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, loginID string, rawPassword string, logger *slog.Logger) (domain.AppUserID, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(loginID))
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
-			slog.Int("user_id", user.ID()),
+			slog.String("user_id", user.ID().String()),
 			slog.String("login_id", string(user.LoginID())),
 		)
 		return user.ID(), nil
 	}
 	if !errors.Is(err, domain.ErrAppUserNotFound) {
-		return 0, fmt.Errorf("find user by login id: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("find user by login id: %w", err)
 	}
 
 	hashedPassword, err := domainuser.HashPassword(rawPassword, hasher)
 	if err != nil {
-		return 0, fmt.Errorf("hash password: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(loginID), hashedPassword, "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(loginID), hashedPassword, "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("provision owner user: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("provision owner user: %w", err)
 	}
 
 	logger.InfoContext(ctx, "owner user created",
-		slog.Int("user_id", user.ID()),
+		slog.String("user_id", user.ID().String()),
 		slog.String("login_id", loginID),
 	)
 	return user.ID(), nil
 }
 
-func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID int, logger *slog.Logger) (int, error) {
+func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
 	guestLoginID := domainuser.NewGuestLoginID(organizationName)
 
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(guestLoginID))
 	if err == nil {
 		logger.InfoContext(ctx, "guest user already exists",
-			slog.Int("user_id", user.ID()),
+			slog.String("user_id", user.ID().String()),
 			slog.String("login_id", string(user.LoginID())),
 		)
 		return user.ID(), nil
 	}
 	if !errors.Is(err, domain.ErrAppUserNotFound) {
-		return 0, fmt.Errorf("find guest by login id: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("find guest by login id: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(guestLoginID), "", "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(guestLoginID), "", "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("provision guest user: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("provision guest user: %w", err)
 	}
 
 	logger.InfoContext(ctx, "guest user created",
-		slog.Int("user_id", user.ID()),
+		slog.String("user_id", user.ID().String()),
 		slog.String("login_id", guestLoginID),
 	)
 	return user.ID(), nil
@@ -197,39 +204,39 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 
 const systemOwnerLoginID = "__system_owner"
 
-func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID int, logger *slog.Logger) (int, error) {
+func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(systemOwnerLoginID))
 	if err == nil {
 		logger.InfoContext(ctx, "system owner user already exists",
-			slog.Int("user_id", user.ID()),
+			slog.String("user_id", user.ID().String()),
 			slog.String("login_id", string(user.LoginID())),
 		)
 		return user.ID(), nil
 	}
 	if !errors.Is(err, domain.ErrAppUserNotFound) {
-		return 0, fmt.Errorf("find system owner by login id: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("find system owner by login id: %w", err)
 	}
 
 	// SystemOwner uses a random long password since it cannot login.
 	dummyPassword := "system_owner_no_login_00000000"
 	hashedPassword, err := domainuser.HashPassword(dummyPassword, hasher)
 	if err != nil {
-		return 0, fmt.Errorf("hash password: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, "", "", true)
 	if err != nil {
-		return 0, fmt.Errorf("provision system owner: %w", err)
+		return domain.AppUserID{}, fmt.Errorf("provision system owner: %w", err)
 	}
 
 	logger.InfoContext(ctx, "system owner user created",
-		slog.Int("user_id", user.ID()),
+		slog.String("user_id", user.ID().String()),
 		slog.String("login_id", systemOwnerLoginID),
 	)
 	return user.ID(), nil
 }
 
-func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID int, logger *slog.Logger) error {
+func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
 	list, err := repo.FindByOrganizationID(ctx, org.ID())
 	if err != nil {
 		return fmt.Errorf("find active user list: %w", err)
@@ -237,7 +244,7 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 
 	if err := list.Add(userID, org.MaxActiveUsers()); err != nil {
 		if errors.Is(err, domain.ErrDuplicateEntry) {
-			logger.InfoContext(ctx, "user already in active user list", slog.Int("user_id", userID))
+			logger.InfoContext(ctx, "user already in active user list", slog.String("user_id", userID.String()))
 			return nil
 		}
 		return fmt.Errorf("add user to active list: %w", err)
@@ -247,11 +254,11 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 		return fmt.Errorf("save active user list: %w", err)
 	}
 
-	logger.InfoContext(ctx, "user added to active user list", slog.Int("user_id", userID))
+	logger.InfoContext(ctx, "user added to active user list", slog.String("user_id", userID.String()))
 	return nil
 }
 
-func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	adminGroup, err := domainrbac.NewGroup("admin")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
@@ -281,13 +288,13 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 	}
 
 	logger.InfoContext(ctx, "RBAC policies created",
-		slog.Int("organization_id", orgID),
+		slog.String("organization_id", orgID.String()),
 		slog.Int("policy_count", len(actions)),
 	)
 	return nil
 }
 
-func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID int, logger *slog.Logger) error {
+func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
@@ -318,13 +325,13 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 	}
 
 	logger.InfoContext(ctx, "system owner RBAC policies created",
-		slog.Int("organization_id", orgID),
+		slog.String("organization_id", orgID.String()),
 		slog.Int("policy_count", len(actions)),
 	)
 	return nil
 }
 
-func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
+func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, logger *slog.Logger) error {
 	adminGroup, err := domainrbac.NewGroup("admin")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
@@ -335,13 +342,13 @@ func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID i
 	}
 
 	logger.InfoContext(ctx, "admin group assigned to user",
-		slog.Int("organization_id", orgID),
-		slog.Int("user_id", userID),
+		slog.String("organization_id", orgID.String()),
+		slog.String("user_id", userID.String()),
 	)
 	return nil
 }
 
-func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID int, systemOwnerID int, logger *slog.Logger) error {
+func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID domain.OrganizationID, systemOwnerID domain.AppUserID, logger *slog.Logger) error {
 	keyName := domainspace.PublicSpaceKeyName(organizationName)
 
 	_, err := repo.FindByKeyName(ctx, orgID, keyName)
@@ -365,7 +372,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 	return nil
 }
 
-func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, orgID int, userID int, logger *slog.Logger) error {
+func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, logger *slog.Logger) error {
 	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
 	if err != nil {
 		return fmt.Errorf("new rbac group: %w", err)
@@ -376,8 +383,8 @@ func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, o
 	}
 
 	logger.InfoContext(ctx, "system owner group assigned to user",
-		slog.Int("organization_id", orgID),
-		slog.Int("user_id", userID),
+		slog.String("organization_id", orgID.String()),
+		slog.String("user_id", userID.String()),
 	)
 	return nil
 }

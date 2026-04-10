@@ -11,10 +11,6 @@ import (
 	userservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user"
 )
 
-type appUserIDProvider interface {
-	NextID(ctx context.Context) (int, error)
-}
-
 type organizationFinderByName interface {
 	FindByName(ctx context.Context, name string) (*domain.Organization, error)
 }
@@ -29,12 +25,11 @@ type passwordHasher interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CreateAppUserCommand creates a new app user within an organization.
 type CreateAppUserCommand struct {
-	idProvider  appUserIDProvider
 	saver       appUserSaver
 	orgRepo     organizationFinderByName
 	publisher   eventPublisher
@@ -44,7 +39,6 @@ type CreateAppUserCommand struct {
 
 // NewCreateAppUserCommand returns a new CreateAppUserCommand.
 func NewCreateAppUserCommand(
-	idProvider appUserIDProvider,
 	saver appUserSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
@@ -52,7 +46,6 @@ func NewCreateAppUserCommand(
 	authChecker authorizationChecker,
 ) *CreateAppUserCommand {
 	return &CreateAppUserCommand{
-		idProvider:  idProvider,
 		saver:       saver,
 		orgRepo:     orgRepo,
 		publisher:   publisher,
@@ -85,7 +78,7 @@ func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userser
 	}
 
 	// TX2: Reserve aggregate ID, build the aggregate via the domain factory, and persist.
-	user, err := domainuser.Provision(ctx, c.idProvider, c.saver, org.ID(), domain.LoginID(input.LoginID), hashedPassword, "", "", true)
+	user, err := domainuser.Provision(ctx, c.saver, org.ID(), domain.LoginID(input.LoginID), hashedPassword, "", "", true)
 	if err != nil {
 		return nil, fmt.Errorf("provision app user: %w", err)
 	}

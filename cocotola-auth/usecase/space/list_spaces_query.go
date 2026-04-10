@@ -12,7 +12,7 @@ import (
 
 type spaceFinder interface {
 	FindByID(ctx context.Context, id int) (*domainspace.Space, error)
-	FindByOrganizationID(ctx context.Context, organizationID int) ([]domainspace.Space, error)
+	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) ([]domainspace.Space, error)
 }
 
 // ListSpacesQuery returns spaces accessible by the operator.

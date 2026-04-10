@@ -3,7 +3,7 @@ create table session_token (
  ,version int not null default 1
  ,created_at timestamp not null default current_timestamp
  ,updated_at timestamp not null default current_timestamp
- ,user_id int not null
+ ,user_id uuid not null
  ,login_id varchar(200) not null
  ,organization_name varchar(20) not null
  ,token_hash varchar(64) not null

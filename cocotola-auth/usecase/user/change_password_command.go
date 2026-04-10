@@ -11,7 +11,7 @@ import (
 )
 
 type appUserFinder interface {
-	FindByID(ctx context.Context, id int) (*domainuser.AppUser, error)
+	FindByID(ctx context.Context, id domain.AppUserID) (*domainuser.AppUser, error)
 }
 
 type appUserSaver interface {

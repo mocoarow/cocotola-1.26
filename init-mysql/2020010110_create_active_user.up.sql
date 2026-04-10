@@ -1,6 +1,6 @@
 create table `active_user` (
- `organization_id` int not null
-,`user_id` int not null
+ `organization_id` char(36) character set ascii not null
+,`user_id` char(36) character set ascii not null
 ,`created_at` datetime not null default current_timestamp
 ,primary key(`organization_id`, `user_id`)
 ,foreign key(`organization_id`) references `organization`(`id`) on delete cascade

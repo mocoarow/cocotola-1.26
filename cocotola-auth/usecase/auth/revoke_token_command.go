@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
@@ -125,7 +126,7 @@ func (c *RevokeTokenCommand) revokeRefreshToken(ctx context.Context, refreshToke
 	return nil
 }
 
-func (c *RevokeTokenCommand) removeFromWhitelist(ctx context.Context, repo WhitelistRepository, userID int, ids []string) error {
+func (c *RevokeTokenCommand) removeFromWhitelist(ctx context.Context, repo WhitelistRepository, userID domain.AppUserID, ids []string) error {
 	entries, err := repo.FindByUserID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("find whitelist entries: %w", err)

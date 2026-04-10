@@ -9,14 +9,14 @@ const maxOrganizationNameLength = 255
 
 // Organization represents a tenant that owns users and groups.
 type Organization struct {
-	id              int
+	id              OrganizationID
 	name            string
 	maxActiveUsers  int
 	maxActiveGroups int
 }
 
 // NewOrganization creates a validated Organization.
-func NewOrganization(id int, name string, maxActiveUsers int, maxActiveGroups int) (*Organization, error) {
+func NewOrganization(id OrganizationID, name string, maxActiveUsers int, maxActiveGroups int) (*Organization, error) {
 	m := &Organization{
 		id:              id,
 		name:            name,
@@ -30,7 +30,7 @@ func NewOrganization(id int, name string, maxActiveUsers int, maxActiveGroups in
 }
 
 // ReconstructOrganization reconstitutes an Organization from persistence.
-func ReconstructOrganization(id int, name string, maxActiveUsers int, maxActiveGroups int) *Organization {
+func ReconstructOrganization(id OrganizationID, name string, maxActiveUsers int, maxActiveGroups int) *Organization {
 	return &Organization{
 		id:              id,
 		name:            name,
@@ -40,8 +40,8 @@ func ReconstructOrganization(id int, name string, maxActiveUsers int, maxActiveG
 }
 
 func (o *Organization) validate() error {
-	if o.id <= 0 {
-		return errors.New("organization id must be positive")
+	if o.id.IsZero() {
+		return errors.New("organization id must not be zero")
 	}
 	if o.name == "" {
 		return errors.New("organization name is required")
@@ -59,7 +59,7 @@ func (o *Organization) validate() error {
 }
 
 // ID returns the organization ID.
-func (o *Organization) ID() int { return o.id }
+func (o *Organization) ID() OrganizationID { return o.id }
 
 // Name returns the organization name.
 func (o *Organization) Name() string { return o.name }

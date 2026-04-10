@@ -13,7 +13,7 @@ import (
 // --- active group list ---
 
 type activeGroupRecord struct {
-	OrganizationID int       `gorm:"column:organization_id;primaryKey"`
+	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
 	GroupID        int       `gorm:"column:group_id;primaryKey"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
 }
@@ -29,7 +29,7 @@ func NewActiveGroupListRepository(db *gorm.DB) *ActiveGroupListRepository {
 }
 
 // FindByOrganizationID returns the active group list for the given organization.
-func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, organizationID int) (*domain.ActiveGroupList, error) {
+func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveGroupList, error) {
 	ids, err := findMemberIDs(ctx, r.db, organizationID,
 		func(rec activeGroupRecord) int { return rec.GroupID }, "active groups by organization id")
 	if err != nil {
@@ -47,23 +47,24 @@ func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, or
 func (r *ActiveGroupListRepository) Save(ctx context.Context, list *domain.ActiveGroupList) error {
 	entries := list.Entries()
 
+	orgIDStr := list.OrganizationID().String()
 	records := make([]activeGroupRecord, len(entries))
 	for i, groupID := range entries {
 		records[i] = activeGroupRecord{
-			OrganizationID: list.OrganizationID(),
+			OrganizationID: orgIDStr,
 			GroupID:        groupID,
 			CreatedAt:      time.Now(),
 		}
 	}
-	return replaceRecords(ctx, r.db, "organization_id = ?", list.OrganizationID(),
+	return replaceRecords(ctx, r.db, "organization_id = ?", orgIDStr,
 		records, "active group entries")
 }
 
 // --- active user list ---
 
 type activeUserRecord struct {
-	OrganizationID int       `gorm:"column:organization_id;primaryKey"`
-	UserID         int       `gorm:"column:user_id;primaryKey"`
+	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
+	UserID         string    `gorm:"column:user_id;primaryKey"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
 }
 
@@ -78,9 +79,9 @@ func NewActiveUserListRepository(db *gorm.DB) *ActiveUserListRepository {
 }
 
 // FindByOrganizationID returns the active user list for the given organization.
-func (r *ActiveUserListRepository) FindByOrganizationID(ctx context.Context, organizationID int) (*domain.ActiveUserList, error) {
+func (r *ActiveUserListRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveUserList, error) {
 	ids, err := findMemberIDs(ctx, r.db, organizationID,
-		func(rec activeUserRecord) int { return rec.UserID }, "active users by organization id")
+		func(rec activeUserRecord) domain.AppUserID { return domain.MustParseAppUserID(rec.UserID) }, "active users by organization id")
 	if err != nil {
 		return nil, err
 	}
@@ -96,14 +97,15 @@ func (r *ActiveUserListRepository) FindByOrganizationID(ctx context.Context, org
 func (r *ActiveUserListRepository) Save(ctx context.Context, list *domain.ActiveUserList) error {
 	entries := list.Entries()
 
+	orgIDStr := list.OrganizationID().String()
 	records := make([]activeUserRecord, len(entries))
 	for i, userID := range entries {
 		records[i] = activeUserRecord{
-			OrganizationID: list.OrganizationID(),
-			UserID:         userID,
+			OrganizationID: orgIDStr,
+			UserID:         userID.String(),
 			CreatedAt:      time.Now(),
 		}
 	}
-	return replaceRecords(ctx, r.db, "organization_id = ?", list.OrganizationID(),
+	return replaceRecords(ctx, r.db, "organization_id = ?", orgIDStr,
 		records, "active user entries")
 }

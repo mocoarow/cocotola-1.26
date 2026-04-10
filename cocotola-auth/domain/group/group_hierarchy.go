@@ -44,14 +44,14 @@ func (e HierarchyEdge) ChildGroupID() int { return e.childGroupID }
 // within an organization. It enforces the acyclic invariant by checking for cycles
 // on every edge addition.
 type Hierarchy struct {
-	organizationID int
+	organizationID domain.OrganizationID
 	edges          []HierarchyEdge
 }
 
 // NewHierarchy creates a validated GroupHierarchy.
-func NewHierarchy(organizationID int, edges []HierarchyEdge) (*Hierarchy, error) {
-	if organizationID <= 0 {
-		return nil, errors.New("group hierarchy organization id must be positive")
+func NewHierarchy(organizationID domain.OrganizationID, edges []HierarchyEdge) (*Hierarchy, error) {
+	if organizationID.IsZero() {
+		return nil, errors.New("group hierarchy organization id must not be zero")
 	}
 	copied := make([]HierarchyEdge, len(edges))
 	copy(copied, edges)
@@ -62,7 +62,7 @@ func NewHierarchy(organizationID int, edges []HierarchyEdge) (*Hierarchy, error)
 }
 
 // OrganizationID returns the organization ID.
-func (h *Hierarchy) OrganizationID() int { return h.organizationID }
+func (h *Hierarchy) OrganizationID() domain.OrganizationID { return h.organizationID }
 
 // Edges returns a defensive copy of the current edges.
 func (h *Hierarchy) Edges() []HierarchyEdge {

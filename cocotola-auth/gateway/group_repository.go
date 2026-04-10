@@ -17,9 +17,9 @@ type groupRecord struct {
 	Version        int       `gorm:"column:version;->"`
 	CreatedAt      time.Time `gorm:"column:created_at;->"`
 	UpdatedAt      time.Time `gorm:"column:updated_at;->"`
-	CreatedBy      int       `gorm:"column:created_by;<-:create"`
-	UpdatedBy      int       `gorm:"column:updated_by"`
-	OrganizationID int       `gorm:"column:organization_id"`
+	CreatedBy      string    `gorm:"column:created_by;<-:create"`
+	UpdatedBy      string    `gorm:"column:updated_by"`
+	OrganizationID string    `gorm:"column:organization_id"`
 	Name           string    `gorm:"column:name"`
 	Enabled        bool      `gorm:"column:enabled"`
 }
@@ -29,7 +29,7 @@ func (groupRecord) TableName() string {
 }
 
 func toGroupDomain(r *groupRecord) *domaingroup.Group {
-	return domaingroup.ReconstructGroup(r.ID, r.OrganizationID, r.Name, r.Enabled)
+	return domaingroup.ReconstructGroup(r.ID, domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled)
 }
 
 // GroupRepository implements group persistence using GORM.
@@ -44,14 +44,15 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 
 // Save persists a group record (upsert: insert or update).
 func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) error {
+	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
 		ID:             group.ID(),
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
-		CreatedBy:      0,
-		UpdatedBy:      0,
-		OrganizationID: group.OrganizationID(),
+		CreatedBy:      systemUserID,
+		UpdatedBy:      systemUserID,
+		OrganizationID: group.OrganizationID().String(),
 		Name:           group.Name(),
 		Enabled:        group.Enabled(),
 	}
@@ -62,15 +63,16 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 }
 
 // Create inserts a new group record and returns the auto-generated ID.
-func (r *GroupRepository) Create(ctx context.Context, organizationID int, name string) (int, error) {
+func (r *GroupRepository) Create(ctx context.Context, organizationID domain.OrganizationID, name string) (int, error) {
+	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
 		ID:             0,
 		Version:        0,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
-		CreatedBy:      0,
-		UpdatedBy:      0,
-		OrganizationID: organizationID,
+		CreatedBy:      systemUserID,
+		UpdatedBy:      systemUserID,
+		OrganizationID: organizationID.String(),
 		Name:           name,
 		Enabled:        true,
 	}
@@ -93,10 +95,10 @@ func (r *GroupRepository) FindByID(ctx context.Context, id int) (*domaingroup.Gr
 }
 
 // FindByName looks up a group by organization ID and name.
-func (r *GroupRepository) FindByName(ctx context.Context, organizationID int, name string) (*domaingroup.Group, error) {
+func (r *GroupRepository) FindByName(ctx context.Context, organizationID domain.OrganizationID, name string) (*domaingroup.Group, error) {
 	var record groupRecord
 	if err := r.db.WithContext(ctx).
-		Where("organization_id = ? AND name = ?", organizationID, name).
+		Where("organization_id = ? AND name = ?", organizationID.String(), name).
 		First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrGroupNotFound

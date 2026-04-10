@@ -7,15 +7,16 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
 type groupNGroupRecord struct {
-	OrganizationID int       `gorm:"column:organization_id;primaryKey"`
+	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
 	ParentGroupID  int       `gorm:"column:parent_group_id;primaryKey"`
 	ChildGroupID   int       `gorm:"column:child_group_id;primaryKey"`
 	CreatedAt      time.Time `gorm:"column:created_at"`
-	CreatedBy      int       `gorm:"column:created_by"`
+	CreatedBy      string    `gorm:"column:created_by"`
 }
 
 func (groupNGroupRecord) TableName() string {
@@ -33,9 +34,9 @@ func NewGroupHierarchyRepository(db *gorm.DB) *GroupHierarchyRepository {
 }
 
 // FindByOrganizationID returns the group hierarchy for the given organization.
-func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, organizationID int) (*domaingroup.Hierarchy, error) {
+func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domaingroup.Hierarchy, error) {
 	var records []groupNGroupRecord
-	if err := r.db.WithContext(ctx).Where("organization_id = ?", organizationID).Find(&records).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("organization_id = ?", organizationID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find group hierarchy by organization id: %w", err)
 	}
 
@@ -54,16 +55,18 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 // Save persists the group hierarchy by replacing all entries for the organization.
 func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domaingroup.Hierarchy) error {
 	edges := hierarchy.Edges()
+	orgIDStr := hierarchy.OrganizationID().String()
+	systemUserID := domain.SystemAppUserID().String()
 	records := make([]groupNGroupRecord, len(edges))
 	for i, edge := range edges {
 		records[i] = groupNGroupRecord{
-			OrganizationID: hierarchy.OrganizationID(),
+			OrganizationID: orgIDStr,
 			ParentGroupID:  edge.ParentGroupID(),
 			ChildGroupID:   edge.ChildGroupID(),
 			CreatedAt:      time.Now(),
-			CreatedBy:      0,
+			CreatedBy:      systemUserID,
 		}
 	}
-	return replaceRecords(ctx, r.db, "organization_id = ?", hierarchy.OrganizationID(),
+	return replaceRecords(ctx, r.db, "organization_id = ?", orgIDStr,
 		records, "group hierarchy entries")
 }

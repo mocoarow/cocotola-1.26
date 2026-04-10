@@ -59,7 +59,8 @@ func (h *FindOrganizationHandler) FindOrganization(c *gin.Context) {
 		return
 	}
 
-	orgID, err := handler.SafeIntToInt32(org.ID())
+	// TODO(uuidv7-phase1-openapi): OpenAPI still encodes IDs as int32.
+	orgID, err := handler.BridgeOrganizationIDToInt32(org.ID())
 	if err != nil {
 		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))

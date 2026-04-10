@@ -1,5 +1,5 @@
 create table `active_group` (
- `organization_id` int not null
+ `organization_id` char(36) character set ascii not null
 ,`group_id` int not null
 ,`created_at` datetime not null default current_timestamp
 ,primary key(`organization_id`, `group_id`)

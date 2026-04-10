@@ -37,7 +37,7 @@ const eventBusBufferSize = 100
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // OrganizationFinder finds organizations by name.
@@ -133,7 +133,6 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		appUserRepo,
 		appUserRepo,
 		appUserRepo,
-		appUserRepo,
 		orgRepo,
 	)
 
@@ -174,7 +173,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
 
 	// user usecase + controller
-	userCommand := userusecase.NewCommand(appUserRepo, appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
+	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 

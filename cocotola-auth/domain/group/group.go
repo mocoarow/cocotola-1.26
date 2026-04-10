@@ -4,20 +4,23 @@ package group
 import (
 	"errors"
 	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
 const maxGroupNameLength = 255
 
 // Group represents a group belonging to an organization.
+// group.id remains int in Phase 1 (Phase 2 will migrate it to UUIDv7).
 type Group struct {
 	id             int
-	organizationID int
+	organizationID domain.OrganizationID
 	name           string
 	enabled        bool
 }
 
 // NewGroup creates a validated Group.
-func NewGroup(id int, organizationID int, name string, enabled bool) (*Group, error) {
+func NewGroup(id int, organizationID domain.OrganizationID, name string, enabled bool) (*Group, error) {
 	m := &Group{
 		id:             id,
 		organizationID: organizationID,
@@ -31,7 +34,7 @@ func NewGroup(id int, organizationID int, name string, enabled bool) (*Group, er
 }
 
 // ReconstructGroup reconstitutes a Group from persistence.
-func ReconstructGroup(id int, organizationID int, name string, enabled bool) *Group {
+func ReconstructGroup(id int, organizationID domain.OrganizationID, name string, enabled bool) *Group {
 	return &Group{
 		id:             id,
 		organizationID: organizationID,
@@ -44,8 +47,8 @@ func (g *Group) validate() error {
 	if g.id <= 0 {
 		return errors.New("group id must be positive")
 	}
-	if g.organizationID <= 0 {
-		return errors.New("group organization id must be positive")
+	if g.organizationID.IsZero() {
+		return errors.New("group organization id must not be zero")
 	}
 	if g.name == "" {
 		return errors.New("group name is required")
@@ -60,7 +63,7 @@ func (g *Group) validate() error {
 func (g *Group) ID() int { return g.id }
 
 // OrganizationID returns the organization ID.
-func (g *Group) OrganizationID() int { return g.organizationID }
+func (g *Group) OrganizationID() domain.OrganizationID { return g.organizationID }
 
 // Name returns the group name.
 func (g *Group) Name() string { return g.name }

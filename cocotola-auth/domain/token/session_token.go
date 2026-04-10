@@ -10,7 +10,7 @@ import (
 // SessionToken represents a cookie-based session with sliding window expiry and absolute timeout.
 type SessionToken struct {
 	id               string
-	userID           int
+	userID           domain.AppUserID
 	loginID          domain.LoginID
 	organizationName string
 	tokenHash        domain.TokenHash
@@ -20,7 +20,7 @@ type SessionToken struct {
 }
 
 // NewSessionToken creates a validated SessionToken.
-func NewSessionToken(id string, userID int, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time) (*SessionToken, error) {
+func NewSessionToken(id string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time) (*SessionToken, error) {
 	m := &SessionToken{
 		id:               id,
 		userID:           userID,
@@ -38,7 +38,7 @@ func NewSessionToken(id string, userID int, loginID domain.LoginID, organization
 }
 
 // ReconstructSessionToken reconstitutes a SessionToken from persistence (including RevokedAt).
-func ReconstructSessionToken(id string, userID int, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *SessionToken {
+func ReconstructSessionToken(id string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *SessionToken {
 	return &SessionToken{
 		id:               id,
 		userID:           userID,
@@ -55,8 +55,8 @@ func (t *SessionToken) validate() error {
 	if t.id == "" {
 		return errors.New("session token id is required")
 	}
-	if t.userID <= 0 {
-		return errors.New("session token user id must be positive")
+	if t.userID.IsZero() {
+		return errors.New("session token user id must not be zero")
 	}
 	if t.loginID == "" {
 		return errors.New("session token login id is required")
@@ -80,7 +80,7 @@ func (t *SessionToken) validate() error {
 func (t *SessionToken) ID() string { return t.id }
 
 // UserID returns the user ID.
-func (t *SessionToken) UserID() int { return t.userID }
+func (t *SessionToken) UserID() domain.AppUserID { return t.userID }
 
 // LoginID returns the login ID.
 func (t *SessionToken) LoginID() domain.LoginID { return t.loginID }

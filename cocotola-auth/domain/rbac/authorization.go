@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
 // Action represents an operation type for authorization.
@@ -112,8 +114,8 @@ func (r Resource) Value() string { return r.value }
 func ResourceAny() Resource { return Resource{value: "*"} }
 
 // ResourceUser returns a resource representing a specific user.
-func ResourceUser(userID int) Resource {
-	return Resource{value: fmt.Sprintf("user:%d", userID)}
+func ResourceUser(userID domain.AppUserID) Resource {
+	return Resource{value: "user:" + userID.String()}
 }
 
 // ResourceGroup returns a resource representing a specific group.
@@ -168,28 +170,28 @@ func EffectDeny() Effect { return Effect{value: "deny"} }
 
 // AuthorizationChecker is a domain service interface for checking permissions.
 type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action Action, resource Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action Action, resource Resource) (bool, error)
 }
 
 // PolicyRepository manages RBAC policies and group assignments.
 type PolicyRepository interface {
 	// Group assignment: assign/revoke a group for a user within an organization.
-	AssignGroupToUser(ctx context.Context, organizationID int, userID int, group Group) error
-	RevokeGroupFromUser(ctx context.Context, organizationID int, userID int, group Group) error
+	AssignGroupToUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, group Group) error
+	RevokeGroupFromUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, group Group) error
 
 	// Policy management: define what actions a group can perform on resources.
-	AddPolicy(ctx context.Context, organizationID int, group Group, action Action, resource Resource, effect Effect) error
-	RemovePolicy(ctx context.Context, organizationID int, group Group, action Action, resource Resource, effect Effect) error
+	AddPolicy(ctx context.Context, organizationID domain.OrganizationID, group Group, action Action, resource Resource, effect Effect) error
+	RemovePolicy(ctx context.Context, organizationID domain.OrganizationID, group Group, action Action, resource Resource, effect Effect) error
 }
 
 // UserPolicyManager manages per-user RBAC policies.
 type UserPolicyManager interface {
-	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action Action, resource Resource, effect Effect) error
+	AddPolicyForUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, action Action, resource Resource, effect Effect) error
 }
 
 // GroupFinder retrieves groups assigned to a user within an organization.
 type GroupFinder interface {
-	GetGroupsForUser(ctx context.Context, organizationID int, userID int) ([]string, error)
+	GetGroupsForUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID) ([]string, error)
 }
 
 // IsLoginDenied returns true if the given group denies login.
