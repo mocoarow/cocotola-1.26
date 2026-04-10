@@ -2,7 +2,6 @@ package domain
 
 import (
 	"database/sql/driver"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -70,37 +69,41 @@ func (id OrganizationID) Equal(other OrganizationID) bool { return id.value == o
 
 // MarshalJSON encodes the ID as a JSON string.
 func (id OrganizationID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(id.String())
+	s := `"` + id.String() + `"`
+
+	return []byte(s), nil
 }
 
 // UnmarshalJSON decodes a JSON string into an OrganizationID.
 func (id *OrganizationID) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("unmarshal organization id: %w", err)
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
 	}
+
 	parsed, err := ParseOrganizationID(s)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal organization id: %w", err)
 	}
+
 	*id = parsed
+
 	return nil
 }
 
 // Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
 func (id OrganizationID) Value() (driver.Value, error) {
-	if id.IsZero() {
-		return nil, nil
-	}
 	return id.String(), nil
 }
 
 // Scan implements sql.Scanner so drivers can load the ID back.
 func (id *OrganizationID) Scan(src any) error {
 	if src == nil {
-		*id = OrganizationID{}
+		*id = OrganizationID{value: uuid.Nil}
+
 		return nil
 	}
+
 	switch v := src.(type) {
 	case string:
 		parsed, err := ParseOrganizationID(v)
@@ -180,37 +183,41 @@ func (id AppUserID) Equal(other AppUserID) bool { return id.value == other.value
 
 // MarshalJSON encodes the ID as a JSON string.
 func (id AppUserID) MarshalJSON() ([]byte, error) {
-	return json.Marshal(id.String())
+	s := `"` + id.String() + `"`
+
+	return []byte(s), nil
 }
 
 // UnmarshalJSON decodes a JSON string into an AppUserID.
 func (id *AppUserID) UnmarshalJSON(data []byte) error {
-	var s string
-	if err := json.Unmarshal(data, &s); err != nil {
-		return fmt.Errorf("unmarshal app user id: %w", err)
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
 	}
+
 	parsed, err := ParseAppUserID(s)
 	if err != nil {
-		return err
+		return fmt.Errorf("unmarshal app user id: %w", err)
 	}
+
 	*id = parsed
+
 	return nil
 }
 
 // Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
 func (id AppUserID) Value() (driver.Value, error) {
-	if id.IsZero() {
-		return nil, nil
-	}
 	return id.String(), nil
 }
 
 // Scan implements sql.Scanner so drivers can load the ID back.
 func (id *AppUserID) Scan(src any) error {
 	if src == nil {
-		*id = AppUserID{}
+		*id = AppUserID{value: uuid.Nil}
+
 		return nil
 	}
+
 	switch v := src.(type) {
 	case string:
 		parsed, err := ParseAppUserID(v)

@@ -58,7 +58,7 @@ func Test_GroupHierarchyRepository_FindByOrganizationID_shouldReturnHierarchy_wh
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	foundEdges := found.Edges()
 	assert.Len(t, foundEdges, 2)
 }

@@ -17,7 +17,7 @@ func Test_New_shouldCreateEmptySet_whenNoIDs(t *testing.T) {
 	s := idset.New[int, int](1, nil)
 
 	// then
-	assert.Equal(t, 1, s.OwnerID())
+	assert.Equal(t, 1, s.OwnerID)
 	assert.Equal(t, 0, s.Size())
 }
 

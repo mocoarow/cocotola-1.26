@@ -9,7 +9,8 @@ package idset
 // The type parameter O is the owner ID type (e.g. OrganizationID, int).
 // The type parameter M is the member ID type (e.g. AppUserID, int).
 type Set[O any, M comparable] struct {
-	ownerID O
+	// OwnerID is the ID of the entity that owns this set.
+	OwnerID O
 	entries map[M]struct{}
 }
 
@@ -19,11 +20,9 @@ func New[O any, M comparable](ownerID O, ids []M) Set[O, M] {
 	for _, id := range ids {
 		m[id] = struct{}{}
 	}
-	return Set[O, M]{ownerID: ownerID, entries: m}
-}
 
-// OwnerID returns the owner ID.
-func (s *Set[O, M]) OwnerID() O { return s.ownerID }
+	return Set[O, M]{OwnerID: ownerID, entries: m}
+}
 
 // Size returns the number of entries in the set.
 func (s *Set[O, M]) Size() int { return len(s.entries) }

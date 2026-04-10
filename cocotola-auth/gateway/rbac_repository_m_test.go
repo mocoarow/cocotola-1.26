@@ -4,23 +4,29 @@ package gateway_test
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
-func randOrgID(t *testing.T) int {
+func randOrgID(t *testing.T) domain.OrganizationID {
 	t.Helper()
-	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000_000))
+	id, err := domain.NewOrganizationIDV7()
 	require.NoError(t, err)
-	return int(n.Int64()) + 1
+	return id
+}
+
+func randAppUserID(t *testing.T) domain.AppUserID {
+	t.Helper()
+	id, err := domain.NewAppUserIDV7()
+	require.NoError(t, err)
+	return id
 }
 
 func mustGroup(t *testing.T, name string) domainrbac.Group {
@@ -45,22 +51,22 @@ func Test_RBACRepository_AddPolicy_shouldEnforceDirectPolicy_whenUserHasNoGroup(
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	aliceID := 100
-	bobID := 200
+	aliceID := randAppUserID(t)
+	bobID := randAppUserID(t)
 
-	aliceGroup := mustGroup(t, fmt.Sprintf("org:%d,alice_group", orgID))
-	data1 := mustResource(t, fmt.Sprintf("org:%d,data:1", orgID))
-	data2 := mustResource(t, fmt.Sprintf("org:%d,data:2", orgID))
+	aliceGroup := mustGroup(t, fmt.Sprintf("org:%s,alice_group", orgID.String()))
+	data1 := mustResource(t, fmt.Sprintf("org:%s,data:1", orgID.String()))
+	data2 := mustResource(t, fmt.Sprintf("org:%s,data:2", orgID.String()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, aliceGroup))
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, aliceGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
 
-	bobGroup := mustGroup(t, fmt.Sprintf("org:%d,bob_group", orgID))
+	bobGroup := mustGroup(t, fmt.Sprintf("org:%s,bob_group", orgID.String()))
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, bobID, bobGroup))
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, bobGroup, domainrbac.ActionCreateUser(), data2, domainrbac.EffectAllow()))
 
 	tests := []struct {
-		userID   int
+		userID   domain.AppUserID
 		action   domainrbac.Action
 		resource domainrbac.Resource
 		want     bool
@@ -73,7 +79,7 @@ func Test_RBACRepository_AddPolicy_shouldEnforceDirectPolicy_whenUserHasNoGroup(
 		{userID: bobID, action: domainrbac.ActionCreateUser(), resource: data1, want: false},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("user:%d,%s,%s,want:%v", tt.userID, tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
+		t.Run(fmt.Sprintf("user:%s,%s,%s,want:%v", tt.userID.String(), tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
 			t.Parallel()
 			// when
 			ok, err := rbacRepo.Enforce(orgID, tt.userID, tt.action, tt.resource)
@@ -93,13 +99,13 @@ func Test_RBACRepository_AssignGroupToUser_shouldInheritPolicies_whenGroupHasPol
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	aliceID := 100
-	bobID := 200
+	aliceID := randAppUserID(t)
+	bobID := randAppUserID(t)
 
-	readerGroup := mustGroup(t, fmt.Sprintf("org:%d,reader", orgID))
-	writerGroup := mustGroup(t, fmt.Sprintf("org:%d,writer", orgID))
-	data1 := mustResource(t, fmt.Sprintf("org:%d,data:1", orgID))
-	data2 := mustResource(t, fmt.Sprintf("org:%d,data:2", orgID))
+	readerGroup := mustGroup(t, fmt.Sprintf("org:%s,reader", orgID.String()))
+	writerGroup := mustGroup(t, fmt.Sprintf("org:%s,writer", orgID.String()))
+	data1 := mustResource(t, fmt.Sprintf("org:%s,data:1", orgID.String()))
+	data2 := mustResource(t, fmt.Sprintf("org:%s,data:2", orgID.String()))
 
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, writerGroup, domainrbac.ActionCreateUser(), data2, domainrbac.EffectAllow()))
@@ -108,7 +114,7 @@ func Test_RBACRepository_AssignGroupToUser_shouldInheritPolicies_whenGroupHasPol
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, bobID, writerGroup))
 
 	tests := []struct {
-		userID   int
+		userID   domain.AppUserID
 		action   domainrbac.Action
 		resource domainrbac.Resource
 		want     bool
@@ -120,7 +126,7 @@ func Test_RBACRepository_AssignGroupToUser_shouldInheritPolicies_whenGroupHasPol
 		{userID: bobID, action: domainrbac.ActionViewUser(), resource: data1, want: false},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("user:%d,%s,%s,want:%v", tt.userID, tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
+		t.Run(fmt.Sprintf("user:%s,%s,%s,want:%v", tt.userID.String(), tt.action.Value(), tt.resource.Value(), tt.want), func(t *testing.T) {
 			t.Parallel()
 			ok, err := rbacRepo.Enforce(orgID, tt.userID, tt.action, tt.resource)
 			require.NoError(t, err)
@@ -137,11 +143,11 @@ func Test_RBACRepository_AddObjectGroupingPolicy_shouldInheritAccess_whenResourc
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	aliceID := 100
+	aliceID := randAppUserID(t)
 
-	readerGroup := mustGroup(t, fmt.Sprintf("org:%d,reader", orgID))
-	data1 := mustResource(t, fmt.Sprintf("org:%d,data:1", orgID))
-	child1 := mustResource(t, fmt.Sprintf("org:%d,child:1", orgID))
+	readerGroup := mustGroup(t, fmt.Sprintf("org:%s,reader", orgID.String()))
+	data1 := mustResource(t, fmt.Sprintf("org:%s,data:1", orgID.String()))
+	child1 := mustResource(t, fmt.Sprintf("org:%s,child:1", orgID.String()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
@@ -175,12 +181,12 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	aliceID := 100
-	readerGroup := mustGroup(t, fmt.Sprintf("org:%d,reader", orgID))
+	aliceID := randAppUserID(t)
+	readerGroup := mustGroup(t, fmt.Sprintf("org:%s,reader", orgID.String()))
 
 	resources := make([]domainrbac.Resource, 5)
 	for i := range 5 {
-		resources[i] = mustResource(t, fmt.Sprintf("org:%d,data:%d", orgID, i+1))
+		resources[i] = mustResource(t, fmt.Sprintf("org:%s,data:%d", orgID.String(), i+1))
 	}
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
@@ -221,8 +227,8 @@ func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnTrue_whenUserHasPermi
 	checker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 
 	orgID := randOrgID(t)
-	userID := 100
-	adminGroup := mustGroup(t, fmt.Sprintf("org:%d,admin", orgID))
+	userID := randAppUserID(t)
+	adminGroup := mustGroup(t, fmt.Sprintf("org:%s,admin", orgID.String()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, adminGroup))
 	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, adminGroup, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
@@ -245,7 +251,7 @@ func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnFalse_whenUserLacksPe
 	checker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 
 	orgID := randOrgID(t)
-	userID := 100
+	userID := randAppUserID(t)
 
 	// when (no group assigned)
 	ok, err := checker.IsAllowed(ctx, orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
@@ -263,10 +269,10 @@ func Test_RBACRepository_GetGroupsForUser_shouldReturnGroups_whenUserHasGroups(t
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	userID := 100
+	userID := randAppUserID(t)
 
-	adminGroup := mustGroup(t, fmt.Sprintf("org:%d,admin", orgID))
-	editorGroup := mustGroup(t, fmt.Sprintf("org:%d,editor", orgID))
+	adminGroup := mustGroup(t, fmt.Sprintf("org:%s,admin", orgID.String()))
+	editorGroup := mustGroup(t, fmt.Sprintf("org:%s,editor", orgID.String()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, adminGroup))
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, editorGroup))
@@ -289,7 +295,7 @@ func Test_RBACRepository_GetGroupsForUser_shouldReturnEmpty_whenUserHasNoGroups(
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	userID := 100
+	userID := randAppUserID(t)
 
 	// when
 	groups, err := rbacRepo.GetGroupsForUser(ctx, orgID, userID)

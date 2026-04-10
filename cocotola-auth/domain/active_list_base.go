@@ -9,7 +9,7 @@ type activeListBase[M comparable] struct {
 }
 
 // OrganizationID returns the organization ID.
-func (b *activeListBase[M]) OrganizationID() OrganizationID { return b.set.OwnerID() }
+func (b *activeListBase[M]) OrganizationID() OrganizationID { return b.set.OwnerID }
 
 // Entries returns a copy of the current IDs as a slice.
 func (b *activeListBase[M]) Entries() []M { return b.set.IDs() }

@@ -9,7 +9,7 @@ type memberSetBase[M comparable] struct {
 }
 
 // GroupID returns the group ID.
-func (b *memberSetBase[M]) GroupID() int { return b.set.OwnerID() }
+func (b *memberSetBase[M]) GroupID() int { return b.set.OwnerID }
 
 // Size returns the number of entries in the set.
 func (b *memberSetBase[M]) Size() int { return b.set.Size() }

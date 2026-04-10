@@ -43,7 +43,7 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	require.NoError(t, repo.Save(ctx, group))
 
 	var inserted gateway.GroupRecordForTest
-	require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", "findbyid-group", orgID).First(&inserted).Error)
+	require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", "findbyid-group", orgID.String()).First(&inserted).Error)
 
 	// when
 	found, err := repo.FindByID(ctx, inserted.ID)
@@ -51,7 +51,7 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, inserted.ID, found.ID())
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, "findbyid-group", found.Name())
 	assert.True(t, found.Enabled())
 }
@@ -87,7 +87,7 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, "findbyname-group", found.Name())
 }
 
@@ -98,9 +98,10 @@ func Test_GroupRepository_FindByName_shouldReturnError_whenNameDoesNotExist(t *t
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewGroupRepository(tx)
+	nonExistentOrgID := domain.MustParseOrganizationID("00000000-0000-7000-8000-ffffffffffff")
 
 	// when
-	_, err := repo.FindByName(ctx, 1, "nonexistent-group")
+	_, err := repo.FindByName(ctx, nonExistentOrgID, "nonexistent-group")
 
 	// then
 	require.ErrorIs(t, err, domain.ErrGroupNotFound)
