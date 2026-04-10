@@ -29,7 +29,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   }
 
   const user = (await response.json()) as {
-    userId: number;
+    userId: string;
     loginId: string;
     organizationName: string;
   };
