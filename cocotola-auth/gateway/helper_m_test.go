@@ -19,12 +19,10 @@ import (
 func setupOrganization(ctx context.Context, t *testing.T, tx *gorm.DB, name string) domain.OrganizationID {
 	t.Helper()
 	orgRepo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(domain.OrganizationID{}, name, 100, 50)
-	require.NoError(t, orgRepo.Save(ctx, org))
-	var inserted gateway.OrganizationRecordForTest
-	require.NoError(t, tx.Where("name = ?", name).First(&inserted).Error)
-	orgID, err := domain.ParseOrganizationID(inserted.ID)
+	orgID, err := domain.NewOrganizationIDV7()
 	require.NoError(t, err)
+	org := domain.ReconstructOrganization(orgID, name, 100, 50)
+	require.NoError(t, orgRepo.Save(ctx, org))
 	return orgID
 }
 
@@ -35,12 +33,10 @@ func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.Org
 
 	for i := range count {
 		loginID := domain.LoginID(fmt.Sprintf("%s-user-%d", orgName, i))
-		user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, loginID, "", "", "", true)
-		require.NoError(t, userRepo.Save(ctx, user))
-		var userRec gateway.AppUserRecordForTest
-		require.NoError(t, tx.Where("login_id = ?", string(loginID)).First(&userRec).Error)
-		uid, err := domain.ParseAppUserID(userRec.ID)
+		uid, err := domain.NewAppUserIDV7()
 		require.NoError(t, err)
+		user := domainuser.ReconstructAppUser(uid, orgID, loginID, "", "", "", true)
+		require.NoError(t, userRepo.Save(ctx, user))
 		userIDs[i] = uid
 	}
 	return userIDs
@@ -53,11 +49,11 @@ func setupGroups(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.Or
 
 	for i := range count {
 		name := fmt.Sprintf("%s-group-%d", orgName, i)
-		group := domaingroup.ReconstructGroup(domain.GroupID{}, orgID, name, true)
+		gid, err := domain.NewGroupIDV7()
+		require.NoError(t, err)
+		group := domaingroup.ReconstructGroup(gid, orgID, name, true)
 		require.NoError(t, groupRepo.Save(ctx, group))
-		var groupRec gateway.GroupRecordForTest
-		require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", name, orgID.String()).First(&groupRec).Error)
-		groupIDs[i] = domain.MustParseGroupID(groupRec.ID)
+		groupIDs[i] = gid
 	}
 	return groupIDs
 }

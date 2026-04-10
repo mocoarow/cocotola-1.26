@@ -6,6 +6,7 @@ go_library(
     srcs = ["authorization.go"],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac",
     visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
 )
 
 smart_go_test(
@@ -13,6 +14,7 @@ smart_go_test(
     srcs = ["authorization_s_test.go"],
     deps = [
         ":rbac",
+        "//cocotola-auth/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

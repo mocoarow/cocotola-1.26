@@ -26,14 +26,17 @@ CreateSpaceResponse:
       type: string
       x-go-name: SpaceID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     organizationId:
       type: string
       x-go-name: OrganizationID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     ownerId:
       type: string
       x-go-name: OwnerID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     keyName:
       type: string
       pattern: ^.*$
@@ -63,14 +66,17 @@ SpaceItem:
       type: string
       x-go-name: SpaceID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     organizationId:
       type: string
       x-go-name: OrganizationID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     ownerId:
       type: string
       x-go-name: OwnerID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     keyName:
       type: string
       pattern: ^.*$

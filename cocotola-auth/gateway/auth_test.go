@@ -8,13 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
-)
-
-var (
-	fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
-	fixtureOrgID     = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
 )
 
 func newTestJWTManager(t *testing.T) *gateway.JWTManager {

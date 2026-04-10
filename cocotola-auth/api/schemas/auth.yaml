@@ -114,6 +114,7 @@ GetMeResponse:
       type: string
       x-go-name: UserID
       format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     loginId:
       type: string
       x-go-name: LoginID

@@ -22,6 +22,7 @@ smart_go_test(
     name = "event_test",
     srcs = [
         "active_user_list_handler_s_test.go",
+        "fixtures_test.go",
         "mocks_test.go",
         "private_space_handler_s_test.go",
     ],

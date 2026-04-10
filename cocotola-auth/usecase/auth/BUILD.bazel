@@ -35,6 +35,7 @@ go_library(
 smart_go_test(
     name = "auth_test",
     srcs = [
+        "fixtures_test.go",
         "mocks_test.go",
         "revoke_session_token_command_s_test.go",
         "supabase_exchange_query_s_test.go",

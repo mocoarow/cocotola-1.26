@@ -22,10 +22,12 @@ func Test_GroupRepository_Save_shouldInsertGroup_whenNewRecord(t *testing.T) {
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-save-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(domain.GroupID{}, orgID, "test-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "test-group", true)
 
 	// when
-	err := repo.Save(ctx, group)
+	err = repo.Save(ctx, group)
 
 	// then
 	require.NoError(t, err)
@@ -39,7 +41,9 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyid-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(domain.GroupID{}, orgID, "findbyid-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "findbyid-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	var inserted gateway.GroupRecordForTest
@@ -80,7 +84,9 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyname-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(domain.GroupID{}, orgID, "findbyname-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "findbyname-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	// when

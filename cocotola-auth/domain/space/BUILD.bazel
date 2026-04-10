@@ -9,6 +9,7 @@ go_library(
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space",
     visibility = ["//visibility:public"],
+    deps = ["//cocotola-auth/domain"],
 )
 
 smart_go_test(
@@ -19,6 +20,7 @@ smart_go_test(
     ],
     deps = [
         ":space",
+        "//cocotola-auth/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

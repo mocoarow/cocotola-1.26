@@ -30,6 +30,7 @@ def smart_go_test(name, srcs, **kwargs):
         elif ("helper_test.go" in src or "_helper_test.go" in src or
               "init_test.go" in src or "_init_test.go" in src or
               "export_test.go" in src or "_export_test.go" in src or
+              "fixtures_test.go" in src or "_fixtures_test.go" in src or
               "mocks_test.go" in src):  # helper files
             helper_srcs.append(src)
         else:

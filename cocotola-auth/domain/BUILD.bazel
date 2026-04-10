@@ -11,6 +11,7 @@ go_library(
         "doc.go",
         "error.go",
         "event.go",
+        "ids.go",
         "organization.go",
         "validator.go",
         "value_objects.go",
@@ -20,6 +21,7 @@ go_library(
     deps = [
         "//cocotola-auth/domain/internal/idset",
         "@com_github_go_playground_validator_v10//:validator",
+        "@com_github_google_uuid//:uuid",
     ],
 )
 

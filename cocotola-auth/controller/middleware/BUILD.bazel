@@ -32,6 +32,7 @@ smart_go_test(
     deps = [
         ":middleware",
         "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
         "//cocotola-auth/service/auth",
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_stretchr_testify//assert",
