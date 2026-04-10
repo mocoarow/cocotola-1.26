@@ -10,9 +10,9 @@ import (
 
 // AppUser represents a user belonging to an organization.
 type AppUser struct {
-	id             int
+	id             domain.AppUserID
 	version        int
-	organizationID int
+	organizationID domain.OrganizationID
 	loginID        domain.LoginID
 	hashedPassword string
 	provider       string
@@ -21,7 +21,7 @@ type AppUser struct {
 }
 
 // NewAppUser creates a validated AppUser for a brand-new aggregate (version 0).
-func NewAppUser(id int, organizationID int, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) (*AppUser, error) {
+func NewAppUser(id domain.AppUserID, organizationID domain.OrganizationID, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) (*AppUser, error) {
 	m := &AppUser{
 		id:             id,
 		version:        0,
@@ -42,7 +42,7 @@ func NewAppUser(id int, organizationID int, loginID domain.LoginID, hashedPasswo
 // The returned aggregate has version 0; callers that load from storage should
 // call WithVersion to set the persisted version so Save can perform an
 // optimistic-lock compare-and-swap.
-func ReconstructAppUser(id int, organizationID int, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) *AppUser {
+func ReconstructAppUser(id domain.AppUserID, organizationID domain.OrganizationID, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) *AppUser {
 	return &AppUser{
 		id:             id,
 		version:        0,
@@ -71,11 +71,11 @@ func (u *AppUser) Version() int { return u.version }
 func (u *AppUser) IncrementVersion() { u.version++ }
 
 func (u *AppUser) validate() error {
-	if u.id <= 0 {
-		return errors.New("app user id must be positive")
+	if u.id.IsZero() {
+		return errors.New("app user id must not be zero")
 	}
-	if u.organizationID <= 0 {
-		return errors.New("app user organization id must be positive")
+	if u.organizationID.IsZero() {
+		return errors.New("app user organization id must not be zero")
 	}
 	if u.loginID == "" {
 		return errors.New("app user login id is required")
@@ -87,10 +87,10 @@ func (u *AppUser) validate() error {
 }
 
 // ID returns the user ID.
-func (u *AppUser) ID() int { return u.id }
+func (u *AppUser) ID() domain.AppUserID { return u.id }
 
 // OrganizationID returns the organization ID.
-func (u *AppUser) OrganizationID() int { return u.organizationID }
+func (u *AppUser) OrganizationID() domain.OrganizationID { return u.organizationID }
 
 // LoginID returns the login ID.
 func (u *AppUser) LoginID() domain.LoginID { return u.loginID }

@@ -10,7 +10,7 @@ import (
 // RefreshToken represents a long-lived opaque token used for token-based authentication.
 type RefreshToken struct {
 	id               string
-	userID           int
+	userID           domain.AppUserID
 	loginID          domain.LoginID
 	organizationName string
 	tokenHash        domain.TokenHash
@@ -20,7 +20,7 @@ type RefreshToken struct {
 }
 
 // NewRefreshToken creates a validated RefreshToken.
-func NewRefreshToken(id string, userID int, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time) (*RefreshToken, error) {
+func NewRefreshToken(id string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time) (*RefreshToken, error) {
 	m := &RefreshToken{
 		id:               id,
 		userID:           userID,
@@ -38,7 +38,7 @@ func NewRefreshToken(id string, userID int, loginID domain.LoginID, organization
 }
 
 // ReconstructRefreshToken reconstitutes a RefreshToken from persistence (including RevokedAt).
-func ReconstructRefreshToken(id string, userID int, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *RefreshToken {
+func ReconstructRefreshToken(id string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *RefreshToken {
 	return &RefreshToken{
 		id:               id,
 		userID:           userID,
@@ -55,8 +55,8 @@ func (t *RefreshToken) validate() error {
 	if t.id == "" {
 		return errors.New("refresh token id is required")
 	}
-	if t.userID <= 0 {
-		return errors.New("refresh token user id must be positive")
+	if t.userID.IsZero() {
+		return errors.New("refresh token user id is required")
 	}
 	if t.loginID == "" {
 		return errors.New("refresh token login id is required")
@@ -80,7 +80,7 @@ func (t *RefreshToken) validate() error {
 func (t *RefreshToken) ID() string { return t.id }
 
 // UserID returns the user ID.
-func (t *RefreshToken) UserID() int { return t.userID }
+func (t *RefreshToken) UserID() domain.AppUserID { return t.userID }
 
 // LoginID returns the login ID.
 func (t *RefreshToken) LoginID() domain.LoginID { return t.loginID }

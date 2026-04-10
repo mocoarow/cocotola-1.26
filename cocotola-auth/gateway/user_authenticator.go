@@ -16,8 +16,8 @@ import (
 )
 
 type userRecord struct {
-	ID               int    `gorm:"column:id;primaryKey"`
-	OrganizationID   int    `gorm:"column:organization_id"`
+	ID               string `gorm:"column:id;primaryKey"`
+	OrganizationID   string `gorm:"column:organization_id"`
 	LoginID          string `gorm:"column:login_id"`
 	HashedPassword   string `gorm:"column:hashed_password"`
 	Enabled          bool   `gorm:"column:enabled"`
@@ -56,13 +56,15 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 		return nil, domain.ErrUnauthenticated
 	}
 
-	user := domainuser.ReconstructAppUser(record.ID, record.OrganizationID, domain.LoginID(record.LoginID), record.HashedPassword, "", "", record.Enabled)
+	userID := domain.MustParseAppUserID(record.ID)
+	orgID := domain.MustParseOrganizationID(record.OrganizationID)
+	user := domainuser.ReconstructAppUser(userID, orgID, domain.LoginID(record.LoginID), record.HashedPassword, "", "", record.Enabled)
 	if err := user.VerifyPassword(password, a.hasher); err != nil {
 		return nil, domain.ErrUnauthenticated
 	}
 
 	// Check login-denied groups via Casbin.
-	groups, err := a.groupFinder.GetGroupsForUser(ctx, record.OrganizationID, record.ID)
+	groups, err := a.groupFinder.GetGroupsForUser(ctx, orgID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("get groups for user: %w", err)
 	}
@@ -70,7 +72,7 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 		return nil, domain.ErrUnauthenticated
 	}
 
-	userInfo, err := authservice.NewUserInfo(record.ID, record.LoginID, record.OrganizationName, time.Now())
+	userInfo, err := authservice.NewUserInfo(userID, record.LoginID, record.OrganizationName, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("create user info: %w", err)
 	}

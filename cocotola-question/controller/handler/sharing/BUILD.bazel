@@ -15,7 +15,6 @@ go_library(
         "//cocotola-lib/logging",
         "//cocotola-question/api",
         "//cocotola-question/controller",
-        "//cocotola-question/controller/handler",
         "//cocotola-question/domain",
         "//cocotola-question/service/reference",
         "@com_github_gin_gonic_gin//:gin",

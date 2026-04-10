@@ -37,15 +37,15 @@ func NewUpdateQuestionHandler(usecase UpdateQuestionUsecase) *UpdateQuestionHand
 func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	organizationID := c.GetInt(controller.ContextFieldOrganizationID{})
-	if organizationID <= 0 {
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return

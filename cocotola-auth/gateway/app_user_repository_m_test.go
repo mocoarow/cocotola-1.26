@@ -22,7 +22,7 @@ func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T)
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-save-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(0, orgID, "testuser@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "testuser@example.com", "", "", "", true)
 
 	// when
 	err := repo.Save(ctx, user)
@@ -39,19 +39,21 @@ func Test_AppUserRepository_FindByID_shouldReturnAppUser_whenUserExists(t *testi
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(0, orgID, "findbyid@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "findbyid@example.com", "", "", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
 	require.NoError(t, tx.Where("login_id = ?", "findbyid@example.com").First(&inserted).Error)
+	insertedID, err := domain.ParseAppUserID(inserted.ID)
+	require.NoError(t, err)
 
 	// when
-	found, err := repo.FindByID(ctx, inserted.ID)
+	found, err := repo.FindByID(ctx, insertedID)
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, inserted.ID, found.ID())
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, insertedID.Equal(found.ID()))
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, domain.LoginID("findbyid@example.com"), found.LoginID())
 	assert.True(t, found.Enabled())
 }
@@ -63,9 +65,10 @@ func Test_AppUserRepository_FindByID_shouldReturnError_whenUserDoesNotExist(t *t
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewAppUserRepository(tx)
+	nonExistentID := domain.MustParseAppUserID("00000000-0000-7000-8000-ffffffffffff")
 
 	// when
-	_, err := repo.FindByID(ctx, 999999)
+	_, err := repo.FindByID(ctx, nonExistentID)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrAppUserNotFound)
@@ -79,7 +82,7 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnAppUser_whenLoginIDExists(
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyloginid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(0, orgID, "login@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "login@example.com", "", "", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	// when
@@ -87,7 +90,7 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnAppUser_whenLoginIDExists(
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, domain.LoginID("login@example.com"), found.LoginID())
 }
 
@@ -98,9 +101,10 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnError_whenLoginIDDoesNotEx
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewAppUserRepository(tx)
+	nonExistentOrgID := domain.MustParseOrganizationID("00000000-0000-7000-8000-ffffffffffff")
 
 	// when
-	_, err := repo.FindByLoginID(ctx, 1, domain.LoginID("nonexistent@example.com"))
+	_, err := repo.FindByLoginID(ctx, nonExistentOrgID, domain.LoginID("nonexistent@example.com"))
 
 	// then
 	require.ErrorIs(t, err, domain.ErrAppUserNotFound)
@@ -116,16 +120,18 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	hashedPw := "$2a$10$abcdefghij"
 
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(0, orgID, "pw-test@example.com", hashedPw, "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "pw-test@example.com", hashedPw, "", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
 	require.NoError(t, tx.Where("login_id = ?", "pw-test@example.com").First(&inserted).Error)
+	insertedID, err := domain.ParseAppUserID(inserted.ID)
+	require.NoError(t, err)
 
 	// when
 	// Load the persisted aggregate via FindByID so its version is populated from the
 	// existing row — otherwise the version-0 Save path would attempt another INSERT.
-	loaded, err := repo.FindByID(ctx, inserted.ID)
+	loaded, err := repo.FindByID(ctx, insertedID)
 	require.NoError(t, err)
 	newHashedPw := "$2a$10$newhashedpw"
 	updated := domainuser.
@@ -152,15 +158,17 @@ func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionM
 	orgID := setupOrganization(ctx, t, tx, "appuser-cas-org")
 	repo := gateway.NewAppUserRepository(tx)
 
-	initial := domainuser.ReconstructAppUser(0, orgID, "cas@example.com", "", "", "", true)
+	initial := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "cas@example.com", "", "", "", true)
 	require.NoError(t, repo.Save(ctx, initial))
 
 	var inserted gateway.AppUserRecordForTest
 	require.NoError(t, tx.Where("login_id = ?", "cas@example.com").First(&inserted).Error)
-
-	firstCopy, err := repo.FindByID(ctx, inserted.ID)
+	insertedID, err := domain.ParseAppUserID(inserted.ID)
 	require.NoError(t, err)
-	secondCopy, err := repo.FindByID(ctx, inserted.ID)
+
+	firstCopy, err := repo.FindByID(ctx, insertedID)
+	require.NoError(t, err)
+	secondCopy, err := repo.FindByID(ctx, insertedID)
 	require.NoError(t, err)
 
 	// when: the first transaction commits its update (bumping the stored version),

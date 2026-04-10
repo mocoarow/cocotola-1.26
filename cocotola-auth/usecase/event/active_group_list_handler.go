@@ -9,7 +9,7 @@ import (
 )
 
 type activeGroupListRepository interface {
-	FindByOrganizationID(ctx context.Context, organizationID int) (*domain.ActiveGroupList, error)
+	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveGroupList, error)
 	Save(ctx context.Context, list *domain.ActiveGroupList) error
 }
 
@@ -40,7 +40,7 @@ func (h *ActiveGroupListHandler) Handle(ctx context.Context, event domain.Event)
 		return fmt.Errorf("unexpected event type: %T", event)
 	}
 
-	return handleActiveListEvent[domain.ActiveGroupList](
+	return handleActiveListEvent[domain.ActiveGroupList, domain.GroupID](
 		ctx, h.orgRepo, h.activeGroupRepo,
 		e.OrganizationID(), e.GroupID(),
 		func(org *domain.Organization) int { return org.MaxActiveGroups() },

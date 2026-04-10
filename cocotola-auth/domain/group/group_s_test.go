@@ -7,11 +7,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
-func validGroupArgs() (int, int, string, bool) {
-	return 1, 1, "group1", true
+func validGroupArgs() (domain.GroupID, domain.OrganizationID, string, bool) {
+	return fixtureGroupID1, fixtureOrgID, "group1", true
 }
 
 func Test_NewGroup_shouldReturnGroup_whenAllFieldsAreValid(t *testing.T) {
@@ -38,20 +39,7 @@ func Test_NewGroup_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, orgID, name, enabled := validGroupArgs()
 
 	// when
-	_, err := group.NewGroup(0, orgID, name, enabled)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewGroup_shouldReturnError_whenIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given
-	_, orgID, name, enabled := validGroupArgs()
-
-	// when
-	_, err := group.NewGroup(-1, orgID, name, enabled)
+	_, err := group.NewGroup(domain.GroupID{}, orgID, name, enabled)
 
 	// then
 	require.Error(t, err)
@@ -64,7 +52,7 @@ func Test_NewGroup_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	id, _, name, enabled := validGroupArgs()
 
 	// when
-	_, err := group.NewGroup(id, 0, name, enabled)
+	_, err := group.NewGroup(id, domain.OrganizationID{}, name, enabled)
 
 	// then
 	require.Error(t, err)
@@ -116,7 +104,7 @@ func Test_Group_Enable_shouldSetEnabledTrue_whenDisabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewGroup(1, 1, "group1", false)
+	g, _ := group.NewGroup(fixtureGroupID1, fixtureOrgID, "group1", false)
 
 	// when
 	g.Enable()
@@ -129,7 +117,7 @@ func Test_Group_Disable_shouldSetEnabledFalse_whenEnabled(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewGroup(1, 1, "group1", true)
+	g, _ := group.NewGroup(fixtureGroupID1, fixtureOrgID, "group1", true)
 
 	// when
 	g.Disable()

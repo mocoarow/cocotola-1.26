@@ -28,7 +28,7 @@ func Test_AppUser_ChangePassword_shouldUpdateHash_whenPasswordIsValid(t *testing
 	t.Parallel()
 
 	// given
-	u := user.ReconstructAppUser(1, 1, "user@example.com", "", "", "", true)
+	u := user.ReconstructAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "", "", "", true)
 	hasher := &stubHasher{hashResult: "$2a$10$newhash"}
 
 	// when
@@ -43,7 +43,7 @@ func Test_AppUser_ChangePassword_shouldReturnError_whenPasswordTooShort(t *testi
 	t.Parallel()
 
 	// given
-	u := user.ReconstructAppUser(1, 1, "user@example.com", "", "", "", true)
+	u := user.ReconstructAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "", "", "", true)
 	hasher := &stubHasher{}
 
 	// when
@@ -57,7 +57,7 @@ func Test_AppUser_ChangePassword_shouldReturnError_whenHasherFails(t *testing.T)
 	t.Parallel()
 
 	// given
-	u := user.ReconstructAppUser(1, 1, "user@example.com", "", "", "", true)
+	u := user.ReconstructAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "", "", "", true)
 	hashErr := errors.New("hash failure")
 	hasher := &stubHasher{hashErr: hashErr}
 
@@ -72,7 +72,7 @@ func Test_AppUser_VerifyPassword_shouldReturnNil_whenPasswordMatches(t *testing.
 	t.Parallel()
 
 	// given
-	u := user.ReconstructAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u := user.ReconstructAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 	hasher := &stubHasher{compareErr: nil}
 
 	// when
@@ -86,7 +86,7 @@ func Test_AppUser_VerifyPassword_shouldReturnError_whenPasswordDoesNotMatch(t *t
 	t.Parallel()
 
 	// given
-	u := user.ReconstructAppUser(1, 1, "user@example.com", "$2a$10$hash", "", "", true)
+	u := user.ReconstructAppUser(fixtureAppUserID, fixtureOrgID, "user@example.com", "$2a$10$hash", "", "", true)
 	compareErr := errors.New("mismatch")
 	hasher := &stubHasher{compareErr: compareErr}
 

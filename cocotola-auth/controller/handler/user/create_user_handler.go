@@ -40,8 +40,8 @@ func NewCreateUserHandler(usecase CreateUserUsecase) *CreateUserHandler {
 func (h *CreateUserHandler) CreateUser(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID, ok := handler.GetAppUserIDFromContext(c)
+	if !ok {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -74,23 +74,9 @@ func (h *CreateUserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	appUserID, err := handler.SafeIntToInt32(output.AppUserID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert app user ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	orgID, err := handler.SafeIntToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusCreated, api.CreateUserResponse{
-		AppUserID:      appUserID,
-		OrganizationID: orgID,
+		AppUserID:      output.AppUserID.UUID(),
+		OrganizationID: output.OrganizationID.UUID(),
 		LoginID:        output.LoginID,
 		Enabled:        output.Enabled,
 	})

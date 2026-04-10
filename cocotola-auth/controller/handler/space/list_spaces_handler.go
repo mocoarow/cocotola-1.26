@@ -38,8 +38,8 @@ func NewListSpacesHandler(usecase ListSpacesUsecase) *ListSpacesHandler {
 func (h *ListSpacesHandler) ListSpaces(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID, ok := handler.GetAppUserIDFromContext(c)
+	if !ok {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -67,28 +67,10 @@ func (h *ListSpacesHandler) ListSpaces(c *gin.Context) {
 
 	items := make([]api.SpaceItem, len(output.Spaces))
 	for i, s := range output.Spaces {
-		spaceID, err := handler.SafeIntToInt32(s.SpaceID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		orgID, err := handler.SafeIntToInt32(s.OrganizationID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		ownerID, err := handler.SafeIntToInt32(s.OwnerID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.SpaceItem{
-			SpaceID:        spaceID,
-			OrganizationID: orgID,
-			OwnerID:        ownerID,
+			SpaceID:        s.SpaceID.UUID(),
+			OrganizationID: s.OrganizationID.UUID(),
+			OwnerID:        s.OwnerID.UUID(),
 			KeyName:        s.KeyName,
 			Name:           s.Name,
 			SpaceType:      api.SpaceItemSpaceType(s.SpaceType),

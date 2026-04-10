@@ -9,7 +9,6 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -38,15 +37,15 @@ func NewGetWorkbookHandler(usecase GetWorkbookUsecase) *GetWorkbookHandler {
 func (h *GetWorkbookHandler) GetWorkbook(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	organizationID := c.GetInt(controller.ContextFieldOrganizationID{})
-	if organizationID <= 0 {
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -72,32 +71,11 @@ func (h *GetWorkbookHandler) GetWorkbook(c *gin.Context) {
 		return
 	}
 
-	spaceID, err := handler.SafeIntToInt32(output.SpaceID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	ownerID, err := handler.SafeIntToInt32(output.OwnerID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	orgID, err := handler.SafeIntToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.WorkbookResponse{
 		WorkbookID:     output.WorkbookID,
-		SpaceID:        spaceID,
-		OwnerID:        ownerID,
-		OrganizationID: orgID,
+		SpaceID:        output.SpaceID,
+		OwnerID:        output.OwnerID,
+		OrganizationID: output.OrganizationID,
 		Title:          output.Title,
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),

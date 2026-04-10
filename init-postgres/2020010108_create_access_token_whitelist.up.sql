@@ -1,5 +1,5 @@
 create table access_token_whitelist (
-  user_id int not null
+  user_id uuid not null
  ,token_id varchar(36) not null
  ,created_at timestamp not null default current_timestamp
  ,primary key(user_id, token_id)

@@ -22,10 +22,12 @@ func Test_GroupRepository_Save_shouldInsertGroup_whenNewRecord(t *testing.T) {
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-save-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(0, orgID, "test-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "test-group", true)
 
 	// when
-	err := repo.Save(ctx, group)
+	err = repo.Save(ctx, group)
 
 	// then
 	require.NoError(t, err)
@@ -39,19 +41,22 @@ func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyid-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(0, orgID, "findbyid-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "findbyid-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	var inserted gateway.GroupRecordForTest
-	require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", "findbyid-group", orgID).First(&inserted).Error)
+	require.NoError(t, tx.Table("\"group\"").Where("name = ? AND organization_id = ?", "findbyid-group", orgID.String()).First(&inserted).Error)
+	insertedID := domain.MustParseGroupID(inserted.ID)
 
 	// when
-	found, err := repo.FindByID(ctx, inserted.ID)
+	found, err := repo.FindByID(ctx, insertedID)
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, inserted.ID, found.ID())
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.Equal(t, insertedID, found.ID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, "findbyid-group", found.Name())
 	assert.True(t, found.Enabled())
 }
@@ -65,7 +70,7 @@ func Test_GroupRepository_FindByID_shouldReturnError_whenGroupDoesNotExist(t *te
 	repo := gateway.NewGroupRepository(tx)
 
 	// when
-	_, err := repo.FindByID(ctx, 999999)
+	_, err := repo.FindByID(ctx, domain.MustParseGroupID("00000000-0000-7000-8000-ffffffffffff"))
 
 	// then
 	require.ErrorIs(t, err, domain.ErrGroupNotFound)
@@ -79,7 +84,9 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "group-findbyname-org")
 	repo := gateway.NewGroupRepository(tx)
-	group := domaingroup.ReconstructGroup(0, orgID, "findbyname-group", true)
+	gid, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	group := domaingroup.ReconstructGroup(gid, orgID, "findbyname-group", true)
 	require.NoError(t, repo.Save(ctx, group))
 
 	// when
@@ -87,7 +94,7 @@ func Test_GroupRepository_FindByName_shouldReturnGroup_whenNameExists(t *testing
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, "findbyname-group", found.Name())
 }
 
@@ -98,9 +105,10 @@ func Test_GroupRepository_FindByName_shouldReturnError_whenNameDoesNotExist(t *t
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewGroupRepository(tx)
+	nonExistentOrgID := domain.MustParseOrganizationID("00000000-0000-7000-8000-ffffffffffff")
 
 	// when
-	_, err := repo.FindByName(ctx, 1, "nonexistent-group")
+	_, err := repo.FindByName(ctx, nonExistentOrgID, "nonexistent-group")
 
 	// then
 	require.ErrorIs(t, err, domain.ErrGroupNotFound)

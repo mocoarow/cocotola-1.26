@@ -11,11 +11,11 @@ import (
 )
 
 type spaceCreator interface {
-	Create(ctx context.Context, organizationID int, ownerID int, keyName string, name string, spaceType string, createdBy int) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)
 }
 
 type userPolicyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID int, userID int, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error
+	AddPolicyForUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error
 }
 
 // PrivateSpaceHandler creates a private space when a new app user is created.
@@ -48,17 +48,20 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 	keyName := domainspace.PrivateSpaceKeyName(e.LoginID())
 	spaceName := fmt.Sprintf("Private(%s)", e.LoginID())
 
-	spaceID, err := h.spaceRepo.Create(ctx, e.OrganizationID(), e.AppUserID(), keyName, spaceName, domainspace.TypePrivate().Value(), e.AppUserID())
+	orgID := e.OrganizationID()
+	userID := e.AppUserID()
+
+	spaceID, err := h.spaceRepo.Create(ctx, orgID, userID, keyName, spaceName, domainspace.TypePrivate().Value(), userID)
 	if err != nil {
-		return fmt.Errorf("create private space for user %d: %w", e.AppUserID(), err)
+		return fmt.Errorf("create private space for user %s: %w", userID.String(), err)
 	}
 
-	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
-		return fmt.Errorf("add list_spaces policy for user %d: %w", e.AppUserID(), err)
+	if err := h.policyRepo.AddPolicyForUser(ctx, orgID, userID, domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
+		return fmt.Errorf("add list_spaces policy for user %s: %w", userID.String(), err)
 	}
 
-	if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(spaceID), domainrbac.EffectAllow()); err != nil {
-		return fmt.Errorf("add view_space policy for user %d on space %d: %w", e.AppUserID(), spaceID, err)
+	if err := h.policyRepo.AddPolicyForUser(ctx, orgID, userID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(spaceID), domainrbac.EffectAllow()); err != nil {
+		return fmt.Errorf("add view_space policy for user %s on space %s: %w", userID.String(), spaceID.String(), err)
 	}
 
 	workbookActions := []domainrbac.Action{
@@ -69,15 +72,15 @@ func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) er
 		domainrbac.ActionImportWorkbook(),
 	}
 	for _, action := range workbookActions {
-		if err := h.policyRepo.AddPolicyForUser(ctx, e.OrganizationID(), e.AppUserID(), action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
-			return fmt.Errorf("add %s policy for user %d: %w", action.Value(), e.AppUserID(), err)
+		if err := h.policyRepo.AddPolicyForUser(ctx, orgID, userID, action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
+			return fmt.Errorf("add %s policy for user %s: %w", action.Value(), userID.String(), err)
 		}
 	}
 
 	h.logger.InfoContext(ctx, "private space created for user",
-		slog.Int("user_id", e.AppUserID()),
-		slog.Int("space_id", spaceID),
-		slog.Int("organization_id", e.OrganizationID()),
+		slog.String("user_id", userID.String()),
+		slog.String("space_id", spaceID.String()),
+		slog.String("organization_id", orgID.String()),
 	)
 
 	return nil

@@ -55,13 +55,12 @@ func NewUsecase(
 	config UsecaseConfig,
 	supabaseVerifier SupabaseVerifier,
 	appUserFinder AppUserProviderFinder,
-	appUserIDProvider AppUserIDProvider,
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
 ) *Usecase {
 	return &Usecase{
-		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, appUserFinder, appUserIDProvider, appUserByLoginIDFinder, appUserSaver, organizationFinder),
+		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, appUserFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
 		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}
 }

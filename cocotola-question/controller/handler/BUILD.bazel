@@ -8,5 +8,4 @@ go_library(
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_gin_gonic_gin//:gin"],
 )

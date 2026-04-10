@@ -2,6 +2,7 @@
 package space
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -11,14 +12,17 @@ import (
 
 // CreateSpaceInput holds the parameters for creating a space.
 type CreateSpaceInput struct {
-	OperatorID       int    `validate:"required,gt=0"`
+	OperatorID       domain.AppUserID
 	OrganizationName string `validate:"required"`
 	Name             string `validate:"required,max=100"`
 	SpaceType        string `validate:"required,oneof=public private"`
 }
 
 // NewCreateSpaceInput creates a validated CreateSpaceInput.
-func NewCreateSpaceInput(operatorID int, organizationName string, name string, spaceType string) (*CreateSpaceInput, error) {
+func NewCreateSpaceInput(operatorID domain.AppUserID, organizationName string, name string, spaceType string) (*CreateSpaceInput, error) {
+	if operatorID.IsZero() {
+		return nil, errors.New("create space input operator id must not be zero")
+	}
 	m := &CreateSpaceInput{
 		OperatorID:       operatorID,
 		OrganizationName: organizationName,
@@ -33,9 +37,9 @@ func NewCreateSpaceInput(operatorID int, organizationName string, name string, s
 
 // CreateSpaceOutput holds the result of creating a space.
 type CreateSpaceOutput struct {
-	SpaceID        int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
-	OwnerID        int    `validate:"required,gt=0"`
+	SpaceID        domain.SpaceID
+	OrganizationID domain.OrganizationID
+	OwnerID        domain.AppUserID
 	KeyName        string `validate:"required"`
 	Name           string `validate:"required"`
 	SpaceType      string `validate:"required"`
@@ -43,7 +47,16 @@ type CreateSpaceOutput struct {
 }
 
 // NewCreateSpaceOutput creates a validated CreateSpaceOutput.
-func NewCreateSpaceOutput(spaceID int, organizationID int, ownerID int, keyName string, name string, spaceType string, deleted bool) (*CreateSpaceOutput, error) {
+func NewCreateSpaceOutput(spaceID domain.SpaceID, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, deleted bool) (*CreateSpaceOutput, error) {
+	if spaceID.IsZero() {
+		return nil, errors.New("create space output space id must not be zero")
+	}
+	if organizationID.IsZero() {
+		return nil, errors.New("create space output organization id must not be zero")
+	}
+	if ownerID.IsZero() {
+		return nil, errors.New("create space output owner id must not be zero")
+	}
 	m := &CreateSpaceOutput{
 		SpaceID:        spaceID,
 		OrganizationID: organizationID,
@@ -63,12 +76,15 @@ func NewCreateSpaceOutput(spaceID int, organizationID int, ownerID int, keyName 
 
 // ListSpacesInput holds the parameters for listing spaces.
 type ListSpacesInput struct {
-	OperatorID       int    `validate:"required,gt=0"`
+	OperatorID       domain.AppUserID
 	OrganizationName string `validate:"required"`
 }
 
 // NewListSpacesInput creates a validated ListSpacesInput.
-func NewListSpacesInput(operatorID int, organizationName string) (*ListSpacesInput, error) {
+func NewListSpacesInput(operatorID domain.AppUserID, organizationName string) (*ListSpacesInput, error) {
+	if operatorID.IsZero() {
+		return nil, errors.New("list spaces input operator id must not be zero")
+	}
 	m := &ListSpacesInput{
 		OperatorID:       operatorID,
 		OrganizationName: organizationName,
@@ -81,9 +97,9 @@ func NewListSpacesInput(operatorID int, organizationName string) (*ListSpacesInp
 
 // Item represents a single space in a list.
 type Item struct {
-	SpaceID        int
-	OrganizationID int
-	OwnerID        int
+	SpaceID        domain.SpaceID
+	OrganizationID domain.OrganizationID
+	OwnerID        domain.AppUserID
 	KeyName        string
 	Name           string
 	SpaceType      string

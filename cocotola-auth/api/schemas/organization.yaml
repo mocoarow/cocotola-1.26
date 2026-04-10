@@ -3,9 +3,10 @@ FindOrganizationResponse:
   type: object
   properties:
     id:
-      type: integer
+      type: string
       x-go-name: ID
-      format: int32
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     name:
       type: string
       pattern: ^.*$

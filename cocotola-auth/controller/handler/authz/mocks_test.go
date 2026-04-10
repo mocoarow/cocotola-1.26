@@ -7,6 +7,7 @@ package authz_test
 import (
 	"context"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -39,7 +40,7 @@ func (_m *MockAuthorizationChecker) EXPECT() *MockAuthorizationChecker_Expecter 
 }
 
 // IsAllowed provides a mock function for the type MockAuthorizationChecker
-func (_mock *MockAuthorizationChecker) IsAllowed(ctx context.Context, organizationID int, operatorID int, action rbac.Action, resource rbac.Resource) (bool, error) {
+func (_mock *MockAuthorizationChecker) IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action rbac.Action, resource rbac.Resource) (bool, error) {
 	ret := _mock.Called(ctx, organizationID, operatorID, action, resource)
 
 	if len(ret) == 0 {
@@ -48,15 +49,15 @@ func (_mock *MockAuthorizationChecker) IsAllowed(ctx context.Context, organizati
 
 	var r0 bool
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, rbac.Action, rbac.Resource) (bool, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, rbac.Action, rbac.Resource) (bool, error)); ok {
 		return returnFunc(ctx, organizationID, operatorID, action, resource)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, int, int, rbac.Action, rbac.Resource) bool); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID, rbac.Action, rbac.Resource) bool); ok {
 		r0 = returnFunc(ctx, organizationID, operatorID, action, resource)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, int, int, rbac.Action, rbac.Resource) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID, domain.AppUserID, rbac.Action, rbac.Resource) error); ok {
 		r1 = returnFunc(ctx, organizationID, operatorID, action, resource)
 	} else {
 		r1 = ret.Error(1)
@@ -71,27 +72,27 @@ type MockAuthorizationChecker_IsAllowed_Call struct {
 
 // IsAllowed is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationID int
-//   - operatorID int
+//   - organizationID domain.OrganizationID
+//   - operatorID domain.AppUserID
 //   - action rbac.Action
 //   - resource rbac.Resource
 func (_e *MockAuthorizationChecker_Expecter) IsAllowed(ctx interface{}, organizationID interface{}, operatorID interface{}, action interface{}, resource interface{}) *MockAuthorizationChecker_IsAllowed_Call {
 	return &MockAuthorizationChecker_IsAllowed_Call{Call: _e.mock.On("IsAllowed", ctx, organizationID, operatorID, action, resource)}
 }
 
-func (_c *MockAuthorizationChecker_IsAllowed_Call) Run(run func(ctx context.Context, organizationID int, operatorID int, action rbac.Action, resource rbac.Resource)) *MockAuthorizationChecker_IsAllowed_Call {
+func (_c *MockAuthorizationChecker_IsAllowed_Call) Run(run func(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action rbac.Action, resource rbac.Resource)) *MockAuthorizationChecker_IsAllowed_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 int
+		var arg1 domain.OrganizationID
 		if args[1] != nil {
-			arg1 = args[1].(int)
+			arg1 = args[1].(domain.OrganizationID)
 		}
-		var arg2 int
+		var arg2 domain.AppUserID
 		if args[2] != nil {
-			arg2 = args[2].(int)
+			arg2 = args[2].(domain.AppUserID)
 		}
 		var arg3 rbac.Action
 		if args[3] != nil {
@@ -117,7 +118,7 @@ func (_c *MockAuthorizationChecker_IsAllowed_Call) Return(b bool, err error) *Mo
 	return _c
 }
 
-func (_c *MockAuthorizationChecker_IsAllowed_Call) RunAndReturn(run func(ctx context.Context, organizationID int, operatorID int, action rbac.Action, resource rbac.Resource) (bool, error)) *MockAuthorizationChecker_IsAllowed_Call {
+func (_c *MockAuthorizationChecker_IsAllowed_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action rbac.Action, resource rbac.Resource) (bool, error)) *MockAuthorizationChecker_IsAllowed_Call {
 	_c.Call.Return(run)
 	return _c
 }

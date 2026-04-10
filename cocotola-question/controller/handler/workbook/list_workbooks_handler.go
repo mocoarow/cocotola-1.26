@@ -4,13 +4,11 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -39,31 +37,24 @@ func NewListWorkbooksHandler(usecase ListWorkbooksUsecase) *ListWorkbooksHandler
 func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	organizationID := c.GetInt(controller.ContextFieldOrganizationID{})
-	if organizationID <= 0 {
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	spaceIDStr := c.Query("spaceId")
-	if spaceIDStr == "" {
+	spaceID := c.Query("spaceId")
+	if spaceID == "" {
 		h.logger.WarnContext(ctx, "missing spaceId query parameter")
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "spaceId query parameter is required"))
-		return
-	}
-
-	spaceID, err := strconv.Atoi(spaceIDStr)
-	if err != nil {
-		h.logger.WarnContext(ctx, "invalid spaceId query parameter", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "spaceId must be a valid integer"))
 		return
 	}
 
@@ -82,29 +73,11 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 
 	items := make([]api.WorkbookResponse, len(output.Workbooks))
 	for i, wb := range output.Workbooks {
-		sid, err := handler.SafeIntToInt32(wb.SpaceID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert space ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		oid, err := handler.SafeIntToInt32(wb.OwnerID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		orgID, err := handler.SafeIntToInt32(wb.OrganizationID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.WorkbookResponse{
 			WorkbookID:     wb.WorkbookID,
-			SpaceID:        sid,
-			OwnerID:        oid,
-			OrganizationID: orgID,
+			SpaceID:        wb.SpaceID,
+			OwnerID:        wb.OwnerID,
+			OrganizationID: wb.OrganizationID,
 			Title:          wb.Title,
 			Description:    wb.Description,
 			Visibility:     api.WorkbookResponseVisibility(wb.Visibility),

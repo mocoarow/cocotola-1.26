@@ -4,7 +4,7 @@ create table access_token (
  ,created_at timestamp not null default current_timestamp
  ,updated_at timestamp not null default current_timestamp
  ,refresh_token_id varchar(36) not null
- ,user_id int not null
+ ,user_id uuid not null
  ,login_id varchar(200) not null
  ,organization_name varchar(20) not null
  ,expires_at timestamp not null

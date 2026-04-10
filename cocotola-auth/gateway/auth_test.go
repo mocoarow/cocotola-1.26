@@ -24,7 +24,7 @@ func Test_JWTManager_CreateAccessToken_shouldReturnToken_whenValidInput(t *testi
 	m := newTestJWTManager(t)
 
 	// when
-	token, err := m.CreateAccessToken("user1", 1, "org1", "test-jti-123")
+	token, err := m.CreateAccessToken("user1", fixtureAppUserID, "org1", "test-jti-123")
 
 	// then
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func Test_JWTManager_ParseAccessToken_shouldReturnUserInfoAndJTI_whenValidToken(
 
 	// given
 	m := newTestJWTManager(t)
-	token, err := m.CreateAccessToken("user1", 1, "org1", "test-jti-456")
+	token, err := m.CreateAccessToken("user1", fixtureAppUserID, "org1", "test-jti-456")
 	require.NoError(t, err)
 
 	// when
@@ -45,7 +45,7 @@ func Test_JWTManager_ParseAccessToken_shouldReturnUserInfoAndJTI_whenValidToken(
 	// then
 	require.NoError(t, err)
 	require.NotNil(t, userInfo)
-	assert.Equal(t, 1, userInfo.UserID)
+	assert.True(t, fixtureAppUserID.Equal(userInfo.UserID))
 	assert.Equal(t, "user1", userInfo.LoginID)
 	assert.Equal(t, "org1", userInfo.OrganizationName)
 	assert.Equal(t, "test-jti-456", jti)
@@ -73,7 +73,7 @@ func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsSignedWithDif
 	// given
 	creator := gateway.NewJWTManager([]byte("original-key-that-is-long-enough"), jwt.SigningMethodHS256, 60*time.Minute)
 	parser := gateway.NewJWTManager([]byte("different-key-that-is-long-enough"), jwt.SigningMethodHS256, 60*time.Minute)
-	token, err := creator.CreateAccessToken("user1", 1, "org1", "jti-1")
+	token, err := creator.CreateAccessToken("user1", fixtureAppUserID, "org1", "jti-1")
 	require.NoError(t, err)
 
 	// when
@@ -91,7 +91,7 @@ func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsExpired(t *te
 
 	// given
 	m := gateway.NewJWTManager([]byte("test-signing-key-that-is-long-enough-for-hmac"), jwt.SigningMethodHS256, -1*time.Minute)
-	token, err := m.CreateAccessToken("user1", 1, "org1", "jti-expired")
+	token, err := m.CreateAccessToken("user1", fixtureAppUserID, "org1", "jti-expired")
 	require.NoError(t, err)
 
 	// when
@@ -109,7 +109,7 @@ func Test_JWTManager_ParseAccessToken_shouldReturnExpiresAt(t *testing.T) {
 
 	// given
 	m := newTestJWTManager(t)
-	token, err := m.CreateAccessToken("user1", 1, "org1", "jti-expiry")
+	token, err := m.CreateAccessToken("user1", fixtureAppUserID, "org1", "jti-expiry")
 	require.NoError(t, err)
 
 	// when

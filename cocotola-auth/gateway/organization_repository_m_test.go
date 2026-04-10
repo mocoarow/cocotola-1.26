@@ -20,7 +20,7 @@ func Test_OrganizationRepository_Save_shouldInsertOrganization_whenNewRecord(t *
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(0, "test-org-save", 10, 5)
+	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-save", 10, 5)
 
 	// when
 	err := repo.Save(ctx, org)
@@ -36,18 +36,20 @@ func Test_OrganizationRepository_FindByID_shouldReturnOrganization_whenOrganizat
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(0, "test-org-findbyid", 20, 10)
+	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-findbyid", 20, 10)
 	require.NoError(t, repo.Save(ctx, org))
 
 	var inserted gateway.OrganizationRecordForTest
 	require.NoError(t, tx.Where("name = ?", "test-org-findbyid").First(&inserted).Error)
+	insertedID, err := domain.ParseOrganizationID(inserted.ID)
+	require.NoError(t, err)
 
 	// when
-	found, err := repo.FindByID(ctx, inserted.ID)
+	found, err := repo.FindByID(ctx, insertedID)
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, inserted.ID, found.ID())
+	assert.True(t, insertedID.Equal(found.ID()))
 	assert.Equal(t, "test-org-findbyid", found.Name())
 	assert.Equal(t, 20, found.MaxActiveUsers())
 	assert.Equal(t, 10, found.MaxActiveGroups())
@@ -60,9 +62,10 @@ func Test_OrganizationRepository_FindByID_shouldReturnError_whenOrganizationDoes
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
+	nonExistentID := domain.MustParseOrganizationID("00000000-0000-7000-8000-ffffffffffff")
 
 	// when
-	_, err := repo.FindByID(ctx, 999999)
+	_, err := repo.FindByID(ctx, nonExistentID)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrOrganizationNotFound)
@@ -75,7 +78,7 @@ func Test_OrganizationRepository_FindByName_shouldReturnOrganization_whenNameExi
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(0, "test-org-findbyname", 30, 15)
+	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-findbyname", 30, 15)
 	require.NoError(t, repo.Save(ctx, org))
 
 	// when

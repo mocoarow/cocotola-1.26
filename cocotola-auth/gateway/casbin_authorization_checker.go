@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 )
 
@@ -22,7 +23,7 @@ func NewCasbinAuthorizationChecker(rbacRepo *RBACRepository) *CasbinAuthorizatio
 }
 
 // IsAllowed checks whether the operator is allowed to perform the action on the resource.
-func (c *CasbinAuthorizationChecker) IsAllowed(_ context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error) {
+func (c *CasbinAuthorizationChecker) IsAllowed(_ context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error) {
 	if err := c.rbacRepo.LoadPolicy(); err != nil {
 		return false, fmt.Errorf("load policy: %w", err)
 	}

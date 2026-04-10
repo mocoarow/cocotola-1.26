@@ -9,21 +9,19 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
+var (
+	fixtureUser1 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000021")
+	fixtureUser2 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000022")
+	fixtureUser3 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000023")
+	fixtureUser4 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000024")
+	fixtureUser5 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000025")
+)
+
 func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	t.Parallel()
 
 	// given / when
-	_, err := domain.NewActiveUserList(0, nil)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given / when
-	_, err := domain.NewActiveUserList(-1, nil)
+	_, err := domain.NewActiveUserList(domain.OrganizationID{}, nil)
 
 	// then
 	require.Error(t, err)
@@ -33,25 +31,25 @@ func Test_ActiveUserList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, []int{1, 2})
+	list, _ := domain.NewActiveUserList(fixtureOrgID, []domain.AppUserID{fixtureUser1, fixtureUser2})
 
 	// when
-	err := list.Add(3, 5)
+	err := list.Add(fixtureUser3, 5)
 
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, 3, list.Size())
-	assert.True(t, list.Contains(3))
+	assert.True(t, list.Contains(fixtureUser3))
 }
 
 func Test_ActiveUserList_Add_shouldReturnError_whenAtLimit(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, []int{1, 2, 3})
+	list, _ := domain.NewActiveUserList(fixtureOrgID, []domain.AppUserID{fixtureUser1, fixtureUser2, fixtureUser3})
 
 	// when
-	err := list.Add(4, 3)
+	err := list.Add(fixtureUser4, 3)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrActiveUserLimitReached)
@@ -61,10 +59,10 @@ func Test_ActiveUserList_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, []int{1, 2})
+	list, _ := domain.NewActiveUserList(fixtureOrgID, []domain.AppUserID{fixtureUser1, fixtureUser2})
 
 	// when
-	err := list.Add(2, 5)
+	err := list.Add(fixtureUser2, 5)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
@@ -74,24 +72,24 @@ func Test_ActiveUserList_Remove_shouldRemoveEntry(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, []int{1, 2, 3})
+	list, _ := domain.NewActiveUserList(fixtureOrgID, []domain.AppUserID{fixtureUser1, fixtureUser2, fixtureUser3})
 
 	// when
-	list.Remove(2)
+	list.Remove(fixtureUser2)
 
 	// then
 	assert.Equal(t, 2, list.Size())
-	assert.False(t, list.Contains(2))
+	assert.False(t, list.Contains(fixtureUser2))
 }
 
 func Test_ActiveUserList_Remove_shouldDoNothing_whenIDNotFound(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, []int{1, 2})
+	list, _ := domain.NewActiveUserList(fixtureOrgID, []domain.AppUserID{fixtureUser1, fixtureUser2})
 
 	// when
-	list.Remove(99)
+	list.Remove(fixtureUser5)
 
 	// then
 	assert.Equal(t, 2, list.Size())
@@ -101,10 +99,10 @@ func Test_ActiveUserList_Contains_shouldReturnFalse_whenEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, nil)
+	list, _ := domain.NewActiveUserList(fixtureOrgID, nil)
 
 	// when
-	result := list.Contains(1)
+	result := list.Contains(fixtureUser1)
 
 	// then
 	assert.False(t, result)
@@ -114,10 +112,10 @@ func Test_ActiveUserList_Add_shouldSucceed_whenAddingToEmptyList(t *testing.T) {
 	t.Parallel()
 
 	// given
-	list, _ := domain.NewActiveUserList(1, nil)
+	list, _ := domain.NewActiveUserList(fixtureOrgID, nil)
 
 	// when
-	err := list.Add(1, 5)
+	err := list.Add(fixtureUser1, 5)
 
 	// then
 	require.NoError(t, err)

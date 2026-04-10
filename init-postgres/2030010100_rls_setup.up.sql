@@ -18,15 +18,19 @@ END
 $$;
 
 -- Helper functions to get current user context from session settings
--- Usage: SET app.current_user_id = '123'; SET app.current_organization_id = '1';
-CREATE OR REPLACE FUNCTION public.current_app_user_id() RETURNS int
+-- Usage:
+--   SET app.current_user_id = '00000000-0000-7000-8000-000000000002';
+--   SET app.current_organization_id = '00000000-0000-7000-8000-000000000001';
+-- The zero UUID is returned when the setting is absent so policies still evaluate
+-- safely to "no match" for the unauthenticated case.
+CREATE OR REPLACE FUNCTION public.current_app_user_id() RETURNS uuid
 LANGUAGE sql STABLE
 AS $$
-  SELECT COALESCE(NULLIF(current_setting('app.current_user_id', true), '')::int, -1);
+  SELECT COALESCE(NULLIF(current_setting('app.current_user_id', true), '')::uuid, '00000000-0000-0000-0000-000000000000'::uuid);
 $$;
 
-CREATE OR REPLACE FUNCTION public.current_organization_id() RETURNS int
+CREATE OR REPLACE FUNCTION public.current_organization_id() RETURNS uuid
 LANGUAGE sql STABLE
 AS $$
-  SELECT COALESCE(NULLIF(current_setting('app.current_organization_id', true), '')::int, -1);
+  SELECT COALESCE(NULLIF(current_setting('app.current_organization_id', true), '')::uuid, '00000000-0000-0000-0000-000000000000'::uuid);
 $$;

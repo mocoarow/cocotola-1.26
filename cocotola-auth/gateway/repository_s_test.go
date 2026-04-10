@@ -89,8 +89,9 @@ func Test_groupNGroupRecord_TableName_shouldReturnGroupNGroup(t *testing.T) {
 func Test_toOrganizationDomain_shouldReconstructOrganization_whenRecordIsValid(t *testing.T) {
 	t.Parallel()
 	// given
+	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
 	record := &gateway.OrganizationRecordForTest{
-		ID:              1,
+		ID:              fixtureOrgIDStr,
 		Version:         1,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
@@ -101,7 +102,7 @@ func Test_toOrganizationDomain_shouldReconstructOrganization_whenRecordIsValid(t
 	// when
 	org := gateway.ToOrganizationDomain(record)
 	// then
-	assert.Equal(t, 1, org.ID())
+	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), org.ID())
 	assert.Equal(t, "org1", org.Name())
 	assert.Equal(t, 100, org.MaxActiveUsers())
 	assert.Equal(t, 50, org.MaxActiveGroups())
@@ -110,20 +111,22 @@ func Test_toOrganizationDomain_shouldReconstructOrganization_whenRecordIsValid(t
 func Test_toAppUserDomain_shouldReconstructAppUser_whenRecordIsValid(t *testing.T) {
 	t.Parallel()
 	// given
+	fixtureUserIDStr := "00000000-0000-7000-8000-000000000020"
+	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
 	record := &gateway.AppUserRecordForTest{
-		ID:             10,
+		ID:             fixtureUserIDStr,
 		Version:        1,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
-		OrganizationID: 1,
+		OrganizationID: fixtureOrgIDStr,
 		LoginID:        "user@example.com",
 		Enabled:        true,
 	}
 	// when
 	user := gateway.ToAppUserDomain(record)
 	// then
-	assert.Equal(t, 10, user.ID())
-	assert.Equal(t, 1, user.OrganizationID())
+	assert.Equal(t, domain.MustParseAppUserID(fixtureUserIDStr), user.ID())
+	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), user.OrganizationID())
 	assert.Equal(t, domain.LoginID("user@example.com"), user.LoginID())
 	assert.True(t, user.Enabled())
 }
@@ -131,36 +134,40 @@ func Test_toAppUserDomain_shouldReconstructAppUser_whenRecordIsValid(t *testing.
 func Test_toAppUserDomain_shouldReconstructDisabledAppUser_whenEnabledIsFalse(t *testing.T) {
 	t.Parallel()
 	// given
+	fixtureUserIDStr := "00000000-0000-7000-8000-000000000021"
+	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000011"
 	record := &gateway.AppUserRecordForTest{
-		ID:             20,
-		OrganizationID: 2,
+		ID:             fixtureUserIDStr,
+		OrganizationID: fixtureOrgIDStr,
 		LoginID:        "disabled@example.com",
 		Enabled:        false,
 	}
 	// when
 	user := gateway.ToAppUserDomain(record)
 	// then
-	assert.Equal(t, 20, user.ID())
+	assert.Equal(t, domain.MustParseAppUserID(fixtureUserIDStr), user.ID())
 	assert.False(t, user.Enabled())
 }
 
 func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
 	t.Parallel()
 	// given
+	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
+	fixtureGroupIDStr := "00000000-0000-7000-8000-000000000005"
 	record := &gateway.GroupRecordForTest{
-		ID:             5,
+		ID:             fixtureGroupIDStr,
 		Version:        1,
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
-		OrganizationID: 1,
+		OrganizationID: fixtureOrgIDStr,
 		Name:           "admins",
 		Enabled:        true,
 	}
 	// when
 	group := gateway.ToGroupDomain(record)
 	// then
-	assert.Equal(t, 5, group.ID())
-	assert.Equal(t, 1, group.OrganizationID())
+	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
+	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), group.OrganizationID())
 	assert.Equal(t, "admins", group.Name())
 	assert.True(t, group.Enabled())
 }
@@ -168,15 +175,17 @@ func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
 func Test_toGroupDomain_shouldReconstructDisabledGroup_whenEnabledIsFalse(t *testing.T) {
 	t.Parallel()
 	// given
+	fixtureOrgIDStr := "00000000-0000-7000-8000-000000000010"
+	fixtureGroupIDStr := "00000000-0000-7000-8000-000000000006"
 	record := &gateway.GroupRecordForTest{
-		ID:             6,
-		OrganizationID: 1,
+		ID:             fixtureGroupIDStr,
+		OrganizationID: fixtureOrgIDStr,
 		Name:           "archived",
 		Enabled:        false,
 	}
 	// when
 	group := gateway.ToGroupDomain(record)
 	// then
-	assert.Equal(t, 6, group.ID())
+	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
 	assert.False(t, group.Enabled())
 }

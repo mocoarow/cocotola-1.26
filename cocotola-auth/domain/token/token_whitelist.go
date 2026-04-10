@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sort"
 	"time"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
 // WhitelistEntry holds the minimal information needed for whitelist eviction.
@@ -17,15 +19,15 @@ type WhitelistEntry struct {
 // It is used by SessionTokenWhitelist, RefreshTokenWhitelist, and AccessTokenWhitelist
 // which share the same eviction logic.
 type Whitelist struct {
-	userID  int
+	userID  domain.AppUserID
 	entries []WhitelistEntry
 	maxSize int
 }
 
 // NewWhitelist creates a new Whitelist with validated parameters.
-func NewWhitelist(userID int, entries []WhitelistEntry, maxSize int) (*Whitelist, error) {
-	if userID <= 0 {
-		return nil, errors.New("whitelist user id must be positive")
+func NewWhitelist(userID domain.AppUserID, entries []WhitelistEntry, maxSize int) (*Whitelist, error) {
+	if userID.IsZero() {
+		return nil, errors.New("whitelist user id is required")
 	}
 	if maxSize <= 0 {
 		return nil, errors.New("whitelist max size must be positive")
@@ -40,7 +42,7 @@ func NewWhitelist(userID int, entries []WhitelistEntry, maxSize int) (*Whitelist
 }
 
 // UserID returns the user ID this whitelist belongs to.
-func (w *Whitelist) UserID() int {
+func (w *Whitelist) UserID() domain.AppUserID {
 	return w.userID
 }
 

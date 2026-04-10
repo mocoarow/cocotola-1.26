@@ -18,7 +18,13 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
-func fakeAuthMiddleware(userID int, loginID string, organizationName string) gin.HandlerFunc {
+var (
+	fixtureOrgID     = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+	fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+	fixtureOtherID   = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000099")
+)
+
+func fakeAuthMiddleware(userID domain.AppUserID, loginID string, organizationName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(controller.ContextFieldUserID{}, userID)
 		c.Set(controller.ContextFieldLoginID{}, loginID)

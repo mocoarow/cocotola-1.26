@@ -23,7 +23,7 @@ func Test_SupabaseExchangeHandler_Exchange_shouldReturn200_whenTokenIsValid(t *t
 
 	// given
 	authUsecase := NewMockAuthUsecase(t)
-	exchangeOutput, err := authservice.NewSupabaseExchangeOutput(1, "user@example.com", "org1")
+	exchangeOutput, err := authservice.NewSupabaseExchangeOutput(fixtureAppUserID, "user@example.com", "org1")
 	require.NoError(t, err)
 	authUsecase.On("SupabaseExchange", mock.Anything, mock.Anything).Return(exchangeOutput, nil).Once()
 

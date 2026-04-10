@@ -15,13 +15,19 @@ import (
 	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
 )
 
+var (
+	fixtureOperatorID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000099")
+	fixtureUserID     = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+	fixtureOrgID      = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+)
+
 func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t *testing.T) {
 	t.Parallel()
 
 	// given
-	operatorID := 99
-	userID := 1
-	orgID := 1
+	operatorID := fixtureOperatorID
+	userID := fixtureUserID
+	orgID := fixtureOrgID
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 
@@ -47,7 +53,7 @@ func Test_ChangePasswordCommand_ChangePassword_shouldSucceed_whenInputIsValid(t 
 
 	// then
 	require.NoError(t, err)
-	require.Equal(t, userID, output.AppUserID)
+	require.True(t, userID.Equal(output.AppUserID))
 	saverMock.AssertCalled(t, "Save", mock.Anything, mock.Anything)
 }
 
@@ -55,9 +61,9 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnForbidden_whenNotAuth
 	t.Parallel()
 
 	// given
-	operatorID := 99
-	userID := 1
-	orgID := 1
+	operatorID := fixtureOperatorID
+	userID := fixtureUserID
+	orgID := fixtureOrgID
 	newPassword := "newpassword123"
 
 	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
@@ -87,8 +93,8 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenUserNotFoun
 	t.Parallel()
 
 	// given
-	operatorID := 99
-	userID := 1
+	operatorID := fixtureOperatorID
+	userID := fixtureUserID
 	newPassword := "newpassword123"
 
 	finderMock := newMockappUserFinder(t)
@@ -114,9 +120,9 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenPasswordToo
 	t.Parallel()
 
 	// given
-	operatorID := 99
-	userID := 1
-	orgID := 1
+	operatorID := fixtureOperatorID
+	userID := fixtureUserID
+	orgID := fixtureOrgID
 	newPassword := "short"
 
 	user := domainuser.ReconstructAppUser(userID, orgID, "user@example.com", "$2a$10$oldhash", "", "", true)
@@ -146,9 +152,9 @@ func Test_ChangePasswordCommand_ChangePassword_shouldReturnError_whenSaveFails(t
 	t.Parallel()
 
 	// given
-	operatorID := 99
-	userID := 1
-	orgID := 1
+	operatorID := fixtureOperatorID
+	userID := fixtureUserID
+	orgID := fixtureOrgID
 	newPassword := "newpassword123"
 	hashedPassword := "$2a$10$newhash"
 	saveErr := errors.New("db error")

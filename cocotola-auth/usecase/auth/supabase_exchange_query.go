@@ -16,7 +16,6 @@ import (
 type SupabaseExchangeQuery struct {
 	supabaseVerifier       SupabaseVerifier
 	appUserFinder          AppUserProviderFinder
-	appUserIDProvider      AppUserIDProvider
 	appUserByLoginIDFinder AppUserByLoginIDFinder
 	appUserSaver           AppUserSaver
 	organizationFinder     OrganizationFinder
@@ -26,7 +25,6 @@ type SupabaseExchangeQuery struct {
 func NewSupabaseExchangeQuery(
 	supabaseVerifier SupabaseVerifier,
 	appUserFinder AppUserProviderFinder,
-	appUserIDProvider AppUserIDProvider,
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
@@ -34,7 +32,6 @@ func NewSupabaseExchangeQuery(
 	return &SupabaseExchangeQuery{
 		supabaseVerifier:       supabaseVerifier,
 		appUserFinder:          appUserFinder,
-		appUserIDProvider:      appUserIDProvider,
 		appUserByLoginIDFinder: appUserByLoginIDFinder,
 		appUserSaver:           appUserSaver,
 		organizationFinder:     organizationFinder,
@@ -67,10 +64,10 @@ func (q *SupabaseExchangeQuery) SupabaseExchange(ctx context.Context, input *aut
 	return q.findOrCreateUser(ctx, org.ID(), email, providerName, sub, input.OrganizationName)
 }
 
-func (q *SupabaseExchangeQuery) findOrCreateUser(ctx context.Context, orgID int, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+func (q *SupabaseExchangeQuery) findOrCreateUser(ctx context.Context, orgID domain.OrganizationID, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
 	loginID := domain.LoginID(email)
 
-	newUser, createErr := domainuser.Provision(ctx, q.appUserIDProvider, q.appUserSaver, orgID, loginID, "", provider, providerID, true)
+	newUser, createErr := domainuser.Provision(ctx, q.appUserSaver, orgID, loginID, "", provider, providerID, true)
 	if createErr == nil {
 		return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
 	}
@@ -97,26 +94,23 @@ func (q *SupabaseExchangeQuery) findOrCreateUser(ctx context.Context, orgID int,
 		return nil, fmt.Errorf("find app user by login id for linking: %w", findErr)
 	}
 
-	// C1: refuse to auto-link an existing password-holding account. SupabaseVerifier
-	// has already confirmed email_verified=true, but an account with a password belongs
-	// to a human who did not opt into linking from the provider side — taking it over
-	// by a Supabase signup would be an account-takeover path.
+	// C1: refuse to auto-link an existing password-holding account.
 	if existing.HashedPassword() != "" {
-		return nil, fmt.Errorf("app user %d login=%s: %w", existing.ID(), email, domain.ErrAppUserAutoLinkRejected)
+		return nil, fmt.Errorf("app user %s login=%s: %w", existing.ID().String(), email, domain.ErrAppUserAutoLinkRejected)
 	}
 
 	if err := existing.LinkProvider(provider, providerID); err != nil {
-		return nil, fmt.Errorf("link provider to app user %d: %w", existing.ID(), err)
+		return nil, fmt.Errorf("link provider to app user %s: %w", existing.ID().String(), err)
 	}
 
 	if err := q.appUserSaver.Save(ctx, existing); err != nil {
-		return nil, fmt.Errorf("save linked app user %d: %w", existing.ID(), err)
+		return nil, fmt.Errorf("save linked app user %s: %w", existing.ID().String(), err)
 	}
 
 	return q.buildOutput(existing.ID(), string(existing.LoginID()), orgName)
 }
 
-func (q *SupabaseExchangeQuery) buildOutput(userID int, loginID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+func (q *SupabaseExchangeQuery) buildOutput(userID domain.AppUserID, loginID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
 	output, err := authservice.NewSupabaseExchangeOutput(userID, loginID, orgName)
 	if err != nil {
 		return nil, fmt.Errorf("new supabase exchange output: %w", err)

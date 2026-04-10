@@ -18,7 +18,7 @@ type refreshTokenRecord struct {
 	Version          int        `gorm:"column:version"`
 	CreatedAt        time.Time  `gorm:"column:created_at"`
 	UpdatedAt        time.Time  `gorm:"column:updated_at"`
-	UserID           int        `gorm:"column:user_id"`
+	UserID           string     `gorm:"column:user_id"`
 	LoginID          string     `gorm:"column:login_id"`
 	OrganizationName string     `gorm:"column:organization_name"`
 	TokenHash        string     `gorm:"column:token_hash"`
@@ -29,7 +29,7 @@ type refreshTokenRecord struct {
 func (refreshTokenRecord) TableName() string { return "refresh_token" }
 
 func toRefreshTokenDomain(r *refreshTokenRecord) *domaintoken.RefreshToken {
-	return domaintoken.ReconstructRefreshToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+	return domaintoken.ReconstructRefreshToken(r.ID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // RefreshTokenRepository implements refresh token persistence using GORM.
@@ -47,7 +47,7 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, token *domaintoken.Re
 		Version:          1,
 		CreatedAt:        token.CreatedAt(),
 		UpdatedAt:        time.Now(),
-		UserID:           token.UserID(),
+		UserID:           token.UserID().String(),
 		LoginID:          string(token.LoginID()),
 		OrganizationName: token.OrganizationName(),
 		TokenHash:        string(token.TokenHash()),
@@ -76,7 +76,7 @@ type sessionTokenRecord struct {
 	Version          int        `gorm:"column:version"`
 	CreatedAt        time.Time  `gorm:"column:created_at"`
 	UpdatedAt        time.Time  `gorm:"column:updated_at"`
-	UserID           int        `gorm:"column:user_id"`
+	UserID           string     `gorm:"column:user_id"`
 	LoginID          string     `gorm:"column:login_id"`
 	OrganizationName string     `gorm:"column:organization_name"`
 	TokenHash        string     `gorm:"column:token_hash"`
@@ -87,7 +87,7 @@ type sessionTokenRecord struct {
 func (sessionTokenRecord) TableName() string { return "session_token" }
 
 func toSessionTokenDomain(r *sessionTokenRecord) *domaintoken.SessionToken {
-	return domaintoken.ReconstructSessionToken(r.ID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+	return domaintoken.ReconstructSessionToken(r.ID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // SessionTokenRepository implements session token persistence using GORM.
@@ -105,7 +105,7 @@ func (r *SessionTokenRepository) Save(ctx context.Context, token *domaintoken.Se
 		Version:          1,
 		CreatedAt:        token.CreatedAt(),
 		UpdatedAt:        time.Now(),
-		UserID:           token.UserID(),
+		UserID:           token.UserID().String(),
 		LoginID:          string(token.LoginID()),
 		OrganizationName: token.OrganizationName(),
 		TokenHash:        string(token.TokenHash()),

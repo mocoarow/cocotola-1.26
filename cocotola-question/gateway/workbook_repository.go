@@ -18,9 +18,9 @@ import (
 const workbooksCollection = "workbooks"
 
 type workbookRecord struct {
-	SpaceID        int       `firestore:"spaceID"`
-	OwnerID        int       `firestore:"ownerID"`
-	OrganizationID int       `firestore:"organizationID"`
+	SpaceID        string    `firestore:"spaceID"`
+	OwnerID        string    `firestore:"ownerID"`
+	OrganizationID string    `firestore:"organizationID"`
 	Title          string    `firestore:"title"`
 	Description    string    `firestore:"description"`
 	Visibility     string    `firestore:"visibility"`
@@ -47,7 +47,7 @@ func NewWorkbookRepository(client *firestore.Client) *WorkbookRepository {
 }
 
 // Create inserts a new workbook and returns the auto-generated document ID.
-func (r *WorkbookRepository) Create(ctx context.Context, spaceID int, ownerID int, organizationID int, title string, description string, visibility string) (string, error) {
+func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error) {
 	now := time.Now()
 	record := workbookRecord{
 		SpaceID:        spaceID,
@@ -87,7 +87,7 @@ func (r *WorkbookRepository) FindByID(ctx context.Context, id string) (*domainwo
 }
 
 // FindBySpaceID returns all workbooks for the given space.
-func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID int) ([]domainworkbook.Workbook, error) {
+func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).Where("spaceID", "==", spaceID).Documents(ctx)
 	defer iter.Stop()
 
@@ -115,7 +115,7 @@ func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID int) ([]
 }
 
 // FindPublicByOrganizationID returns all public workbooks for the given organization.
-func (r *WorkbookRepository) FindPublicByOrganizationID(ctx context.Context, organizationID int) ([]domainworkbook.Workbook, error) {
+func (r *WorkbookRepository) FindPublicByOrganizationID(ctx context.Context, organizationID string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).
 		Where("organizationID", "==", organizationID).
 		Where("visibility", "==", "public").

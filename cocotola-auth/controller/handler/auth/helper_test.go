@@ -36,7 +36,9 @@ func noopMiddleware() gin.HandlerFunc {
 
 // fakeAuthMiddleware sets the given userID and loginID into the Gin context,
 // simulating what the real auth middleware does.
-func fakeAuthMiddleware(userID int, loginID string, organizationName string) gin.HandlerFunc {
+var fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+
+func fakeAuthMiddleware(userID domain.AppUserID, loginID string, organizationName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set(controller.ContextFieldUserID{}, userID)
 		c.Set(controller.ContextFieldLoginID{}, loginID)

@@ -12,12 +12,12 @@ import (
 )
 
 type organizationRecord struct {
-	ID              int       `gorm:"column:id;primaryKey"`
+	ID              string    `gorm:"column:id;primaryKey"`
 	Version         int       `gorm:"column:version;->"`
 	CreatedAt       time.Time `gorm:"column:created_at;->"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;->"`
-	CreatedBy       int       `gorm:"column:created_by;<-:create"`
-	UpdatedBy       int       `gorm:"column:updated_by"`
+	CreatedBy       string    `gorm:"column:created_by;<-:create"`
+	UpdatedBy       string    `gorm:"column:updated_by"`
 	Name            string    `gorm:"column:name"`
 	MaxActiveUsers  int       `gorm:"column:max_active_users"`
 	MaxActiveGroups int       `gorm:"column:max_active_groups"`
@@ -28,7 +28,7 @@ func (organizationRecord) TableName() string {
 }
 
 func toOrganizationDomain(r *organizationRecord) *domain.Organization {
-	return domain.ReconstructOrganization(r.ID, r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
+	return domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
 }
 
 // OrganizationRepository implements organization persistence using GORM.
@@ -43,13 +43,14 @@ func NewOrganizationRepository(db *gorm.DB) *OrganizationRepository {
 
 // Save persists an organization record (upsert: insert or update).
 func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organization) error {
+	systemUserID := domain.SystemAppUserID().String()
 	record := organizationRecord{
-		ID:              org.ID(),
+		ID:              org.ID().String(),
 		Version:         0,
 		CreatedAt:       time.Time{},
 		UpdatedAt:       time.Time{},
-		CreatedBy:       0,
-		UpdatedBy:       0,
+		CreatedBy:       systemUserID,
+		UpdatedBy:       systemUserID,
 		Name:            org.Name(),
 		MaxActiveUsers:  org.MaxActiveUsers(),
 		MaxActiveGroups: org.MaxActiveGroups(),
@@ -61,9 +62,9 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 }
 
 // FindByID looks up an organization by its ID.
-func (r *OrganizationRepository) FindByID(ctx context.Context, id int) (*domain.Organization, error) {
+func (r *OrganizationRepository) FindByID(ctx context.Context, id domain.OrganizationID) (*domain.Organization, error) {
 	var record organizationRecord
-	if err := r.db.WithContext(ctx).Where("id = ?", id).First(&record).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("id = ?", id.String()).First(&record).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrOrganizationNotFound
 		}

@@ -13,7 +13,7 @@ import (
 )
 
 type spaceCreator interface {
-	Create(ctx context.Context, organizationID int, ownerID int, keyName string, name string, spaceType string, createdBy int) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)
 }
 
 type organizationFinderByName interface {
@@ -25,7 +25,7 @@ type eventPublisher interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CreateSpaceCommand creates a new space within an organization.

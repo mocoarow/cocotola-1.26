@@ -1,15 +1,14 @@
 package auth
 
 import (
-	"fmt"
 	"log/slog"
-	"math"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
@@ -29,8 +28,8 @@ func NewGetMeHandler() *GetMeHandler {
 // GetMe handles GET /auth/me and returns the authenticated user's ID and login ID.
 func (h *GetMeHandler) GetMe(c *gin.Context) {
 	ctx := c.Request.Context()
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID, ok := handler.GetAppUserIDFromContext(c)
+	if !ok {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -45,23 +44,9 @@ func (h *GetMeHandler) GetMe(c *gin.Context) {
 
 	organizationName := c.GetString(controller.ContextFieldOrganizationName{})
 
-	userIDInt32, err := safeIntToInt32(userID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert user ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.GetMeResponse{
-		UserID:           userIDInt32,
+		UserID:           userID.UUID(),
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	})
-}
-
-func safeIntToInt32(v int) (int32, error) {
-	if v < math.MinInt32 || v > math.MaxInt32 {
-		return 0, fmt.Errorf("value %d overflows int32", v)
-	}
-	return int32(v), nil
 }

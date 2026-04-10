@@ -76,7 +76,7 @@ tasks:
 
   trivy:
     cmds:
-      - docker run --rm -v .:/workspace aquasec/trivy:0.69.0 fs --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 /workspace
+      - trivy fs --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
 
   gitleaks:
     cmds:

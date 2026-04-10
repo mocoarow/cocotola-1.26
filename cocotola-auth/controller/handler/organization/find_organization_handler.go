@@ -11,7 +11,6 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -59,15 +58,8 @@ func (h *FindOrganizationHandler) FindOrganization(c *gin.Context) {
 		return
 	}
 
-	orgID, err := handler.SafeIntToInt32(org.ID())
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.FindOrganizationResponse{
-		ID:   orgID,
+		ID:   org.ID().UUID(),
 		Name: org.Name(),
 	})
 }

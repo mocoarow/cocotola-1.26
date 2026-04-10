@@ -26,7 +26,7 @@ import (
 )
 
 // OrganizationIDResolver resolves an organization name to its ID.
-type OrganizationIDResolver func(ctx context.Context, name string) (int, error)
+type OrganizationIDResolver func(ctx context.Context, name string) (string, error)
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker = domain.AuthorizationChecker

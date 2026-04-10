@@ -75,12 +75,12 @@ func run() (int, error) {
 	defer authResult.Close()
 
 	// initialize question module
-	orgResolver := func(ctx context.Context, name string) (int, error) {
+	orgResolver := func(ctx context.Context, name string) (string, error) {
 		org, err := authResult.OrgFinder.FindByName(ctx, name)
 		if err != nil {
-			return 0, fmt.Errorf("find organization by name %s: %w", name, err)
+			return "", fmt.Errorf("find organization by name %s: %w", name, err)
 		}
-		return org.ID(), nil
+		return org.ID().String(), nil
 	}
 	authzAdapter := &authorizationCheckerAdapter{inner: authResult.AuthzChecker}
 	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authResult.AuthMiddleware, authzAdapter, orgResolver)

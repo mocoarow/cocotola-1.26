@@ -7,14 +7,15 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
 type userNGroupRecord struct {
-	GroupID   int       `gorm:"column:group_id;primaryKey"`
-	UserID    int       `gorm:"column:user_id;primaryKey"`
+	GroupID   string    `gorm:"column:group_id;primaryKey"`
+	UserID    string    `gorm:"column:user_id;primaryKey"`
 	CreatedAt time.Time `gorm:"column:created_at"`
-	CreatedBy int       `gorm:"column:created_by"`
+	CreatedBy string    `gorm:"column:created_by"`
 }
 
 func (userNGroupRecord) TableName() string {
@@ -32,15 +33,15 @@ func NewGroupUsersRepository(db *gorm.DB) *GroupUsersRepository {
 }
 
 // FindByGroupID returns the group users aggregate for the given group.
-func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (*domaingroup.Users, error) {
+func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID domain.GroupID) (*domaingroup.Users, error) {
 	var records []userNGroupRecord
-	if err := r.db.WithContext(ctx).Where("group_id = ?", groupID).Find(&records).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("group_id = ?", groupID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find group users by group id: %w", err)
 	}
 
-	userIDs := make([]int, len(records))
+	userIDs := make([]domain.AppUserID, len(records))
 	for i := range records {
-		userIDs[i] = records[i].UserID
+		userIDs[i] = domain.MustParseAppUserID(records[i].UserID)
 	}
 
 	gu, err := domaingroup.NewUsers(groupID, userIDs)
@@ -53,15 +54,16 @@ func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID int) (
 // Save persists the group users aggregate by replacing all entries for the group.
 func (r *GroupUsersRepository) Save(ctx context.Context, gu *domaingroup.Users) error {
 	userIDs := gu.UserIDs()
+	systemUserID := domain.SystemAppUserID().String()
 	records := make([]userNGroupRecord, len(userIDs))
 	for i, userID := range userIDs {
 		records[i] = userNGroupRecord{
-			GroupID:   gu.GroupID(),
-			UserID:    userID,
+			GroupID:   gu.GroupID().String(),
+			UserID:    userID.String(),
 			CreatedAt: time.Now(),
-			CreatedBy: 0,
+			CreatedBy: systemUserID,
 		}
 	}
-	return replaceRecords(ctx, r.db, "group_id = ?", gu.GroupID(),
+	return replaceRecords(ctx, r.db, "group_id = ?", gu.GroupID().String(),
 		records, "group user entries")
 }

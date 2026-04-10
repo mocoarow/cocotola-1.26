@@ -74,5 +74,5 @@ func ResourceAny() Resource { return Resource{value: "*"} }
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action Action, resource Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID string, operatorID string, action Action, resource Resource) (bool, error)
 }

@@ -18,7 +18,7 @@ type accessTokenRecord struct {
 	CreatedAt        time.Time  `gorm:"column:created_at"`
 	UpdatedAt        time.Time  `gorm:"column:updated_at"`
 	RefreshTokenID   string     `gorm:"column:refresh_token_id"`
-	UserID           int        `gorm:"column:user_id"`
+	UserID           string     `gorm:"column:user_id"`
 	LoginID          string     `gorm:"column:login_id"`
 	OrganizationName string     `gorm:"column:organization_name"`
 	ExpiresAt        time.Time  `gorm:"column:expires_at"`
@@ -30,7 +30,7 @@ func (accessTokenRecord) TableName() string {
 }
 
 func toAccessTokenDomain(r *accessTokenRecord) *domaintoken.AccessToken {
-	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, r.UserID, domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
 }
 
 // AccessTokenRepository implements access token persistence using GORM.
@@ -51,7 +51,7 @@ func (r *AccessTokenRepository) Save(ctx context.Context, token *domaintoken.Acc
 		CreatedAt:        token.CreatedAt(),
 		UpdatedAt:        time.Now(),
 		RefreshTokenID:   token.RefreshTokenID(),
-		UserID:           token.UserID(),
+		UserID:           token.UserID().String(),
 		LoginID:          string(token.LoginID()),
 		OrganizationName: token.OrganizationName(),
 		ExpiresAt:        token.ExpiresAt(),

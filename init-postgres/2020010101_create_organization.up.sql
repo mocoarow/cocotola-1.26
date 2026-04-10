@@ -7,12 +7,12 @@ END;
 $$ language 'plpgsql';
 
 create table organization (
- id serial
+ id uuid not null
 ,version int not null default 1
 ,created_at timestamp not null default current_timestamp
 ,updated_at timestamp not null default current_timestamp
-,created_by int not null
-,updated_by int not null
+,created_by uuid not null
+,updated_by uuid not null
 ,name varchar(255) not null
 ,max_active_users int not null default 100
 ,max_active_groups int not null default 100

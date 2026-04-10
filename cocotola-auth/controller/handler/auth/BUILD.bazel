@@ -18,6 +18,7 @@ go_library(
     deps = [
         "//cocotola-auth/api",
         "//cocotola-auth/controller",
+        "//cocotola-auth/controller/handler",
         "//cocotola-auth/domain",
         "//cocotola-auth/service/auth",
         "//cocotola-lib/logging",

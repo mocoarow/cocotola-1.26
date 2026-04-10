@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -86,12 +85,12 @@ func extractBearerToken(c *gin.Context) string {
 	return ""
 }
 
-func setUserContext(ctx context.Context, c *gin.Context, userID int, loginID string, organizationName string, logger *slog.Logger) {
+func setUserContext(ctx context.Context, c *gin.Context, userID domain.AppUserID, loginID string, organizationName string, logger *slog.Logger) {
 	c.Set(controller.ContextFieldUserID{}, userID)
 	c.Set(controller.ContextFieldLoginID{}, loginID)
 	c.Set(controller.ContextFieldOrganizationName{}, organizationName)
 	ctx = libtelemetry.AddBaggageMembers(ctx, map[string]string{
-		"user_id": strconv.Itoa(userID),
+		"user_id": userID.String(),
 	}, logger)
 	c.Request = c.Request.WithContext(ctx)
 }

@@ -57,6 +57,7 @@ smart_go_test(
         "auth_test.go",
         "event_bus_s_test.go",
         "export_test.go",
+        "fixtures_test.go",
         "gateway_m_test.go",
         "group_hierarchy_repository_m_test.go",
         "group_repository_m_test.go",

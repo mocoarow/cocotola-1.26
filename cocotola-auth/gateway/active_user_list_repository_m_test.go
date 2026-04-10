@@ -50,7 +50,7 @@ func Test_ActiveUserListRepository_FindByOrganizationID_shouldReturnList_whenEnt
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, orgID, found.OrganizationID())
+	assert.True(t, orgID.Equal(found.OrganizationID()))
 	assert.Equal(t, 3, found.Size())
 	for _, id := range userIDs {
 		assert.True(t, found.Contains(id))

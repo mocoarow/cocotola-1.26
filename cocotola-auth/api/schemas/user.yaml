@@ -22,13 +22,15 @@ CreateUserResponse:
   type: object
   properties:
     appUserId:
-      type: integer
+      type: string
       x-go-name: AppUserID
-      format: int32
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     organizationId:
-      type: integer
+      type: string
       x-go-name: OrganizationID
-      format: int32
+      format: uuid
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     loginId:
       type: string
       x-go-name: LoginID

@@ -31,13 +31,13 @@ type AccessTokenRepository interface {
 
 // WhitelistRepository defines persistence operations for token whitelists.
 type WhitelistRepository interface {
-	FindByUserID(ctx context.Context, userID int) ([]domaintoken.WhitelistEntry, error)
+	FindByUserID(ctx context.Context, userID domain.AppUserID) ([]domaintoken.WhitelistEntry, error)
 	Save(ctx context.Context, whitelist *domaintoken.Whitelist) error
 }
 
 // JWTManager creates and parses JWT access tokens.
 type JWTManager interface {
-	CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error)
+	CreateAccessToken(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error)
 	ParseAccessToken(tokenString string) (*authservice.UserInfo, string, error)
 }
 
@@ -84,17 +84,12 @@ type SupabaseVerifier interface {
 
 // AppUserProviderFinder finds an app user by external provider ID.
 type AppUserProviderFinder interface {
-	FindByProviderID(ctx context.Context, organizationID int, provider string, providerID string) (*domainuser.AppUser, error)
-}
-
-// AppUserIDProvider reserves a fresh aggregate identifier from the persistence layer.
-type AppUserIDProvider interface {
-	NextID(ctx context.Context) (int, error)
+	FindByProviderID(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*domainuser.AppUser, error)
 }
 
 // AppUserByLoginIDFinder finds an existing app user by organization and login ID.
 type AppUserByLoginIDFinder interface {
-	FindByLoginID(ctx context.Context, organizationID int, loginID domain.LoginID) (*domainuser.AppUser, error)
+	FindByLoginID(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID) (*domainuser.AppUser, error)
 }
 
 // AppUserSaver persists an app user aggregate as a whole.
@@ -129,7 +124,6 @@ func NewQuery(
 	config UsecaseConfig,
 	supabaseVerifier SupabaseVerifier,
 	appUserFinder AppUserProviderFinder,
-	appUserIDProvider AppUserIDProvider,
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
@@ -139,6 +133,6 @@ func NewQuery(
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserIDProvider, appUserByLoginIDFinder, appUserSaver, organizationFinder),
+		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
 	}
 }

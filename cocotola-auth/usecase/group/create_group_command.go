@@ -11,7 +11,7 @@ import (
 )
 
 type groupCreator interface {
-	Create(ctx context.Context, organizationID int, name string) (int, error)
+	Create(ctx context.Context, organizationID domain.OrganizationID, name string) (domain.GroupID, error)
 }
 
 type organizationFinderByName interface {
@@ -23,7 +23,7 @@ type eventPublisher interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CreateGroupCommand creates a new group within an organization.

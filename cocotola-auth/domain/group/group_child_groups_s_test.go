@@ -10,21 +10,19 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 )
 
+var (
+	fixtureGroupID1  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000001")
+	fixtureGroupID2  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000002")
+	fixtureGroupID3  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000003")
+	fixtureGroupID4  = domain.MustParseGroupID("00000000-0000-7000-8000-000000000004")
+	fixtureGroupID99 = domain.MustParseGroupID("00000000-0000-7000-8000-000000000099")
+)
+
 func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsZero(t *testing.T) {
 	t.Parallel()
 
 	// given / when
-	_, err := group.NewChildGroups(0, nil)
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// given / when
-	_, err := group.NewChildGroups(-1, nil)
+	_, err := group.NewChildGroups(domain.GroupID{}, nil)
 
 	// then
 	require.Error(t, err)
@@ -34,25 +32,25 @@ func Test_GroupChildGroups_Add_shouldSucceed_whenGroupNotInChildren(t *testing.T
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, []int{2, 3})
+	g, _ := group.NewChildGroups(fixtureGroupID1, []domain.GroupID{fixtureGroupID2, fixtureGroupID3})
 
 	// when
-	err := g.Add(4)
+	err := g.Add(fixtureGroupID4)
 
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, 3, g.Size())
-	assert.True(t, g.Contains(4))
+	assert.True(t, g.Contains(fixtureGroupID4))
 }
 
 func Test_GroupChildGroups_Add_shouldReturnError_whenDuplicate(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, []int{2, 3})
+	g, _ := group.NewChildGroups(fixtureGroupID1, []domain.GroupID{fixtureGroupID2, fixtureGroupID3})
 
 	// when
-	err := g.Add(3)
+	err := g.Add(fixtureGroupID3)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
@@ -62,24 +60,24 @@ func Test_GroupChildGroups_Remove_shouldRemoveChildGroup(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, []int{2, 3, 4})
+	g, _ := group.NewChildGroups(fixtureGroupID1, []domain.GroupID{fixtureGroupID2, fixtureGroupID3, fixtureGroupID4})
 
 	// when
-	g.Remove(3)
+	g.Remove(fixtureGroupID3)
 
 	// then
 	assert.Equal(t, 2, g.Size())
-	assert.False(t, g.Contains(3))
+	assert.False(t, g.Contains(fixtureGroupID3))
 }
 
 func Test_GroupChildGroups_Remove_shouldDoNothing_whenGroupNotInChildren(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, []int{2, 3})
+	g, _ := group.NewChildGroups(fixtureGroupID1, []domain.GroupID{fixtureGroupID2, fixtureGroupID3})
 
 	// when
-	g.Remove(99)
+	g.Remove(fixtureGroupID99)
 
 	// then
 	assert.Equal(t, 2, g.Size())
@@ -89,10 +87,10 @@ func Test_GroupChildGroups_Contains_shouldReturnFalse_whenEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, nil)
+	g, _ := group.NewChildGroups(fixtureGroupID1, nil)
 
 	// when
-	result := g.Contains(2)
+	result := g.Contains(fixtureGroupID2)
 
 	// then
 	assert.False(t, result)
@@ -102,10 +100,10 @@ func Test_GroupChildGroups_Add_shouldSucceed_whenAddingToEmptyGroup(t *testing.T
 	t.Parallel()
 
 	// given
-	g, _ := group.NewChildGroups(1, nil)
+	g, _ := group.NewChildGroups(fixtureGroupID1, nil)
 
 	// when
-	err := g.Add(2)
+	err := g.Add(fixtureGroupID2)
 
 	// then
 	require.NoError(t, err)

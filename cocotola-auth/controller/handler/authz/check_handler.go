@@ -5,12 +5,12 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -18,7 +18,7 @@ import (
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
 // CheckHandler handles the GET /auth/authz/check endpoint.
@@ -50,17 +50,17 @@ func (h *CheckHandler) Check(c *gin.Context) {
 		return
 	}
 
-	orgID, err := strconv.Atoi(orgStr)
+	orgID, err := domain.ParseOrganizationID(orgStr)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid org parameter", slog.String("org", orgStr))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org must be an integer"))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org must be a UUID"))
 		return
 	}
 
-	userID, err := strconv.Atoi(userStr)
+	userID, err := domain.ParseAppUserID(userStr)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid user parameter", slog.String("user", userStr))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "user must be an integer"))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "user must be a UUID"))
 		return
 	}
 

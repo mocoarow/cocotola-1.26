@@ -53,9 +53,9 @@ func findRecordByHash[R any](ctx context.Context, db *gorm.DB, hash string, labe
 }
 
 // findAndConvertWhitelist queries whitelist records and converts them to domain entries.
-func findAndConvertWhitelist[R any](ctx context.Context, db *gorm.DB, userID int, toEntry func(R) domaintoken.WhitelistEntry, label string) ([]domaintoken.WhitelistEntry, error) {
+func findAndConvertWhitelist[R any](ctx context.Context, db *gorm.DB, userID domain.AppUserID, toEntry func(R) domaintoken.WhitelistEntry, label string) ([]domaintoken.WhitelistEntry, error) {
 	var records []R
-	if err := db.WithContext(ctx).Where("user_id = ?", userID).Find(&records).Error; err != nil {
+	if err := db.WithContext(ctx).Where("user_id = ?", userID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find %s: %w", label, err)
 	}
 
@@ -67,24 +67,25 @@ func findAndConvertWhitelist[R any](ctx context.Context, db *gorm.DB, userID int
 }
 
 // saveWhitelist converts domain whitelist entries to records and persists them.
-func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domaintoken.Whitelist, toRecord func(int, domaintoken.WhitelistEntry) R, label string) error {
+func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domaintoken.Whitelist, toRecord func(string, domaintoken.WhitelistEntry) R, label string) error {
 	entries := whitelist.Entries()
+	userIDStr := whitelist.UserID().String()
 
 	records := make([]R, len(entries))
 	for i, e := range entries {
-		records[i] = toRecord(whitelist.UserID(), e)
+		records[i] = toRecord(userIDStr, e)
 	}
-	return replaceRecords(ctx, db, "user_id = ?", whitelist.UserID(), records, label)
+	return replaceRecords(ctx, db, "user_id = ?", userIDStr, records, label)
 }
 
-// findMemberIDs queries records by organization_id and extracts member IDs.
-func findMemberIDs[R any](ctx context.Context, db *gorm.DB, organizationID int, extractID func(R) int, label string) ([]int, error) {
+// findMemberIDs queries records by organization_id and extracts member IDs as strings.
+func findMemberIDs[R any, ID any](ctx context.Context, db *gorm.DB, organizationID domain.OrganizationID, extractID func(R) ID, label string) ([]ID, error) {
 	var records []R
-	if err := db.WithContext(ctx).Where("organization_id = ?", organizationID).Find(&records).Error; err != nil {
+	if err := db.WithContext(ctx).Where("organization_id = ?", organizationID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find %s: %w", label, err)
 	}
 
-	ids := make([]int, len(records))
+	ids := make([]ID, len(records))
 	for i := range records {
 		ids[i] = extractID(records[i])
 	}

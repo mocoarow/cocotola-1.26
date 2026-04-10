@@ -13,7 +13,7 @@ import (
 type AccessToken struct {
 	id               string
 	refreshTokenID   string
-	userID           int
+	userID           domain.AppUserID
 	loginID          domain.LoginID
 	organizationName string
 	createdAt        time.Time
@@ -22,7 +22,7 @@ type AccessToken struct {
 }
 
 // NewAccessToken creates a validated AccessToken.
-func NewAccessToken(id string, refreshTokenID string, userID int, loginID domain.LoginID, organizationName string, createdAt time.Time, expiresAt time.Time) (*AccessToken, error) {
+func NewAccessToken(id string, refreshTokenID string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, createdAt time.Time, expiresAt time.Time) (*AccessToken, error) {
 	m := &AccessToken{
 		id:               id,
 		refreshTokenID:   refreshTokenID,
@@ -40,7 +40,7 @@ func NewAccessToken(id string, refreshTokenID string, userID int, loginID domain
 }
 
 // ReconstructAccessToken reconstitutes an AccessToken from persistence (including RevokedAt).
-func ReconstructAccessToken(id string, refreshTokenID string, userID int, loginID domain.LoginID, organizationName string, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *AccessToken {
+func ReconstructAccessToken(id string, refreshTokenID string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *AccessToken {
 	return &AccessToken{
 		id:               id,
 		refreshTokenID:   refreshTokenID,
@@ -60,8 +60,8 @@ func (t *AccessToken) validate() error {
 	if t.refreshTokenID == "" {
 		return errors.New("access token refresh token id is required")
 	}
-	if t.userID <= 0 {
-		return errors.New("access token user id must be positive")
+	if t.userID.IsZero() {
+		return errors.New("access token user id is required")
 	}
 	if t.loginID == "" {
 		return errors.New("access token login id is required")
@@ -85,7 +85,7 @@ func (t *AccessToken) ID() string { return t.id }
 func (t *AccessToken) RefreshTokenID() string { return t.refreshTokenID }
 
 // UserID returns the user ID.
-func (t *AccessToken) UserID() int { return t.userID }
+func (t *AccessToken) UserID() domain.AppUserID { return t.userID }
 
 // LoginID returns the login ID.
 func (t *AccessToken) LoginID() domain.LoginID { return t.loginID }

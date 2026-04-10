@@ -11,9 +11,11 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
-func validAccessTokenArgs() (string, string, int, domain.LoginID, string, time.Time, time.Time) {
+var fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
+
+func validAccessTokenArgs() (string, string, domain.AppUserID, domain.LoginID, string, time.Time, time.Time) {
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	return "jti-1", "rt-1", 1, "user@example.com", "org1", now, now.Add(time.Hour)
+	return "jti-1", "rt-1", fixtureAppUserID, "user@example.com", "org1", now, now.Add(time.Hour)
 }
 
 func Test_NewAccessToken_shouldReturnToken_whenAllFieldsAreValid(t *testing.T) {
@@ -70,7 +72,7 @@ func Test_NewAccessToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	id, rtID, _, loginID, org, created, expires := validAccessTokenArgs()
 
 	// when
-	_, err := token.NewAccessToken(id, rtID, 0, loginID, org, created, expires)
+	_, err := token.NewAccessToken(id, rtID, domain.AppUserID{}, loginID, org, created, expires)
 
 	// then
 	require.Error(t, err)
@@ -151,7 +153,7 @@ func Test_AccessToken_RevokedAt_shouldReturnCopy_whenMutated(t *testing.T) {
 	// given
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	revokedAt := now.Add(10 * time.Minute)
-	tk := token.ReconstructAccessToken("jti-1", "rt-1", 1, "user@example.com", "org1", now, now.Add(time.Hour), &revokedAt)
+	tk := token.ReconstructAccessToken("jti-1", "rt-1", fixtureAppUserID, "user@example.com", "org1", now, now.Add(time.Hour), &revokedAt)
 
 	// when
 	ptr := tk.RevokedAt()

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -19,7 +18,7 @@ import (
 
 // getMeResponse represents the response from cocotola-auth GET /api/v1/auth/me.
 type getMeResponse struct {
-	UserID           int32  `json:"userId"`
+	UserID           string `json:"userId"`
 	LoginID          string `json:"loginId"`
 	OrganizationName string `json:"organizationName"`
 }
@@ -78,7 +77,7 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 			return
 		}
 
-		c.Set(controller.ContextFieldUserID{}, int(me.UserID))
+		c.Set(controller.ContextFieldUserID{}, me.UserID)
 		c.Set(controller.ContextFieldOrganizationName{}, me.OrganizationName)
 		c.Next()
 	}
@@ -86,22 +85,22 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 
 // AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves
 // organization names by calling cocotola-auth's GET /api/v1/auth/organization endpoint.
-func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client) func(ctx context.Context, name string) (int, error) {
+func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client) func(ctx context.Context, name string) (string, error) {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "OrgResolver"))
 
-	return func(ctx context.Context, name string) (int, error) {
+	return func(ctx context.Context, name string) (string, error) {
 		params := url.Values{}
 		params.Set("name", name)
 		reqURL := authBaseURL + "/api/v1/auth/organization?" + params.Encode()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 		if err != nil {
-			return 0, fmt.Errorf("create request: %w", err)
+			return "", fmt.Errorf("create request: %w", err)
 		}
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			return 0, fmt.Errorf("call auth service: %w", err)
+			return "", fmt.Errorf("call auth service: %w", err)
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
@@ -110,14 +109,14 @@ func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			return 0, fmt.Errorf("auth service returned status %d", resp.StatusCode)
+			return "", fmt.Errorf("auth service returned status %d", resp.StatusCode)
 		}
 
 		var result struct {
-			ID int `json:"id"`
+			ID string `json:"id"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return 0, fmt.Errorf("decode response: %w", err)
+			return "", fmt.Errorf("decode response: %w", err)
 		}
 
 		return result.ID, nil
@@ -142,10 +141,10 @@ func NewAuthServiceAuthorizationChecker(authBaseURL string, httpClient *http.Cli
 
 // IsAllowed checks if the given action on the resource is allowed
 // by calling cocotola-auth's GET /api/v1/auth/authz/check endpoint.
-func (c *AuthServiceAuthorizationChecker) IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error) {
+func (c *AuthServiceAuthorizationChecker) IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error) {
 	params := url.Values{}
-	params.Set("org", strconv.Itoa(organizationID))
-	params.Set("user", strconv.Itoa(operatorID))
+	params.Set("org", organizationID)
+	params.Set("user", operatorID)
 	params.Set("action", action.Value())
 	params.Set("resource", resource.Value())
 	reqURL := c.authBaseURL + "/api/v1/auth/authz/check?" + params.Encode()

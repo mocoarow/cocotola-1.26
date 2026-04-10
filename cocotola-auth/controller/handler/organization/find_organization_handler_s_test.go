@@ -18,10 +18,10 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn200_whenOrganizat
 	ctx := context.Background()
 
 	// given
-	org := domain.ReconstructOrganization(1, "test-org", 100, 50)
+	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
 	orgFinder := NewMockFinder(t)
 	orgFinder.On("FindByName", mock.Anything, "test-org").Return(org, nil)
-	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
+	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(fixtureAppUserID, "user42", "test-org"))
 	w := httptest.NewRecorder()
 
 	// when
@@ -37,7 +37,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn200_whenOrganizat
 	idExpr := parseExpr(t, "$.id")
 	id := idExpr.Get(jsonObj)
 	require.Len(t, id, 1)
-	assert.EqualValues(t, 1, id[0])
+	assert.Equal(t, fixtureOrgID.String(), id[0])
 
 	nameExpr := parseExpr(t, "$.name")
 	name := nameExpr.Get(jsonObj)
@@ -51,7 +51,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn400_whenNameMissi
 
 	// given
 	orgFinder := NewMockFinder(t)
-	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
+	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(fixtureAppUserID, "user42", "test-org"))
 	w := httptest.NewRecorder()
 
 	// when
@@ -72,7 +72,7 @@ func Test_FindOrganizationHandler_FindOrganization_shouldReturn404_whenOrganizat
 	// given
 	orgFinder := NewMockFinder(t)
 	orgFinder.On("FindByName", mock.Anything, "nonexistent").Return(nil, domain.ErrOrganizationNotFound)
-	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(42, "user42", "test-org"))
+	r := initOrgRouter(ctx, t, orgFinder, fakeAuthMiddleware(fixtureAppUserID, "user42", "test-org"))
 	w := httptest.NewRecorder()
 
 	// when

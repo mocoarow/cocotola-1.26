@@ -1,11 +1,11 @@
 create table app_user (
- id serial
+ id uuid not null
 ,version int not null default 1
 ,created_at timestamp not null default current_timestamp
 ,updated_at timestamp not null default current_timestamp
-,created_by int not null
-,updated_by int not null
-,organization_id int not null
+,created_by uuid not null
+,updated_by uuid not null
+,organization_id uuid not null
 ,login_id varchar(200) not null
 ,hashed_password varchar(200)
 ,username varchar(40)

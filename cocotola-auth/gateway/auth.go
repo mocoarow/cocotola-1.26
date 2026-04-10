@@ -7,12 +7,13 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
 type userClaims struct {
 	LoginID          string `json:"loginId"`
-	UserID           int    `json:"userId"`
+	UserID           string `json:"userId"`
 	OrganizationName string `json:"organizationName"`
 	jwt.RegisteredClaims
 }
@@ -34,11 +35,11 @@ func NewJWTManager(signingKey []byte, signingMethod jwt.SigningMethod, tokenTime
 }
 
 // CreateAccessToken generates a signed JWT for the given user with the specified JTI.
-func (m *JWTManager) CreateAccessToken(loginID string, userID int, organizationName string, jti string) (string, error) {
+func (m *JWTManager) CreateAccessToken(loginID string, userID domain.AppUserID, organizationName string, jti string) (string, error) {
 	now := time.Now()
 	claims := userClaims{
 		LoginID:          loginID,
-		UserID:           userID,
+		UserID:           userID.String(),
 		OrganizationName: organizationName,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        jti,
@@ -66,7 +67,12 @@ func (m *JWTManager) ParseAccessToken(tokenString string) (*authservice.UserInfo
 		return nil, "", fmt.Errorf("parse token: %w", err)
 	}
 
-	userInfo, err := authservice.NewUserInfo(claims.UserID, claims.LoginID, claims.OrganizationName, claims.ExpiresAt.Time)
+	userID, err := domain.ParseAppUserID(claims.UserID)
+	if err != nil {
+		return nil, "", fmt.Errorf("parse user id from claims: %w", err)
+	}
+
+	userInfo, err := authservice.NewUserInfo(userID, claims.LoginID, claims.OrganizationName, claims.ExpiresAt.Time)
 	if err != nil {
 		return nil, "", fmt.Errorf("create user info: %w", err)
 	}
@@ -84,7 +90,7 @@ func (m *JWTManager) parseToken(tokenString string) (*userClaims, error) {
 
 	currentToken, err := jwt.ParseWithClaims(tokenString, &userClaims{
 		LoginID:          "",
-		UserID:           0,
+		UserID:           "",
 		OrganizationName: "",
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "",

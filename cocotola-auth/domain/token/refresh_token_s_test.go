@@ -15,9 +15,9 @@ func validRefreshTokenHash() domain.TokenHash {
 	return token.HashToken("test-raw-token-for-refresh")
 }
 
-func validRefreshTokenArgs() (string, int, domain.LoginID, string, domain.TokenHash, time.Time, time.Time) {
+func validRefreshTokenArgs() (string, domain.AppUserID, domain.LoginID, string, domain.TokenHash, time.Time, time.Time) {
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	return "rt-1", 1, "user@example.com", "org1", validRefreshTokenHash(), now, now.Add(30 * 24 * time.Hour)
+	return "rt-1", fixtureAppUserID, "user@example.com", "org1", validRefreshTokenHash(), now, now.Add(30 * 24 * time.Hour)
 }
 
 func Test_NewRefreshToken_shouldReturnToken_whenAllFieldsAreValid(t *testing.T) {
@@ -61,7 +61,7 @@ func Test_NewRefreshToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	id, _, loginID, org, hash, created, expires := validRefreshTokenArgs()
 
 	// when
-	_, err := token.NewRefreshToken(id, 0, loginID, org, hash, created, expires)
+	_, err := token.NewRefreshToken(id, domain.AppUserID{}, loginID, org, hash, created, expires)
 
 	// then
 	require.Error(t, err)
@@ -103,7 +103,7 @@ func Test_RefreshToken_RevokedAt_shouldReturnCopy_whenMutated(t *testing.T) {
 	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	revokedAt := now.Add(10 * time.Minute)
 	hash := validRefreshTokenHash()
-	tk := token.ReconstructRefreshToken("rt-1", 1, "user@example.com", "org1", hash, now, now.Add(30*24*time.Hour), &revokedAt)
+	tk := token.ReconstructRefreshToken("rt-1", fixtureAppUserID, "user@example.com", "org1", hash, now, now.Add(30*24*time.Hour), &revokedAt)
 
 	// when
 	ptr := tk.RevokedAt()

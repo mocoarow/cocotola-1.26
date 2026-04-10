@@ -18,6 +18,7 @@ security:
 tags:
   - name: auth
   - name: authz
+  - name: internal
   - name: group
   - name: health
   - name: organization
@@ -262,14 +263,14 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
-  /api/v1/auth/supabase/exchange:
+  /api/v1/internal/auth/supabase/exchange:
     post:
       summary: Exchange Supabase JWT for internal tokens
       deprecated: false
       description: Verify a Supabase JWT and return internal access and refresh tokens. Creates an AppUser if one does not exist for the Supabase user.
       operationId: supabaseExchange
       tags:
-        - auth
+        - internal
       parameters: []
       requestBody:
         content:
@@ -294,7 +295,14 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
         '401':
-          description: Invalid Supabase JWT
+          description: Invalid Supabase JWT or missing API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Invalid API key
           content:
             application/json:
               schema:
@@ -307,7 +315,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
-      security: []
+      security:
+        - ServiceApiKey: []
   /api/v1/auth/me:
     get:
       summary: Get current user
@@ -743,9 +752,10 @@ components:
       type: object
       properties:
         userId:
-          type: integer
+          type: string
           x-go-name: UserID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         loginId:
           type: string
           x-go-name: LoginID
@@ -772,13 +782,15 @@ components:
       type: object
       properties:
         groupId:
-          type: integer
+          type: string
           x-go-name: GroupID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         organizationId:
-          type: integer
+          type: string
           x-go-name: OrganizationID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         name:
           type: string
           pattern: ^.*$
@@ -812,17 +824,20 @@ components:
       type: object
       properties:
         spaceId:
-          type: integer
+          type: string
           x-go-name: SpaceID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         organizationId:
-          type: integer
+          type: string
           x-go-name: OrganizationID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         ownerId:
-          type: integer
+          type: string
           x-go-name: OwnerID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         keyName:
           type: string
           pattern: ^.*$
@@ -848,17 +863,20 @@ components:
       type: object
       properties:
         spaceId:
-          type: integer
+          type: string
           x-go-name: SpaceID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         organizationId:
-          type: integer
+          type: string
           x-go-name: OrganizationID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         ownerId:
-          type: integer
+          type: string
           x-go-name: OwnerID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         keyName:
           type: string
           pattern: ^.*$
@@ -912,13 +930,15 @@ components:
       type: object
       properties:
         appUserId:
-          type: integer
+          type: string
           x-go-name: AppUserID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         organizationId:
-          type: integer
+          type: string
           x-go-name: OrganizationID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         loginId:
           type: string
           x-go-name: LoginID
@@ -942,9 +962,10 @@ components:
       type: object
       properties:
         id:
-          type: integer
+          type: string
           x-go-name: ID
-          format: int32
+          format: uuid
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         name:
           type: string
           pattern: ^.*$
@@ -980,3 +1001,7 @@ components:
       type: apiKey
       in: cookie
       name: session_token
+    ServiceApiKey:
+      type: apiKey
+      in: header
+      name: X-Service-Api-Key
