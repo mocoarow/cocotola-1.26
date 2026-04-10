@@ -11,9 +11,9 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
-func validWorkbookArgs() (string, int, int, int, string, string, workbook.Visibility, time.Time, time.Time) {
+func validWorkbookArgs() (string, int, string, string, string, string, workbook.Visibility, time.Time, time.Time) {
 	now := time.Now()
-	return "wb-1", 1, 1, 1, "Test Workbook", "A test workbook", workbook.VisibilityPrivate(), now, now
+	return "wb-1", 1, "user-1", "org-1", "Test Workbook", "A test workbook", workbook.VisibilityPrivate(), now, now
 }
 
 func Test_NewWorkbook_shouldReturnWorkbook_whenAllFieldsAreValid(t *testing.T) {
@@ -64,27 +64,27 @@ func Test_NewWorkbook_shouldReturnError_whenSpaceIDIsZero(t *testing.T) {
 	require.Error(t, err)
 }
 
-func Test_NewWorkbook_shouldReturnError_whenOwnerIDIsZero(t *testing.T) {
+func Test_NewWorkbook_shouldReturnError_whenOwnerIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
 	id, spaceID, _, orgID, title, desc, vis, createdAt, updatedAt := validWorkbookArgs()
 
 	// when
-	_, err := workbook.NewWorkbook(id, spaceID, 0, orgID, title, desc, vis, createdAt, updatedAt)
+	_, err := workbook.NewWorkbook(id, spaceID, "", orgID, title, desc, vis, createdAt, updatedAt)
 
 	// then
 	require.Error(t, err)
 }
 
-func Test_NewWorkbook_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
+func Test_NewWorkbook_shouldReturnError_whenOrganizationIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
 	id, spaceID, ownerID, _, title, desc, vis, createdAt, updatedAt := validWorkbookArgs()
 
 	// when
-	_, err := workbook.NewWorkbook(id, spaceID, ownerID, 0, title, desc, vis, createdAt, updatedAt)
+	_, err := workbook.NewWorkbook(id, spaceID, ownerID, "", title, desc, vis, createdAt, updatedAt)
 
 	// then
 	require.Error(t, err)

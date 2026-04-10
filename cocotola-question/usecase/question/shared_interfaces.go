@@ -30,5 +30,5 @@ type workbookFinder interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }

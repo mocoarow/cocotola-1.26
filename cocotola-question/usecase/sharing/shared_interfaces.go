@@ -9,16 +9,16 @@ import (
 )
 
 type referenceCreator interface {
-	Create(ctx context.Context, userID int, workbookID string) (string, error)
+	Create(ctx context.Context, userID string, workbookID string) (string, error)
 }
 
 type referenceFinder interface {
-	FindByID(ctx context.Context, userID int, referenceID string) (*domainreference.WorkbookReference, error)
-	FindByUserID(ctx context.Context, userID int) ([]domainreference.WorkbookReference, error)
+	FindByID(ctx context.Context, userID string, referenceID string) (*domainreference.WorkbookReference, error)
+	FindByUserID(ctx context.Context, userID string) ([]domainreference.WorkbookReference, error)
 }
 
 type referenceDeleter interface {
-	Delete(ctx context.Context, userID int, referenceID string) error
+	Delete(ctx context.Context, userID string, referenceID string) error
 }
 
 type workbookFinder interface {
@@ -26,9 +26,9 @@ type workbookFinder interface {
 }
 
 type publicWorkbookFinder interface {
-	FindPublicByOrganizationID(ctx context.Context, organizationID int) ([]domainworkbook.Workbook, error)
+	FindPublicByOrganizationID(ctx context.Context, organizationID string) ([]domainworkbook.Workbook, error)
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type workbookCreator interface {
-	Create(ctx context.Context, spaceID int, ownerID int, organizationID int, title string, description string, visibility string) (string, error)
+	Create(ctx context.Context, spaceID int, ownerID string, organizationID string, title string, description string, visibility string) (string, error)
 }
 
 type workbookFinder interface {
@@ -25,5 +25,5 @@ type workbookDeleter interface {
 }
 
 type authorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID int, operatorID int, action domain.Action, resource domain.Resource) (bool, error)
+	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }

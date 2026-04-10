@@ -10,8 +10,8 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference"
 )
 
-func validRefArgs() (string, int, string, time.Time) {
-	return "ref-1", 1, "wb-1", time.Now()
+func validRefArgs() (string, string, string, time.Time) {
+	return "ref-1", "user-1", "wb-1", time.Now()
 }
 
 func Test_NewWorkbookReference_shouldReturnReference_whenAllFieldsAreValid(t *testing.T) {
@@ -44,14 +44,14 @@ func Test_NewWorkbookReference_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	require.Error(t, err)
 }
 
-func Test_NewWorkbookReference_shouldReturnError_whenUserIDIsZero(t *testing.T) {
+func Test_NewWorkbookReference_shouldReturnError_whenUserIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
 	id, _, wbID, addedAt := validRefArgs()
 
 	// when
-	_, err := reference.NewWorkbookReference(id, 0, wbID, addedAt)
+	_, err := reference.NewWorkbookReference(id, "", wbID, addedAt)
 
 	// then
 	require.Error(t, err)

@@ -10,8 +10,8 @@ import (
 
 // CreateWorkbookInput is the validated input for creating a workbook.
 type CreateWorkbookInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	SpaceID        int    `validate:"required,gt=0"`
 	Title          string `validate:"required,max=200"`
 	Description    string `validate:"max=1000"`
@@ -19,7 +19,7 @@ type CreateWorkbookInput struct {
 }
 
 // NewCreateWorkbookInput creates a validated CreateWorkbookInput.
-func NewCreateWorkbookInput(operatorID int, organizationID int, spaceID int, title string, description string, visibility string) (*CreateWorkbookInput, error) {
+func NewCreateWorkbookInput(operatorID string, organizationID string, spaceID int, title string, description string, visibility string) (*CreateWorkbookInput, error) {
 	m := &CreateWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -38,8 +38,8 @@ func NewCreateWorkbookInput(operatorID int, organizationID int, spaceID int, tit
 type CreateWorkbookOutput struct {
 	WorkbookID     string `validate:"required"`
 	SpaceID        int    `validate:"required,gt=0"`
-	OwnerID        int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OwnerID        string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	Title          string `validate:"required"`
 	Description    string
 	Visibility     string `validate:"required"`
@@ -48,7 +48,7 @@ type CreateWorkbookOutput struct {
 }
 
 // NewCreateWorkbookOutput creates a validated CreateWorkbookOutput.
-func NewCreateWorkbookOutput(workbookID string, spaceID int, ownerID int, organizationID int, title string, description string, visibility string, createdAt time.Time, updatedAt time.Time) (*CreateWorkbookOutput, error) {
+func NewCreateWorkbookOutput(workbookID string, spaceID int, ownerID string, organizationID string, title string, description string, visibility string, createdAt time.Time, updatedAt time.Time) (*CreateWorkbookOutput, error) {
 	m := &CreateWorkbookOutput{
 		WorkbookID:     workbookID,
 		SpaceID:        spaceID,
@@ -68,13 +68,13 @@ func NewCreateWorkbookOutput(workbookID string, spaceID int, ownerID int, organi
 
 // GetWorkbookInput is the validated input for getting a workbook.
 type GetWorkbookInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 }
 
 // NewGetWorkbookInput creates a validated GetWorkbookInput.
-func NewGetWorkbookInput(operatorID int, organizationID int, workbookID string) (*GetWorkbookInput, error) {
+func NewGetWorkbookInput(operatorID string, organizationID string, workbookID string) (*GetWorkbookInput, error) {
 	m := &GetWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -90,8 +90,8 @@ func NewGetWorkbookInput(operatorID int, organizationID int, workbookID string) 
 type Item struct {
 	WorkbookID     string
 	SpaceID        int
-	OwnerID        int
-	OrganizationID int
+	OwnerID        string
+	OrganizationID string
 	Title          string
 	Description    string
 	Visibility     string
@@ -106,13 +106,13 @@ type GetWorkbookOutput struct {
 
 // ListWorkbooksInput is the validated input for listing workbooks.
 type ListWorkbooksInput struct {
-	OperatorID     int `validate:"required,gt=0"`
-	OrganizationID int `validate:"required,gt=0"`
-	SpaceID        int `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
+	SpaceID        int    `validate:"required,gt=0"`
 }
 
 // NewListWorkbooksInput creates a validated ListWorkbooksInput.
-func NewListWorkbooksInput(operatorID int, organizationID int, spaceID int) (*ListWorkbooksInput, error) {
+func NewListWorkbooksInput(operatorID string, organizationID string, spaceID int) (*ListWorkbooksInput, error) {
 	m := &ListWorkbooksInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -131,8 +131,8 @@ type ListWorkbooksOutput struct {
 
 // UpdateWorkbookInput is the validated input for updating a workbook.
 type UpdateWorkbookInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	Title          string `validate:"required,max=200"`
 	Description    string `validate:"max=1000"`
@@ -140,7 +140,7 @@ type UpdateWorkbookInput struct {
 }
 
 // NewUpdateWorkbookInput creates a validated UpdateWorkbookInput.
-func NewUpdateWorkbookInput(operatorID int, organizationID int, workbookID string, title string, description string, visibility string) (*UpdateWorkbookInput, error) {
+func NewUpdateWorkbookInput(operatorID string, organizationID string, workbookID string, title string, description string, visibility string) (*UpdateWorkbookInput, error) {
 	m := &UpdateWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -162,13 +162,13 @@ type UpdateWorkbookOutput struct {
 
 // DeleteWorkbookInput is the validated input for deleting a workbook.
 type DeleteWorkbookInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 }
 
 // NewDeleteWorkbookInput creates a validated DeleteWorkbookInput.
-func NewDeleteWorkbookInput(operatorID int, organizationID int, workbookID string) (*DeleteWorkbookInput, error) {
+func NewDeleteWorkbookInput(operatorID string, organizationID string, workbookID string) (*DeleteWorkbookInput, error) {
 	m := &DeleteWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,

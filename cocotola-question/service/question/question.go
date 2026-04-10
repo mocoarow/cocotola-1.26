@@ -10,8 +10,8 @@ import (
 
 // AddQuestionInput is the validated input for adding a question.
 type AddQuestionInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	QuestionType   string `validate:"required"`
 	Content        string `validate:"required,max=10000"`
@@ -19,7 +19,7 @@ type AddQuestionInput struct {
 }
 
 // NewAddQuestionInput creates a validated AddQuestionInput.
-func NewAddQuestionInput(operatorID int, organizationID int, workbookID string, questionType string, content string, orderIndex int) (*AddQuestionInput, error) {
+func NewAddQuestionInput(operatorID string, organizationID string, workbookID string, questionType string, content string, orderIndex int) (*AddQuestionInput, error) {
 	m := &AddQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -51,14 +51,14 @@ type AddQuestionOutput struct {
 
 // GetQuestionInput is the validated input for getting a question.
 type GetQuestionInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	QuestionID     string `validate:"required"`
 }
 
 // NewGetQuestionInput creates a validated GetQuestionInput.
-func NewGetQuestionInput(operatorID int, organizationID int, workbookID string, questionID string) (*GetQuestionInput, error) {
+func NewGetQuestionInput(operatorID string, organizationID string, workbookID string, questionID string) (*GetQuestionInput, error) {
 	m := &GetQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -78,13 +78,13 @@ type GetQuestionOutput struct {
 
 // ListQuestionsInput is the validated input for listing questions.
 type ListQuestionsInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 }
 
 // NewListQuestionsInput creates a validated ListQuestionsInput.
-func NewListQuestionsInput(operatorID int, organizationID int, workbookID string) (*ListQuestionsInput, error) {
+func NewListQuestionsInput(operatorID string, organizationID string, workbookID string) (*ListQuestionsInput, error) {
 	m := &ListQuestionsInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -103,8 +103,8 @@ type ListQuestionsOutput struct {
 
 // UpdateQuestionInput is the validated input for updating a question.
 type UpdateQuestionInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	QuestionID     string `validate:"required"`
 	Content        string `validate:"required,max=10000"`
@@ -112,7 +112,7 @@ type UpdateQuestionInput struct {
 }
 
 // NewUpdateQuestionInput creates a validated UpdateQuestionInput.
-func NewUpdateQuestionInput(operatorID int, organizationID int, workbookID string, questionID string, content string, orderIndex int) (*UpdateQuestionInput, error) {
+func NewUpdateQuestionInput(operatorID string, organizationID string, workbookID string, questionID string, content string, orderIndex int) (*UpdateQuestionInput, error) {
 	m := &UpdateQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -134,14 +134,14 @@ type UpdateQuestionOutput struct {
 
 // DeleteQuestionInput is the validated input for deleting a question.
 type DeleteQuestionInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	QuestionID     string `validate:"required"`
 }
 
 // NewDeleteQuestionInput creates a validated DeleteQuestionInput.
-func NewDeleteQuestionInput(operatorID int, organizationID int, workbookID string, questionID string) (*DeleteQuestionInput, error) {
+func NewDeleteQuestionInput(operatorID string, organizationID string, workbookID string, questionID string) (*DeleteQuestionInput, error) {
 	m := &DeleteQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,

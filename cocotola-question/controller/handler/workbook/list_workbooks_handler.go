@@ -39,15 +39,15 @@ func NewListWorkbooksHandler(usecase ListWorkbooksUsecase) *ListWorkbooksHandler
 func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	organizationID := c.GetInt(controller.ContextFieldOrganizationID{})
-	if organizationID <= 0 {
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -88,23 +88,11 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 			return
 		}
-		oid, err := handler.SafeIntToInt32(wb.OwnerID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-		orgID, err := handler.SafeIntToInt32(wb.OrganizationID)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
 		items[i] = api.WorkbookResponse{
 			WorkbookID:     wb.WorkbookID,
 			SpaceID:        sid,
-			OwnerID:        oid,
-			OrganizationID: orgID,
+			OwnerID:        wb.OwnerID,
+			OrganizationID: wb.OrganizationID,
 			Title:          wb.Title,
 			Description:    wb.Description,
 			Visibility:     api.WorkbookResponseVisibility(wb.Visibility),

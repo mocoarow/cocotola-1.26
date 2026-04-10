@@ -15,8 +15,8 @@ const (
 type Workbook struct {
 	id             string
 	spaceID        int
-	ownerID        int
-	organizationID int
+	ownerID        string
+	organizationID string
 	title          string
 	description    string
 	visibility     Visibility
@@ -25,7 +25,7 @@ type Workbook struct {
 }
 
 // NewWorkbook creates a validated Workbook.
-func NewWorkbook(id string, spaceID int, ownerID int, organizationID int, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) (*Workbook, error) {
+func NewWorkbook(id string, spaceID int, ownerID string, organizationID string, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) (*Workbook, error) {
 	m := &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -44,7 +44,7 @@ func NewWorkbook(id string, spaceID int, ownerID int, organizationID int, title 
 }
 
 // ReconstructWorkbook reconstitutes a Workbook from persistence without validation.
-func ReconstructWorkbook(id string, spaceID int, ownerID int, organizationID int, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) *Workbook {
+func ReconstructWorkbook(id string, spaceID int, ownerID string, organizationID string, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) *Workbook {
 	return &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -65,11 +65,11 @@ func (w *Workbook) validate() error {
 	if w.spaceID <= 0 {
 		return errors.New("workbook space id must be positive")
 	}
-	if w.ownerID <= 0 {
-		return errors.New("workbook owner id must be positive")
+	if w.ownerID == "" {
+		return errors.New("workbook owner id is required")
 	}
-	if w.organizationID <= 0 {
-		return errors.New("workbook organization id must be positive")
+	if w.organizationID == "" {
+		return errors.New("workbook organization id is required")
 	}
 	if w.title == "" {
 		return errors.New("workbook title is required")
@@ -93,10 +93,10 @@ func (w *Workbook) ID() string { return w.id }
 func (w *Workbook) SpaceID() int { return w.spaceID }
 
 // OwnerID returns the owner user ID.
-func (w *Workbook) OwnerID() int { return w.ownerID }
+func (w *Workbook) OwnerID() string { return w.ownerID }
 
 // OrganizationID returns the organization ID.
-func (w *Workbook) OrganizationID() int { return w.organizationID }
+func (w *Workbook) OrganizationID() string { return w.organizationID }
 
 // Title returns the workbook title.
 func (w *Workbook) Title() string { return w.title }

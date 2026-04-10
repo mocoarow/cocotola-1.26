@@ -38,15 +38,15 @@ func NewUpdateWorkbookHandler(usecase UpdateWorkbookUsecase) *UpdateWorkbookHand
 func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetInt(controller.ContextFieldUserID{})
-	if userID <= 0 {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
 	}
 
-	organizationID := c.GetInt(controller.ContextFieldOrganizationID{})
-	if organizationID <= 0 {
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
 		return
@@ -91,25 +91,11 @@ func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 		return
 	}
 
-	ownerID, err := handler.SafeIntToInt32(output.OwnerID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert owner ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
-	orgID, err := handler.SafeIntToInt32(output.OrganizationID)
-	if err != nil {
-		h.logger.ErrorContext(ctx, "convert organization ID", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-		return
-	}
-
 	c.JSON(http.StatusOK, api.WorkbookResponse{
 		WorkbookID:     output.WorkbookID,
 		SpaceID:        spaceID,
-		OwnerID:        ownerID,
-		OrganizationID: orgID,
+		OwnerID:        output.OwnerID,
+		OrganizationID: output.OrganizationID,
 		Title:          output.Title,
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),

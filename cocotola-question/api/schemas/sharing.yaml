@@ -56,9 +56,9 @@ PublicWorkbookResponse:
       x-go-name: WorkbookID
       pattern: ^.*$
     ownerId:
-      type: integer
+      type: string
       x-go-name: OwnerID
-      format: int32
+      pattern: ^.*$
     title:
       type: string
       pattern: ^.*$

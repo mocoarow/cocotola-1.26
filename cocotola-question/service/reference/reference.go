@@ -10,13 +10,13 @@ import (
 
 // ShareWorkbookInput is the validated input for sharing (importing) a workbook.
 type ShareWorkbookInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 }
 
 // NewShareWorkbookInput creates a validated ShareWorkbookInput.
-func NewShareWorkbookInput(operatorID int, organizationID int, workbookID string) (*ShareWorkbookInput, error) {
+func NewShareWorkbookInput(operatorID string, organizationID string, workbookID string) (*ShareWorkbookInput, error) {
 	m := &ShareWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -37,12 +37,12 @@ type ShareWorkbookOutput struct {
 
 // ListSharedInput is the validated input for listing shared workbooks.
 type ListSharedInput struct {
-	OperatorID     int `validate:"required,gt=0"`
-	OrganizationID int `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 }
 
 // NewListSharedInput creates a validated ListSharedInput.
-func NewListSharedInput(operatorID int, organizationID int) (*ListSharedInput, error) {
+func NewListSharedInput(operatorID string, organizationID string) (*ListSharedInput, error) {
 	m := &ListSharedInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -67,13 +67,13 @@ type ListSharedOutput struct {
 
 // UnshareInput is the validated input for unsharing a workbook.
 type UnshareInput struct {
-	OperatorID     int    `validate:"required,gt=0"`
-	OrganizationID int    `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 	ReferenceID    string `validate:"required"`
 }
 
 // NewUnshareInput creates a validated UnshareInput.
-func NewUnshareInput(operatorID int, organizationID int, referenceID string) (*UnshareInput, error) {
+func NewUnshareInput(operatorID string, organizationID string, referenceID string) (*UnshareInput, error) {
 	m := &UnshareInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -87,12 +87,12 @@ func NewUnshareInput(operatorID int, organizationID int, referenceID string) (*U
 
 // ListPublicInput is the validated input for listing public workbooks.
 type ListPublicInput struct {
-	OperatorID     int `validate:"required,gt=0"`
-	OrganizationID int `validate:"required,gt=0"`
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
 }
 
 // NewListPublicInput creates a validated ListPublicInput.
-func NewListPublicInput(operatorID int, organizationID int) (*ListPublicInput, error) {
+func NewListPublicInput(operatorID string, organizationID string) (*ListPublicInput, error) {
 	m := &ListPublicInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -106,7 +106,7 @@ func NewListPublicInput(operatorID int, organizationID int) (*ListPublicInput, e
 // PublicWorkbookItem represents a public workbook.
 type PublicWorkbookItem struct {
 	WorkbookID  string
-	OwnerID     int
+	OwnerID     string
 	Title       string
 	Description string
 	CreatedAt   time.Time

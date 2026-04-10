@@ -75,14 +75,12 @@ func run() (int, error) {
 	defer authResult.Close()
 
 	// initialize question module
-	orgResolver := func(ctx context.Context, name string) (int, error) {
-		_, err := authResult.OrgFinder.FindByName(ctx, name)
+	orgResolver := func(ctx context.Context, name string) (string, error) {
+		org, err := authResult.OrgFinder.FindByName(ctx, name)
 		if err != nil {
-			return 0, fmt.Errorf("find organization by name %s: %w", name, err)
+			return "", fmt.Errorf("find organization by name %s: %w", name, err)
 		}
-		// TODO(uuidv7-phase2): cocotola-question's resolver still expects int.
-		// Once question migrates to UUIDs, return the VO string instead of -1.
-		return -1, nil
+		return org.ID().String(), nil
 	}
 	authzAdapter := &authorizationCheckerAdapter{inner: authResult.AuthzChecker}
 	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authResult.AuthMiddleware, authzAdapter, orgResolver)

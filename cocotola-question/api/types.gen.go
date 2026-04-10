@@ -83,7 +83,7 @@ type ListWorkbooksResponse struct {
 type PublicWorkbookResponse struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	Description string    `json:"description"`
-	OwnerID     int32     `json:"ownerId"`
+	OwnerID     string    `json:"ownerId"`
 	Title       string    `json:"title"`
 	WorkbookID  string    `json:"workbookId"`
 }
@@ -132,8 +132,8 @@ type UpdateWorkbookRequestVisibility string
 type WorkbookResponse struct {
 	CreatedAt      time.Time                  `json:"createdAt"`
 	Description    string                     `json:"description"`
-	OrganizationID int32                      `json:"organizationId"`
-	OwnerID        int32                      `json:"ownerId"`
+	OrganizationID string                     `json:"organizationId"`
+	OwnerID        string                     `json:"ownerId"`
 	SpaceID        int32                      `json:"spaceId"`
 	Title          string                     `json:"title"`
 	UpdatedAt      time.Time                  `json:"updatedAt"`

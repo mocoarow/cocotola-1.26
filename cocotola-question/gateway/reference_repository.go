@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"cloud.google.com/go/firestore"
@@ -26,7 +25,7 @@ type referenceRecord struct {
 	AddedAt    time.Time `firestore:"addedAt"`
 }
 
-func toReferenceDomain(id string, userID int, r *referenceRecord) *domainreference.WorkbookReference {
+func toReferenceDomain(id string, userID string, r *referenceRecord) *domainreference.WorkbookReference {
 	return domainreference.ReconstructWorkbookReference(id, userID, r.WorkbookID, r.AddedAt)
 }
 
@@ -40,12 +39,12 @@ func NewReferenceRepository(client *firestore.Client) *ReferenceRepository {
 	return &ReferenceRepository{client: client}
 }
 
-func (r *ReferenceRepository) refsCol(userID int) *firestore.CollectionRef {
-	return r.client.Collection(usersCollection).Doc(strconv.Itoa(userID)).Collection(workbookRefsSubCol)
+func (r *ReferenceRepository) refsCol(userID string) *firestore.CollectionRef {
+	return r.client.Collection(usersCollection).Doc(userID).Collection(workbookRefsSubCol)
 }
 
 // Create inserts a new workbook reference and returns the auto-generated document ID.
-func (r *ReferenceRepository) Create(ctx context.Context, userID int, workbookID string) (string, error) {
+func (r *ReferenceRepository) Create(ctx context.Context, userID string, workbookID string) (string, error) {
 	// Check for duplicate
 	iter := r.refsCol(userID).Where("workbookID", "==", workbookID).Limit(1).Documents(ctx)
 	defer iter.Stop()
@@ -66,7 +65,7 @@ func (r *ReferenceRepository) Create(ctx context.Context, userID int, workbookID
 }
 
 // FindByID looks up a reference by user ID and reference ID.
-func (r *ReferenceRepository) FindByID(ctx context.Context, userID int, referenceID string) (*domainreference.WorkbookReference, error) {
+func (r *ReferenceRepository) FindByID(ctx context.Context, userID string, referenceID string) (*domainreference.WorkbookReference, error) {
 	doc, err := r.refsCol(userID).Doc(referenceID).Get(ctx)
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -82,7 +81,7 @@ func (r *ReferenceRepository) FindByID(ctx context.Context, userID int, referenc
 }
 
 // FindByUserID returns all references for the given user.
-func (r *ReferenceRepository) FindByUserID(ctx context.Context, userID int) ([]domainreference.WorkbookReference, error) {
+func (r *ReferenceRepository) FindByUserID(ctx context.Context, userID string) ([]domainreference.WorkbookReference, error) {
 	iter := r.refsCol(userID).Documents(ctx)
 	defer iter.Stop()
 
@@ -106,7 +105,7 @@ func (r *ReferenceRepository) FindByUserID(ctx context.Context, userID int) ([]d
 }
 
 // Delete removes a reference document.
-func (r *ReferenceRepository) Delete(ctx context.Context, userID int, referenceID string) error {
+func (r *ReferenceRepository) Delete(ctx context.Context, userID string, referenceID string) error {
 	_, err := r.refsCol(userID).Doc(referenceID).Delete(ctx)
 	if err != nil {
 		return fmt.Errorf("delete reference: %w", err)
