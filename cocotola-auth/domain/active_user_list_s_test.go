@@ -24,7 +24,7 @@ func Test_NewActiveUserList_shouldReturnError_whenOrganizationIDIsZero(t *testin
 	_, err := domain.NewActiveUserList(domain.OrganizationID{}, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ActiveUserList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {

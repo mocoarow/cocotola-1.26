@@ -51,7 +51,7 @@ func Test_NewSpace_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := space.NewSpace(domain.SpaceID{}, orgID, ownerID, keyName, name, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -64,7 +64,7 @@ func Test_NewSpace_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	_, err := space.NewSpace(id, domain.OrganizationID{}, ownerID, keyName, name, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldReturnError_whenOwnerIDIsZero(t *testing.T) {
@@ -77,7 +77,7 @@ func Test_NewSpace_shouldReturnError_whenOwnerIDIsZero(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, domain.AppUserID{}, keyName, name, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldReturnError_whenKeyNameIsEmpty(t *testing.T) {
@@ -90,7 +90,7 @@ func Test_NewSpace_shouldReturnError_whenKeyNameIsEmpty(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, ownerID, "", name, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldReturnError_whenKeyNameExceedsMaxLength(t *testing.T) {
@@ -104,7 +104,7 @@ func Test_NewSpace_shouldReturnError_whenKeyNameExceedsMaxLength(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, ownerID, longKeyName, name, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldSucceed_whenKeyNameIsAtMaxLength(t *testing.T) {
@@ -132,7 +132,7 @@ func Test_NewSpace_shouldReturnError_whenNameIsEmpty(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, ownerID, keyName, "", spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
@@ -146,7 +146,7 @@ func Test_NewSpace_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, ownerID, keyName, longName, spaceType, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewSpace_shouldSucceed_whenNameIsAtMaxLength(t *testing.T) {
@@ -174,7 +174,7 @@ func Test_NewSpace_shouldReturnError_whenSpaceTypeIsZeroValue(t *testing.T) {
 	_, err := space.NewSpace(id, orgID, ownerID, keyName, name, space.Type{}, deleted)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ReconstructSpace_shouldReturnSpace_withoutValidation(t *testing.T) {

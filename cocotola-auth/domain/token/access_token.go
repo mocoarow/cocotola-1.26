@@ -2,7 +2,7 @@
 package token
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -55,25 +55,25 @@ func ReconstructAccessToken(id string, refreshTokenID string, userID domain.AppU
 
 func (t *AccessToken) validate() error {
 	if t.id == "" {
-		return errors.New("access token id is required")
+		return fmt.Errorf("access token id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.refreshTokenID == "" {
-		return errors.New("access token refresh token id is required")
+		return fmt.Errorf("access token refresh token id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.userID.IsZero() {
-		return errors.New("access token user id is required")
+		return fmt.Errorf("access token user id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.loginID == "" {
-		return errors.New("access token login id is required")
+		return fmt.Errorf("access token login id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.organizationName == "" {
-		return errors.New("access token organization name is required")
+		return fmt.Errorf("access token organization name is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.createdAt.IsZero() {
-		return errors.New("access token created at is required")
+		return fmt.Errorf("access token created at is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.expiresAt.IsZero() {
-		return errors.New("access token expires at is required")
+		return fmt.Errorf("access token expires at is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

@@ -45,7 +45,7 @@ func Test_NewHierarchyEdge_shouldReturnError_whenParentIDIsZero(t *testing.T) {
 	_, err := group.NewHierarchyEdge(domain.GroupID{}, fixtureHierGroupID2)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewHierarchyEdge_shouldReturnError_whenChildIDIsZero(t *testing.T) {
@@ -55,7 +55,7 @@ func Test_NewHierarchyEdge_shouldReturnError_whenChildIDIsZero(t *testing.T) {
 	_, err := group.NewHierarchyEdge(fixtureHierGroupID1, domain.GroupID{})
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -65,7 +65,7 @@ func Test_NewGroupHierarchy_shouldReturnError_whenOrganizationIDIsZero(t *testin
 	_, err := group.NewHierarchy(domain.OrganizationID{}, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_GroupHierarchy_AddEdge_shouldSucceed_whenNoCycle(t *testing.T) {

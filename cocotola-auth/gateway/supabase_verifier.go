@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -52,22 +51,22 @@ func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (stri
 		jwt.WithValidMethods(allowedSupabaseAlgs()),
 	)
 	if err != nil {
-		return "", "", fmt.Errorf("parse supabase token: %w", err)
+		return "", "", fmt.Errorf("parse supabase token: %w: %w", err, domain.ErrUnauthenticated)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return "", "", errors.New("invalid supabase token claims")
+		return "", "", fmt.Errorf("invalid supabase token claims: %w", domain.ErrUnauthenticated)
 	}
 
 	sub, _ := claims.GetSubject()
 	if sub == "" {
-		return "", "", errors.New("supabase token missing sub claim")
+		return "", "", fmt.Errorf("supabase token missing sub claim: %w", domain.ErrUnauthenticated)
 	}
 
 	email, _ := claims["email"].(string)
 	if email == "" {
-		return "", "", errors.New("supabase token missing email claim")
+		return "", "", fmt.Errorf("supabase token missing email claim: %w", domain.ErrUnauthenticated)
 	}
 
 	if !readEmailVerified(claims) {

@@ -2,8 +2,10 @@
 package reference
 
 import (
-	"errors"
+	"fmt"
 	"time"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 // WorkbookReference represents a user's reference link to another workbook.
@@ -40,13 +42,13 @@ func ReconstructWorkbookReference(id string, userID string, workbookID string, a
 
 func (r *WorkbookReference) validate() error {
 	if r.id == "" {
-		return errors.New("workbook reference id is required")
+		return fmt.Errorf("workbook reference id is required: %w", domain.ErrInvalidArgument)
 	}
 	if r.userID == "" {
-		return errors.New("workbook reference user id is required")
+		return fmt.Errorf("workbook reference user id is required: %w", domain.ErrInvalidArgument)
 	}
 	if r.workbookID == "" {
-		return errors.New("workbook reference workbook id is required")
+		return fmt.Errorf("workbook reference workbook id is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

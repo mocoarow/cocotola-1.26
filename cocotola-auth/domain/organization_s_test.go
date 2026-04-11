@@ -41,7 +41,7 @@ func Test_NewOrganization_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := domain.NewOrganization(domain.OrganizationID{}, name, maxUsers, maxGroups)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewOrganization_shouldReturnError_whenNameIsEmpty(t *testing.T) {
@@ -54,7 +54,7 @@ func Test_NewOrganization_shouldReturnError_whenNameIsEmpty(t *testing.T) {
 	_, err := domain.NewOrganization(id, "", maxUsers, maxGroups)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewOrganization_shouldReturnError_whenMaxActiveUsersIsZero(t *testing.T) {
@@ -67,7 +67,7 @@ func Test_NewOrganization_shouldReturnError_whenMaxActiveUsersIsZero(t *testing.
 	_, err := domain.NewOrganization(id, name, 0, maxGroups)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewOrganization_shouldReturnError_whenMaxActiveGroupsIsZero(t *testing.T) {
@@ -80,7 +80,7 @@ func Test_NewOrganization_shouldReturnError_whenMaxActiveGroupsIsZero(t *testing
 	_, err := domain.NewOrganization(id, name, maxUsers, 0)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewOrganization_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
@@ -94,7 +94,7 @@ func Test_NewOrganization_shouldReturnError_whenNameExceedsMaxLength(t *testing.
 	_, err := domain.NewOrganization(id, longName, maxUsers, maxGroups)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewOrganization_shouldSucceed_whenNameIsAtMaxLength(t *testing.T) {

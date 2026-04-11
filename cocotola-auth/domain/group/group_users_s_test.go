@@ -24,7 +24,7 @@ func Test_NewGroupUsers_shouldReturnError_whenGroupIDIsZero(t *testing.T) {
 	_, err := group.NewUsers(domain.GroupID{}, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_GroupUsers_Add_shouldSucceed_whenUserNotInGroup(t *testing.T) {

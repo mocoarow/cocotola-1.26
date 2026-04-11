@@ -47,7 +47,7 @@ func Test_NewAppUser_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := user.NewAppUser(domain.AppUserID{}, orgID, loginID, hashedPw, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAppUser_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -60,7 +60,7 @@ func Test_NewAppUser_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	_, err := user.NewAppUser(id, domain.OrganizationID{}, loginID, hashedPw, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAppUser_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
@@ -73,7 +73,7 @@ func Test_NewAppUser_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
 	_, err := user.NewAppUser(id, orgID, "", hashedPw, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_AppUser_Enable_shouldSetEnabledTrue_whenDisabled(t *testing.T) {

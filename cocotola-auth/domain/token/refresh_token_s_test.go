@@ -51,7 +51,7 @@ func Test_NewRefreshToken_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := token.NewRefreshToken("", userID, loginID, org, hash, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewRefreshToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
@@ -64,7 +64,7 @@ func Test_NewRefreshToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	_, err := token.NewRefreshToken(id, domain.AppUserID{}, loginID, org, hash, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewRefreshToken_shouldReturnError_whenTokenHashIsInvalid(t *testing.T) {
@@ -77,7 +77,7 @@ func Test_NewRefreshToken_shouldReturnError_whenTokenHashIsInvalid(t *testing.T)
 	_, err := token.NewRefreshToken(id, userID, loginID, org, "short", created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_RefreshToken_Revoke_shouldSetRevokedAt_whenTokenIsActive(t *testing.T) {

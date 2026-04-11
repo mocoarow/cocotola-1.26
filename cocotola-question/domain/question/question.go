@@ -1,9 +1,10 @@
 package question
 
 import (
-	"errors"
 	"fmt"
 	"time"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 const (
@@ -50,19 +51,19 @@ func ReconstructQuestion(id string, questionType Type, content string, orderInde
 
 func (q *Question) validate() error {
 	if q.id == "" {
-		return errors.New("question id is required")
+		return fmt.Errorf("question id is required: %w", domain.ErrInvalidArgument)
 	}
 	if q.questionType.Value() == "" {
-		return errors.New("question type is required")
+		return fmt.Errorf("question type is required: %w", domain.ErrInvalidArgument)
 	}
 	if q.content == "" {
-		return errors.New("question content is required")
+		return fmt.Errorf("question content is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(q.content) > maxContentLength {
-		return fmt.Errorf("question content must not exceed %d characters", maxContentLength)
+		return fmt.Errorf("question content must not exceed %d characters: %w", maxContentLength, domain.ErrInvalidArgument)
 	}
 	if q.orderIndex < 0 {
-		return errors.New("question order index must not be negative")
+		return fmt.Errorf("question order index must not be negative: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

@@ -1,7 +1,6 @@
 package group
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -16,7 +15,7 @@ type Users struct {
 // NewUsers creates a validated Users aggregate.
 func NewUsers(groupID domain.GroupID, userIDs []domain.AppUserID) (*Users, error) {
 	if groupID.IsZero() {
-		return nil, errors.New("group users group id must not be zero")
+		return nil, fmt.Errorf("group users group id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	return &Users{memberSetBase[domain.AppUserID]{idset.New[domain.GroupID, domain.AppUserID](groupID, userIDs)}}, nil
 }

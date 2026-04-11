@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
@@ -39,7 +40,7 @@ func Test_NewQuestionType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 			_, err := question.NewType(tt.value)
 
 			// then
-			require.Error(t, err)
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
 		})
 	}
 }

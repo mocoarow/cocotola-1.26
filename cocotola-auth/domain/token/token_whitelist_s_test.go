@@ -310,8 +310,7 @@ func Test_NewWhitelist_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	_, err := token.NewWhitelist(domain.AppUserID{}, nil, 3)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "user id")
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsZero(t *testing.T) {
@@ -321,8 +320,7 @@ func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsZero(t *testing.T) {
 	_, err := token.NewWhitelist(fixtureAppUserID, nil, 0)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "max size must be positive")
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsNegative(t *testing.T) {
@@ -332,6 +330,5 @@ func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsNegative(t *testing.T) {
 	_, err := token.NewWhitelist(fixtureAppUserID, nil, -1)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "max size must be positive")
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }

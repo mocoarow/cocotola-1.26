@@ -1,7 +1,6 @@
 package group
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -16,7 +15,7 @@ type ChildGroups struct {
 // NewChildGroups creates a validated ChildGroups aggregate.
 func NewChildGroups(groupID domain.GroupID, childGroupIDs []domain.GroupID) (*ChildGroups, error) {
 	if groupID.IsZero() {
-		return nil, errors.New("group child groups group id must not be zero")
+		return nil, fmt.Errorf("group child groups group id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	return &ChildGroups{memberSetBase[domain.GroupID]{idset.New[domain.GroupID, domain.GroupID](groupID, childGroupIDs)}}, nil
 }

@@ -68,8 +68,11 @@ linters:
     - wsl_v5
   settings:
     forbidigo:
+      analyze-types: true
       forbid:
         - pattern: ^fmt\.Print.*$
+        - pattern: ^(github\.com/stretchr/testify/require\.Error|require\.Error)$
+          msg: "use require.ErrorIs or require.ErrorContains instead of require.Error"
     gocognit:
       min-complexity: 20
     gocyclo:

@@ -1,7 +1,6 @@
 package space
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -58,28 +57,28 @@ func ReconstructSpace(id domain.SpaceID, organizationID domain.OrganizationID, o
 
 func (s *Space) validate() error {
 	if s.id.IsZero() {
-		return errors.New("space id must not be zero")
+		return fmt.Errorf("space id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if s.organizationID.IsZero() {
-		return errors.New("space organization id must not be zero")
+		return fmt.Errorf("space organization id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if s.ownerID.IsZero() {
-		return errors.New("space owner id must not be zero")
+		return fmt.Errorf("space owner id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if s.keyName == "" {
-		return errors.New("space key name is required")
+		return fmt.Errorf("space key name is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(s.keyName) > maxSpaceKeyNameLength {
-		return fmt.Errorf("space key name must not exceed %d characters", maxSpaceKeyNameLength)
+		return fmt.Errorf("space key name must not exceed %d characters: %w", maxSpaceKeyNameLength, domain.ErrInvalidArgument)
 	}
 	if s.name == "" {
-		return errors.New("space name is required")
+		return fmt.Errorf("space name is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(s.name) > maxSpaceNameLength {
-		return fmt.Errorf("space name must not exceed %d characters", maxSpaceNameLength)
+		return fmt.Errorf("space name must not exceed %d characters: %w", maxSpaceNameLength, domain.ErrInvalidArgument)
 	}
 	if s.spaceType.Value() == "" {
-		return errors.New("space type is required")
+		return fmt.Errorf("space type is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

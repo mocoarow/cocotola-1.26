@@ -1,7 +1,11 @@
 // Package question contains the question entity of the cocotola-question domain.
 package question
 
-import "errors"
+import (
+	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+)
 
 // Type represents the type of a question.
 type Type struct {
@@ -21,7 +25,7 @@ func NewType(value string) (Type, error) {
 	case questionTypeDefault:
 		return TypeDefault(), nil
 	default:
-		return Type{}, errors.New("invalid question type: must be 'default'")
+		return Type{}, fmt.Errorf("invalid question type: must be 'default': %w", domain.ErrInvalidArgument)
 	}
 }
 

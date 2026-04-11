@@ -172,7 +172,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenEventTypeIsWrong(t *t
 	err := handler.Handle(context.Background(), badEvent{})
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 	spaceRepoMock.AssertNotCalled(t, "Save")
 }
 

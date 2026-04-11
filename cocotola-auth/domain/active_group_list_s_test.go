@@ -26,7 +26,7 @@ func Test_NewActiveGroupList_shouldReturnError_whenOrganizationIDIsZero(t *testi
 	_, err := domain.NewActiveGroupList(domain.OrganizationID{}, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ActiveGroupList_Add_shouldSucceed_whenUnderLimit(t *testing.T) {

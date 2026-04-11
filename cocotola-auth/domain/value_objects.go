@@ -2,7 +2,6 @@ package domain
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 )
 
@@ -15,10 +14,10 @@ type TokenHash string
 // NewTokenHash creates a validated TokenHash.
 func NewTokenHash(hash string) (TokenHash, error) {
 	if len(hash) != TokenHashLength {
-		return "", fmt.Errorf("token hash must be %d characters, got %d", TokenHashLength, len(hash))
+		return "", fmt.Errorf("token hash must be %d characters, got %d: %w", TokenHashLength, len(hash), ErrInvalidArgument)
 	}
 	if _, err := hex.DecodeString(hash); err != nil {
-		return "", fmt.Errorf("token hash must be valid hex: %w", err)
+		return "", fmt.Errorf("token hash must be valid hex: %w", ErrInvalidArgument)
 	}
 	return TokenHash(hash), nil
 }
@@ -34,7 +33,7 @@ type LoginID string
 // NewLoginID creates a validated LoginID.
 func NewLoginID(id string) (LoginID, error) {
 	if id == "" {
-		return "", errors.New("login id must not be empty")
+		return "", fmt.Errorf("login id must not be empty: %w", ErrInvalidArgument)
 	}
 	return LoginID(id), nil
 }

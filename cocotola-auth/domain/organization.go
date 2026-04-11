@@ -1,9 +1,6 @@
 package domain
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
 const maxOrganizationNameLength = 255
 
@@ -44,19 +41,19 @@ func ReconstructOrganization(id OrganizationID, name string, maxActiveUsers int,
 
 func (o *Organization) validate() error {
 	if o.id.IsZero() {
-		return errors.New("organization id must not be zero")
+		return fmt.Errorf("organization id must not be zero: %w", ErrInvalidArgument)
 	}
 	if o.name == "" {
-		return errors.New("organization name is required")
+		return fmt.Errorf("organization name is required: %w", ErrInvalidArgument)
 	}
 	if len(o.name) > maxOrganizationNameLength {
-		return fmt.Errorf("organization name must not exceed %d characters", maxOrganizationNameLength)
+		return fmt.Errorf("organization name must not exceed %d characters: %w", maxOrganizationNameLength, ErrInvalidArgument)
 	}
 	if o.maxActiveUsers <= 0 {
-		return errors.New("organization max active users must be positive")
+		return fmt.Errorf("organization max active users must be positive: %w", ErrInvalidArgument)
 	}
 	if o.maxActiveGroups <= 0 {
-		return errors.New("organization max active groups must be positive")
+		return fmt.Errorf("organization max active groups must be positive: %w", ErrInvalidArgument)
 	}
 	return nil
 }

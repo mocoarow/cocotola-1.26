@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
@@ -61,10 +62,9 @@ func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsInvalid(t *te
 	userInfo, jti, err := m.ParseAccessToken("invalid-token-string")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 	assert.Nil(t, userInfo)
 	assert.Empty(t, jti)
-	assert.Contains(t, err.Error(), "parse token")
 }
 
 func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsSignedWithDifferentKey(t *testing.T) {
@@ -80,10 +80,9 @@ func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsSignedWithDif
 	userInfo, jti, err := parser.ParseAccessToken(token)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 	assert.Nil(t, userInfo)
 	assert.Empty(t, jti)
-	assert.Contains(t, err.Error(), "parse token")
 }
 
 func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsExpired(t *testing.T) {
@@ -98,10 +97,9 @@ func Test_JWTManager_ParseAccessToken_shouldReturnError_whenTokenIsExpired(t *te
 	userInfo, jti, err := m.ParseAccessToken(token)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 	assert.Nil(t, userInfo)
 	assert.Empty(t, jti)
-	assert.Contains(t, err.Error(), "parse token")
 }
 
 func Test_JWTManager_ParseAccessToken_shouldReturnExpiresAt(t *testing.T) {

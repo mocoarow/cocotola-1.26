@@ -1,7 +1,7 @@
 package token
 
 import (
-	"errors"
+	"fmt"
 	"sort"
 	"time"
 
@@ -27,10 +27,10 @@ type Whitelist struct {
 // NewWhitelist creates a new Whitelist with validated parameters.
 func NewWhitelist(userID domain.AppUserID, entries []WhitelistEntry, maxSize int) (*Whitelist, error) {
 	if userID.IsZero() {
-		return nil, errors.New("whitelist user id is required")
+		return nil, fmt.Errorf("whitelist user id is required: %w", domain.ErrInvalidArgument)
 	}
 	if maxSize <= 0 {
-		return nil, errors.New("whitelist max size must be positive")
+		return nil, fmt.Errorf("whitelist max size must be positive: %w", domain.ErrInvalidArgument)
 	}
 	copied := make([]WhitelistEntry, len(entries))
 	copy(copied, entries)

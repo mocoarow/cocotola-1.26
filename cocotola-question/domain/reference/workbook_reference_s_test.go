@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference"
 )
 
@@ -41,7 +42,7 @@ func Test_NewWorkbookReference_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := reference.NewWorkbookReference("", userID, wbID, addedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbookReference_shouldReturnError_whenUserIDIsEmpty(t *testing.T) {
@@ -54,7 +55,7 @@ func Test_NewWorkbookReference_shouldReturnError_whenUserIDIsEmpty(t *testing.T)
 	_, err := reference.NewWorkbookReference(id, "", wbID, addedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbookReference_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
@@ -67,7 +68,7 @@ func Test_NewWorkbookReference_shouldReturnError_whenWorkbookIDIsEmpty(t *testin
 	_, err := reference.NewWorkbookReference(id, userID, "", addedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ReconstructWorkbookReference_shouldReturnReference_withoutValidation(t *testing.T) {

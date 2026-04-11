@@ -103,7 +103,7 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 	// Only attempt to link an existing local account when the create failed
 	// because of a duplicate login_id.
 	if !errors.Is(createErr, gorm.ErrDuplicatedKey) {
-		return nil, fmt.Errorf("save new app user: %w", createErr)
+		return nil, fmt.Errorf("save new app user: %w: %w", createErr, domain.ErrInternal)
 	}
 
 	// Account linking: a user may already exist with the same login ID (e.g. password signup).

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
@@ -16,7 +15,7 @@ type ActiveUserList struct {
 // NewActiveUserList creates a validated ActiveUserList.
 func NewActiveUserList(organizationID OrganizationID, entries []AppUserID) (*ActiveUserList, error) {
 	if organizationID.IsZero() {
-		return nil, errors.New("active user list organization id must not be zero")
+		return nil, fmt.Errorf("active user list organization id must not be zero: %w", ErrInvalidArgument)
 	}
 	return &ActiveUserList{activeListBase[AppUserID]{idset.New[OrganizationID, AppUserID](organizationID, entries)}}, nil
 }
