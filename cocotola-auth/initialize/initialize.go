@@ -117,6 +117,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		return nil, fmt.Errorf("new supabase verifier: %w", err)
 	}
 	appUserRepo := gateway.NewAppUserRepository(db)
+	appUserProviderRepo := gateway.NewAppUserProviderRepository(db)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
 		guestAuthenticator,
@@ -130,6 +131,8 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		tokenCache,
 		usecaseConfig,
 		supabaseVerifier,
+		appUserProviderRepo,
+		appUserProviderRepo,
 		appUserRepo,
 		appUserRepo,
 		appUserRepo,

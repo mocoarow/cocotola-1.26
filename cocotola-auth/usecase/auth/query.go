@@ -82,9 +82,19 @@ type SupabaseVerifier interface {
 	Verify(ctx context.Context, tokenString string) (sub string, email string, err error)
 }
 
-// AppUserProviderFinder finds an app user by external provider ID.
+// AppUserProviderFinder finds an app user provider link by external provider ID.
 type AppUserProviderFinder interface {
-	FindByProviderID(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*domainuser.AppUser, error)
+	FindByProviderID(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*domainuser.AppUserProvider, error)
+}
+
+// AppUserProviderSaver persists an AppUserProvider entity.
+type AppUserProviderSaver interface {
+	Save(ctx context.Context, provider *domainuser.AppUserProvider) error
+}
+
+// AppUserByIDFinder finds an app user by ID.
+type AppUserByIDFinder interface {
+	FindByID(ctx context.Context, id domain.AppUserID) (*domainuser.AppUser, error)
 }
 
 // AppUserByLoginIDFinder finds an existing app user by organization and login ID.
@@ -123,7 +133,9 @@ func NewQuery(
 	tokenCache TokenCache,
 	config UsecaseConfig,
 	supabaseVerifier SupabaseVerifier,
-	appUserFinder AppUserProviderFinder,
+	providerFinder AppUserProviderFinder,
+	providerSaver AppUserProviderSaver,
+	appUserByIDFinder AppUserByIDFinder,
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
@@ -133,6 +145,6 @@ func NewQuery(
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, appUserFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
+		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
 	}
 }

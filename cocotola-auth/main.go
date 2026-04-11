@@ -118,6 +118,7 @@ func run() (int, error) {
 	}
 	defer supabaseVerifier.Close()
 	appUserRepo := gateway.NewAppUserRepository(dbConn.DB)
+	appUserProviderRepo := gateway.NewAppUserProviderRepository(dbConn.DB)
 	authUsecase := authusecase.NewUsecase(
 		userAuthenticator,
 		guestAuthenticator,
@@ -131,6 +132,8 @@ func run() (int, error) {
 		tokenCache,
 		usecaseConfig,
 		supabaseVerifier,
+		appUserProviderRepo,
+		appUserProviderRepo,
 		appUserRepo,
 		appUserRepo,
 		appUserRepo,

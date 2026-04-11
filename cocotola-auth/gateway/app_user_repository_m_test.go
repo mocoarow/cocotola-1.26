@@ -22,7 +22,7 @@ func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T)
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-save-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "testuser@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "testuser@example.com", "", true)
 
 	// when
 	err := repo.Save(ctx, user)
@@ -39,7 +39,7 @@ func Test_AppUserRepository_FindByID_shouldReturnAppUser_whenUserExists(t *testi
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "findbyid@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "findbyid@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
@@ -82,7 +82,7 @@ func Test_AppUserRepository_FindByLoginID_shouldReturnAppUser_whenLoginIDExists(
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "appuser-findbyloginid-org")
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "login@example.com", "", "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "login@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	// when
@@ -120,7 +120,7 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	hashedPw := "$2a$10$abcdefghij"
 
 	repo := gateway.NewAppUserRepository(tx)
-	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "pw-test@example.com", hashedPw, "", "", true)
+	user := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "pw-test@example.com", hashedPw, true)
 	require.NoError(t, repo.Save(ctx, user))
 
 	var inserted gateway.AppUserRecordForTest
@@ -135,7 +135,7 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	require.NoError(t, err)
 	newHashedPw := "$2a$10$newhashedpw"
 	updated := domainuser.
-		ReconstructAppUser(loaded.ID(), loaded.OrganizationID(), loaded.LoginID(), newHashedPw, loaded.Provider(), loaded.ProviderID(), false).
+		ReconstructAppUser(loaded.ID(), loaded.OrganizationID(), loaded.LoginID(), newHashedPw, false).
 		WithVersion(loaded.Version())
 	err = repo.Save(ctx, updated)
 
@@ -158,7 +158,7 @@ func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionM
 	orgID := setupOrganization(ctx, t, tx, "appuser-cas-org")
 	repo := gateway.NewAppUserRepository(tx)
 
-	initial := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "cas@example.com", "", "", "", true)
+	initial := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "cas@example.com", "", true)
 	require.NoError(t, repo.Save(ctx, initial))
 
 	var inserted gateway.AppUserRecordForTest

@@ -15,7 +15,9 @@ import (
 // SupabaseExchangeQuery handles Supabase JWT exchange for internal user lookup or creation.
 type SupabaseExchangeQuery struct {
 	supabaseVerifier       SupabaseVerifier
-	appUserFinder          AppUserProviderFinder
+	providerFinder         AppUserProviderFinder
+	providerSaver          AppUserProviderSaver
+	appUserByIDFinder      AppUserByIDFinder
 	appUserByLoginIDFinder AppUserByLoginIDFinder
 	appUserSaver           AppUserSaver
 	organizationFinder     OrganizationFinder
@@ -24,14 +26,18 @@ type SupabaseExchangeQuery struct {
 // NewSupabaseExchangeQuery returns a new SupabaseExchangeQuery.
 func NewSupabaseExchangeQuery(
 	supabaseVerifier SupabaseVerifier,
-	appUserFinder AppUserProviderFinder,
+	providerFinder AppUserProviderFinder,
+	providerSaver AppUserProviderSaver,
+	appUserByIDFinder AppUserByIDFinder,
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
 ) *SupabaseExchangeQuery {
 	return &SupabaseExchangeQuery{
 		supabaseVerifier:       supabaseVerifier,
-		appUserFinder:          appUserFinder,
+		providerFinder:         providerFinder,
+		providerSaver:          providerSaver,
+		appUserByIDFinder:      appUserByIDFinder,
 		appUserByLoginIDFinder: appUserByLoginIDFinder,
 		appUserSaver:           appUserSaver,
 		organizationFinder:     organizationFinder,
@@ -52,59 +58,72 @@ func (q *SupabaseExchangeQuery) SupabaseExchange(ctx context.Context, input *aut
 
 	const providerName = "supabase"
 
-	appUser, err := q.appUserFinder.FindByProviderID(ctx, org.ID(), providerName, sub)
+	// Step 1: Check if a provider link already exists.
+	providerLink, err := q.providerFinder.FindByProviderID(ctx, org.ID(), providerName, sub)
 	if err == nil {
+		// Provider link found — load the app user and return.
+		appUser, findErr := q.appUserByIDFinder.FindByID(ctx, providerLink.AppUserID())
+		if findErr != nil {
+			return nil, fmt.Errorf("find app user by id: %w", findErr)
+		}
 		return q.buildOutput(appUser.ID(), string(appUser.LoginID()), input.OrganizationName)
 	}
 
-	if !errors.Is(err, domain.ErrAppUserNotFound) {
-		return nil, fmt.Errorf("find app user by provider id: %w", err)
+	if !errors.Is(err, domain.ErrAppUserProviderNotFound) {
+		return nil, fmt.Errorf("find provider link: %w", err)
 	}
 
-	return q.findOrCreateUser(ctx, org.ID(), email, providerName, sub, input.OrganizationName)
+	// Step 2: No provider link. Find or create user, then create the provider link.
+	return q.findOrCreateUserAndLink(ctx, org.ID(), email, providerName, sub, input.OrganizationName)
 }
 
-func (q *SupabaseExchangeQuery) findOrCreateUser(ctx context.Context, orgID domain.OrganizationID, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, orgID domain.OrganizationID, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
 	loginID := domain.LoginID(email)
 
-	newUser, createErr := domainuser.Provision(ctx, q.appUserSaver, orgID, loginID, "", provider, providerID, true)
+	// Try to create a new user (without provider — provider is now separate).
+	newUser, createErr := domainuser.Provision(ctx, q.appUserSaver, orgID, loginID, "", true)
 	if createErr == nil {
+		// User created — now create the provider link.
+		_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, newUser.ID(), orgID, provider, providerID)
+		if linkErr != nil {
+			return nil, fmt.Errorf("create provider link for new user: %w", linkErr)
+		}
 		return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
 	}
 
 	// Race-condition: another request may have created the same provider mapping concurrently.
-	if appUser, retryErr := q.appUserFinder.FindByProviderID(ctx, orgID, provider, providerID); retryErr == nil {
+	if providerLink, retryErr := q.providerFinder.FindByProviderID(ctx, orgID, provider, providerID); retryErr == nil {
+		appUser, findErr := q.appUserByIDFinder.FindByID(ctx, providerLink.AppUserID())
+		if findErr != nil {
+			return nil, fmt.Errorf("find app user by id after retry: %w", findErr)
+		}
 		return q.buildOutput(appUser.ID(), string(appUser.LoginID()), orgName)
 	}
 
-	// C2: only attempt to link an existing local account when the create actually failed
-	// because of a duplicate login_id. Any other error (network, CAS failure, driver fault)
-	// must propagate so we do not silently paper over persistence bugs.
+	// Only attempt to link an existing local account when the create failed
+	// because of a duplicate login_id.
 	if !errors.Is(createErr, gorm.ErrDuplicatedKey) {
-		return nil, fmt.Errorf("save new app user with provider: %w", createErr)
+		return nil, fmt.Errorf("save new app user: %w", createErr)
 	}
 
 	// Account linking: a user may already exist with the same login ID (e.g. password signup).
-	// Load the aggregate, let the domain enforce the linking invariant, then save it.
 	existing, findErr := q.appUserByLoginIDFinder.FindByLoginID(ctx, orgID, loginID)
 	if findErr != nil {
 		if errors.Is(findErr, domain.ErrAppUserNotFound) {
-			return nil, fmt.Errorf("save new app user with provider: %w", createErr)
+			return nil, fmt.Errorf("save new app user: %w", createErr)
 		}
 		return nil, fmt.Errorf("find app user by login id for linking: %w", findErr)
 	}
 
-	// C1: refuse to auto-link an existing password-holding account.
+	// Refuse to auto-link an existing password-holding account.
 	if existing.HashedPassword() != "" {
 		return nil, fmt.Errorf("app user %s login=%s: %w", existing.ID().String(), email, domain.ErrAppUserAutoLinkRejected)
 	}
 
-	if err := existing.LinkProvider(provider, providerID); err != nil {
-		return nil, fmt.Errorf("link provider to app user %s: %w", existing.ID().String(), err)
-	}
-
-	if err := q.appUserSaver.Save(ctx, existing); err != nil {
-		return nil, fmt.Errorf("save linked app user %s: %w", existing.ID().String(), err)
+	// Create the provider link for the existing user.
+	_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, existing.ID(), orgID, provider, providerID)
+	if linkErr != nil {
+		return nil, fmt.Errorf("link provider to app user %s: %w", existing.ID().String(), linkErr)
 	}
 
 	return q.buildOutput(existing.ID(), string(existing.LoginID()), orgName)

@@ -35,7 +35,7 @@ func setupUsers(ctx context.Context, t *testing.T, tx *gorm.DB, orgID domain.Org
 		loginID := domain.LoginID(fmt.Sprintf("%s-user-%d", orgName, i))
 		uid, err := domain.NewAppUserIDV7()
 		require.NoError(t, err)
-		user := domainuser.ReconstructAppUser(uid, orgID, loginID, "", "", "", true)
+		user := domainuser.ReconstructAppUser(uid, orgID, loginID, "", true)
 		require.NoError(t, userRepo.Save(ctx, user))
 		userIDs[i] = uid
 	}

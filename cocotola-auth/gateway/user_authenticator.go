@@ -58,7 +58,7 @@ func (a *UserAuthenticator) Authenticate(ctx context.Context, loginID string, pa
 
 	userID := domain.MustParseAppUserID(record.ID)
 	orgID := domain.MustParseOrganizationID(record.OrganizationID)
-	user := domainuser.ReconstructAppUser(userID, orgID, domain.LoginID(record.LoginID), record.HashedPassword, "", "", record.Enabled)
+	user := domainuser.ReconstructAppUser(userID, orgID, domain.LoginID(record.LoginID), record.HashedPassword, record.Enabled)
 	if err := user.VerifyPassword(password, a.hasher); err != nil {
 		return nil, domain.ErrUnauthenticated
 	}

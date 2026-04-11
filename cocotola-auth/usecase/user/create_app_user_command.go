@@ -78,7 +78,7 @@ func (c *CreateAppUserCommand) CreateAppUser(ctx context.Context, input *userser
 	}
 
 	// TX2: Reserve aggregate ID, build the aggregate via the domain factory, and persist.
-	user, err := domainuser.Provision(ctx, c.saver, org.ID(), domain.LoginID(input.LoginID), hashedPassword, "", "", true)
+	user, err := domainuser.Provision(ctx, c.saver, org.ID(), domain.LoginID(input.LoginID), hashedPassword, true)
 	if err != nil {
 		return nil, fmt.Errorf("provision app user: %w", err)
 	}

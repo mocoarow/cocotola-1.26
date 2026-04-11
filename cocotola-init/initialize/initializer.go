@@ -163,7 +163,7 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 		return domain.AppUserID{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(loginID), hashedPassword, "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(loginID), hashedPassword, true)
 	if err != nil {
 		return domain.AppUserID{}, fmt.Errorf("provision owner user: %w", err)
 	}
@@ -190,7 +190,7 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 		return domain.AppUserID{}, fmt.Errorf("find guest by login id: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(guestLoginID), "", "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(guestLoginID), "", true)
 	if err != nil {
 		return domain.AppUserID{}, fmt.Errorf("provision guest user: %w", err)
 	}
@@ -224,7 +224,7 @@ func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepositor
 		return domain.AppUserID{}, fmt.Errorf("hash password: %w", err)
 	}
 
-	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, "", "", true)
+	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, true)
 	if err != nil {
 		return domain.AppUserID{}, fmt.Errorf("provision system owner: %w", err)
 	}

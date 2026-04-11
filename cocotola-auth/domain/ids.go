@@ -464,6 +464,111 @@ func (id *SpaceID) Scan(src any) error {
 	}
 }
 
+// AppUserProviderID is the value-object identifier for an AppUserProvider entity.
+type AppUserProviderID struct {
+	value uuid.UUID
+}
+
+// NewAppUserProviderIDV7 generates a fresh UUIDv7-based AppUserProviderID.
+func NewAppUserProviderIDV7() (AppUserProviderID, error) {
+	u, err := uuid.NewV7()
+	if err != nil {
+		return AppUserProviderID{}, fmt.Errorf("generate app user provider id: %w", err)
+	}
+	return AppUserProviderID{value: u}, nil
+}
+
+// ParseAppUserProviderID parses a string into an AppUserProviderID.
+func ParseAppUserProviderID(s string) (AppUserProviderID, error) {
+	if s == "" {
+		return AppUserProviderID{}, errors.New("app user provider id must not be empty")
+	}
+	u, err := uuid.Parse(s)
+	if err != nil {
+		return AppUserProviderID{}, fmt.Errorf("parse app user provider id: %w", err)
+	}
+	return AppUserProviderID{value: u}, nil
+}
+
+// MustParseAppUserProviderID parses a string into an AppUserProviderID and panics on error.
+// Intended for tests and hard-coded constants only.
+func MustParseAppUserProviderID(s string) AppUserProviderID {
+	id, err := ParseAppUserProviderID(s)
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
+
+// UUID returns the underlying uuid.UUID value.
+func (id AppUserProviderID) UUID() uuid.UUID { return id.value }
+
+// String returns the canonical string representation.
+func (id AppUserProviderID) String() string { return id.value.String() }
+
+// IsZero reports whether the ID has its zero value.
+func (id AppUserProviderID) IsZero() bool { return id.value == uuid.Nil }
+
+// Equal reports whether two IDs are equal.
+func (id AppUserProviderID) Equal(other AppUserProviderID) bool { return id.value == other.value }
+
+// MarshalJSON encodes the ID as a JSON string.
+func (id AppUserProviderID) MarshalJSON() ([]byte, error) {
+	s := `"` + id.String() + `"`
+
+	return []byte(s), nil
+}
+
+// UnmarshalJSON decodes a JSON string into an AppUserProviderID.
+func (id *AppUserProviderID) UnmarshalJSON(data []byte) error {
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+
+	parsed, err := ParseAppUserProviderID(s)
+	if err != nil {
+		return fmt.Errorf("unmarshal app user provider id: %w", err)
+	}
+
+	*id = parsed
+
+	return nil
+}
+
+// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
+func (id AppUserProviderID) Value() (driver.Value, error) {
+	return id.String(), nil
+}
+
+// Scan implements sql.Scanner so drivers can load the ID back.
+func (id *AppUserProviderID) Scan(src any) error {
+	if src == nil {
+		*id = AppUserProviderID{value: uuid.Nil}
+
+		return nil
+	}
+
+	switch v := src.(type) {
+	case string:
+		parsed, err := ParseAppUserProviderID(v)
+		if err != nil {
+			return err
+		}
+		*id = parsed
+		return nil
+	case []byte:
+		parsed, err := ParseAppUserProviderID(string(v))
+		if err != nil {
+			return err
+		}
+		*id = parsed
+		return nil
+	default:
+		return fmt.Errorf("scan app user provider id: unsupported type %T", src)
+	}
+}
+
 // Well-known bootstrap IDs used by seed SQL. These must match the constants in
 // init-{postgres,mysql} and supabase/migrations so that the system-admin rows
 // inserted at DB-init time are referenced consistently from Go.
