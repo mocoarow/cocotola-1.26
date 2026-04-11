@@ -19,3 +19,5 @@ packages:
     version: v10.33.0
   - name: biomejs/biome
     version: "@biomejs/biome@2.4.10"
+  - name: aquasecurity/trivy
+    version: v0.69.3
