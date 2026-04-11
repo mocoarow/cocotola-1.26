@@ -9,7 +9,9 @@
     "check": "pnpm run check:biome && pnpm run typecheck",
     "typecheck": "react-router typegen && tsc",
     "check:biome": "biome check .",
-    "format": "biome check --write ."
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -32,11 +34,16 @@
   "devDependencies": {
     "@react-router/dev": "7.14.0",
     "@tailwindcss/vite": "^4.2.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "jsdom": "^29.0.2",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
-    "vite": "^8.0.3"
+    "vite": "^8.0.3",
+    "vitest": "^4.1.4"
   }
 }
