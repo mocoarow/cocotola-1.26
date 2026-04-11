@@ -39,16 +39,8 @@ func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	if r.HashedPassword != nil {
 		hashedPw = *r.HashedPassword
 	}
-	var provider string
-	if r.Provider != nil {
-		provider = *r.Provider
-	}
-	var providerID string
-	if r.ProviderID != nil {
-		providerID = *r.ProviderID
-	}
 	return domainuser.
-		ReconstructAppUser(domain.MustParseAppUserID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.LoginID(r.LoginID), hashedPw, provider, providerID, r.Enabled).
+		ReconstructAppUser(domain.MustParseAppUserID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.LoginID(r.LoginID), hashedPw, r.Enabled).
 		WithVersion(r.Version)
 }
 
@@ -56,14 +48,6 @@ func toAppUserRecord(user *domainuser.AppUser) appUserRecord {
 	var hashedPw *string
 	if hp := user.HashedPassword(); hp != "" {
 		hashedPw = &hp
-	}
-	var provider *string
-	if p := user.Provider(); p != "" {
-		provider = &p
-	}
-	var providerID *string
-	if pid := user.ProviderID(); pid != "" {
-		providerID = &pid
 	}
 	systemUserID := domain.SystemAppUserID().String()
 	return appUserRecord{
@@ -77,8 +61,8 @@ func toAppUserRecord(user *domainuser.AppUser) appUserRecord {
 		LoginID:                       string(user.LoginID()),
 		HashedPassword:                hashedPw,
 		Username:                      nil,
-		Provider:                      provider,
-		ProviderID:                    providerID,
+		Provider:                      nil,
+		ProviderID:                    nil,
 		EncryptedProviderAccessToken:  nil,
 		EncryptedProviderRefreshToken: nil,
 		Enabled:                       user.Enabled(),
@@ -120,8 +104,6 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 			"organization_id": record.OrganizationID,
 			"login_id":        record.LoginID,
 			"hashed_password": record.HashedPassword,
-			"provider":        record.Provider,
-			"provider_id":     record.ProviderID,
 			"enabled":         record.Enabled,
 			"version":         nextVersion,
 		})
@@ -157,20 +139,6 @@ func (r *AppUserRepository) FindByLoginID(ctx context.Context, organizationID do
 			return nil, domain.ErrAppUserNotFound
 		}
 		return nil, fmt.Errorf("find app user by login id: %w", err)
-	}
-	return toAppUserDomain(&record), nil
-}
-
-// FindByProviderID looks up an app user by organization, provider, and provider ID.
-func (r *AppUserRepository) FindByProviderID(ctx context.Context, organizationID domain.OrganizationID, provider string, providerID string) (*domainuser.AppUser, error) {
-	var record appUserRecord
-	if err := r.db.WithContext(ctx).
-		Where("organization_id = ? AND provider = ? AND provider_id = ?", organizationID.String(), provider, providerID).
-		First(&record).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrAppUserNotFound
-		}
-		return nil, fmt.Errorf("find app user by provider id: %w", err)
 	}
 	return toAppUserDomain(&record), nil
 }

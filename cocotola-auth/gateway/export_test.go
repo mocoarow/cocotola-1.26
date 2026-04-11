@@ -9,6 +9,7 @@ type ActiveUserRecordForTest = activeUserRecord
 type ActiveGroupRecordForTest = activeGroupRecord
 type UserNGroupRecordForTest = userNGroupRecord
 type GroupNGroupRecordForTest = groupNGroupRecord
+type AppUserProviderRecordForTest = appUserProviderRecord
 
 var ToOrganizationDomain = toOrganizationDomain
 var ToAppUserDomain = toAppUserDomain

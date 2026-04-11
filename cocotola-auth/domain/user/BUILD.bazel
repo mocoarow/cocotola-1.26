@@ -5,6 +5,7 @@ go_library(
     name = "user",
     srcs = [
         "app_user.go",
+        "app_user_provider.go",
         "guest.go",
         "password_hasher.go",
         "provisioning.go",

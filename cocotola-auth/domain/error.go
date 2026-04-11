@@ -67,6 +67,13 @@ var ErrCyclicGroupHierarchy = errors.New("cyclic group hierarchy")
 // ErrDuplicateEntry is returned when attempting to add a duplicate entry.
 var ErrDuplicateEntry = errors.New("duplicate entry")
 
+// ErrAppUserProviderNotFound is returned when an app user provider link cannot be found.
+var ErrAppUserProviderNotFound = errors.New("app user provider not found")
+
+// ErrAppUserProviderConcurrentModification is returned when an optimistic-lock CAS
+// on the AppUserProvider row version fails.
+var ErrAppUserProviderConcurrentModification = errors.New("app user provider was modified concurrently")
+
 // ErrSpaceNotFound is returned when a space cannot be found.
 var ErrSpaceNotFound = errors.New("space not found")
 

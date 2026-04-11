@@ -23,15 +23,13 @@ func Provision(
 	organizationID domain.OrganizationID,
 	loginID domain.LoginID,
 	hashedPassword string,
-	provider string,
-	providerID string,
 	enabled bool,
 ) (*AppUser, error) {
 	id, err := domain.NewAppUserIDV7()
 	if err != nil {
 		return nil, fmt.Errorf("generate app user id: %w", err)
 	}
-	user, err := NewAppUser(id, organizationID, loginID, hashedPassword, provider, providerID, enabled)
+	user, err := NewAppUser(id, organizationID, loginID, hashedPassword, enabled)
 	if err != nil {
 		return nil, fmt.Errorf("new app user: %w", err)
 	}

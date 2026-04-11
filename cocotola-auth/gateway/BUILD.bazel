@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "access_token_repository.go",
         "active_list_repository.go",
+        "app_user_provider_repository.go",
         "app_user_repository.go",
         "auth.go",
         "bcrypt_hasher.go",
