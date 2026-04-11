@@ -42,7 +42,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - run: task test
+      - run: task test-go
 
   test_web:
     runs-on: ubuntu-latest

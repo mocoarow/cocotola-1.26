@@ -175,7 +175,8 @@ tasks:
     cmds:
       - pnpm run test
 
-  test:
+  test-go:
+    desc: "Run Go tests with coverage"
     cmds:
       - docker compose -f compose.test.yml up -d --wait
       - rm -f ./coverage.lcov
@@ -184,9 +185,14 @@ tasks:
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+
+  test:
+    desc: "Run all tests (Go + Web)"
+    cmds:
+      - task: test-go
       - task: test-web
 
-  test-remote:
+  test-go-remote:
     cmds:
       - rm -f ./coverage.lcov
       - bazelisk test --config=remote //... --collect_code_coverage=true --test_output=errors --test_timeout=60 --test_size_filters=small,medium
@@ -194,7 +200,6 @@ tasks:
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
-      - task: test-web
 
   test-clear:
     cmds:
