@@ -19,13 +19,19 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
 	authhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth"
 	authzhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz"
+	grouphandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group"
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health"
 	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
+	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
+	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
+	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
+	spaceusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space"
+	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
 )
 
 const eventBusBufferSize = 100
@@ -98,10 +104,17 @@ func run() (int, error) {
 	eventBus := gateway.NewEventBus(eventBusBufferSize, eventBusLogger)
 
 	activeUserListRepo := gateway.NewActiveUserListRepository(dbConn.DB)
+	activeGroupListRepo := gateway.NewActiveGroupListRepository(dbConn.DB)
 	orgRepo := gateway.NewOrganizationRepository(dbConn.DB)
+	groupRepo := gateway.NewGroupRepository(dbConn.DB)
+	spaceRepo := gateway.NewSpaceRepository(dbConn.DB)
 	eventHandlerLogger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-event-handler"))
 	activeUserListHandler := eventusecase.NewActiveUserListHandler(activeUserListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
+	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
+	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, rbacRepo, eventHandlerLogger)
+	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer
 	usecaseConfig := authusecase.UsecaseConfig{
@@ -180,10 +193,32 @@ func run() (int, error) {
 	}
 
 	// authz check
+	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 	{
-		authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 		authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
 		authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
+	}
+
+	// group
+	{
+		groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
+		createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
+		grouphandler.InitGroupRouter(createGroupHandler, authV1, authMiddleware)
+	}
+
+	// space
+	{
+		spaceCommand := spaceusecase.NewCommand(spaceRepo, spaceRepo, orgRepo, eventBus, authzChecker)
+		createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
+		listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
+		spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
+	}
+
+	// user
+	{
+		userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
+		createUserHandler := userhandler.NewCreateUserHandler(userCommand)
+		userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 	}
 
 	// run
