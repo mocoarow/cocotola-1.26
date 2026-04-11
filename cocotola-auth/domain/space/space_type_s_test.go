@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 )
 
@@ -54,7 +55,7 @@ func Test_NewSpaceType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 			_, err := space.NewType(tt.value)
 
 			// then
-			require.Error(t, err)
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
 		})
 	}
 }

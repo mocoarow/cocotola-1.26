@@ -1,7 +1,11 @@
 // Package workbook contains the workbook aggregate of the cocotola-question domain.
 package workbook
 
-import "errors"
+import (
+	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+)
 
 // Visibility represents the visibility setting of a workbook.
 type Visibility struct {
@@ -27,7 +31,7 @@ func NewVisibility(value string) (Visibility, error) {
 	case visibilityPublic:
 		return VisibilityPublic(), nil
 	default:
-		return Visibility{}, errors.New("invalid visibility: must be 'private' or 'public'")
+		return Visibility{}, fmt.Errorf("invalid visibility: must be 'private' or 'public': %w", domain.ErrInvalidArgument)
 	}
 }
 

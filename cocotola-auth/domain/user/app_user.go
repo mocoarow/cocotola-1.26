@@ -2,7 +2,6 @@
 package user
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -60,13 +59,13 @@ func (u *AppUser) Version() int { return u.version }
 
 func (u *AppUser) validate() error {
 	if u.id.IsZero() {
-		return errors.New("app user id must not be zero")
+		return fmt.Errorf("app user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if u.organizationID.IsZero() {
-		return errors.New("app user organization id must not be zero")
+		return fmt.Errorf("app user organization id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if u.loginID == "" {
-		return errors.New("app user login id is required")
+		return fmt.Errorf("app user login id is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

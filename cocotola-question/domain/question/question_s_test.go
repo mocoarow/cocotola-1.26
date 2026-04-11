@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
@@ -45,7 +46,7 @@ func Test_NewQuestion_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := question.NewQuestion("", qt, content, orderIndex, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewQuestion_shouldReturnError_whenQuestionTypeIsZeroValue(t *testing.T) {
@@ -58,7 +59,7 @@ func Test_NewQuestion_shouldReturnError_whenQuestionTypeIsZeroValue(t *testing.T
 	_, err := question.NewQuestion(id, question.Type{}, content, orderIndex, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewQuestion_shouldReturnError_whenContentIsEmpty(t *testing.T) {
@@ -71,7 +72,7 @@ func Test_NewQuestion_shouldReturnError_whenContentIsEmpty(t *testing.T) {
 	_, err := question.NewQuestion(id, qt, "", orderIndex, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewQuestion_shouldReturnError_whenContentExceedsMaxLength(t *testing.T) {
@@ -85,7 +86,7 @@ func Test_NewQuestion_shouldReturnError_whenContentExceedsMaxLength(t *testing.T
 	_, err := question.NewQuestion(id, qt, longContent, orderIndex, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewQuestion_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
@@ -98,7 +99,7 @@ func Test_NewQuestion_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
 	_, err := question.NewQuestion(id, qt, content, -1, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ReconstructQuestion_shouldReturnQuestion_withoutValidation(t *testing.T) {

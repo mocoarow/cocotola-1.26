@@ -33,7 +33,7 @@ func Test_NewTokenHash_shouldReturnError_whenLengthIsNot64(t *testing.T) {
 	_, err := domain.NewTokenHash(shortHex)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "64 characters")
 }
 
@@ -47,7 +47,7 @@ func Test_NewTokenHash_shouldReturnError_whenNotValidHex(t *testing.T) {
 	_, err := domain.NewTokenHash(invalidHex)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "valid hex")
 }
 
@@ -72,7 +72,7 @@ func Test_NewLoginID_shouldReturnError_whenEmpty(t *testing.T) {
 	_, err := domain.NewLoginID("")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 	assert.Contains(t, err.Error(), "must not be empty")
 }
 

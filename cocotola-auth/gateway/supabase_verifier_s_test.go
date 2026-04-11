@@ -109,8 +109,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenTokenIsExpired(t *testin
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "parse supabase token")
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenKeyIsWrong(t *testing.T) {
@@ -134,8 +133,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenKeyIsWrong(t *testing.T)
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "parse supabase token")
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenSubIsMissing(t *testing.T) {
@@ -157,8 +155,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenSubIsMissing(t *testing.
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "missing sub")
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailIsMissing(t *testing.T) {
@@ -180,8 +177,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailIsMissing(t *testin
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "missing email")
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailNotVerified(t *testing.T) {
@@ -204,8 +200,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailNotVerified(t *test
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
+	require.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailVerifiedIsFalse(t *testing.T) {
@@ -229,8 +224,7 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailVerifiedIsFalse(t *
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
+	require.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
 }
 
 func Test_SupabaseVerifier_Verify_shouldReturnSubAndEmail_whenUserMetadataEmailVerifiedIsTrue(t *testing.T) {
@@ -283,6 +277,5 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenSigningMethodIsNotRSA(t 
 	_, _, err = verifier.Verify(context.Background(), tokenStr)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "parse supabase token")
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 }

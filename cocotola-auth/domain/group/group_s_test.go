@@ -42,7 +42,7 @@ func Test_NewGroup_shouldReturnError_whenIDIsZero(t *testing.T) {
 	_, err := group.NewGroup(domain.GroupID{}, orgID, name, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewGroup_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
@@ -55,7 +55,7 @@ func Test_NewGroup_shouldReturnError_whenOrganizationIDIsZero(t *testing.T) {
 	_, err := group.NewGroup(id, domain.OrganizationID{}, name, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewGroup_shouldReturnError_whenNameIsEmpty(t *testing.T) {
@@ -68,7 +68,7 @@ func Test_NewGroup_shouldReturnError_whenNameIsEmpty(t *testing.T) {
 	_, err := group.NewGroup(id, orgID, "", enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewGroup_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
@@ -82,7 +82,7 @@ func Test_NewGroup_shouldReturnError_whenNameExceedsMaxLength(t *testing.T) {
 	_, err := group.NewGroup(id, orgID, longName, enabled)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewGroup_shouldSucceed_whenNameIsAtMaxLength(t *testing.T) {

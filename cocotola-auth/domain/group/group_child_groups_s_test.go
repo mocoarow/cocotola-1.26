@@ -25,7 +25,7 @@ func Test_NewGroupChildGroups_shouldReturnError_whenGroupIDIsZero(t *testing.T) 
 	_, err := group.NewChildGroups(domain.GroupID{}, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_GroupChildGroups_Add_shouldSucceed_whenGroupNotInChildren(t *testing.T) {

@@ -79,3 +79,9 @@ var ErrSpaceNotFound = errors.New("space not found")
 
 // ErrForbidden is returned when the operator does not have permission to perform the action.
 var ErrForbidden = errors.New("forbidden")
+
+// ErrInvalidArgument is returned when a required field is missing, empty, or invalid.
+var ErrInvalidArgument = errors.New("invalid argument")
+
+// ErrInternal is returned when an unexpected infrastructure error occurs.
+var ErrInternal = errors.New("internal error")

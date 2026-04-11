@@ -1,7 +1,11 @@
 // Package space contains the space aggregate of the cocotola-auth domain.
 package space
 
-import "errors"
+import (
+	"fmt"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+)
 
 // Type represents the type of a space.
 type Type struct {
@@ -27,7 +31,7 @@ func NewType(value string) (Type, error) {
 	case spaceTypePrivate:
 		return TypePrivate(), nil
 	default:
-		return Type{}, errors.New("invalid space type: must be 'public' or 'private'")
+		return Type{}, fmt.Errorf("invalid space type: must be 'public' or 'private': %w", domain.ErrInvalidArgument)
 	}
 }
 

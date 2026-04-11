@@ -2,7 +2,6 @@
 package group
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -47,16 +46,16 @@ func ReconstructGroup(id domain.GroupID, organizationID domain.OrganizationID, n
 
 func (g *Group) validate() error {
 	if g.id.IsZero() {
-		return errors.New("group id must not be zero")
+		return fmt.Errorf("group id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if g.organizationID.IsZero() {
-		return errors.New("group organization id must not be zero")
+		return fmt.Errorf("group organization id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if g.name == "" {
-		return errors.New("group name is required")
+		return fmt.Errorf("group name is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(g.name) > maxGroupNameLength {
-		return fmt.Errorf("group name must not exceed %d characters", maxGroupNameLength)
+		return fmt.Errorf("group name must not exceed %d characters: %w", maxGroupNameLength, domain.ErrInvalidArgument)
 	}
 	return nil
 }

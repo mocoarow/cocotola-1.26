@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
@@ -54,7 +55,7 @@ func Test_NewVisibility_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 			_, err := workbook.NewVisibility(tt.value)
 
 			// then
-			require.Error(t, err)
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
 		})
 	}
 }

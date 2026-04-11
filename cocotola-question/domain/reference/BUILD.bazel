@@ -6,6 +6,7 @@ go_library(
     srcs = ["workbook_reference.go"],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference",
     visibility = ["//visibility:public"],
+    deps = ["//cocotola-question/domain"],
 )
 
 smart_go_test(
@@ -13,6 +14,7 @@ smart_go_test(
     srcs = ["workbook_reference_s_test.go"],
     deps = [
         ":reference",
+        "//cocotola-question/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

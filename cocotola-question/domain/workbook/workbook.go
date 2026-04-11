@@ -1,9 +1,10 @@
 package workbook
 
 import (
-	"errors"
 	"fmt"
 	"time"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 const (
@@ -60,28 +61,28 @@ func ReconstructWorkbook(id string, spaceID string, ownerID string, organization
 
 func (w *Workbook) validate() error {
 	if w.id == "" {
-		return errors.New("workbook id is required")
+		return fmt.Errorf("workbook id is required: %w", domain.ErrInvalidArgument)
 	}
 	if w.spaceID == "" {
-		return errors.New("workbook space id is required")
+		return fmt.Errorf("workbook space id is required: %w", domain.ErrInvalidArgument)
 	}
 	if w.ownerID == "" {
-		return errors.New("workbook owner id is required")
+		return fmt.Errorf("workbook owner id is required: %w", domain.ErrInvalidArgument)
 	}
 	if w.organizationID == "" {
-		return errors.New("workbook organization id is required")
+		return fmt.Errorf("workbook organization id is required: %w", domain.ErrInvalidArgument)
 	}
 	if w.title == "" {
-		return errors.New("workbook title is required")
+		return fmt.Errorf("workbook title is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(w.title) > maxTitleLength {
-		return fmt.Errorf("workbook title must not exceed %d characters", maxTitleLength)
+		return fmt.Errorf("workbook title must not exceed %d characters: %w", maxTitleLength, domain.ErrInvalidArgument)
 	}
 	if len(w.description) > maxDescriptionLength {
-		return fmt.Errorf("workbook description must not exceed %d characters", maxDescriptionLength)
+		return fmt.Errorf("workbook description must not exceed %d characters: %w", maxDescriptionLength, domain.ErrInvalidArgument)
 	}
 	if w.visibility.Value() == "" {
-		return errors.New("workbook visibility is required")
+		return fmt.Errorf("workbook visibility is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }
@@ -121,10 +122,10 @@ func (w *Workbook) ChangeVisibility(v Visibility) {
 // UpdateTitle updates the workbook title.
 func (w *Workbook) UpdateTitle(title string) error {
 	if title == "" {
-		return errors.New("workbook title is required")
+		return fmt.Errorf("workbook title is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(title) > maxTitleLength {
-		return fmt.Errorf("workbook title must not exceed %d characters", maxTitleLength)
+		return fmt.Errorf("workbook title must not exceed %d characters: %w", maxTitleLength, domain.ErrInvalidArgument)
 	}
 	w.title = title
 	return nil
@@ -133,7 +134,7 @@ func (w *Workbook) UpdateTitle(title string) error {
 // UpdateDescription updates the workbook description.
 func (w *Workbook) UpdateDescription(desc string) error {
 	if len(desc) > maxDescriptionLength {
-		return fmt.Errorf("workbook description must not exceed %d characters", maxDescriptionLength)
+		return fmt.Errorf("workbook description must not exceed %d characters: %w", maxDescriptionLength, domain.ErrInvalidArgument)
 	}
 	w.description = desc
 	return nil

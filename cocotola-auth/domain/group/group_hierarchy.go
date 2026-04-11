@@ -1,7 +1,7 @@
 package group
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -15,10 +15,10 @@ type HierarchyEdge struct {
 // NewHierarchyEdge creates a validated HierarchyEdge.
 func NewHierarchyEdge(parentGroupID domain.GroupID, childGroupID domain.GroupID) (HierarchyEdge, error) {
 	if parentGroupID.IsZero() {
-		return HierarchyEdge{}, errors.New("hierarchy edge parent group id must not be zero")
+		return HierarchyEdge{}, fmt.Errorf("hierarchy edge parent group id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if childGroupID.IsZero() {
-		return HierarchyEdge{}, errors.New("hierarchy edge child group id must not be zero")
+		return HierarchyEdge{}, fmt.Errorf("hierarchy edge child group id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	return HierarchyEdge{
 		parentGroupID: parentGroupID,
@@ -51,7 +51,7 @@ type Hierarchy struct {
 // NewHierarchy creates a validated GroupHierarchy.
 func NewHierarchy(organizationID domain.OrganizationID, edges []HierarchyEdge) (*Hierarchy, error) {
 	if organizationID.IsZero() {
-		return nil, errors.New("group hierarchy organization id must not be zero")
+		return nil, fmt.Errorf("group hierarchy organization id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	copied := make([]HierarchyEdge, len(edges))
 	copy(copied, edges)

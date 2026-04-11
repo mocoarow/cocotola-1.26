@@ -1,7 +1,7 @@
 package token
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -53,25 +53,25 @@ func ReconstructSessionToken(id string, userID domain.AppUserID, loginID domain.
 
 func (t *SessionToken) validate() error {
 	if t.id == "" {
-		return errors.New("session token id is required")
+		return fmt.Errorf("session token id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.userID.IsZero() {
-		return errors.New("session token user id must not be zero")
+		return fmt.Errorf("session token user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	if t.loginID == "" {
-		return errors.New("session token login id is required")
+		return fmt.Errorf("session token login id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.organizationName == "" {
-		return errors.New("session token organization name is required")
+		return fmt.Errorf("session token organization name is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(t.tokenHash) != domain.TokenHashLength {
-		return errors.New("session token hash must be 64 characters")
+		return fmt.Errorf("session token hash must be 64 characters: %w", domain.ErrInvalidArgument)
 	}
 	if t.createdAt.IsZero() {
-		return errors.New("session token created at is required")
+		return fmt.Errorf("session token created at is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.expiresAt.IsZero() {
-		return errors.New("session token expires at is required")
+		return fmt.Errorf("session token expires at is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

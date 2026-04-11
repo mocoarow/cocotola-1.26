@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
@@ -48,7 +49,7 @@ func Test_NewWorkbook_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := workbook.NewWorkbook("", spaceID, ownerID, orgID, title, desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenSpaceIDIsEmpty(t *testing.T) {
@@ -61,7 +62,7 @@ func Test_NewWorkbook_shouldReturnError_whenSpaceIDIsEmpty(t *testing.T) {
 	_, err := workbook.NewWorkbook(id, "", ownerID, orgID, title, desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenOwnerIDIsEmpty(t *testing.T) {
@@ -74,7 +75,7 @@ func Test_NewWorkbook_shouldReturnError_whenOwnerIDIsEmpty(t *testing.T) {
 	_, err := workbook.NewWorkbook(id, spaceID, "", orgID, title, desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenOrganizationIDIsEmpty(t *testing.T) {
@@ -87,7 +88,7 @@ func Test_NewWorkbook_shouldReturnError_whenOrganizationIDIsEmpty(t *testing.T) 
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, "", title, desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenTitleIsEmpty(t *testing.T) {
@@ -100,7 +101,7 @@ func Test_NewWorkbook_shouldReturnError_whenTitleIsEmpty(t *testing.T) {
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, "", desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenTitleExceedsMaxLength(t *testing.T) {
@@ -114,7 +115,7 @@ func Test_NewWorkbook_shouldReturnError_whenTitleExceedsMaxLength(t *testing.T) 
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, longTitle, desc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldSucceed_whenTitleIsAtMaxLength(t *testing.T) {
@@ -143,7 +144,7 @@ func Test_NewWorkbook_shouldReturnError_whenDescriptionExceedsMaxLength(t *testi
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, longDesc, vis, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewWorkbook_shouldReturnError_whenVisibilityIsZeroValue(t *testing.T) {
@@ -156,7 +157,7 @@ func Test_NewWorkbook_shouldReturnError_whenVisibilityIsZeroValue(t *testing.T) 
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, desc, workbook.Visibility{}, createdAt, updatedAt)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ReconstructWorkbook_shouldReturnWorkbook_withoutValidation(t *testing.T) {
@@ -213,7 +214,7 @@ func Test_Workbook_UpdateTitle_shouldReturnError_whenTitleIsEmpty(t *testing.T) 
 	err := wb.UpdateTitle("")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_Workbook_UpdateDescription_shouldUpdateDescription(t *testing.T) {
@@ -242,5 +243,5 @@ func Test_Workbook_UpdateDescription_shouldReturnError_whenDescriptionExceedsMax
 	err := wb.UpdateDescription(strings.Repeat("a", 1001))
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }

@@ -16,3 +16,6 @@ var ErrDuplicateReference = errors.New("duplicate workbook reference")
 
 // ErrForbidden is returned when the operator does not have permission to perform the action.
 var ErrForbidden = errors.New("forbidden")
+
+// ErrInvalidArgument is returned when a required field is missing, empty, or invalid.
+var ErrInvalidArgument = errors.New("invalid argument")

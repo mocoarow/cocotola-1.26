@@ -1,7 +1,7 @@
 package token
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -53,25 +53,25 @@ func ReconstructRefreshToken(id string, userID domain.AppUserID, loginID domain.
 
 func (t *RefreshToken) validate() error {
 	if t.id == "" {
-		return errors.New("refresh token id is required")
+		return fmt.Errorf("refresh token id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.userID.IsZero() {
-		return errors.New("refresh token user id is required")
+		return fmt.Errorf("refresh token user id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.loginID == "" {
-		return errors.New("refresh token login id is required")
+		return fmt.Errorf("refresh token login id is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.organizationName == "" {
-		return errors.New("refresh token organization name is required")
+		return fmt.Errorf("refresh token organization name is required: %w", domain.ErrInvalidArgument)
 	}
 	if len(t.tokenHash) != domain.TokenHashLength {
-		return errors.New("refresh token hash must be 64 characters")
+		return fmt.Errorf("refresh token hash must be 64 characters: %w", domain.ErrInvalidArgument)
 	}
 	if t.createdAt.IsZero() {
-		return errors.New("refresh token created at is required")
+		return fmt.Errorf("refresh token created at is required: %w", domain.ErrInvalidArgument)
 	}
 	if t.expiresAt.IsZero() {
-		return errors.New("refresh token expires at is required")
+		return fmt.Errorf("refresh token expires at is required: %w", domain.ErrInvalidArgument)
 	}
 	return nil
 }

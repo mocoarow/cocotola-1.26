@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
@@ -16,7 +15,7 @@ type ActiveGroupList struct {
 // NewActiveGroupList creates a validated ActiveGroupList.
 func NewActiveGroupList(organizationID OrganizationID, entries []GroupID) (*ActiveGroupList, error) {
 	if organizationID.IsZero() {
-		return nil, errors.New("active group list organization id must not be zero")
+		return nil, fmt.Errorf("active group list organization id must not be zero: %w", ErrInvalidArgument)
 	}
 	return &ActiveGroupList{activeListBase[GroupID]{idset.New[OrganizationID, GroupID](organizationID, entries)}}, nil
 }

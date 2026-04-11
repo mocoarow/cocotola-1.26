@@ -3,6 +3,7 @@ package auth_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -110,7 +111,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenTokenIsIn
 
 	// given
 	verifierMock := NewMockSupabaseVerifier(t)
-	verifierMock.On("Verify", mock.Anything, "bad-jwt").Return("", "", errors.New("invalid token"))
+	verifierMock.On("Verify", mock.Anything, "bad-jwt").Return("", "", fmt.Errorf("invalid token: %w", domain.ErrUnauthenticated))
 
 	providerFinderMock := NewMockAppUserProviderFinder(t)
 	providerSaverMock := NewMockAppUserProviderSaver(t)
@@ -127,7 +128,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenTokenIsIn
 	output, err := query.SupabaseExchange(context.Background(), input)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrUnauthenticated)
 	require.Nil(t, output)
 }
 
@@ -322,8 +323,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPropagateSaveError_whenCr
 	output, err := query.SupabaseExchange(context.Background(), input)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInternal)
 	require.Nil(t, output)
-	assert.Contains(t, err.Error(), "db unavailable")
 	loginIDFinderMock.AssertNotCalled(t, "FindByLoginID")
 }

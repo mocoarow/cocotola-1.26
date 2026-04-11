@@ -31,7 +31,7 @@ func Test_NewRBACAction_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 	_, err := rbac.NewAction("")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewRBACResource_shouldReturnResource_whenValueIsValid(t *testing.T) {
@@ -55,7 +55,7 @@ func Test_NewRBACResource_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 	_, err := rbac.NewResource("")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ResourceUser_shouldFormatWithUserPrefix(t *testing.T) {
@@ -148,7 +148,7 @@ func Test_NewRBACGroup_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 	_, err := rbac.NewGroup("")
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_EffectAllow_shouldReturnAllow(t *testing.T) {

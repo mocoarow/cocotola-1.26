@@ -49,7 +49,7 @@ func Test_NewAccessToken_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	_, err := token.NewAccessToken("", rtID, userID, loginID, org, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenRefreshTokenIDIsEmpty(t *testing.T) {
@@ -62,7 +62,7 @@ func Test_NewAccessToken_shouldReturnError_whenRefreshTokenIDIsEmpty(t *testing.
 	_, err := token.NewAccessToken(id, "", userID, loginID, org, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
@@ -75,7 +75,7 @@ func Test_NewAccessToken_shouldReturnError_whenUserIDIsZero(t *testing.T) {
 	_, err := token.NewAccessToken(id, rtID, domain.AppUserID{}, loginID, org, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
@@ -88,7 +88,7 @@ func Test_NewAccessToken_shouldReturnError_whenLoginIDIsEmpty(t *testing.T) {
 	_, err := token.NewAccessToken(id, rtID, userID, "", org, created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenOrganizationNameIsEmpty(t *testing.T) {
@@ -101,7 +101,7 @@ func Test_NewAccessToken_shouldReturnError_whenOrganizationNameIsEmpty(t *testin
 	_, err := token.NewAccessToken(id, rtID, userID, loginID, "", created, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenCreatedAtIsZero(t *testing.T) {
@@ -114,7 +114,7 @@ func Test_NewAccessToken_shouldReturnError_whenCreatedAtIsZero(t *testing.T) {
 	_, err := token.NewAccessToken(id, rtID, userID, loginID, org, time.Time{}, expires)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_NewAccessToken_shouldReturnError_whenExpiresAtIsZero(t *testing.T) {
@@ -127,7 +127,7 @@ func Test_NewAccessToken_shouldReturnError_whenExpiresAtIsZero(t *testing.T) {
 	_, err := token.NewAccessToken(id, rtID, userID, loginID, org, created, time.Time{})
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_AccessToken_Revoke_shouldSetRevokedAt_whenTokenIsActive(t *testing.T) {

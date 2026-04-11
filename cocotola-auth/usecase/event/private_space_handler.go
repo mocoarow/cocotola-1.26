@@ -42,7 +42,7 @@ func NewPrivateSpaceHandler(
 func (h *PrivateSpaceHandler) Handle(ctx context.Context, event domain.Event) error {
 	e, ok := event.(domain.AppUserCreated)
 	if !ok {
-		return fmt.Errorf("unexpected event type: %T", event)
+		return fmt.Errorf("unexpected event type %T: %w", event, domain.ErrInvalidArgument)
 	}
 
 	keyName := domainspace.PrivateSpaceKeyName(e.LoginID())

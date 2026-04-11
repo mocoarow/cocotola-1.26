@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -103,15 +102,15 @@ func (m *JWTManager) parseToken(tokenString string) (*userClaims, error) {
 		},
 	}, keyFunc)
 	if err != nil {
-		return nil, fmt.Errorf("parse token: %w", err)
+		return nil, fmt.Errorf("parse token: %w: %w", err, domain.ErrUnauthenticated)
 	}
 	if !currentToken.Valid {
-		return nil, errors.New("invalid token")
+		return nil, fmt.Errorf("invalid token: %w", domain.ErrUnauthenticated)
 	}
 
 	currentClaims, ok := currentToken.Claims.(*userClaims)
 	if !ok {
-		return nil, errors.New("invalid claims")
+		return nil, fmt.Errorf("invalid claims: %w", domain.ErrUnauthenticated)
 	}
 
 	return currentClaims, nil

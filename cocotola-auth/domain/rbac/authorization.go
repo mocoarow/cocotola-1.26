@@ -3,7 +3,7 @@ package rbac
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -16,7 +16,7 @@ type Action struct {
 // NewAction creates a validated RBACAction.
 func NewAction(value string) (Action, error) {
 	if value == "" {
-		return Action{}, errors.New("rbac action must not be empty")
+		return Action{}, fmt.Errorf("rbac action must not be empty: %w", domain.ErrInvalidArgument)
 	}
 	return Action{value: value}, nil
 }
@@ -101,7 +101,7 @@ type Resource struct {
 // NewResource creates a validated RBACResource.
 func NewResource(value string) (Resource, error) {
 	if value == "" {
-		return Resource{}, errors.New("rbac resource must not be empty")
+		return Resource{}, fmt.Errorf("rbac resource must not be empty: %w", domain.ErrInvalidArgument)
 	}
 	return Resource{value: value}, nil
 }
@@ -145,7 +145,7 @@ type Group struct {
 // NewGroup creates a validated RBACGroup.
 func NewGroup(value string) (Group, error) {
 	if value == "" {
-		return Group{}, errors.New("rbac group must not be empty")
+		return Group{}, fmt.Errorf("rbac group must not be empty: %w", domain.ErrInvalidArgument)
 	}
 	return Group{value: value}, nil
 }
