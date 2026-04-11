@@ -20,11 +20,11 @@ type AppUser struct {
 	enabled        bool
 }
 
-// NewAppUser creates a validated AppUser for a brand-new aggregate (version 0).
+// NewAppUser creates a validated AppUser for a brand-new aggregate (version 1).
 func NewAppUser(id domain.AppUserID, organizationID domain.OrganizationID, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) (*AppUser, error) {
 	m := &AppUser{
 		id:             id,
-		version:        0,
+		version:        1,
 		organizationID: organizationID,
 		loginID:        loginID,
 		hashedPassword: hashedPassword,
@@ -39,9 +39,8 @@ func NewAppUser(id domain.AppUserID, organizationID domain.OrganizationID, login
 }
 
 // ReconstructAppUser reconstitutes an AppUser from persistence.
-// The returned aggregate has version 0; callers that load from storage should
-// call WithVersion to set the persisted version so Save can perform an
-// optimistic-lock compare-and-swap.
+// Callers that load from storage must call WithVersion to set the persisted
+// version so Save can perform an optimistic-lock compare-and-swap.
 func ReconstructAppUser(id domain.AppUserID, organizationID domain.OrganizationID, loginID domain.LoginID, hashedPassword string, provider string, providerID string, enabled bool) *AppUser {
 	return &AppUser{
 		id:             id,
@@ -62,12 +61,11 @@ func (u *AppUser) WithVersion(version int) *AppUser {
 	return u
 }
 
-// Version returns the persisted row version (0 = new, not yet saved).
+// Version returns the aggregate version (1 = new, not yet saved).
 func (u *AppUser) Version() int { return u.version }
 
-// IncrementVersion bumps the version after a successful persist. Callers in the
-// repository layer invoke this after a successful INSERT or UPDATE so that a
-// subsequent Save on the same aggregate uses the correct compare-and-swap target.
+// IncrementVersion bumps the version after a successful persist. The caller
+// (usecase/factory layer) is responsible for calling this after a successful Save.
 func (u *AppUser) IncrementVersion() { u.version++ }
 
 func (u *AppUser) validate() error {

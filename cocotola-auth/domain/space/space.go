@@ -15,6 +15,7 @@ const (
 // Space represents a space belonging to an organization.
 type Space struct {
 	id             domain.SpaceID
+	version        int
 	organizationID domain.OrganizationID
 	ownerID        domain.AppUserID
 	keyName        string
@@ -27,6 +28,7 @@ type Space struct {
 func NewSpace(id domain.SpaceID, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType Type, deleted bool) (*Space, error) {
 	m := &Space{
 		id:             id,
+		version:        1,
 		organizationID: organizationID,
 		ownerID:        ownerID,
 		keyName:        keyName,
@@ -116,4 +118,16 @@ func PublicSpaceKeyName(orgName string) string {
 // PrivateSpaceKeyName returns the key name for a private space belonging to the given user.
 func PrivateSpaceKeyName(loginID string) string {
 	return "private@@" + loginID
+}
+
+// Version returns the persisted row version (1 = new, not yet saved).
+func (s *Space) Version() int { return s.version }
+
+// IncrementVersion bumps the version after a successful persist.
+func (s *Space) IncrementVersion() { s.version++ }
+
+// WithVersion sets the persisted row version on a reconstituted aggregate.
+func (s *Space) WithVersion(version int) *Space {
+	s.version = version
+	return s
 }

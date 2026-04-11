@@ -40,8 +40,20 @@ var ErrAppUserAutoLinkRejected = errors.New("auto-link rejected: existing accoun
 // any local account to prevent email-spoofing account takeover.
 var ErrSupabaseEmailNotVerified = errors.New("supabase email not verified")
 
+// ErrOrganizationConcurrentModification is returned when an optimistic-lock CAS
+// on the Organization row version fails.
+var ErrOrganizationConcurrentModification = errors.New("organization was modified concurrently")
+
 // ErrGroupNotFound is returned when a group cannot be found.
 var ErrGroupNotFound = errors.New("group not found")
+
+// ErrGroupConcurrentModification is returned when an optimistic-lock CAS
+// on the Group row version fails.
+var ErrGroupConcurrentModification = errors.New("group was modified concurrently")
+
+// ErrSpaceConcurrentModification is returned when an optimistic-lock CAS
+// on the Space row version fails.
+var ErrSpaceConcurrentModification = errors.New("space was modified concurrently")
 
 // ErrActiveUserLimitReached is returned when the organization has reached its active user limit.
 var ErrActiveUserLimitReached = errors.New("active user limit reached")

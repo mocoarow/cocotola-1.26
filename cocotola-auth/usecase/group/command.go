@@ -7,7 +7,7 @@ type Command struct {
 
 // NewCommand returns a new Command with the given dependencies.
 func NewCommand(
-	groupRepo groupCreator,
+	groupRepo groupSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	authChecker authorizationChecker,

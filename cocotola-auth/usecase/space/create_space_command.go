@@ -12,8 +12,8 @@ import (
 	spaceservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space"
 )
 
-type spaceCreator interface {
-	Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error)
+type spaceSaver interface {
+	Save(ctx context.Context, space *domainspace.Space) error
 }
 
 type organizationFinderByName interface {
@@ -30,7 +30,7 @@ type authorizationChecker interface {
 
 // CreateSpaceCommand creates a new space within an organization.
 type CreateSpaceCommand struct {
-	spaceRepo   spaceCreator
+	spaceRepo   spaceSaver
 	orgRepo     organizationFinderByName
 	publisher   eventPublisher
 	authChecker authorizationChecker
@@ -38,7 +38,7 @@ type CreateSpaceCommand struct {
 
 // NewCreateSpaceCommand returns a new CreateSpaceCommand.
 func NewCreateSpaceCommand(
-	spaceRepo spaceCreator,
+	spaceRepo spaceSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	authChecker authorizationChecker,
@@ -78,14 +78,14 @@ func (c *CreateSpaceCommand) CreateSpace(ctx context.Context, input *spaceservic
 		return nil, errors.New("private spaces must be created via event handler")
 	}
 
-	spaceID, err := c.spaceRepo.Create(ctx, org.ID(), input.OperatorID, keyName, input.Name, input.SpaceType, input.OperatorID)
+	s, err := domainspace.Provision(ctx, c.spaceRepo, org.ID(), input.OperatorID, keyName, input.Name, st)
 	if err != nil {
-		return nil, fmt.Errorf("create space: %w", err)
+		return nil, fmt.Errorf("provision space: %w", err)
 	}
 
-	c.publisher.Publish(domain.NewSpaceCreated(spaceID, org.ID(), input.OperatorID, keyName, input.Name, input.SpaceType, time.Now()))
+	c.publisher.Publish(domain.NewSpaceCreated(s.ID(), org.ID(), input.OperatorID, keyName, input.Name, input.SpaceType, time.Now()))
 
-	output, err := spaceservice.NewCreateSpaceOutput(spaceID, org.ID(), input.OperatorID, keyName, input.Name, input.SpaceType, false)
+	output, err := spaceservice.NewCreateSpaceOutput(s.ID(), org.ID(), input.OperatorID, keyName, input.Name, input.SpaceType, false)
 	if err != nil {
 		return nil, fmt.Errorf("create space output: %w", err)
 	}

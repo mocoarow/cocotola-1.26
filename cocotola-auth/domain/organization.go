@@ -10,6 +10,7 @@ const maxOrganizationNameLength = 255
 // Organization represents a tenant that owns users and groups.
 type Organization struct {
 	id              OrganizationID
+	version         int
 	name            string
 	maxActiveUsers  int
 	maxActiveGroups int
@@ -19,6 +20,7 @@ type Organization struct {
 func NewOrganization(id OrganizationID, name string, maxActiveUsers int, maxActiveGroups int) (*Organization, error) {
 	m := &Organization{
 		id:              id,
+		version:         1,
 		name:            name,
 		maxActiveUsers:  maxActiveUsers,
 		maxActiveGroups: maxActiveGroups,
@@ -69,3 +71,15 @@ func (o *Organization) MaxActiveUsers() int { return o.maxActiveUsers }
 
 // MaxActiveGroups returns the maximum number of active groups.
 func (o *Organization) MaxActiveGroups() int { return o.maxActiveGroups }
+
+// Version returns the persisted row version (1 = new, not yet saved).
+func (o *Organization) Version() int { return o.version }
+
+// IncrementVersion bumps the version after a successful persist.
+func (o *Organization) IncrementVersion() { o.version++ }
+
+// WithVersion sets the persisted row version on a reconstituted aggregate.
+func (o *Organization) WithVersion(version int) *Organization {
+	o.version = version
+	return o
+}

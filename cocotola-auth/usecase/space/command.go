@@ -9,7 +9,7 @@ type Command struct {
 
 // NewCommand returns a new Command with the given dependencies.
 func NewCommand(
-	spaceRepo spaceCreator,
+	spaceRepo spaceSaver,
 	spaceFinderRepo spaceFinder,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
