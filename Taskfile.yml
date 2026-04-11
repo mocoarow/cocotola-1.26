@@ -169,6 +169,12 @@ tasks:
         vars:
           PROJECT: "{{ .ITEM }}"
 
+  test-web:
+    desc: "Run cocotola-web tests"
+    dir: cocotola-web
+    cmds:
+      - pnpm run test
+
   test:
     cmds:
       - docker compose -f compose.test.yml up -d --wait
@@ -178,6 +184,7 @@ tasks:
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+      - task: test-web
 
   test-remote:
     cmds:
@@ -187,6 +194,7 @@ tasks:
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
+      - task: test-web
 
   test-clear:
     cmds:
