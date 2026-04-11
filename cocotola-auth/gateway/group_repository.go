@@ -43,14 +43,16 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 	return &GroupRepository{db: db}
 }
 
-// Save persists a group aggregate. New aggregates (version 1) are inserted;
-// loaded aggregates (version > 1) are updated via CAS on the version column.
-// The caller is responsible for calling IncrementVersion after a successful Save.
+// Save persists a group aggregate. New aggregates (version 0) are inserted;
+// loaded aggregates (version > 0) are updated via CAS on the version column.
+// The repository updates the aggregate's version after a successful persist so
+// the caller does not need to manage versioning.
 func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) error {
+	nextVersion := group.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
 		ID:             group.ID().String(),
-		Version:        group.Version(),
+		Version:        nextVersion,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
 		CreatedBy:      systemUserID,
@@ -59,21 +61,22 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 		Name:           group.Name(),
 		Enabled:        group.Enabled(),
 	}
-	if group.Version() == 1 {
+	if group.Version() == 0 {
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert group: %w", err)
 		}
+		group.WithVersion(nextVersion)
 		return nil
 	}
 
 	result := r.db.WithContext(ctx).
 		Model(&record).
-		Where("id = ? AND version = ?", record.ID, record.Version-1).
+		Where("id = ? AND version = ?", record.ID, group.Version()).
 		Updates(map[string]any{
 			"organization_id": record.OrganizationID,
 			"name":            record.Name,
 			"enabled":         record.Enabled,
-			"version":         record.Version,
+			"version":         nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update group: %w", result.Error)
@@ -81,6 +84,7 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 	if result.RowsAffected == 0 {
 		return domain.ErrGroupConcurrentModification
 	}
+	group.WithVersion(nextVersion)
 	return nil
 }
 

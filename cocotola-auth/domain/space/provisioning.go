@@ -34,6 +34,5 @@ func Provision(
 	if err := saver.Save(ctx, s); err != nil {
 		return nil, fmt.Errorf("save space: %w", err)
 	}
-	s.IncrementVersion()
 	return s, nil
 }

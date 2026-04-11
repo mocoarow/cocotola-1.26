@@ -42,15 +42,16 @@ func NewOrganizationRepository(db *gorm.DB) *OrganizationRepository {
 	return &OrganizationRepository{db: db}
 }
 
-// Save persists an organization aggregate. New aggregates (version 1) are
-// inserted; loaded aggregates (version > 1) are updated via CAS on the version
-// column. The caller is responsible for calling IncrementVersion after a
-// successful Save.
+// Save persists an organization aggregate. New aggregates (version 0) are
+// inserted; loaded aggregates (version > 0) are updated via CAS on the version
+// column. The repository updates the aggregate's version after a successful
+// persist so the caller does not need to manage versioning.
 func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organization) error {
+	nextVersion := org.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := organizationRecord{
 		ID:              org.ID().String(),
-		Version:         org.Version(),
+		Version:         nextVersion,
 		CreatedAt:       time.Time{},
 		UpdatedAt:       time.Time{},
 		CreatedBy:       systemUserID,
@@ -59,21 +60,22 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 		MaxActiveUsers:  org.MaxActiveUsers(),
 		MaxActiveGroups: org.MaxActiveGroups(),
 	}
-	if org.Version() == 1 {
+	if org.Version() == 0 {
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert organization: %w", err)
 		}
+		org.WithVersion(nextVersion)
 		return nil
 	}
 
 	result := r.db.WithContext(ctx).
 		Model(&record).
-		Where("id = ? AND version = ?", record.ID, record.Version-1).
+		Where("id = ? AND version = ?", record.ID, org.Version()).
 		Updates(map[string]any{
 			"name":              record.Name,
 			"max_active_users":  record.MaxActiveUsers,
 			"max_active_groups": record.MaxActiveGroups,
-			"version":           record.Version,
+			"version":           nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update organization: %w", result.Error)
@@ -81,6 +83,7 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 	if result.RowsAffected == 0 {
 		return domain.ErrOrganizationConcurrentModification
 	}
+	org.WithVersion(nextVersion)
 	return nil
 }
 

@@ -23,7 +23,7 @@ type Group struct {
 func NewGroup(id domain.GroupID, organizationID domain.OrganizationID, name string, enabled bool) (*Group, error) {
 	m := &Group{
 		id:             id,
-		version:        1,
+		version:        0,
 		organizationID: organizationID,
 		name:           name,
 		enabled:        enabled,
@@ -38,6 +38,7 @@ func NewGroup(id domain.GroupID, organizationID domain.OrganizationID, name stri
 func ReconstructGroup(id domain.GroupID, organizationID domain.OrganizationID, name string, enabled bool) *Group {
 	return &Group{
 		id:             id,
+		version:        0,
 		organizationID: organizationID,
 		name:           name,
 		enabled:        enabled,
@@ -78,11 +79,8 @@ func (g *Group) Enable() { g.enabled = true }
 // Disable disables the group.
 func (g *Group) Disable() { g.enabled = false }
 
-// Version returns the persisted row version (1 = new, not yet saved).
+// Version returns the persisted row version (0 = new, not yet saved).
 func (g *Group) Version() int { return g.version }
-
-// IncrementVersion bumps the version after a successful persist.
-func (g *Group) IncrementVersion() { g.version++ }
 
 // WithVersion sets the persisted row version on a reconstituted aggregate.
 func (g *Group) WithVersion(version int) *Group {

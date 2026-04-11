@@ -50,14 +50,16 @@ func NewSpaceRepository(db *gorm.DB) *SpaceRepository {
 	return &SpaceRepository{db: db}
 }
 
-// Save persists a space aggregate. New aggregates (version 1) are inserted;
-// loaded aggregates (version > 1) are updated via CAS on the version column.
-// The caller is responsible for calling IncrementVersion after a successful Save.
+// Save persists a space aggregate. New aggregates (version 0) are inserted;
+// loaded aggregates (version > 0) are updated via CAS on the version column.
+// The repository updates the aggregate's version after a successful persist so
+// the caller does not need to manage versioning.
 func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
+	nextVersion := space.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := spaceRecord{
 		ID:             space.ID().String(),
-		Version:        space.Version(),
+		Version:        nextVersion,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
 		CreatedBy:      systemUserID,
@@ -69,16 +71,17 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 		SpaceType:      space.SpaceType().Value(),
 		Deleted:        space.Deleted(),
 	}
-	if space.Version() == 1 {
+	if space.Version() == 0 {
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert space: %w", err)
 		}
+		space.WithVersion(nextVersion)
 		return nil
 	}
 
 	result := r.db.WithContext(ctx).
 		Model(&record).
-		Where("id = ? AND version = ?", record.ID, record.Version-1).
+		Where("id = ? AND version = ?", record.ID, space.Version()).
 		Updates(map[string]any{
 			"organization_id": record.OrganizationID,
 			"owner_id":        record.OwnerID,
@@ -86,7 +89,7 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 			"name":            record.Name,
 			"space_type":      record.SpaceType,
 			"deleted":         record.Deleted,
-			"version":         record.Version,
+			"version":         nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update space: %w", result.Error)
@@ -94,6 +97,7 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 	if result.RowsAffected == 0 {
 		return domain.ErrSpaceConcurrentModification
 	}
+	space.WithVersion(nextVersion)
 	return nil
 }
 

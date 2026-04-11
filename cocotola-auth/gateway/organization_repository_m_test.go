@@ -20,10 +20,13 @@ func Test_OrganizationRepository_Save_shouldInsertOrganization_whenNewRecord(t *
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-save", 10, 5)
+	orgID, err := domain.NewOrganizationIDV7()
+	require.NoError(t, err)
+	org, err := domain.NewOrganization(orgID, "test-org-save", 10, 5)
+	require.NoError(t, err)
 
 	// when
-	err := repo.Save(ctx, org)
+	err = repo.Save(ctx, org)
 
 	// then
 	require.NoError(t, err)
@@ -36,20 +39,18 @@ func Test_OrganizationRepository_FindByID_shouldReturnOrganization_whenOrganizat
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-findbyid", 20, 10)
+	orgID, err := domain.NewOrganizationIDV7()
+	require.NoError(t, err)
+	org, err := domain.NewOrganization(orgID, "test-org-findbyid", 20, 10)
+	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, org))
 
-	var inserted gateway.OrganizationRecordForTest
-	require.NoError(t, tx.Where("name = ?", "test-org-findbyid").First(&inserted).Error)
-	insertedID, err := domain.ParseOrganizationID(inserted.ID)
-	require.NoError(t, err)
-
 	// when
-	found, err := repo.FindByID(ctx, insertedID)
+	found, err := repo.FindByID(ctx, orgID)
 
 	// then
 	require.NoError(t, err)
-	assert.True(t, insertedID.Equal(found.ID()))
+	assert.True(t, orgID.Equal(found.ID()))
 	assert.Equal(t, "test-org-findbyid", found.Name())
 	assert.Equal(t, 20, found.MaxActiveUsers())
 	assert.Equal(t, 10, found.MaxActiveGroups())
@@ -78,7 +79,10 @@ func Test_OrganizationRepository_FindByName_shouldReturnOrganization_whenNameExi
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	repo := gateway.NewOrganizationRepository(tx)
-	org := domain.ReconstructOrganization(domain.OrganizationID{}, "test-org-findbyname", 30, 15)
+	orgID, err := domain.NewOrganizationIDV7()
+	require.NoError(t, err)
+	org, err := domain.NewOrganization(orgID, "test-org-findbyname", 30, 15)
+	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, org))
 
 	// when

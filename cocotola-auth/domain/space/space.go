@@ -28,7 +28,7 @@ type Space struct {
 func NewSpace(id domain.SpaceID, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType Type, deleted bool) (*Space, error) {
 	m := &Space{
 		id:             id,
-		version:        1,
+		version:        0,
 		organizationID: organizationID,
 		ownerID:        ownerID,
 		keyName:        keyName,
@@ -46,6 +46,7 @@ func NewSpace(id domain.SpaceID, organizationID domain.OrganizationID, ownerID d
 func ReconstructSpace(id domain.SpaceID, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType Type, deleted bool) *Space {
 	return &Space{
 		id:             id,
+		version:        0,
 		organizationID: organizationID,
 		ownerID:        ownerID,
 		keyName:        keyName,
@@ -120,11 +121,8 @@ func PrivateSpaceKeyName(loginID string) string {
 	return "private@@" + loginID
 }
 
-// Version returns the persisted row version (1 = new, not yet saved).
+// Version returns the persisted row version (0 = new, not yet saved).
 func (s *Space) Version() int { return s.version }
-
-// IncrementVersion bumps the version after a successful persist.
-func (s *Space) IncrementVersion() { s.version++ }
 
 // WithVersion sets the persisted row version on a reconstituted aggregate.
 func (s *Space) WithVersion(version int) *Space {

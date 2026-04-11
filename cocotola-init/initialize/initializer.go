@@ -137,7 +137,6 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	if err := repo.Save(ctx, org); err != nil {
 		return nil, fmt.Errorf("save organization: %w", err)
 	}
-	org.IncrementVersion()
 
 	logger.InfoContext(ctx, "organization created",
 		slog.String("id", org.ID().String()),

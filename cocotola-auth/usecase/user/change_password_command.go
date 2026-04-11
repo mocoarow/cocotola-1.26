@@ -64,7 +64,6 @@ func (c *ChangePasswordCommand) ChangePassword(ctx context.Context, input *users
 	if err := c.appUserSaver.Save(ctx, user); err != nil {
 		return nil, fmt.Errorf("save app user: %w", err)
 	}
-	user.IncrementVersion()
 
 	output, err := userservice.NewChangePasswordOutput(input.AppUserID)
 	if err != nil {

@@ -38,6 +38,5 @@ func Provision(
 	if err := saver.Save(ctx, user); err != nil {
 		return nil, fmt.Errorf("save app user: %w", err)
 	}
-	user.IncrementVersion()
 	return user, nil
 }

@@ -31,6 +31,5 @@ func Provision(
 	if err := saver.Save(ctx, group); err != nil {
 		return nil, fmt.Errorf("save group: %w", err)
 	}
-	group.IncrementVersion()
 	return group, nil
 }

@@ -34,7 +34,8 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 			s.Name() == "Private(user@example.com)" &&
 			s.SpaceType() == domainspace.TypePrivate()
 	})).Run(func(args mock.Arguments) {
-		s := args.Get(1).(*domainspace.Space)
+		s, ok := args.Get(1).(*domainspace.Space)
+		require.True(t, ok)
 		capturedSpaceID = s.ID()
 	}).Return(nil)
 

@@ -95,23 +95,27 @@ func NewAppUserRepository(db *gorm.DB) *AppUserRepository {
 	return &AppUserRepository{db: db}
 }
 
-// Save persists an app user aggregate. New aggregates (version 1) are inserted;
-// loaded aggregates (version > 1) are updated via CAS on the version column.
-// The caller is responsible for calling IncrementVersion after a successful Save.
+// Save persists an app user aggregate. New aggregates (version 0) are inserted;
+// loaded aggregates (version > 0) are updated via CAS on the version column.
+// The repository updates the aggregate's version after a successful persist so
+// the caller does not need to manage versioning.
 func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) error {
 	record := toAppUserRecord(user)
-	if user.Version() == 1 {
+	nextVersion := user.Version() + 1
+	if user.Version() == 0 {
+		record.Version = nextVersion
 		if err := r.db.WithContext(ctx).
 			Omit("username", "encrypted_provider_access_token", "encrypted_provider_refresh_token").
 			Create(&record).Error; err != nil {
 			return fmt.Errorf("insert app user: %w", err)
 		}
+		user.WithVersion(nextVersion)
 		return nil
 	}
 
 	result := r.db.WithContext(ctx).
 		Model(&record).
-		Where("id = ? AND version = ?", record.ID, record.Version-1).
+		Where("id = ? AND version = ?", record.ID, user.Version()).
 		Updates(map[string]any{
 			"organization_id": record.OrganizationID,
 			"login_id":        record.LoginID,
@@ -119,7 +123,7 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 			"provider":        record.Provider,
 			"provider_id":     record.ProviderID,
 			"enabled":         record.Enabled,
-			"version":         record.Version,
+			"version":         nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update app user: %w", result.Error)
@@ -127,6 +131,7 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 	if result.RowsAffected == 0 {
 		return domain.ErrAppUserConcurrentModification
 	}
+	user.WithVersion(nextVersion)
 	return nil
 }
 
