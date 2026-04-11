@@ -14,7 +14,7 @@ import (
 
 type spaceRecord struct {
 	ID             string    `gorm:"column:id;primaryKey"`
-	Version        int       `gorm:"column:version;->"`
+	Version        int       `gorm:"column:version"`
 	CreatedAt      time.Time `gorm:"column:created_at;->"`
 	UpdatedAt      time.Time `gorm:"column:updated_at;->"`
 	CreatedBy      string    `gorm:"column:created_by;<-:create"`
@@ -36,7 +36,8 @@ func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid space type %q: %w", r.SpaceType, err)
 	}
-	return domainspace.ReconstructSpace(domain.MustParseSpaceID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted), nil
+	return domainspace.ReconstructSpace(domain.MustParseSpaceID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted).
+		WithVersion(r.Version), nil
 }
 
 // SpaceRepository implements space persistence using GORM.
@@ -49,33 +50,55 @@ func NewSpaceRepository(db *gorm.DB) *SpaceRepository {
 	return &SpaceRepository{db: db}
 }
 
-// Create inserts a new space record and returns the generated UUIDv7 ID.
-func (r *SpaceRepository) Create(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID, keyName string, name string, spaceType string, createdBy domain.AppUserID) (domain.SpaceID, error) {
-	spaceID, err := domain.NewSpaceIDV7()
-	if err != nil {
-		return domain.SpaceID{}, fmt.Errorf("generate space id: %w", err)
-	}
-
-	createdByStr := createdBy.String()
+// Save persists a space aggregate. New aggregates (version 0) are inserted;
+// loaded aggregates (version > 0) are updated via CAS on the version column.
+// The repository updates the aggregate's version after a successful persist so
+// the caller does not need to manage versioning.
+func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
+	nextVersion := space.Version() + 1
+	systemUserID := domain.SystemAppUserID().String()
 	record := spaceRecord{
-		ID:             spaceID.String(),
-		Version:        0,
+		ID:             space.ID().String(),
+		Version:        nextVersion,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
-		CreatedBy:      createdByStr,
-		UpdatedBy:      createdByStr,
-		OrganizationID: organizationID.String(),
-		OwnerID:        ownerID.String(),
-		KeyName:        keyName,
-		Name:           name,
-		SpaceType:      spaceType,
-		Deleted:        false,
+		CreatedBy:      systemUserID,
+		UpdatedBy:      systemUserID,
+		OrganizationID: space.OrganizationID().String(),
+		OwnerID:        space.OwnerID().String(),
+		KeyName:        space.KeyName(),
+		Name:           space.Name(),
+		SpaceType:      space.SpaceType().Value(),
+		Deleted:        space.Deleted(),
 	}
-	if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-		return domain.SpaceID{}, fmt.Errorf("create space: %w", err)
+	if space.Version() == 0 {
+		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
+			return fmt.Errorf("insert space: %w", err)
+		}
+		space.WithVersion(nextVersion)
+		return nil
 	}
 
-	return spaceID, nil
+	result := r.db.WithContext(ctx).
+		Model(&record).
+		Where("id = ? AND version = ?", record.ID, space.Version()).
+		Updates(map[string]any{
+			"organization_id": record.OrganizationID,
+			"owner_id":        record.OwnerID,
+			"key_name":        record.KeyName,
+			"name":            record.Name,
+			"space_type":      record.SpaceType,
+			"deleted":         record.Deleted,
+			"version":         nextVersion,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("update space: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrSpaceConcurrentModification
+	}
+	space.WithVersion(nextVersion)
+	return nil
 }
 
 // FindByID looks up a space by its ID.
@@ -129,27 +152,4 @@ func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organization
 		spaces[i] = *space
 	}
 	return spaces, nil
-}
-
-// Save persists a space record (upsert: insert or update).
-func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
-	systemUserID := domain.SystemAppUserID().String()
-	record := spaceRecord{
-		ID:             space.ID().String(),
-		Version:        0,
-		CreatedAt:      time.Time{},
-		UpdatedAt:      time.Time{},
-		CreatedBy:      systemUserID,
-		UpdatedBy:      systemUserID,
-		OrganizationID: space.OrganizationID().String(),
-		OwnerID:        space.OwnerID().String(),
-		KeyName:        space.KeyName(),
-		Name:           space.Name(),
-		SpaceType:      space.SpaceType().Value(),
-		Deleted:        space.Deleted(),
-	}
-	if err := r.db.WithContext(ctx).Save(&record).Error; err != nil {
-		return fmt.Errorf("save space: %w", err)
-	}
-	return nil
 }

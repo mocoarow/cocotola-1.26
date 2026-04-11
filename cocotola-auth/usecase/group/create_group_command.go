@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	groupservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group"
 )
 
-type groupCreator interface {
-	Create(ctx context.Context, organizationID domain.OrganizationID, name string) (domain.GroupID, error)
+type groupSaver interface {
+	Save(ctx context.Context, group *domaingroup.Group) error
 }
 
 type organizationFinderByName interface {
@@ -28,7 +29,7 @@ type authorizationChecker interface {
 
 // CreateGroupCommand creates a new group within an organization.
 type CreateGroupCommand struct {
-	groupRepo   groupCreator
+	groupRepo   groupSaver
 	orgRepo     organizationFinderByName
 	publisher   eventPublisher
 	authChecker authorizationChecker
@@ -36,7 +37,7 @@ type CreateGroupCommand struct {
 
 // NewCreateGroupCommand returns a new CreateGroupCommand.
 func NewCreateGroupCommand(
-	groupRepo groupCreator,
+	groupRepo groupSaver,
 	orgRepo organizationFinderByName,
 	publisher eventPublisher,
 	authChecker authorizationChecker,
@@ -51,13 +52,11 @@ func NewCreateGroupCommand(
 
 // CreateGroup creates a new group and publishes a GroupCreated event.
 func (c *CreateGroupCommand) CreateGroup(ctx context.Context, input *groupservice.CreateGroupInput) (*groupservice.CreateGroupOutput, error) {
-	// TX1: Find organization by name to get organizationID.
 	org, err := c.orgRepo.FindByName(ctx, input.OrganizationName)
 	if err != nil {
 		return nil, fmt.Errorf("find organization: %w", err)
 	}
 
-	// Authorization check.
 	allowed, err := c.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionCreateGroup(), domainrbac.ResourceAny())
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
@@ -66,16 +65,14 @@ func (c *CreateGroupCommand) CreateGroup(ctx context.Context, input *groupservic
 		return nil, domain.ErrForbidden
 	}
 
-	// TX2: Create group record.
-	groupID, err := c.groupRepo.Create(ctx, org.ID(), input.GroupName)
+	group, err := domaingroup.Provision(ctx, c.groupRepo, org.ID(), input.GroupName)
 	if err != nil {
-		return nil, fmt.Errorf("create group: %w", err)
+		return nil, fmt.Errorf("provision group: %w", err)
 	}
 
-	// Publish domain event for eventual consistency with ActiveGroupList.
-	c.publisher.Publish(domain.NewGroupCreated(groupID, org.ID(), input.GroupName, time.Now()))
+	c.publisher.Publish(domain.NewGroupCreated(group.ID(), org.ID(), input.GroupName, time.Now()))
 
-	output, err := groupservice.NewCreateGroupOutput(groupID, org.ID(), input.GroupName, true)
+	output, err := groupservice.NewCreateGroupOutput(group.ID(), org.ID(), input.GroupName, true)
 	if err != nil {
 		return nil, fmt.Errorf("create group output: %w", err)
 	}

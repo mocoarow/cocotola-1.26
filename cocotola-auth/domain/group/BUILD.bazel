@@ -9,6 +9,7 @@ go_library(
         "group_hierarchy.go",
         "group_users.go",
         "member_set_base.go",
+        "provisioning.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group",
     visibility = ["//visibility:public"],

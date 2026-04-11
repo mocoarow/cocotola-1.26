@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "space",
     srcs = [
+        "provisioning.go",
         "space.go",
         "space_type.go",
     ],

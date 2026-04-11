@@ -360,13 +360,13 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 		return fmt.Errorf("find public space by key name: %w", err)
 	}
 
-	spaceID, err := repo.Create(ctx, orgID, systemOwnerID, keyName, "Public", domainspace.TypePublic().Value(), systemOwnerID)
+	s, err := domainspace.Provision(ctx, repo, orgID, systemOwnerID, keyName, "Public", domainspace.TypePublic())
 	if err != nil {
-		return fmt.Errorf("create public space: %w", err)
+		return fmt.Errorf("provision public space: %w", err)
 	}
 
 	logger.InfoContext(ctx, "public space created",
-		slog.String("space_id", spaceID.String()),
+		slog.String("space_id", s.ID().String()),
 		slog.String("key_name", keyName),
 	)
 	return nil

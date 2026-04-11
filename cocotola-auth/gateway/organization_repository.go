@@ -13,7 +13,7 @@ import (
 
 type organizationRecord struct {
 	ID              string    `gorm:"column:id;primaryKey"`
-	Version         int       `gorm:"column:version;->"`
+	Version         int       `gorm:"column:version"`
 	CreatedAt       time.Time `gorm:"column:created_at;->"`
 	UpdatedAt       time.Time `gorm:"column:updated_at;->"`
 	CreatedBy       string    `gorm:"column:created_by;<-:create"`
@@ -28,7 +28,8 @@ func (organizationRecord) TableName() string {
 }
 
 func toOrganizationDomain(r *organizationRecord) *domain.Organization {
-	return domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
+	return domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups).
+		WithVersion(r.Version)
 }
 
 // OrganizationRepository implements organization persistence using GORM.
@@ -41,12 +42,16 @@ func NewOrganizationRepository(db *gorm.DB) *OrganizationRepository {
 	return &OrganizationRepository{db: db}
 }
 
-// Save persists an organization record (upsert: insert or update).
+// Save persists an organization aggregate. New aggregates (version 0) are
+// inserted; loaded aggregates (version > 0) are updated via CAS on the version
+// column. The repository updates the aggregate's version after a successful
+// persist so the caller does not need to manage versioning.
 func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organization) error {
+	nextVersion := org.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := organizationRecord{
 		ID:              org.ID().String(),
-		Version:         0,
+		Version:         nextVersion,
 		CreatedAt:       time.Time{},
 		UpdatedAt:       time.Time{},
 		CreatedBy:       systemUserID,
@@ -55,9 +60,30 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 		MaxActiveUsers:  org.MaxActiveUsers(),
 		MaxActiveGroups: org.MaxActiveGroups(),
 	}
-	if err := r.db.WithContext(ctx).Save(&record).Error; err != nil {
-		return fmt.Errorf("save organization: %w", err)
+	if org.Version() == 0 {
+		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
+			return fmt.Errorf("insert organization: %w", err)
+		}
+		org.WithVersion(nextVersion)
+		return nil
 	}
+
+	result := r.db.WithContext(ctx).
+		Model(&record).
+		Where("id = ? AND version = ?", record.ID, org.Version()).
+		Updates(map[string]any{
+			"name":              record.Name,
+			"max_active_users":  record.MaxActiveUsers,
+			"max_active_groups": record.MaxActiveGroups,
+			"version":           nextVersion,
+		})
+	if result.Error != nil {
+		return fmt.Errorf("update organization: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrOrganizationConcurrentModification
+	}
+	org.WithVersion(nextVersion)
 	return nil
 }
 
