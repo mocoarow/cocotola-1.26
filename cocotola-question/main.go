@@ -60,12 +60,8 @@ func run() (int, error) {
 
 	// auth HTTP client for communicating with cocotola-auth
 	authTimeout := time.Duration(cfg.Auth.TimeoutSec) * time.Second
-	authAudience := cfg.Auth.Audience
-	if authAudience == "" {
-		authAudience = cfg.Auth.BaseURL
-	}
 
-	httpClient, err := libgateway.NewHTTPClient(ctx, cfg.AppEnv, authAudience, authTimeout)
+	httpClient, err := libgateway.NewHTTPClient(ctx, cfg.AppEnv, cfg.Auth.BaseURL, authTimeout)
 	if err != nil {
 		return 1, fmt.Errorf("create auth HTTP client: %w", err)
 	}
