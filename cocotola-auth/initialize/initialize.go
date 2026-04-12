@@ -64,7 +64,7 @@ type InitResult struct {
 // Initialize sets up the cocotola-auth module: gateway, usecase, and controller layers.
 // It registers all auth-related routes under the given parent router group and returns
 // an InitResult containing shared resources for use by other modules.
-func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig, internalConfig config.InternalConfig) (*InitResult, error) {
+func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig) (*InitResult, error) {
 	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(authConfig.SigningKey),
@@ -158,7 +158,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	// internal (service-to-service) routes protected by API key
-	apiKeyMiddleware := middleware.NewAPIKeyMiddleware(internalConfig.APIKey)
+	apiKeyMiddleware := middleware.NewAPIKeyMiddleware(authConfig.APIKey)
 	internalV1 := api.Group("v1/internal", apiKeyMiddleware)
 	supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 	authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)

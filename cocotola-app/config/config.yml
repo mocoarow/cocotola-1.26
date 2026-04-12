@@ -16,8 +16,7 @@ app:
       sameSite: ${APP_AUTH_COOKIE_SAME_SITE:-Lax}
     supabase:
       jwksUrl: ${APP_AUTH_SUPABASE_JWKS_URL}
-  internal:
-    apiKey: ${APP_INTERNAL_API_KEY}
+    apiKey: ${APP_AUTH_API_KEY}
 server:
   httpPort: ${APP_HTTP_PORT:-8000}
   metricsPort: ${APP_METRICS_PORT:-8001}

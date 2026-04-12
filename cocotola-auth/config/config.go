@@ -20,7 +20,7 @@ type SupabaseConfig struct {
 	JWKSURL string `yaml:"jwksUrl" validate:"required,url"`
 }
 
-// AuthConfig holds JWT signing key, token TTL, and cookie delivery settings.
+// AuthConfig holds JWT signing key, token TTL, cookie delivery settings, and API key for service-to-service authentication.
 type AuthConfig struct {
 	SigningKey         string                  `yaml:"signingKey" validate:"required,min=32"`
 	AccessTokenTTLMin  int                     `yaml:"accessTokenTtlMin" validate:"gte=1"`
@@ -30,11 +30,7 @@ type AuthConfig struct {
 	TokenWhitelistSize int                     `yaml:"tokenWhitelistSize" validate:"gte=1"`
 	Cookie             controller.CookieConfig `yaml:"cookie" validate:"required"`
 	Supabase           SupabaseConfig          `yaml:"supabase" validate:"required"`
-}
-
-// InternalConfig holds the shared API key for service-to-service authentication.
-type InternalConfig struct {
-	APIKey string `yaml:"apiKey" validate:"required,min=32"`
+	APIKey             string                  `yaml:"apiKey" validate:"required,min=32"`
 }
 
 // Config holds all configuration for the cocotola-auth service.
@@ -44,7 +40,6 @@ type Config struct {
 	Trace    libgateway.TraceConfig     `yaml:"trace" validate:"required"`
 	Log      libgateway.LogConfig       `yaml:"log" validate:"required"`
 	Auth     AuthConfig                 `yaml:"auth" validate:"required"`
-	Internal InternalConfig             `yaml:"internal" validate:"required"`
 }
 
 //go:embed config.yml

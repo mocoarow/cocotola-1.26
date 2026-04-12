@@ -184,7 +184,7 @@ func run() (int, error) {
 
 	// internal (service-to-service) routes protected by API key
 	{
-		apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Internal.APIKey)
+		apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Auth.APIKey)
 		internalV1 := api.Group("v1/internal", apiKeyMiddleware)
 		supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 		authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
