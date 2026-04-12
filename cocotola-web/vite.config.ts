@@ -8,6 +8,6 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   server: {
-    port: 5173,
+    port: Number(process.env.WEB_HTTP_PORT || 5173),
   },
 });

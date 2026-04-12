@@ -6,7 +6,7 @@ vi.stubGlobal("fetch", fetchMock);
 
 describe("listSpaces", () => {
   beforeEach(() => {
-    vi.stubEnv("COCOTOLA_AUTH_URL", "http://localhost:8080");
+    vi.stubEnv("AUTH_BASE_URL", "http://localhost:8080");
   });
 
   afterEach(() => {
@@ -14,13 +14,13 @@ describe("listSpaces", () => {
     vi.restoreAllMocks();
   });
 
-  it("should throw when COCOTOLA_AUTH_URL is not set", async () => {
+  it("should throw when AUTH_BASE_URL is not set", async () => {
     // given
-    vi.stubEnv("COCOTOLA_AUTH_URL", "");
+    vi.stubEnv("AUTH_BASE_URL", "");
 
     // when / then
     await expect(listSpaces("token")).rejects.toThrow(
-      "COCOTOLA_AUTH_URL environment variable is required",
+      "AUTH_BASE_URL environment variable is required",
     );
   });
 
@@ -77,7 +77,7 @@ describe("listSpaces", () => {
 
 describe("findPrivateSpace", () => {
   beforeEach(() => {
-    vi.stubEnv("COCOTOLA_AUTH_URL", "http://localhost:8080");
+    vi.stubEnv("AUTH_BASE_URL", "http://localhost:8080");
   });
 
   afterEach(() => {

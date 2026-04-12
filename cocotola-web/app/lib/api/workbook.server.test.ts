@@ -6,7 +6,7 @@ vi.stubGlobal("fetch", fetchMock);
 
 describe("listWorkbooks", () => {
   beforeEach(() => {
-    vi.stubEnv("COCOTOLA_QUESTION_URL", "http://localhost:8090");
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
   });
 
   afterEach(() => {
@@ -14,13 +14,13 @@ describe("listWorkbooks", () => {
     vi.restoreAllMocks();
   });
 
-  it("should throw when COCOTOLA_QUESTION_URL is not set", async () => {
+  it("should throw when QUESTION_BASE_URL is not set", async () => {
     // given
-    vi.stubEnv("COCOTOLA_QUESTION_URL", "");
+    vi.stubEnv("QUESTION_BASE_URL", "");
 
     // when / then
     await expect(listWorkbooks("token", "sp-1")).rejects.toThrow(
-      "COCOTOLA_QUESTION_URL environment variable is required",
+      "QUESTION_BASE_URL environment variable is required",
     );
   });
 
@@ -84,7 +84,7 @@ describe("listWorkbooks", () => {
 
 describe("deleteWorkbook", () => {
   beforeEach(() => {
-    vi.stubEnv("COCOTOLA_QUESTION_URL", "http://localhost:8090");
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
   });
 
   afterEach(() => {
