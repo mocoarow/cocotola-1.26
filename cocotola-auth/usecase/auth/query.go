@@ -139,12 +139,13 @@ func NewQuery(
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
+	publisher domain.EventPublisher,
 ) *Query {
 	return &Query{
 		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
+		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 	}
 }

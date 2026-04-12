@@ -1,5 +1,7 @@
 package auth
 
+import "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+
 // Command composes all authentication Command structs.
 type Command struct {
 	*CreateSessionTokenCommand
@@ -60,9 +62,10 @@ func NewUsecase(
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
+	publisher domain.EventPublisher,
 ) *Usecase {
 	return &Usecase{
-		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder),
+		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}
 }

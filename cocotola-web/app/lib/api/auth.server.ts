@@ -28,6 +28,7 @@ export async function exchangeSupabaseToken(
 
   if (!response.ok) {
     const body = await response.text();
+    console.error(`[api] POST ${authUrl}/api/v1/internal/auth/supabase/exchange -> ${response.status}: ${body}`);
     throw new Error(`Token exchange failed (${response.status}): ${body}`);
   }
 

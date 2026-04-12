@@ -137,6 +137,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		appUserRepo,
 		appUserRepo,
 		orgRepo,
+		eventBus,
 	)
 
 	// controller layer

@@ -103,14 +103,14 @@ tasks:
     desc: "Bundle OpenAPI spec and generate Go types for cocotola-auth"
     dir: cocotola-auth/api
     cmds:
-      - pnpm redocly bundle openapi.yaml -o openapi-bundled.yaml
+      - ../../node_modules/.bin/redocly bundle openapi.yaml -o openapi-bundled.yaml
       - oapi-codegen --config oapi-codegen.yaml openapi-bundled.yaml
 
   generate-openapi-question:
     desc: "Bundle OpenAPI spec and generate Go types for cocotola-question"
     dir: cocotola-question/api
     cmds:
-      - pnpm redocly bundle openapi.yaml -o openapi-bundled.yaml
+      - ../../node_modules/.bin/redocly bundle openapi.yaml -o openapi-bundled.yaml
       - oapi-codegen --config oapi-codegen.yaml openapi-bundled.yaml
 
   generate-openapi:
@@ -256,13 +256,11 @@ tasks:
   run-cocotola-init:
     desc: "Run cocotola-init with local infrastructure"
     cmds:
-      - docker compose -f compose.local.postgres-lgtm.yml up -d --wait
       - bazelisk run //cocotola-init:cocotola-init
 
   run-cocotola-auth:
     desc: "Run cocotola-auth with local infrastructure"
     cmds:
-      - docker compose -f compose.local.postgres-lgtm.yml up -d --wait
       - bazelisk run //cocotola-auth:cocotola-auth
 
   run-cocotola-auth-production:
@@ -274,7 +272,6 @@ tasks:
   run-cocotola-question:
     desc: "Run cocotola-question with local infrastructure"
     cmds:
-      - docker compose -f compose.local.postgres-firestore-jaeger.yml up -d --wait
       - bazelisk run //cocotola-question:cocotola-question
 
   run-cocotola-question-production:
@@ -286,7 +283,6 @@ tasks:
   run-cocotola-app:
     desc: "Run cocotola-app with local infrastructure (auth + question)"
     cmds:
-      - docker compose -f compose.local.postgres-firestore-jaeger.yml up -d --wait
       - bazelisk run //cocotola-app:cocotola-app
 
   run-cocotola-empty:
@@ -294,6 +290,10 @@ tasks:
     cmds:
       - bazelisk run //cocotola-empty:cocotola-empty
 
+  start-local-infra:
+    cmds:
+      - docker compose -f compose.local.postgres-firestore-jaeger.yml up -d --wait
+
   clear-local-infra:
     cmds:
-      - docker compose -f compose.test.yml down -v --remove-orphans
+      - docker compose -f compose.local.postgres-firestore-jaeger.yml down -v --remove-orphans

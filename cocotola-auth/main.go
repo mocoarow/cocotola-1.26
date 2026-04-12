@@ -151,6 +151,7 @@ func run() (int, error) {
 		appUserRepo,
 		appUserRepo,
 		orgRepo,
+		eventBus,
 	)
 
 	// api
@@ -176,26 +177,32 @@ func run() (int, error) {
 		authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 	}
 
+	// organization & authz (shared between internal and external)
+	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
+	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
+
 	// internal (service-to-service) routes protected by API key
 	{
 		apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Internal.APIKey)
 		internalV1 := api.Group("v1/internal", apiKeyMiddleware)
 		supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 		authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
+
+		internalAuthV1 := internalV1.Group("auth")
+		orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
+		authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
 	}
 
 	authV1 := v1.Group("auth")
 
-	// organization lookup
+	// organization lookup (external, auth-protected)
 	{
-		findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
 		orghandler.InitOrganizationRouter(findOrgHandler, authV1, authMiddleware)
 	}
 
-	// authz check
-	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+	// authz check (external, auth-protected)
 	{
-		authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
 		authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
 	}
 

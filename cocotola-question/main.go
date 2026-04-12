@@ -71,11 +71,11 @@ func run() (int, error) {
 	// auth middleware (validates tokens via cocotola-auth API)
 	authMiddleware := gateway.NewAuthMiddleware(cfg.Auth.BaseURL, httpClient)
 
-	// authorization checker (checks RBAC via cocotola-auth API)
-	authzChecker := gateway.NewAuthServiceAuthorizationChecker(cfg.Auth.BaseURL, httpClient)
+	// authorization checker (checks RBAC via cocotola-auth internal API)
+	authzChecker := gateway.NewAuthServiceAuthorizationChecker(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
-	// organization resolver (resolves org name to ID via cocotola-auth API)
-	orgResolver := gateway.AuthServiceOrganizationResolver(cfg.Auth.BaseURL, httpClient)
+	// organization resolver (resolves org name to ID via cocotola-auth internal API)
+	orgResolver := gateway.AuthServiceOrganizationResolver(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
 	// initialize question module
 	api := router.Group("api")
