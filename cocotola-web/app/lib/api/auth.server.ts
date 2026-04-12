@@ -20,7 +20,7 @@ export async function exchangeSupabaseToken(
   }
 
   const response = await fetchWithIdToken(
-    authUrl,
+    "cocotola-auth",
     `${authUrl}/api/v1/internal/auth/supabase/exchange`,
     {
       method: "POST",
