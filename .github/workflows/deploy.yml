@@ -121,9 +121,14 @@ jobs:
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
           IMAGE_TAG: ${{ github.sha }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
           IMAGE="us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-web/cocotola-web"
-          docker build -t "${IMAGE}:${IMAGE_TAG}" -t "${IMAGE}:latest" cocotola-web
+          docker build \
+            --build-arg VITE_SUPABASE_URL="${VITE_SUPABASE_URL}" \
+            --build-arg VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY}" \
+            -t "${IMAGE}:${IMAGE_TAG}" -t "${IMAGE}:latest" cocotola-web
           docker push "${IMAGE}:${IMAGE_TAG}"
           docker push "${IMAGE}:latest"
 
