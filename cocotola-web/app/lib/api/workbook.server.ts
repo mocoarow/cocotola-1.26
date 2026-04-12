@@ -17,9 +17,9 @@ type ListWorkbooksResponse = {
 };
 
 function getQuestionUrl(): string {
-  const url = process.env.COCOTOLA_QUESTION_URL;
+  const url = process.env.QUESTION_BASE_URL;
   if (!url) {
-    throw new Error("COCOTOLA_QUESTION_URL environment variable is required");
+    throw new Error("QUESTION_BASE_URL environment variable is required");
   }
   return url;
 }

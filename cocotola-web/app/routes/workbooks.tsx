@@ -26,9 +26,9 @@ import type { Route } from "./+types/workbooks";
 export async function loader({ request }: Route.LoaderArgs) {
   const { accessToken } = await requireAuth(request);
 
-  const authUrl = process.env.COCOTOLA_AUTH_URL;
+  const authUrl = process.env.AUTH_BASE_URL;
   if (!authUrl) {
-    throw new Error("COCOTOLA_AUTH_URL environment variable is required");
+    throw new Error("AUTH_BASE_URL environment variable is required");
   }
 
   const response = await fetchWithIdToken(authUrl, `${authUrl}/api/v1/auth/me`, {

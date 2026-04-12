@@ -9,14 +9,14 @@ export async function exchangeSupabaseToken(
   supabaseJwt: string,
   organizationName: string,
 ): Promise<ExchangeResult> {
-  const authUrl = process.env.COCOTOLA_AUTH_URL;
+  const authUrl = process.env.AUTH_BASE_URL;
   if (!authUrl) {
-    throw new Error("COCOTOLA_AUTH_URL environment variable is required");
+    throw new Error("AUTH_BASE_URL environment variable is required");
   }
 
-  const apiKey = process.env.INTERNAL_API_KEY;
+  const apiKey = process.env.AUTH_API_KEY;
   if (!apiKey) {
-    throw new Error("INTERNAL_API_KEY environment variable is required");
+    throw new Error("AUTH_API_KEY environment variable is required");
   }
 
   const response = await fetchWithIdToken(

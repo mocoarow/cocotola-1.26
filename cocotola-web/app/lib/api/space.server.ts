@@ -15,9 +15,9 @@ type ListSpacesResponse = {
 };
 
 export async function listSpaces(accessToken: string): Promise<Space[]> {
-  const authUrl = process.env.COCOTOLA_AUTH_URL;
+  const authUrl = process.env.AUTH_BASE_URL;
   if (!authUrl) {
-    throw new Error("COCOTOLA_AUTH_URL environment variable is required");
+    throw new Error("AUTH_BASE_URL environment variable is required");
   }
 
   const url = `${authUrl}/api/v1/auth/space`;
