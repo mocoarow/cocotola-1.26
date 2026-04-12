@@ -1,3 +1,5 @@
+import { fetchWithIdToken } from "./fetch.server";
+
 export type Space = {
   spaceId: string;
   organizationId: string;
@@ -19,7 +21,7 @@ export async function listSpaces(accessToken: string): Promise<Space[]> {
   }
 
   const url = `${authUrl}/api/v1/auth/space`;
-  const response = await fetch(url, {
+  const response = await fetchWithIdToken(authUrl, url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 

@@ -18,6 +18,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
+import { fetchWithIdToken } from "~/lib/api/fetch.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { destroySession, getSession } from "~/lib/auth/session.server";
 import type { Route } from "./+types/workbooks";
@@ -30,7 +31,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw new Error("COCOTOLA_AUTH_URL environment variable is required");
   }
 
-  const response = await fetch(`${authUrl}/api/v1/auth/me`, {
+  const response = await fetchWithIdToken(authUrl, `${authUrl}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
