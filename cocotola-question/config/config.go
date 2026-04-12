@@ -22,7 +22,6 @@ type QuestionConfig struct {
 // AuthClientConfig holds configuration for the auth service HTTP client.
 type AuthClientConfig struct {
 	BaseURL    string `yaml:"baseUrl" validate:"required"`
-	Audience   string `yaml:"audience"`
 	APIKey     string `yaml:"apiKey" validate:"required"`
 	TimeoutSec int    `yaml:"timeoutSec" validate:"required,gte=1"`
 }

@@ -25,7 +25,7 @@ export async function listSpaces(accessToken: string): Promise<Space[]> {
   const url = `${authUrl}/api/v1/auth/space`;
   console.info(`[space] fetching spaces: url=${url}`);
 
-  const response = await fetchWithIdToken("cocotola-auth", url, {
+  const response = await fetchWithIdToken(authUrl, url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
