@@ -8,6 +8,7 @@ go_library(
         "db_mysql.go",
         "db_postgres.go",
         "doc.go",
+        "http_client.go",
         "log.go",
         "log_otlp.go",
         "log_uptrace.go",
@@ -33,6 +34,7 @@ go_library(
         "@io_gorm_gorm//:gorm",
         "@io_gorm_plugin_opentelemetry//tracing",
         "@io_opentelemetry_go_contrib_bridges_otelslog//:otelslog",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
         "@io_opentelemetry_go_contrib_processors_baggagecopy//:baggagecopy",
         "@io_opentelemetry_go_otel//:otel",
         "@io_opentelemetry_go_otel//propagation",
@@ -46,6 +48,7 @@ go_library(
         "@io_opentelemetry_go_otel_sdk//resource",
         "@io_opentelemetry_go_otel_sdk//trace",
         "@io_opentelemetry_go_otel_sdk_log//:log",
+        "@org_golang_google_api//idtoken",
     ],
 )
 

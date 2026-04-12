@@ -28,6 +28,7 @@ type AuthClientConfig struct {
 
 // Config holds all configuration for the standalone cocotola-question service.
 type Config struct {
+	AppEnv   string                     `yaml:"appEnv" validate:"required"`
 	Server   libcontroller.ServerConfig `yaml:"server" validate:"required"`
 	Question QuestionConfig             `yaml:"question" validate:"required"`
 	Auth     AuthClientConfig           `yaml:"auth" validate:"required"`

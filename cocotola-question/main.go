@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"time"
 
@@ -61,11 +60,9 @@ func run() (int, error) {
 
 	// auth HTTP client for communicating with cocotola-auth
 	authTimeout := time.Duration(cfg.Auth.TimeoutSec) * time.Second
-	httpClient := &http.Client{
-		Transport:     nil,
-		CheckRedirect: nil,
-		Jar:           nil,
-		Timeout:       authTimeout,
+	httpClient, err := libgateway.NewHTTPClient(ctx, cfg.AppEnv, cfg.Auth.BaseURL, authTimeout)
+	if err != nil {
+		return 1, fmt.Errorf("create auth HTTP client: %w", err)
 	}
 
 	// auth middleware (validates tokens via cocotola-auth API)
