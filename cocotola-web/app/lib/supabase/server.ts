@@ -1,9 +1,19 @@
 import { createServerClient, parseCookieHeader, serializeCookieHeader } from "@supabase/ssr";
 
 export function createSupabaseServerClient(request: Request, headers: Headers) {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) {
+    throw new Error("VITE_SUPABASE_URL environment variable is required");
+  }
+
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  if (!supabaseAnonKey) {
+    throw new Error("VITE_SUPABASE_ANON_KEY environment variable is required");
+  }
+
   return createServerClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() {
