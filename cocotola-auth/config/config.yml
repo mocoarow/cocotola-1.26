@@ -59,4 +59,4 @@ auth:
   supabase:
     jwksUrl: ${AUTH_SUPABASE_JWKS_URL}
 internal:
-  apiKey: ${INTERNAL_API_KEY}
+  apiKey: ${AUTH_API_KEY}

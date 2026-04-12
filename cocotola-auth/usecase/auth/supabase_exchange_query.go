@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -11,6 +12,11 @@ import (
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
+
+// eventPublisher publishes domain events asynchronously.
+type eventPublisher interface {
+	Publish(event domain.Event)
+}
 
 // SupabaseExchangeQuery handles Supabase JWT exchange for internal user lookup or creation.
 type SupabaseExchangeQuery struct {
@@ -21,6 +27,7 @@ type SupabaseExchangeQuery struct {
 	appUserByLoginIDFinder AppUserByLoginIDFinder
 	appUserSaver           AppUserSaver
 	organizationFinder     OrganizationFinder
+	publisher              eventPublisher
 }
 
 // NewSupabaseExchangeQuery returns a new SupabaseExchangeQuery.
@@ -32,6 +39,7 @@ func NewSupabaseExchangeQuery(
 	appUserByLoginIDFinder AppUserByLoginIDFinder,
 	appUserSaver AppUserSaver,
 	organizationFinder OrganizationFinder,
+	publisher eventPublisher,
 ) *SupabaseExchangeQuery {
 	return &SupabaseExchangeQuery{
 		supabaseVerifier:       supabaseVerifier,
@@ -41,6 +49,7 @@ func NewSupabaseExchangeQuery(
 		appUserByLoginIDFinder: appUserByLoginIDFinder,
 		appUserSaver:           appUserSaver,
 		organizationFinder:     organizationFinder,
+		publisher:              publisher,
 	}
 }
 
@@ -88,6 +97,9 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 		if linkErr != nil {
 			return nil, fmt.Errorf("create provider link for new user: %w", linkErr)
 		}
+
+		q.publisher.Publish(domain.NewAppUserCreated(newUser.ID(), orgID, string(loginID), time.Now()))
+
 		return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
 	}
 

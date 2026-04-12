@@ -84,19 +84,20 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 }
 
 // AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves
-// organization names by calling cocotola-auth's GET /api/v1/auth/organization endpoint.
-func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client) func(ctx context.Context, name string) (string, error) {
+// organization names by calling cocotola-auth's internal GET /api/v1/internal/auth/organization endpoint.
+func AuthServiceOrganizationResolver(authBaseURL string, apiKey string, httpClient *http.Client) func(ctx context.Context, name string) (string, error) {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "OrgResolver"))
 
 	return func(ctx context.Context, name string) (string, error) {
 		params := url.Values{}
 		params.Set("name", name)
-		reqURL := authBaseURL + "/api/v1/auth/organization?" + params.Encode()
+		reqURL := authBaseURL + "/api/v1/internal/auth/organization?" + params.Encode()
 
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 		if err != nil {
 			return "", fmt.Errorf("create request: %w", err)
 		}
+		req.Header.Set("X-Service-Api-Key", apiKey)
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
@@ -123,36 +124,39 @@ func AuthServiceOrganizationResolver(authBaseURL string, httpClient *http.Client
 	}
 }
 
-// AuthServiceAuthorizationChecker calls cocotola-auth's API to check RBAC permissions.
+// AuthServiceAuthorizationChecker calls cocotola-auth's internal API to check RBAC permissions.
 type AuthServiceAuthorizationChecker struct {
 	authBaseURL string
+	apiKey      string
 	httpClient  *http.Client
 	logger      *slog.Logger
 }
 
 // NewAuthServiceAuthorizationChecker creates a new AuthServiceAuthorizationChecker.
-func NewAuthServiceAuthorizationChecker(authBaseURL string, httpClient *http.Client) *AuthServiceAuthorizationChecker {
+func NewAuthServiceAuthorizationChecker(authBaseURL string, apiKey string, httpClient *http.Client) *AuthServiceAuthorizationChecker {
 	return &AuthServiceAuthorizationChecker{
 		authBaseURL: authBaseURL,
+		apiKey:      apiKey,
 		httpClient:  httpClient,
 		logger:      slog.Default().With(slog.String(liblogging.LoggerNameKey, "AuthzChecker")),
 	}
 }
 
 // IsAllowed checks if the given action on the resource is allowed
-// by calling cocotola-auth's GET /api/v1/auth/authz/check endpoint.
+// by calling cocotola-auth's internal GET /api/v1/internal/auth/authz/check endpoint.
 func (c *AuthServiceAuthorizationChecker) IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error) {
 	params := url.Values{}
 	params.Set("org", organizationID)
 	params.Set("user", operatorID)
 	params.Set("action", action.Value())
 	params.Set("resource", resource.Value())
-	reqURL := c.authBaseURL + "/api/v1/auth/authz/check?" + params.Encode()
+	reqURL := c.authBaseURL + "/api/v1/internal/auth/authz/check?" + params.Encode()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return false, fmt.Errorf("create request: %w", err)
 	}
+	req.Header.Set("X-Service-Api-Key", c.apiKey)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

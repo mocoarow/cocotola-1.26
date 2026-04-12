@@ -18,11 +18,13 @@ export async function listSpaces(accessToken: string): Promise<Space[]> {
     throw new Error("COCOTOLA_AUTH_URL environment variable is required");
   }
 
-  const response = await fetch(`${authUrl}/api/v1/auth/space`, {
+  const url = `${authUrl}/api/v1/auth/space`;
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
+    console.error(`[api] GET ${url} -> ${response.status}`);
     throw new Response("Failed to fetch spaces", { status: response.status });
   }
 

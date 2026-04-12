@@ -91,13 +91,16 @@ func (h *CheckHandler) Check(c *gin.Context) {
 }
 
 // InitAuthzRouter sets up the routes for authorization check operations.
+// When middleware is provided, it is used as per-route auth middleware.
 func InitAuthzRouter(
 	checkHandler *CheckHandler,
 	parentRouterGroup gin.IRouter,
-	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
 ) {
-	authzGroup := parentRouterGroup.Group("authz", middleware...)
+	authzGroup := parentRouterGroup.Group("authz")
 
-	authzGroup.GET("/check", authMiddleware, checkHandler.Check)
+	handlers := make([]gin.HandlerFunc, 0, len(middleware)+1)
+	handlers = append(handlers, middleware...)
+	handlers = append(handlers, checkHandler.Check)
+	authzGroup.GET("/check", handlers...)
 }

@@ -23,12 +23,14 @@ function getQuestionUrl(): string {
 }
 
 export async function listWorkbooks(accessToken: string, spaceId: string): Promise<Workbook[]> {
-  const url = getQuestionUrl();
-  const response = await fetch(`${url}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`, {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
+  const response = await fetch(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
+    console.error(`[api] GET ${url} -> ${response.status}`);
     throw new Response("Failed to fetch workbooks", { status: response.status });
   }
 
@@ -37,13 +39,15 @@ export async function listWorkbooks(accessToken: string, spaceId: string): Promi
 }
 
 export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
-  const url = getQuestionUrl();
-  const response = await fetch(`${url}/api/v1/workbook/${encodeURIComponent(workbookId)}`, {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
+  const response = await fetch(url, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
+    console.error(`[api] DELETE ${url} -> ${response.status}`);
     throw new Response("Failed to delete workbook", { status: response.status });
   }
 }

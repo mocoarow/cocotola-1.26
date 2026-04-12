@@ -22,6 +22,7 @@ question:
   firestoreProjectId: ${QUESTION_FIRESTORE_PROJECT_ID:-cocotola-local}
 auth:
   baseUrl: ${AUTH_BASE_URL:-http://localhost:8080}
+  apiKey: ${AUTH_API_KEY}
   timeoutSec: ${AUTH_TIMEOUT_SEC:-10}
 trace:
   exporter: ${TRACE_EXPORTER:-none}

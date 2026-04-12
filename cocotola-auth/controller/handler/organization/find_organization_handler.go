@@ -65,13 +65,16 @@ func (h *FindOrganizationHandler) FindOrganization(c *gin.Context) {
 }
 
 // InitOrganizationRouter sets up the routes for organization operations.
+// When middleware is provided, the first element is used as per-route auth middleware.
 func InitOrganizationRouter(
 	findHandler *FindOrganizationHandler,
 	parentRouterGroup gin.IRouter,
-	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
 ) {
-	orgGroup := parentRouterGroup.Group("organization", middleware...)
+	orgGroup := parentRouterGroup.Group("organization")
 
-	orgGroup.GET("", authMiddleware, findHandler.FindOrganization)
+	handlers := make([]gin.HandlerFunc, 0, len(middleware)+1)
+	handlers = append(handlers, middleware...)
+	handlers = append(handlers, findHandler.FindOrganization)
+	orgGroup.GET("", handlers...)
 }
