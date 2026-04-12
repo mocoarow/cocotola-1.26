@@ -9,11 +9,13 @@ vars:
     - third-party-library
     - cocotola-lib
     - cocotola-auth
+    - cocotola-init
     - cocotola-question
     - cocotola-empty
   GO_APPS:
     - cocotola-auth
     - cocotola-empty
+    - cocotola-init
     - cocotola-question
 
 tasks:
