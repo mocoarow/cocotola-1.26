@@ -35,11 +35,11 @@ type AuthConfig struct {
 
 // Config holds all configuration for the cocotola-auth service.
 type Config struct {
-	Server   libcontroller.ServerConfig `yaml:"server" validate:"required"`
-	DB       libgateway.DBConfig        `yaml:"db" validate:"required"`
-	Trace    libgateway.TraceConfig     `yaml:"trace" validate:"required"`
-	Log      libgateway.LogConfig       `yaml:"log" validate:"required"`
-	Auth     AuthConfig                 `yaml:"auth" validate:"required"`
+	Server libcontroller.ServerConfig `yaml:"server" validate:"required"`
+	DB     libgateway.DBConfig        `yaml:"db" validate:"required"`
+	Trace  libgateway.TraceConfig     `yaml:"trace" validate:"required"`
+	Log    libgateway.LogConfig       `yaml:"log" validate:"required"`
+	Auth   AuthConfig                 `yaml:"auth" validate:"required"`
 }
 
 //go:embed config.yml

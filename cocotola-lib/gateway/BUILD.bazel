@@ -27,8 +27,6 @@ go_library(
         "//cocotola-lib/process",
         "@com_github_go_sql_driver_mysql//:mysql",
         "@com_github_googlecloudplatform_opentelemetry_operations_go_exporter_trace//:trace",
-        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
-        "@org_golang_google_api//idtoken",
         "@com_github_mocoarow_slogotel//:slogotel",
         "@com_github_orandin_slog_gorm//:slog-gorm",
         "@io_gorm_driver_mysql//:mysql",
@@ -36,6 +34,7 @@ go_library(
         "@io_gorm_gorm//:gorm",
         "@io_gorm_plugin_opentelemetry//tracing",
         "@io_opentelemetry_go_contrib_bridges_otelslog//:otelslog",
+        "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
         "@io_opentelemetry_go_contrib_processors_baggagecopy//:baggagecopy",
         "@io_opentelemetry_go_otel//:otel",
         "@io_opentelemetry_go_otel//propagation",
@@ -49,6 +48,7 @@ go_library(
         "@io_opentelemetry_go_otel_sdk//resource",
         "@io_opentelemetry_go_otel_sdk//trace",
         "@io_opentelemetry_go_otel_sdk_log//:log",
+        "@org_golang_google_api//idtoken",
     ],
 )
 

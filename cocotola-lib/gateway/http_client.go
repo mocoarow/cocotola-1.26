@@ -19,8 +19,10 @@ import (
 func NewHTTPClient(ctx context.Context, appEnv string, audience string, timeout time.Duration) (*http.Client, error) {
 	if appEnv == "local" || appEnv == "test" {
 		return &http.Client{
-			Transport: otelhttp.NewTransport(http.DefaultTransport),
-			Timeout:   timeout,
+			Transport:     otelhttp.NewTransport(http.DefaultTransport),
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       timeout,
 		}, nil
 	}
 
