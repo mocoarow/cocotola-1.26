@@ -16,6 +16,8 @@ RUN pnpm install --frozen-lockfile --prod
 
 FROM node:20-alpine AS build-env
 ARG PNPM_VERSION
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 COPY . /app/
 COPY --from=development-dependencies-env /app/node_modules /app/node_modules
