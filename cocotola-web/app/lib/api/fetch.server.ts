@@ -9,13 +9,25 @@ export async function fetchWithIdToken(
   url: string,
   init?: RequestInit,
 ): Promise<Response> {
+  console.info(`[fetch] fetchWithIdToken called: audience=${audience}, method=${init?.method ?? "GET"}, url=${url}`);
+
   const idToken = await getIdToken(audience);
 
   if (idToken) {
     const headers = new Headers(init?.headers);
     headers.set("X-Serverless-Authorization", `Bearer ${idToken}`);
-    return fetch(url, { ...init, headers });
+    console.info(`[fetch] X-Serverless-Authorization header set (token length=${idToken.length})`);
+
+    const headerKeys = [...headers.keys()].join(", ");
+    console.info(`[fetch] request headers: ${headerKeys}`);
+
+    const response = await fetch(url, { ...init, headers });
+    console.info(`[fetch] response: status=${response.status}, url=${url}`);
+    return response;
   }
 
-  return fetch(url, init);
+  console.info("[fetch] no ID token attached (local/test mode)");
+  const response = await fetch(url, init);
+  console.info(`[fetch] response: status=${response.status}, url=${url}`);
+  return response;
 }
