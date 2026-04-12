@@ -1,4 +1,5 @@
 ---
+appEnv: ${APP_ENV:-local}
 server:
   httpPort: ${QUESTION_HTTP_PORT:-8090}
   metricsPort: ${QUESTION_METRICS_PORT:-8091}
