@@ -23,10 +23,14 @@ export async function loader({ request }: Route.LoaderArgs) {
     console.error("[auth.callback] exchangeCodeForSession failed:", error);
     return redirect("/login");
   }
-  console.info(`[auth.callback] exchangeCodeForSession succeeded: userId=${data.session.user.id}, tokenLength=${data.session.access_token.length}`);
+  console.info(
+    `[auth.callback] exchangeCodeForSession succeeded: userId=${data.session.user.id}, tokenLength=${data.session.access_token.length}`,
+  );
 
   const organizationName = process.env.ORGANIZATION_NAME ?? "";
-  console.info(`[auth.callback] calling exchangeSupabaseToken: organizationName=${organizationName}`);
+  console.info(
+    `[auth.callback] calling exchangeSupabaseToken: organizationName=${organizationName}`,
+  );
   let tokens: Awaited<ReturnType<typeof exchangeSupabaseToken>>;
   try {
     tokens = await exchangeSupabaseToken(data.session.access_token, organizationName);

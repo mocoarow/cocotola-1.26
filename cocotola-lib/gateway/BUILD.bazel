@@ -49,6 +49,7 @@ go_library(
         "@io_opentelemetry_go_otel_sdk//trace",
         "@io_opentelemetry_go_otel_sdk_log//:log",
         "@org_golang_google_api//idtoken",
+        "@org_golang_x_oauth2//:oauth2",
     ],
 )
 
@@ -58,9 +59,15 @@ smart_go_test(
         "db_postgres_s_test.go",
         "db_s_test.go",
         "export_test.go",
+        "http_client_test.go",
         "log_test.go",
         "trace_s_test.go",
     ],
     embed = [":gateway"],
-    deps = ["@io_opentelemetry_go_otel_sdk//trace"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@org_golang_x_oauth2//:oauth2",
+    ],
 )
