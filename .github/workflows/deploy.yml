@@ -95,3 +95,43 @@ jobs:
           gcloud run jobs update cocotola-init \
             --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-init/cocotola-init:${IMAGE_TAG}" \
             --region us-central1
+
+  deploy-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      id-token: write
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        env:
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          IMAGE="us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-web/cocotola-web"
+          docker build -t "${IMAGE}:${IMAGE_TAG}" -t "${IMAGE}:latest" cocotola-web
+          docker push "${IMAGE}:${IMAGE_TAG}"
+          docker push "${IMAGE}:latest"
+
+      - name: Deploy to Cloud Run
+        env:
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          gcloud run services update cocotola-web \
+            --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-web/cocotola-web:${IMAGE_TAG}" \
+            --region us-central1
