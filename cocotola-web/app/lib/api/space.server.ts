@@ -44,6 +44,8 @@ export async function findPrivateSpace(accessToken: string): Promise<Space | und
   console.info("[space] findPrivateSpace called");
   const spaces = await listSpaces(accessToken);
   const privateSpace = spaces.find((s) => s.spaceType === "private" && !s.deleted);
-  console.info(`[space] findPrivateSpace result: found=${!!privateSpace}, spaceId=${privateSpace?.spaceId ?? "none"}`);
+  console.info(
+    `[space] findPrivateSpace result: found=${!!privateSpace}, spaceId=${privateSpace?.spaceId ?? "none"}`,
+  );
   return privateSpace;
 }

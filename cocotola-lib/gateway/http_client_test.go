@@ -1,8 +1,11 @@
 package gateway_test
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -37,17 +40,17 @@ func Test_serverlessAuthTransport_RoundTrip_shouldSetXServerlessAuthorizationHea
 
 	// given
 	recorder := &recordingTransport{
-		resp: &http.Response{StatusCode: http.StatusOK},
+		resp: &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))},
 	}
 	tokenSrc := &stubTokenSource{
-		token: &oauth2.Token{
+		token: &oauth2.Token{ //nolint:gosec
 			AccessToken: "test-id-token-jwt",
 			Expiry:      time.Now().Add(time.Hour),
 		},
 	}
 	transport := gateway.NewServerlessAuthTransport(recorder, tokenSrc)
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.com/api", nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer user-access-token")
 
@@ -56,6 +59,7 @@ func Test_serverlessAuthTransport_RoundTrip_shouldSetXServerlessAuthorizationHea
 
 	// then
 	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "Bearer test-id-token-jwt", recorder.req.Header.Get("X-Serverless-Authorization"))
 	assert.Equal(t, "Bearer user-access-token", recorder.req.Header.Get("Authorization"))
@@ -66,22 +70,22 @@ func Test_serverlessAuthTransport_RoundTrip_shouldReturnError_whenTokenSourceFai
 
 	// given
 	recorder := &recordingTransport{
-		resp: &http.Response{StatusCode: http.StatusOK},
+		resp: &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))},
 	}
 	tokenSrc := &stubTokenSource{
-		err: fmt.Errorf("token error"),
+		err: errors.New("token error"),
 	}
 	transport := gateway.NewServerlessAuthTransport(recorder, tokenSrc)
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.com/api", nil)
 	require.NoError(t, err)
 
 	// when
-	_, err = transport.RoundTrip(req)
+	resp, err := transport.RoundTrip(req) //nolint:bodyclose
 
 	// then
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "obtain ID token")
+	require.ErrorContains(t, err, "obtain ID token")
+	assert.Nil(t, resp)
 }
 
 func Test_serverlessAuthTransport_RoundTrip_shouldReturnError_whenTokenIsEmpty(t *testing.T) {
@@ -89,7 +93,7 @@ func Test_serverlessAuthTransport_RoundTrip_shouldReturnError_whenTokenIsEmpty(t
 
 	// given
 	recorder := &recordingTransport{
-		resp: &http.Response{StatusCode: http.StatusOK},
+		resp: &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(""))},
 	}
 	tokenSrc := &stubTokenSource{
 		token: &oauth2.Token{
@@ -98,13 +102,13 @@ func Test_serverlessAuthTransport_RoundTrip_shouldReturnError_whenTokenIsEmpty(t
 	}
 	transport := gateway.NewServerlessAuthTransport(recorder, tokenSrc)
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.com/api", nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://example.com/api", nil)
 	require.NoError(t, err)
 
 	// when
-	_, err = transport.RoundTrip(req)
+	resp, err := transport.RoundTrip(req) //nolint:bodyclose
 
 	// then
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "token is empty")
+	require.ErrorContains(t, err, "token is empty")
+	assert.Nil(t, resp)
 }

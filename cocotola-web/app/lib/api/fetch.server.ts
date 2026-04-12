@@ -11,7 +11,9 @@ export async function fetchWithIdToken(
   url: string,
   init?: RequestInit,
 ): Promise<Response> {
-  console.info(`[fetch] fetchWithIdToken called: audience=${audience}, method=${init?.method ?? "GET"}, url=${url}`);
+  console.info(
+    `[fetch] fetchWithIdToken called: audience=${audience}, method=${init?.method ?? "GET"}, url=${url}`,
+  );
 
   const idToken = await getIdToken(audience);
 

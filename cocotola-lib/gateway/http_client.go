@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -35,13 +36,18 @@ func (t *serverlessAuthTransport) RoundTrip(req *http.Request) (*http.Response, 
 	// idtoken.NewTokenSource stores the ID token JWT in oauth2.Token.AccessToken.
 	// This is a Google library convention, not a standard OAuth2 pattern.
 	if token.AccessToken == "" {
-		return nil, fmt.Errorf("obtain ID token: token is empty")
+		return nil, errors.New("obtain ID token: token is empty")
 	}
 
 	req = req.Clone(req.Context())
 	req.Header.Set("X-Serverless-Authorization", "Bearer "+token.AccessToken)
 
-	return t.base.RoundTrip(req)
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, fmt.Errorf("round trip: %w", err)
+	}
+
+	return resp, nil
 }
 
 // NewHTTPClient creates an *http.Client suitable for service-to-service calls.
@@ -69,7 +75,9 @@ func NewHTTPClient(ctx context.Context, appEnv string, audience string, timeout 
 	sat := NewServerlessAuthTransport(http.DefaultTransport, oauth2.ReuseTokenSource(nil, tokenSrc))
 
 	return &http.Client{
-		Transport: otelhttp.NewTransport(sat),
-		Timeout:   timeout,
+		Transport:     otelhttp.NewTransport(sat),
+		CheckRedirect: nil,
+		Jar:           nil,
+		Timeout:       timeout,
 	}, nil
 }

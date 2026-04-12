@@ -9,7 +9,9 @@ export async function exchangeSupabaseToken(
   supabaseJwt: string,
   organizationName: string,
 ): Promise<ExchangeResult> {
-  console.info(`[auth] exchangeSupabaseToken called: organizationName=${organizationName}, jwtLength=${supabaseJwt.length}`);
+  console.info(
+    `[auth] exchangeSupabaseToken called: organizationName=${organizationName}, jwtLength=${supabaseJwt.length}`,
+  );
 
   const authUrl = process.env.AUTH_BASE_URL;
   if (!authUrl) {
@@ -24,18 +26,14 @@ export async function exchangeSupabaseToken(
   const url = `${authUrl}/api/v1/internal/auth/supabase/exchange`;
   console.info(`[auth] calling token exchange: url=${url}`);
 
-  const response = await fetchWithIdToken(
-    authUrl,
-    url,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Service-Api-Key": apiKey,
-      },
-      body: JSON.stringify({ supabaseJwt, organizationName }),
+  const response = await fetchWithIdToken(authUrl, url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Service-Api-Key": apiKey,
     },
-  );
+    body: JSON.stringify({ supabaseJwt, organizationName }),
+  });
 
   if (!response.ok) {
     const body = await response.text();
