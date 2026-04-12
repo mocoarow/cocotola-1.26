@@ -8,45 +8,54 @@ import { createSupabaseServerClient } from "~/lib/supabase/server";
 import type { Route } from "./+types/login";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  console.info("[login] loader called");
   const session = await getSession(request);
   if (session.get("accessToken")) {
+    console.info("[login] user already authenticated, redirecting to /");
     return redirect("/");
   }
   return null;
 }
 
 export async function action({ request }: Route.ActionArgs) {
+  console.info("[login] action called (password login)");
   const formData = await request.formData();
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
+    console.info("[login] missing email or password");
     return { error: "Email and password are required." };
   }
 
   const headers = new Headers();
   const supabase = createSupabaseServerClient(request, headers);
 
+  console.info("[login] signInWithPassword called");
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error || !data.session) {
-    console.error("login: signInWithPassword failed", error);
+    console.error("[login] signInWithPassword failed:", error);
     return { error: error?.message ?? "Authentication failed." };
   }
+  console.info(`[login] signInWithPassword succeeded: userId=${data.session.user.id}`);
 
   const organizationName = process.env.ORGANIZATION_NAME ?? "";
+  console.info(`[login] calling exchangeSupabaseToken: organizationName=${organizationName}`);
   let tokens: Awaited<ReturnType<typeof exchangeSupabaseToken>>;
   try {
     tokens = await exchangeSupabaseToken(data.session.access_token, organizationName);
   } catch (e) {
-    console.error("login: exchangeSupabaseToken failed", e);
+    console.error("[login] exchangeSupabaseToken failed:", e);
     return { error: "Authentication service is temporarily unavailable." };
   }
+  console.info("[login] exchangeSupabaseToken succeeded");
 
   const session = await getSession(request);
   session.set("accessToken", tokens.accessToken);
   session.set("refreshToken", tokens.refreshToken);
   headers.append("Set-Cookie", await commitSession(session));
 
+  console.info("[login] session created, redirecting to /");
   return redirect("/", { headers });
 }
 

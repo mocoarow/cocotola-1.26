@@ -24,6 +24,7 @@ import { destroySession, getSession } from "~/lib/auth/session.server";
 import type { Route } from "./+types/workbooks";
 
 export async function loader({ request }: Route.LoaderArgs) {
+  console.info("[workbooks] loader called");
   const { accessToken } = await requireAuth(request);
 
   const authUrl = process.env.AUTH_BASE_URL;
@@ -31,16 +32,21 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw new Error("AUTH_BASE_URL environment variable is required");
   }
 
-  const response = await fetchWithIdToken("cocotola-auth", `${authUrl}/api/v1/auth/me`, {
+  const meUrl = `${authUrl}/api/v1/auth/me`;
+  console.info(`[workbooks] fetching user info: url=${meUrl}`);
+
+  const response = await fetchWithIdToken("cocotola-auth", meUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (response.status === 401) {
+    console.info("[workbooks] /auth/me returned 401, destroying session");
     const session = await getSession(request);
     throw redirect("/login", { headers: { "Set-Cookie": await destroySession(session) } });
   }
 
   if (!response.ok) {
+    console.error(`[workbooks] /auth/me failed: status=${response.status}`);
     return { user: null };
   }
 
@@ -49,6 +55,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     loginId: string;
     organizationName: string;
   };
+  console.info(`[workbooks] user loaded: userId=${user.userId}, loginId=${user.loginId}`);
   return { user };
 }
 

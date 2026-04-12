@@ -25,31 +25,43 @@ function getQuestionUrl(): string {
 }
 
 export async function listWorkbooks(accessToken: string, spaceId: string): Promise<Workbook[]> {
+  console.info(`[workbook] listWorkbooks called: spaceId=${spaceId}`);
+
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
+  console.info(`[workbook] fetching workbooks: url=${url}`);
+
   const response = await fetchWithIdToken("cocotola-question", url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
-    console.error(`[api] GET ${url} -> ${response.status}`);
+    console.error(`[workbook] listWorkbooks failed: status=${response.status}, url=${url}`);
     throw new Response("Failed to fetch workbooks", { status: response.status });
   }
 
   const data = (await response.json()) as ListWorkbooksResponse;
-  return data.workbooks ?? [];
+  const workbooks = data.workbooks ?? [];
+  console.info(`[workbook] listWorkbooks succeeded: count=${workbooks.length}`);
+  return workbooks;
 }
 
 export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
+  console.info(`[workbook] deleteWorkbook called: workbookId=${workbookId}`);
+
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
+  console.info(`[workbook] deleting workbook: url=${url}`);
+
   const response = await fetchWithIdToken("cocotola-question", url, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   if (!response.ok) {
-    console.error(`[api] DELETE ${url} -> ${response.status}`);
+    console.error(`[workbook] deleteWorkbook failed: status=${response.status}, url=${url}`);
     throw new Response("Failed to delete workbook", { status: response.status });
   }
+
+  console.info(`[workbook] deleteWorkbook succeeded: workbookId=${workbookId}`);
 }
