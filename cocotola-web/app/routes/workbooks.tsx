@@ -31,7 +31,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw new Error("AUTH_BASE_URL environment variable is required");
   }
 
-  const response = await fetchWithIdToken(authUrl, `${authUrl}/api/v1/auth/me`, {
+  const response = await fetchWithIdToken("cocotola-auth", `${authUrl}/api/v1/auth/me`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 

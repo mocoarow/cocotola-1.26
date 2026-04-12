@@ -5,11 +5,11 @@ import { getIdToken } from "./id-token.server";
  * when running on Cloud Run (APP_ENV is not "local" or "test").
  */
 export async function fetchWithIdToken(
-  serviceBaseUrl: string,
+  audience: string,
   url: string,
   init?: RequestInit,
 ): Promise<Response> {
-  const idToken = await getIdToken(serviceBaseUrl);
+  const idToken = await getIdToken(audience);
 
   if (idToken) {
     const headers = new Headers(init?.headers);
