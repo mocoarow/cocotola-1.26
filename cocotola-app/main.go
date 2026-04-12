@@ -68,7 +68,7 @@ func run() (int, error) {
 	}
 
 	// initialize auth module
-	authResult, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth, cfg.App.Internal)
+	authResult, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth)
 	if err != nil {
 		return 1, fmt.Errorf("initialize auth: %w", err)
 	}
