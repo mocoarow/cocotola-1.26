@@ -1,16 +1,4 @@
-import { GoogleAuth } from "google-auth-library";
-
-const authInstances = new Map<string, GoogleAuth>();
-
-function getGoogleAuth(audience: string): GoogleAuth {
-  let auth = authInstances.get(audience);
-  if (!auth) {
-    console.info(`[id-token] creating new GoogleAuth instance for audience=${audience}`);
-    auth = new GoogleAuth();
-    authInstances.set(audience, auth);
-  }
-  return auth;
-}
+const METADATA_URL = "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity";
 
 function isLocalOrTest(): boolean {
   const appEnv = process.env.APP_ENV ?? "local";
@@ -26,21 +14,20 @@ export async function getIdToken(audience: string): Promise<string | undefined> 
   }
 
   try {
-    const auth = getGoogleAuth(audience);
-    console.info(`[id-token] requesting ID token client for audience=${audience}`);
-    const client = await auth.getIdTokenClient(audience);
+    const url = `${METADATA_URL}?audience=${encodeURIComponent(audience)}`;
+    console.info(`[id-token] fetching ID token from metadata server: url=${url}`);
 
-    console.info("[id-token] fetching request headers from ID token client");
-    const headers = await client.getRequestHeaders();
-    console.info(`[id-token] received headers keys: ${Object.keys(headers).join(", ")}`);
+    const response = await fetch(url, {
+      headers: { "Metadata-Flavor": "Google" },
+    });
 
-    const authHeader = headers["Authorization"];
-    if (!authHeader) {
-      console.error(`[id-token] Authorization header missing from response. headers=${JSON.stringify(headers)}`);
-      throw new Error(`Failed to obtain ID token for audience: ${audience}`);
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`[id-token] metadata server returned error: status=${response.status}, body=${body}`);
+      throw new Error(`Failed to obtain ID token for audience: ${audience} (status=${response.status})`);
     }
 
-    const token = authHeader.replace(/^Bearer\s+/, "");
+    const token = await response.text();
     console.info(`[id-token] ID token obtained successfully: length=${token.length}, prefix=${token.substring(0, 20)}...`);
     return token;
   } catch (error) {
