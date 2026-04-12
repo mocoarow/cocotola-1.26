@@ -25,7 +25,7 @@ export async function exchangeSupabaseToken(
   console.info(`[auth] calling token exchange: url=${url}`);
 
   const response = await fetchWithIdToken(
-    "cocotola-auth",
+    authUrl,
     url,
     {
       method: "POST",

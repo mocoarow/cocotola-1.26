@@ -31,7 +31,7 @@ export async function listWorkbooks(accessToken: string, spaceId: string): Promi
   const url = `${baseUrl}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
   console.info(`[workbook] fetching workbooks: url=${url}`);
 
-  const response = await fetchWithIdToken("cocotola-question", url, {
+  const response = await fetchWithIdToken(baseUrl, url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -53,7 +53,7 @@ export async function deleteWorkbook(accessToken: string, workbookId: string): P
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
   console.info(`[workbook] deleting workbook: url=${url}`);
 
-  const response = await fetchWithIdToken("cocotola-question", url, {
+  const response = await fetchWithIdToken(baseUrl, url, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });

@@ -3,6 +3,8 @@ import { getIdToken } from "./id-token.server";
 /**
  * fetch wrapper that attaches a Google Cloud ID Token
  * when running on Cloud Run (APP_ENV is not "local" or "test").
+ *
+ * @param audience - The Cloud Run service URL used as the ID token audience.
  */
 export async function fetchWithIdToken(
   audience: string,

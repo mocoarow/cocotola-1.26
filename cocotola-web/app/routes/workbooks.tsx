@@ -35,7 +35,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const meUrl = `${authUrl}/api/v1/auth/me`;
   console.info(`[workbooks] fetching user info: url=${meUrl}`);
 
-  const response = await fetchWithIdToken("cocotola-auth", meUrl, {
+  const response = await fetchWithIdToken(authUrl, meUrl, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
