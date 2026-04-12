@@ -1,3 +1,5 @@
+import { fetchWithIdToken } from "./fetch.server";
+
 export type Workbook = {
   workbookId: string;
   spaceId: string;
@@ -25,7 +27,7 @@ function getQuestionUrl(): string {
 export async function listWorkbooks(accessToken: string, spaceId: string): Promise<Workbook[]> {
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithIdToken(baseUrl, url, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
@@ -41,7 +43,7 @@ export async function listWorkbooks(accessToken: string, spaceId: string): Promi
 export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithIdToken(baseUrl, url, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${accessToken}` },
   });

@@ -1,3 +1,5 @@
+import { fetchWithIdToken } from "./fetch.server";
+
 type ExchangeResult = {
   accessToken: string;
   refreshToken: string;
@@ -17,14 +19,18 @@ export async function exchangeSupabaseToken(
     throw new Error("INTERNAL_API_KEY environment variable is required");
   }
 
-  const response = await fetch(`${authUrl}/api/v1/internal/auth/supabase/exchange`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Service-Api-Key": apiKey,
+  const response = await fetchWithIdToken(
+    authUrl,
+    `${authUrl}/api/v1/internal/auth/supabase/exchange`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Service-Api-Key": apiKey,
+      },
+      body: JSON.stringify({ supabaseJwt, organizationName }),
     },
-    body: JSON.stringify({ supabaseJwt, organizationName }),
-  });
+  );
 
   if (!response.ok) {
     const body = await response.text();
