@@ -4,6 +4,9 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "question",
     srcs = [
+        "choice_selector.go",
+        "content.go",
+        "lang.go",
         "question.go",
         "question_type.go",
     ],
@@ -15,6 +18,9 @@ go_library(
 smart_go_test(
     name = "question_test",
     srcs = [
+        "choice_selector_s_test.go",
+        "content_s_test.go",
+        "lang_s_test.go",
         "question_s_test.go",
         "question_type_s_test.go",
     ],

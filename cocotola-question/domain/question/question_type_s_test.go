@@ -10,15 +10,26 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
-func Test_NewQuestionType_shouldReturnDefault_whenValueIsDefault(t *testing.T) {
+func Test_NewQuestionType_shouldReturnWordFill_whenValueIsWordFill(t *testing.T) {
 	t.Parallel()
 
 	// when
-	qt, err := question.NewType("default")
+	qt, err := question.NewType("word_fill")
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, "default", qt.Value())
+	assert.Equal(t, "word_fill", qt.Value())
+}
+
+func Test_NewQuestionType_shouldReturnMultipleChoice_whenValueIsMultipleChoice(t *testing.T) {
+	t.Parallel()
+
+	// when
+	qt, err := question.NewType("multiple_choice")
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "multiple_choice", qt.Value())
 }
 
 func Test_NewQuestionType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
@@ -30,7 +41,8 @@ func Test_NewQuestionType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 	}{
 		{name: "empty", value: ""},
 		{name: "unknown", value: "unknown"},
-		{name: "uppercase", value: "Default"},
+		{name: "default", value: "default"},
+		{name: "uppercase", value: "Word_Fill"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,14 +55,4 @@ func Test_NewQuestionType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 			require.ErrorIs(t, err, domain.ErrInvalidArgument)
 		})
 	}
-}
-
-func Test_TypeDefault_shouldReturnDefaultType(t *testing.T) {
-	t.Parallel()
-
-	// when
-	qt := question.TypeDefault()
-
-	// then
-	assert.Equal(t, "default", qt.Value())
 }

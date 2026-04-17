@@ -50,7 +50,7 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 		return nil, fmt.Errorf("find question: %w", err)
 	}
 
-	if err := c.questionUpdater.Update(ctx, input.WorkbookID, input.QuestionID, input.Content, input.OrderIndex); err != nil {
+	if err := c.questionUpdater.Update(ctx, input.WorkbookID, input.QuestionID, input.Content, input.Tags, input.OrderIndex); err != nil {
 		return nil, fmt.Errorf("update question: %w", err)
 	}
 
@@ -59,6 +59,7 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 			QuestionID:   q.ID(),
 			QuestionType: q.QuestionType().Value(),
 			Content:      input.Content,
+			Tags:         input.Tags,
 			OrderIndex:   input.OrderIndex,
 			CreatedAt:    q.CreatedAt(),
 			UpdatedAt:    q.UpdatedAt(),

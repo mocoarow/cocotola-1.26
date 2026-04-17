@@ -49,7 +49,7 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("new question type: %w", err)
 	}
 
-	questionID, err := c.questionRepo.Add(ctx, input.WorkbookID, input.QuestionType, input.Content, input.OrderIndex)
+	questionID, err := c.questionRepo.Add(ctx, input.WorkbookID, input.QuestionType, input.Content, input.Tags, input.OrderIndex)
 	if err != nil {
 		return nil, fmt.Errorf("add question: %w", err)
 	}
@@ -60,6 +60,7 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 			QuestionID:   questionID,
 			QuestionType: input.QuestionType,
 			Content:      input.Content,
+			Tags:         input.Tags,
 			OrderIndex:   input.OrderIndex,
 			CreatedAt:    now,
 			UpdatedAt:    now,

@@ -82,6 +82,7 @@ func (h *GetQuestionHandler) GetQuestion(c *gin.Context) {
 		QuestionID:   output.QuestionID,
 		QuestionType: output.QuestionType,
 		Content:      output.Content,
+		Tags:         output.Tags,
 		OrderIndex:   int32(output.OrderIndex),
 		CreatedAt:    output.CreatedAt,
 		UpdatedAt:    output.UpdatedAt,

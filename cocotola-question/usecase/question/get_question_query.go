@@ -51,6 +51,7 @@ func (q *GetQuestionQuery) GetQuestion(ctx context.Context, input *questionservi
 			QuestionID:   question.ID(),
 			QuestionType: question.QuestionType().Value(),
 			Content:      question.Content(),
+			Tags:         question.Tags(),
 			OrderIndex:   question.OrderIndex(),
 			CreatedAt:    question.CreatedAt(),
 			UpdatedAt:    question.UpdatedAt(),

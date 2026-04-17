@@ -20,6 +20,7 @@ const questionsSubCollection = "questions"
 type questionRecord struct {
 	QuestionType string    `firestore:"questionType"`
 	Content      string    `firestore:"content"`
+	Tags         []string  `firestore:"tags,omitempty"`
 	OrderIndex   int       `firestore:"orderIndex"`
 	CreatedAt    time.Time `firestore:"createdAt"`
 	UpdatedAt    time.Time `firestore:"updatedAt"`
@@ -30,7 +31,7 @@ func toQuestionDomain(id string, r *questionRecord) (*domainquestion.Question, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid question type %q: %w", r.QuestionType, err)
 	}
-	return domainquestion.ReconstructQuestion(id, qt, r.Content, r.OrderIndex, r.CreatedAt, r.UpdatedAt), nil
+	return domainquestion.ReconstructQuestion(id, qt, r.Content, r.Tags, r.OrderIndex, r.CreatedAt, r.UpdatedAt), nil
 }
 
 // QuestionRepository manages question persistence as a subcollection of workbooks in Firestore.
@@ -48,11 +49,12 @@ func (r *QuestionRepository) questionsCol(workbookID string) *firestore.Collecti
 }
 
 // Add inserts a new question and returns the auto-generated document ID.
-func (r *QuestionRepository) Add(ctx context.Context, workbookID string, questionType string, content string, orderIndex int) (string, error) {
+func (r *QuestionRepository) Add(ctx context.Context, workbookID string, questionType string, content string, tags []string, orderIndex int) (string, error) {
 	now := time.Now()
 	record := questionRecord{
 		QuestionType: questionType,
 		Content:      content,
+		Tags:         tags,
 		OrderIndex:   orderIndex,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -113,10 +115,15 @@ func (r *QuestionRepository) FindByWorkbookID(ctx context.Context, workbookID st
 }
 
 // Update updates an existing question.
-func (r *QuestionRepository) Update(ctx context.Context, workbookID string, questionID string, content string, orderIndex int) error {
+func (r *QuestionRepository) Update(ctx context.Context, workbookID string, questionID string, content string, tags []string, orderIndex int) error {
 	now := time.Now()
+	storedTags := tags
+	if storedTags == nil {
+		storedTags = []string{}
+	}
 	_, err := r.questionsCol(workbookID).Doc(questionID).Set(ctx, map[string]any{
 		"content":    content,
+		"tags":       storedTags,
 		"orderIndex": orderIndex,
 		"updatedAt":  now,
 	}, firestore.MergeAll)
