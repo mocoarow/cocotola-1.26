@@ -72,7 +72,7 @@ func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 		return
 	}
 
-	input, err := questionservice.NewUpdateQuestionInput(userID, organizationID, workbookID, questionID, req.Content, int(req.OrderIndex))
+	input, err := questionservice.NewUpdateQuestionInput(userID, organizationID, workbookID, questionID, req.Content, req.Tags, int(req.OrderIndex))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "invalid update question input", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -89,6 +89,7 @@ func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 		QuestionID:   output.QuestionID,
 		QuestionType: output.QuestionType,
 		Content:      output.Content,
+		Tags:         output.Tags,
 		OrderIndex:   int32(output.OrderIndex),
 		CreatedAt:    output.CreatedAt,
 		UpdatedAt:    output.UpdatedAt,

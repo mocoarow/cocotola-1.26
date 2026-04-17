@@ -13,19 +13,25 @@ type Type struct {
 }
 
 const (
-	questionTypeDefault = "default"
+	questionTypeWordFill       = "word_fill"
+	questionTypeMultipleChoice = "multiple_choice"
 )
 
-// TypeDefault returns the default question type.
-func TypeDefault() Type { return Type{value: questionTypeDefault} }
+// TypeWordFill returns the word fill question type.
+func TypeWordFill() Type { return Type{value: questionTypeWordFill} }
+
+// TypeMultipleChoice returns the multiple choice question type.
+func TypeMultipleChoice() Type { return Type{value: questionTypeMultipleChoice} }
 
 // NewType creates a validated QuestionType from a string.
 func NewType(value string) (Type, error) {
 	switch value {
-	case questionTypeDefault:
-		return TypeDefault(), nil
+	case questionTypeWordFill:
+		return TypeWordFill(), nil
+	case questionTypeMultipleChoice:
+		return TypeMultipleChoice(), nil
 	default:
-		return Type{}, fmt.Errorf("invalid question type: must be 'default': %w", domain.ErrInvalidArgument)
+		return Type{}, fmt.Errorf("invalid question type: must be 'word_fill' or 'multiple_choice': %w", domain.ErrInvalidArgument)
 	}
 }
 

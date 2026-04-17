@@ -77,6 +77,7 @@ func (h *ListQuestionsHandler) ListQuestions(c *gin.Context) {
 			QuestionID:   q.QuestionID,
 			QuestionType: q.QuestionType,
 			Content:      q.Content,
+			Tags:         q.Tags,
 			OrderIndex:   int32(q.OrderIndex),
 			CreatedAt:    q.CreatedAt,
 			UpdatedAt:    q.UpdatedAt,

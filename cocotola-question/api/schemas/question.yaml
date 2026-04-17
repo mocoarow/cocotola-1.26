@@ -13,6 +13,13 @@ AddQuestionRequest:
         binding: required,max=10000
       maxLength: 10000
       pattern: ^.*$
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 100
+        pattern: ^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$
+      maxItems: 20
     orderIndex:
       type: integer
       format: int32
@@ -32,6 +39,13 @@ UpdateQuestionRequest:
         binding: required,max=10000
       maxLength: 10000
       pattern: ^.*$
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 100
+        pattern: ^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$
+      maxItems: 20
     orderIndex:
       type: integer
       format: int32
@@ -54,6 +68,13 @@ QuestionResponse:
     content:
       type: string
       pattern: ^.*$
+    tags:
+      type: array
+      items:
+        type: string
+        maxLength: 100
+        pattern: ^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$
+      maxItems: 20
     orderIndex:
       type: integer
       format: int32

@@ -32,9 +32,10 @@ const (
 
 // AddQuestionRequest defines model for AddQuestionRequest.
 type AddQuestionRequest struct {
-	Content      string `binding:"required,max=10000" json:"content"`
-	OrderIndex   int32  `binding:"gte=0" json:"orderIndex"`
-	QuestionType string `binding:"required" json:"questionType"`
+	Content      string   `binding:"required,max=10000" json:"content"`
+	OrderIndex   int32    `binding:"gte=0" json:"orderIndex"`
+	QuestionType string   `binding:"required" json:"questionType"`
+	Tags         []string `json:"tags,omitempty"`
 }
 
 // CreateWorkbookRequest defines model for CreateWorkbookRequest.
@@ -95,6 +96,7 @@ type QuestionResponse struct {
 	OrderIndex   int32     `json:"orderIndex"`
 	QuestionID   string    `json:"questionId"`
 	QuestionType string    `json:"questionType"`
+	Tags         []string  `json:"tags,omitempty"`
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
@@ -114,8 +116,9 @@ type SharedItemResponse struct {
 
 // UpdateQuestionRequest defines model for UpdateQuestionRequest.
 type UpdateQuestionRequest struct {
-	Content    string `binding:"required,max=10000" json:"content"`
-	OrderIndex int32  `binding:"gte=0" json:"orderIndex"`
+	Content    string   `binding:"required,max=10000" json:"content"`
+	OrderIndex int32    `binding:"gte=0" json:"orderIndex"`
+	Tags       []string `json:"tags,omitempty"`
 }
 
 // UpdateWorkbookRequest defines model for UpdateWorkbookRequest.

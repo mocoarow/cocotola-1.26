@@ -10,22 +10,24 @@ import (
 
 // AddQuestionInput is the validated input for adding a question.
 type AddQuestionInput struct {
-	OperatorID     string `validate:"required"`
-	OrganizationID string `validate:"required"`
-	WorkbookID     string `validate:"required"`
-	QuestionType   string `validate:"required"`
-	Content        string `validate:"required,max=10000"`
-	OrderIndex     int    `validate:"gte=0"`
+	OperatorID     string   `validate:"required"`
+	OrganizationID string   `validate:"required"`
+	WorkbookID     string   `validate:"required"`
+	QuestionType   string   `validate:"required"`
+	Content        string   `validate:"required,max=10000"`
+	Tags           []string `validate:"max=20,dive,max=100"`
+	OrderIndex     int      `validate:"gte=0"`
 }
 
 // NewAddQuestionInput creates a validated AddQuestionInput.
-func NewAddQuestionInput(operatorID string, organizationID string, workbookID string, questionType string, content string, orderIndex int) (*AddQuestionInput, error) {
+func NewAddQuestionInput(operatorID string, organizationID string, workbookID string, questionType string, content string, tags []string, orderIndex int) (*AddQuestionInput, error) {
 	m := &AddQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 		QuestionType:   questionType,
 		Content:        content,
+		Tags:           tags,
 		OrderIndex:     orderIndex,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
@@ -39,6 +41,7 @@ type Item struct {
 	QuestionID   string
 	QuestionType string
 	Content      string
+	Tags         []string
 	OrderIndex   int
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -103,22 +106,24 @@ type ListQuestionsOutput struct {
 
 // UpdateQuestionInput is the validated input for updating a question.
 type UpdateQuestionInput struct {
-	OperatorID     string `validate:"required"`
-	OrganizationID string `validate:"required"`
-	WorkbookID     string `validate:"required"`
-	QuestionID     string `validate:"required"`
-	Content        string `validate:"required,max=10000"`
-	OrderIndex     int    `validate:"gte=0"`
+	OperatorID     string   `validate:"required"`
+	OrganizationID string   `validate:"required"`
+	WorkbookID     string   `validate:"required"`
+	QuestionID     string   `validate:"required"`
+	Content        string   `validate:"required,max=10000"`
+	Tags           []string `validate:"max=20,dive,max=100"`
+	OrderIndex     int      `validate:"gte=0"`
 }
 
 // NewUpdateQuestionInput creates a validated UpdateQuestionInput.
-func NewUpdateQuestionInput(operatorID string, organizationID string, workbookID string, questionID string, content string, orderIndex int) (*UpdateQuestionInput, error) {
+func NewUpdateQuestionInput(operatorID string, organizationID string, workbookID string, questionID string, content string, tags []string, orderIndex int) (*UpdateQuestionInput, error) {
 	m := &UpdateQuestionInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 		QuestionID:     questionID,
 		Content:        content,
+		Tags:           tags,
 		OrderIndex:     orderIndex,
 	}
 	if err := domain.ValidateStruct(m); err != nil {

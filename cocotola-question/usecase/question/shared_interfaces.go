@@ -9,7 +9,7 @@ import (
 )
 
 type questionAdder interface {
-	Add(ctx context.Context, workbookID string, questionType string, content string, orderIndex int) (string, error)
+	Add(ctx context.Context, workbookID string, questionType string, content string, tags []string, orderIndex int) (string, error)
 }
 
 type questionFinder interface {
@@ -18,7 +18,7 @@ type questionFinder interface {
 }
 
 type questionUpdater interface {
-	Update(ctx context.Context, workbookID string, questionID string, content string, orderIndex int) error
+	Update(ctx context.Context, workbookID string, questionID string, content string, tags []string, orderIndex int) error
 }
 
 type questionDeleter interface {

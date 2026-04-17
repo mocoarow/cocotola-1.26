@@ -52,6 +52,7 @@ func (q *ListQuestionsQuery) ListQuestions(ctx context.Context, input *questions
 			QuestionID:   question.ID(),
 			QuestionType: question.QuestionType().Value(),
 			Content:      question.Content(),
+			Tags:         question.Tags(),
 			OrderIndex:   question.OrderIndex(),
 			CreatedAt:    question.CreatedAt(),
 			UpdatedAt:    question.UpdatedAt(),
