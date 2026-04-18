@@ -40,7 +40,7 @@ var fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000
 
 func fakeAuthMiddleware(userID domain.AppUserID, loginID string, organizationName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(controller.ContextFieldUserID{}, userID)
+		c.Set(controller.ContextFieldUserID{}, userID.String())
 		c.Set(controller.ContextFieldLoginID{}, loginID)
 		c.Set(controller.ContextFieldOrganizationName{}, organizationName)
 		c.Next()

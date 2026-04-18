@@ -1,12 +1,13 @@
 package controller
 
-import libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
-
 // ContextFieldUserID is a Gin context key for storing the authenticated user's ID.
-type ContextFieldUserID = libcontroller.ContextFieldUserID
+type ContextFieldUserID struct{}
+
+// ContextFieldLoginID is a Gin context key for storing the authenticated user's login ID.
+type ContextFieldLoginID struct{}
 
 // ContextFieldOrganizationName is a Gin context key for storing the authenticated user's organization name.
-type ContextFieldOrganizationName = libcontroller.ContextFieldOrganizationName
+type ContextFieldOrganizationName struct{}
 
 // ContextFieldOrganizationID is a Gin context key for storing the resolved organization ID.
-type ContextFieldOrganizationID = libcontroller.ContextFieldOrganizationID
+type ContextFieldOrganizationID struct{}

@@ -38,9 +38,8 @@ func setupRouter(t *testing.T, authUsecase middleware.AuthUsecase) *gin.Engine {
 	r := gin.New()
 	r.Use(middleware.NewAuthMiddleware(authUsecase, testCookieConfig, 30))
 	r.GET("/protected", func(c *gin.Context) {
-		v, _ := c.Get(controller.ContextFieldUserID{})
-		userID, _ := v.(domain.AppUserID)
-		c.JSON(http.StatusOK, gin.H{"userId": userID.String()})
+		userID := c.GetString(controller.ContextFieldUserID{})
+		c.JSON(http.StatusOK, gin.H{"userId": userID})
 	})
 	return r
 }
