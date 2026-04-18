@@ -1,5 +1,13 @@
 import { getIdToken } from "./id-token.server";
 
+export function getQuestionUrl(): string {
+  const url = process.env.QUESTION_BASE_URL;
+  if (!url) {
+    throw new Error("QUESTION_BASE_URL environment variable is required");
+  }
+  return url;
+}
+
 /**
  * fetch wrapper that attaches a Google Cloud ID Token
  * when running on Cloud Run (APP_ENV is not "local" or "test").

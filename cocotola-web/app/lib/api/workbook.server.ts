@@ -1,4 +1,4 @@
-import { fetchWithIdToken } from "./fetch.server";
+import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
 
 export type Workbook = {
   workbookId: string;
@@ -15,14 +15,6 @@ export type Workbook = {
 type ListWorkbooksResponse = {
   workbooks: Workbook[];
 };
-
-function getQuestionUrl(): string {
-  const url = process.env.QUESTION_BASE_URL;
-  if (!url) {
-    throw new Error("QUESTION_BASE_URL environment variable is required");
-  }
-  return url;
-}
 
 export async function listWorkbooks(accessToken: string, spaceId: string): Promise<Workbook[]> {
   console.info(`[workbook] listWorkbooks called: spaceId=${spaceId}`);

@@ -1,5 +1,5 @@
 import { BookOpenIcon, PencilIcon, Trash2Icon } from "lucide-react";
-import { useFetcher, useLoaderData } from "react-router";
+import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { findPrivateSpace } from "~/lib/api/space.server";
 import { deleteWorkbook, listWorkbooks, type Workbook } from "~/lib/api/workbook.server";
@@ -78,7 +78,12 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           <BookOpenIcon data-icon="inline-start" className="size-3.5" />
           <span>Study</span>
         </Button>
-        <Button variant="outline" size="sm" className="flex-1" disabled>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          render={<Link to={`/workbooks/${workbook.workbookId}`} />}
+        >
           <PencilIcon data-icon="inline-start" className="size-3.5" />
           <span>Edit</span>
         </Button>
