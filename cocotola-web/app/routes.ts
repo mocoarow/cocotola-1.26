@@ -5,5 +5,8 @@ export default [
   route("login", "routes/login.tsx"),
   route("auth/callback", "routes/auth.callback.tsx"),
   route("logout", "routes/logout.tsx"),
-  layout("routes/workbooks.tsx", [route("workbooks", "routes/workbooks.index.tsx")]),
+  layout("routes/workbooks.tsx", [
+    route("workbooks", "routes/workbooks.index.tsx"),
+    route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
+  ]),
 ] satisfies RouteConfig;
