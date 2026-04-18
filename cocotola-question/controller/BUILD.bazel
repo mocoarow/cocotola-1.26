@@ -10,6 +10,7 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//cocotola-lib/controller",
         "//cocotola-question/api",
     ],
 )

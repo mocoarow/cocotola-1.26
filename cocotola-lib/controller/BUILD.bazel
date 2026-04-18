@@ -5,6 +5,7 @@ go_library(
     name = "controller",
     srcs = [
         "config.go",
+        "context.go",
         "cors.go",
         "doc.go",
         "metrics_server.go",

@@ -26,7 +26,7 @@ var (
 
 func fakeAuthMiddleware(userID domain.AppUserID, loginID string, organizationName string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Set(controller.ContextFieldUserID{}, userID)
+		c.Set(controller.ContextFieldUserID{}, userID.String())
 		c.Set(controller.ContextFieldLoginID{}, loginID)
 		c.Set(controller.ContextFieldOrganizationName{}, organizationName)
 		c.Next()

@@ -86,7 +86,7 @@ func extractBearerToken(c *gin.Context) string {
 }
 
 func setUserContext(ctx context.Context, c *gin.Context, userID domain.AppUserID, loginID string, organizationName string, logger *slog.Logger) {
-	c.Set(controller.ContextFieldUserID{}, userID)
+	c.Set(controller.ContextFieldUserID{}, userID.String())
 	c.Set(controller.ContextFieldLoginID{}, loginID)
 	c.Set(controller.ContextFieldOrganizationName{}, organizationName)
 	ctx = libtelemetry.AddBaggageMembers(ctx, map[string]string{
