@@ -3,6 +3,7 @@ module github.com/mocoarow/cocotola-1.26/cocotola-app
 go 1.26.1
 
 require (
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/mocoarow/cocotola-1.26/cocotola-auth v0.0.0-20260329141729-61a05d7320bc
 	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260329141729-61a05d7320bc
 	github.com/mocoarow/cocotola-1.26/cocotola-question v0.0.0-20260404044856-9e08b6035284
@@ -48,7 +49,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.30.1 // indirect
 	github.com/go-sql-driver/mysql v1.9.3 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/goccy/go-yaml v1.19.2 // indirect

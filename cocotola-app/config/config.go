@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"go.yaml.in/yaml/v4"
 
 	authconfig "github.com/mocoarow/cocotola-1.26/cocotola-auth/config"
@@ -16,10 +17,18 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
 
+// AuthClientConfig holds configuration for the auth service HTTP client
+// used by the question module within the monolith.
+type AuthClientConfig struct {
+	BaseURL    string `yaml:"baseUrl" validate:"required"`
+	TimeoutSec int    `yaml:"timeoutSec" validate:"required,gte=1,lte=300"`
+}
+
 // AppConfig holds application-level configuration for included microservices.
 type AppConfig struct {
-	Auth     authconfig.AuthConfig         `yaml:"auth" validate:"required"`
-	Question questionconfig.QuestionConfig `yaml:"question" validate:"required"`
+	Auth       authconfig.AuthConfig         `yaml:"auth" validate:"required"`
+	AuthClient AuthClientConfig              `yaml:"authClient" validate:"required"`
+	Question   questionconfig.QuestionConfig `yaml:"question" validate:"required"`
 }
 
 // Config holds the complete application configuration.
@@ -64,6 +73,10 @@ func LoadConfig() (*Config, error) {
 	var conf Config
 	if err := yaml.Unmarshal(confContent, &conf); err != nil {
 		return nil, fmt.Errorf("unmarshal file(%s): %w", filename, err)
+	}
+
+	if err := validator.New().Struct(&conf); err != nil {
+		return nil, fmt.Errorf("validate config(%s): %w", filename, err)
 	}
 
 	return &conf, nil

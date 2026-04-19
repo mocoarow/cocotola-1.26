@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "gateway",
@@ -7,6 +8,7 @@ go_library(
         "doc.go",
         "firestore_client.go",
         "health_repository.go",
+        "owned_workbook_list_repository.go",
         "question_repository.go",
         "reference_repository.go",
         "workbook_repository.go",
@@ -26,5 +28,17 @@ go_library(
         "@org_golang_google_api//option",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",
+    ],
+)
+
+smart_go_test(
+    name = "gateway_test",
+    srcs = ["owned_workbook_list_repository_m_test.go"],
+    deps = [
+        ":gateway",
+        "//cocotola-question/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_firestore//:firestore",
     ],
 )

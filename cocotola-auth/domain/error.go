@@ -77,6 +77,13 @@ var ErrAppUserProviderConcurrentModification = errors.New("app user provider was
 // ErrSpaceNotFound is returned when a space cannot be found.
 var ErrSpaceNotFound = errors.New("space not found")
 
+// ErrUserSettingNotFound is returned when a user setting cannot be found.
+var ErrUserSettingNotFound = errors.New("user setting not found")
+
+// ErrUserSettingConcurrentModification is returned when an optimistic-lock CAS
+// on the UserSetting row version fails.
+var ErrUserSettingConcurrentModification = errors.New("user setting was modified concurrently")
+
 // ErrForbidden is returned when the operator does not have permission to perform the action.
 var ErrForbidden = errors.New("forbidden")
 

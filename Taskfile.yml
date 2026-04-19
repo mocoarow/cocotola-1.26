@@ -235,7 +235,10 @@ tasks:
       - mkdir -p supabase/migrations
       - |
         for f in init-postgres/*.up.sql; do
-          cp "$f" "supabase/migrations/$(basename "$f")"
+          basename="$(basename "$f")"
+          # Skip 2999* files (healthcheck tables managed outside Supabase migrations)
+          case "$basename" in 2999*) continue ;; esac
+          cp "$f" "supabase/migrations/$basename"
         done
 
   supabase-push:

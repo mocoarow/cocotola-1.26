@@ -27,6 +27,7 @@ go_library(
         "token_cache.go",
         "token_whitelist_repository.go",
         "user_authenticator.go",
+        "user_setting_repository.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway",
     visibility = ["//visibility:public"],

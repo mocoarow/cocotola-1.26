@@ -11,6 +11,7 @@ go_library(
         "//cocotola-lib/controller",
         "//cocotola-lib/gateway",
         "//cocotola-question/config",
+        "@com_github_go_playground_validator_v10//:validator",
         "@in_yaml_go_yaml_v4//:yaml",
     ],
 )

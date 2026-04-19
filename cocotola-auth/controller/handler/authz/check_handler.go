@@ -21,7 +21,7 @@ type AuthorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
 }
 
-// CheckHandler handles the GET /auth/authz/check endpoint.
+// CheckHandler handles the /auth/authz/check endpoint (GET and POST).
 type CheckHandler struct {
 	authzChecker AuthorizationChecker
 	logger       *slog.Logger
@@ -35,18 +35,42 @@ func NewCheckHandler(authzChecker AuthorizationChecker) *CheckHandler {
 	}
 }
 
-// Check handles GET /auth/authz/check?org=<orgID>&user=<userID>&action=<action>&resource=<resource>.
+// checkRequest is the JSON body for POST /auth/authz/check.
+type checkRequest struct {
+	Org      string `json:"org"`
+	User     string `json:"user"`
+	Action   string `json:"action"`
+	Resource string `json:"resource"`
+}
+
+// Check handles POST /auth/authz/check with JSON body,
+// or GET /auth/authz/check with query parameters (for backward compatibility).
 func (h *CheckHandler) Check(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	orgStr := c.Query("org")
-	userStr := c.Query("user")
-	actionStr := c.Query("action")
-	resourceStr := c.Query("resource")
+	var orgStr, userStr, actionStr, resourceStr string
+
+	if c.Request.Method == http.MethodPost {
+		var req checkRequest
+		if err := c.ShouldBindJSON(&req); err != nil {
+			h.logger.WarnContext(ctx, "invalid request body", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "invalid request body"))
+			return
+		}
+		orgStr = req.Org
+		userStr = req.User
+		actionStr = req.Action
+		resourceStr = req.Resource
+	} else {
+		orgStr = c.Query("org")
+		userStr = c.Query("user")
+		actionStr = c.Query("action")
+		resourceStr = c.Query("resource")
+	}
 
 	if orgStr == "" || userStr == "" || actionStr == "" || resourceStr == "" {
-		h.logger.WarnContext(ctx, "missing required query parameters")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org, user, action, and resource query parameters are required"))
+		h.logger.WarnContext(ctx, "missing required parameters")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org, user, action, and resource are required"))
 		return
 	}
 
@@ -92,6 +116,7 @@ func (h *CheckHandler) Check(c *gin.Context) {
 
 // InitAuthzRouter sets up the routes for authorization check operations.
 // When middleware is provided, it is used as per-route auth middleware.
+// Registers both GET (backward compatibility) and POST (preferred).
 func InitAuthzRouter(
 	checkHandler *CheckHandler,
 	parentRouterGroup gin.IRouter,
@@ -103,4 +128,5 @@ func InitAuthzRouter(
 	handlers = append(handlers, middleware...)
 	handlers = append(handlers, checkHandler.Check)
 	authzGroup.GET("/check", handlers...)
+	authzGroup.POST("/check", handlers...)
 }

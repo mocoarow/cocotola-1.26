@@ -2,6 +2,9 @@
 app:
   question:
     firestoreProjectId: ${APP_QUESTION_FIRESTORE_PROJECT_ID:-local}
+  authClient:
+    baseUrl: ${APP_AUTH_CLIENT_BASE_URL:-http://localhost:8000}
+    timeoutSec: ${APP_AUTH_CLIENT_TIMEOUT_SEC:-10}
   auth:
     signingKey: ${APP_AUTH_SIGNING_KEY}
     accessTokenTtlMin: ${APP_AUTH_ACCESS_TOKEN_TTL_MIN:-60}

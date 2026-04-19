@@ -9,6 +9,7 @@ import (
 	"time"
 
 	authinit "github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize"
+	questiongateway "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
 
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
@@ -74,16 +75,26 @@ func run() (int, error) {
 	}
 	defer authResult.Close()
 
-	// initialize question module
-	orgResolver := func(ctx context.Context, name string) (string, error) {
-		org, err := authResult.OrgFinder.FindByName(ctx, name)
-		if err != nil {
-			return "", fmt.Errorf("find organization by name %s: %w", name, err)
-		}
-		return org.ID().String(), nil
+	// auth HTTP client for question module to call auth internal APIs.
+	// In monolith mode, this calls localhost (same process). This allows the question
+	// module to use the same HTTP-based interface as in standalone microservice mode,
+	// enabling seamless deployment as either a monolith or separate services.
+	authClientBaseURL := cfg.App.AuthClient.BaseURL
+	authClientAPIKey := cfg.App.Auth.APIKey
+	authClientTimeout := time.Duration(cfg.App.AuthClient.TimeoutSec) * time.Second
+
+	httpClient, err := libgateway.NewHTTPClient(ctx, "local", authClientBaseURL, authClientTimeout)
+	if err != nil {
+		return 1, fmt.Errorf("create auth HTTP client: %w", err)
 	}
-	authzAdapter := &authorizationCheckerAdapter{inner: authResult.AuthzChecker}
-	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authResult.AuthMiddleware, authzAdapter, orgResolver)
+
+	authMiddleware := questiongateway.NewAuthMiddleware(authClientBaseURL, httpClient)
+	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
+	orgResolver := questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient)
+	maxWbFetcher := questiongateway.NewAuthServiceMaxWorkbooksFetcher(authClientBaseURL, authClientAPIKey, httpClient)
+
+	// initialize question module
+	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}
