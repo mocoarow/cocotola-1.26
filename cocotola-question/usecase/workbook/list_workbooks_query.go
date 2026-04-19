@@ -24,7 +24,7 @@ func NewListWorkbooksQuery(workbookRepo workbookFinder, authChecker authorizatio
 
 // ListWorkbooks returns all workbooks in a space.
 func (q *ListWorkbooksQuery) ListWorkbooks(ctx context.Context, input *workbookservice.ListWorkbooksInput) (*workbookservice.ListWorkbooksOutput, error) {
-	allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceAny())
+	allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceSpace(input.SpaceID))
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

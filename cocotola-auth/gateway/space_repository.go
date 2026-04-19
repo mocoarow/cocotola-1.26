@@ -135,6 +135,24 @@ func (r *SpaceRepository) FindByKeyName(ctx context.Context, organizationID doma
 	return space, nil
 }
 
+// FindPublicByOrganizationID returns the public space for the given organization.
+func (r *SpaceRepository) FindPublicByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domainspace.Space, error) {
+	var record spaceRecord
+	if err := r.db.WithContext(ctx).
+		Where("organization_id = ? AND space_type = ? AND deleted = ?", organizationID.String(), domainspace.TypePublic().Value(), false).
+		First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrSpaceNotFound
+		}
+		return nil, fmt.Errorf("find public space by organization id: %w", err)
+	}
+	space, err := toSpaceDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert space domain: %w", err)
+	}
+	return space, nil
+}
+
 // FindByOrganizationID returns all spaces for the given organization.
 func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) ([]domainspace.Space, error) {
 	var records []spaceRecord

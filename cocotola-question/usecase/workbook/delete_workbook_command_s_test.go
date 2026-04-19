@@ -32,7 +32,7 @@ func Test_DeleteWorkbookCommand_shouldDeleteWorkbook_whenOwnerDeletes(t *testing
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook(fixtureOperatorID), nil)
@@ -63,7 +63,7 @@ func Test_DeleteWorkbookCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny()).Return(false, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, nil)
 
 	cmd := workbookusecase.NewDeleteWorkbookCommand(nil, nil, nil, nil, authChecker)
 	input := newDeleteWorkbookInput(t)
@@ -81,7 +81,7 @@ func Test_DeleteWorkbookCommand_shouldReturnForbidden_whenNotOwner(t *testing.T)
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook("other-user"), nil)
@@ -102,7 +102,7 @@ func Test_DeleteWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook(fixtureOperatorID), nil)

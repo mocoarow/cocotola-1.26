@@ -39,6 +39,10 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 		capturedSpaceID = s.ID()
 	}).Return(nil)
 
+	publicSpaceFinderMock := newMockpublicSpaceFinder(t)
+	publicSpaceFinderMock.On("FindPublicByOrganizationID", mock.Anything, orgID).
+		Return(nil, domain.ErrSpaceNotFound)
+
 	policyRepoMock := newMockuserPolicyAdder(t)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
 		domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
@@ -47,22 +51,22 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 		domainrbac.ActionViewSpace(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(nil)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domainrbac.ActionCreateWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
+		domainrbac.ActionCreateWorkbook(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(nil)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domainrbac.ActionViewWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
+		domainrbac.ActionViewWorkbook(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(nil)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domainrbac.ActionUpdateWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
+		domainrbac.ActionUpdateWorkbook(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(nil)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domainrbac.ActionDeleteWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
+		domainrbac.ActionDeleteWorkbook(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(nil)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
 		domainrbac.ActionImportWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
 	).Return(nil)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, publicSpaceFinderMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -72,8 +76,24 @@ func Test_PrivateSpaceHandler_Handle_shouldCreatePrivateSpace_whenEventValid(t *
 	require.NoError(t, err)
 	require.False(t, capturedSpaceID.IsZero())
 	spaceRepoMock.AssertCalled(t, "Save", mock.Anything, mock.Anything)
+	spaceResource := domainrbac.ResourceSpace(capturedSpaceID)
 	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
-		domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(capturedSpaceID), domainrbac.EffectAllow(),
+		domainrbac.ActionViewSpace(), spaceResource, domainrbac.EffectAllow(),
+	)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domainrbac.ActionCreateWorkbook(), spaceResource, domainrbac.EffectAllow(),
+	)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domainrbac.ActionViewWorkbook(), spaceResource, domainrbac.EffectAllow(),
+	)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domainrbac.ActionUpdateWorkbook(), spaceResource, domainrbac.EffectAllow(),
+	)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domainrbac.ActionDeleteWorkbook(), spaceResource, domainrbac.EffectAllow(),
+	)
+	policyRepoMock.AssertCalled(t, "AddPolicyForUser", mock.Anything, orgID, appUserID,
+		domainrbac.ActionImportWorkbook(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
 	)
 }
 
@@ -89,9 +109,10 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t 
 	spaceRepoMock := newMockspaceSaver(t)
 	spaceRepoMock.On("Save", mock.Anything, mock.Anything).Return(saveErr)
 
+	publicSpaceFinderMock := newMockpublicSpaceFinder(t)
 	policyRepoMock := newMockuserPolicyAdder(t)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, publicSpaceFinderMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -114,12 +135,13 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddListSpacesPolicyFa
 	spaceRepoMock := newMockspaceSaver(t)
 	spaceRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
+	publicSpaceFinderMock := newMockpublicSpaceFinder(t)
 	policyRepoMock := newMockuserPolicyAdder(t)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
 		domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
 	).Return(addErr)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, publicSpaceFinderMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -141,6 +163,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddViewSpacePolicyFai
 	spaceRepoMock := newMockspaceSaver(t)
 	spaceRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
+	publicSpaceFinderMock := newMockpublicSpaceFinder(t)
 	policyRepoMock := newMockuserPolicyAdder(t)
 	policyRepoMock.On("AddPolicyForUser", mock.Anything, orgID, appUserID,
 		domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), domainrbac.EffectAllow(),
@@ -149,7 +172,7 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenAddViewSpacePolicyFai
 		domainrbac.ActionViewSpace(), mock.Anything, domainrbac.EffectAllow(),
 	).Return(addErr)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, publicSpaceFinderMock, policyRepoMock, slog.Default())
 	event := domain.NewAppUserCreated(appUserID, orgID, loginID, time.Now())
 
 	// when
@@ -164,9 +187,10 @@ func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenEventTypeIsWrong(t *t
 
 	// given
 	spaceRepoMock := newMockspaceSaver(t)
+	publicSpaceFinderMock := newMockpublicSpaceFinder(t)
 	policyRepoMock := newMockuserPolicyAdder(t)
 
-	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, policyRepoMock, slog.Default())
+	handler := eventusecase.NewPrivateSpaceHandler(spaceRepoMock, publicSpaceFinderMock, policyRepoMock, slog.Default())
 
 	// when
 	err := handler.Handle(context.Background(), badEvent{})

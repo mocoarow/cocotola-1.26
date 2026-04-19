@@ -86,7 +86,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
 	spaceRepo := gateway.NewSpaceRepository(db)
-	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, rbacRepo, eventHandlerLogger)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, spaceRepo, rbacRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer
