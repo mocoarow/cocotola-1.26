@@ -49,7 +49,14 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 	wbCreator := newMockworkbookCreator(t)
 	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, authChecker)
+	policyAdder := newMockpolicyAdder(t)
+	wbResource := domain.ResourceWorkbook(fixtureWorkbookID)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow).Return(nil)
+
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
 
 	// when
@@ -68,7 +75,7 @@ func Test_CreateWorkbookCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(false, nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker)
+	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker, nil)
 	input := newCreateWorkbookInput(t)
 
 	// when
@@ -84,17 +91,17 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(false, errors.New("auth unavailable"))
+	authErr := errors.New("auth unavailable")
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(false, authErr)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker)
+	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker, nil)
 	input := newCreateWorkbookInput(t)
 
 	// when
 	_, err := cmd.CreateWorkbook(ctx, input)
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "authorization check")
+	require.ErrorIs(t, err, authErr)
 }
 
 func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testing.T) {
@@ -112,7 +119,7 @@ func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testi
 	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(nil, listFinder, nil, maxWbFetcher, authChecker)
+	cmd := workbookusecase.NewCreateWorkbookCommand(nil, listFinder, nil, maxWbFetcher, authChecker, nil)
 	input := newCreateWorkbookInput(t)
 
 	// when
@@ -120,6 +127,39 @@ func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testi
 
 	// then
 	require.ErrorIs(t, err, domain.ErrOwnedWorkbookLimitReached)
+}
+
+func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(true, nil)
+
+	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
+	listFinder := newMockownedWorkbookListFinder(t)
+	listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
+
+	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
+	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
+
+	wbCreator := newMockworkbookCreator(t)
+	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
+
+	policyErr := errors.New("auth service unavailable")
+	policyAdder := newMockpolicyAdder(t)
+	wbResource := domain.ResourceWorkbook(fixtureWorkbookID)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow).Return(policyErr)
+
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, nil, maxWbFetcher, authChecker, policyAdder)
+	input := newCreateWorkbookInput(t)
+
+	// when
+	_, err := cmd.CreateWorkbook(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, policyErr)
 }
 
 func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *testing.T) {
@@ -143,7 +183,14 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	wbCreator := newMockworkbookCreator(t)
 	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, authChecker)
+	policyAdder := newMockpolicyAdder(t)
+	wbResource := domain.ResourceWorkbook(fixtureWorkbookID)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow).Return(nil)
+
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
 
 	// when

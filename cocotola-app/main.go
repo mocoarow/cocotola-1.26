@@ -92,9 +92,10 @@ func run() (int, error) {
 	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
 	orgResolver := questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient)
 	maxWbFetcher := questiongateway.NewAuthServiceMaxWorkbooksFetcher(authClientBaseURL, authClientAPIKey, httpClient)
+	policyAdder := questiongateway.NewAuthServicePolicyAdder(authClientBaseURL, authClientAPIKey, httpClient)
 
 	// initialize question module
-	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher)
+	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher, policyAdder)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}

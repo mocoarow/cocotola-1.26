@@ -160,6 +160,8 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	internalAuthV1 := internalV1.Group("auth")
 	orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
 	authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
+	addPolicyHandler := authzhandler.NewAddPolicyHandler(rbacRepo)
+	authzhandler.InitAuthzPolicyRouter(addPolicyHandler, internalAuthV1)
 	usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
 
 	// external auth routes

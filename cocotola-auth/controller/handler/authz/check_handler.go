@@ -130,3 +130,12 @@ func InitAuthzRouter(
 	authzGroup.GET("/check", handlers...)
 	authzGroup.POST("/check", handlers...)
 }
+
+// InitAuthzPolicyRouter sets up the routes for policy management operations (internal only).
+func InitAuthzPolicyRouter(
+	addPolicyHandler *AddPolicyHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	authzGroup := parentRouterGroup.Group("authz")
+	authzGroup.POST("/policy", addPolicyHandler.AddPolicy)
+}

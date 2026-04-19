@@ -78,11 +78,14 @@ func run() (int, error) {
 	// max workbooks fetcher (fetches user setting via cocotola-auth internal API)
 	maxWbFetcher := gateway.NewAuthServiceMaxWorkbooksFetcher(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
+	// policy adder (adds per-user RBAC policies via cocotola-auth internal API)
+	policyAdder := gateway.NewAuthServicePolicyAdder(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
+
 	// initialize question module
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
-	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher)
+	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher, policyAdder)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}

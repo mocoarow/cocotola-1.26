@@ -13,11 +13,12 @@ import (
 
 // CreateWorkbookCommand handles workbook creation.
 type CreateWorkbookCommand struct {
-	workbookRepo     workbookCreator
-	ownedListFinder  ownedWorkbookListFinder
-	ownedListSaver   ownedWorkbookListSaver
-	maxWbFetcher     maxWorkbooksFetcher
-	authChecker      authorizationChecker
+	workbookRepo    workbookCreator
+	ownedListFinder ownedWorkbookListFinder
+	ownedListSaver  ownedWorkbookListSaver
+	maxWbFetcher    maxWorkbooksFetcher
+	authChecker     authorizationChecker
+	policyAdder     policyAdder
 }
 
 // NewCreateWorkbookCommand returns a new CreateWorkbookCommand.
@@ -27,6 +28,7 @@ func NewCreateWorkbookCommand(
 	ownedListSaver ownedWorkbookListSaver,
 	maxWbFetcher maxWorkbooksFetcher,
 	authChecker authorizationChecker,
+	policyAdder policyAdder,
 ) *CreateWorkbookCommand {
 	return &CreateWorkbookCommand{
 		workbookRepo:    workbookRepo,
@@ -34,6 +36,7 @@ func NewCreateWorkbookCommand(
 		ownedListSaver:  ownedListSaver,
 		maxWbFetcher:    maxWbFetcher,
 		authChecker:     authChecker,
+		policyAdder:     policyAdder,
 	}
 }
 
@@ -70,6 +73,19 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 	workbookID, err := c.workbookRepo.Create(ctx, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, input.Visibility)
 	if err != nil {
 		return nil, fmt.Errorf("create workbook: %w", err)
+	}
+
+	// Grant workbook-scoped permissions via RBAC.
+	actions := []domain.Action{
+		domain.ActionViewWorkbook(),
+		domain.ActionCreateQuestion(),
+		domain.ActionUpdateQuestion(),
+		domain.ActionDeleteQuestion(),
+	}
+	for _, action := range actions {
+		if err := c.policyAdder.AddPolicyForUser(ctx, input.OrganizationID, input.OperatorID, action, domain.ResourceWorkbook(workbookID), domain.EffectAllow); err != nil {
+			return nil, fmt.Errorf("add %s policy for workbook %s: %w", action.Value(), workbookID, err)
+		}
 	}
 
 	// Add to owned list and persist (optimistic lock via version).

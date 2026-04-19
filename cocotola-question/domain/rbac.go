@@ -72,7 +72,23 @@ func (r Resource) Value() string { return r.value }
 // ResourceAny returns a wildcard resource matching all resources.
 func ResourceAny() Resource { return Resource{value: "*"} }
 
+// ResourceWorkbook returns a resource representing a specific workbook.
+func ResourceWorkbook(workbookID string) Resource {
+	return Resource{value: "workbook:" + workbookID}
+}
+
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action Action, resource Resource) (bool, error)
+}
+
+// Effect represents a policy effect (allow or deny).
+const (
+	EffectAllow = "allow"
+	EffectDeny  = "deny"
+)
+
+// PolicyAdder adds per-user RBAC policies via the auth service.
+type PolicyAdder interface {
+	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action Action, resource Resource, effect string) error
 }

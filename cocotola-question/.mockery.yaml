@@ -15,3 +15,6 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question:
+    config:
+      all: true
