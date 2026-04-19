@@ -62,7 +62,7 @@ func (r *OwnedWorkbookListRepository) FindByOwnerID(ctx context.Context, ownerID
 // It uses optimistic locking via a version field on the owner document.
 func (r *OwnedWorkbookListRepository) Save(ctx context.Context, list *domain.OwnedWorkbookList) error {
 	nextVersion := list.Version() + 1
-	if err := r.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+	if err := r.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
 		ownerRef := r.ownerDoc(list.OwnerID())
 
 		// Verify version (optimistic lock).
@@ -94,7 +94,7 @@ func (r *OwnedWorkbookListRepository) Save(ctx context.Context, list *domain.Own
 
 		return nil
 	}); err != nil {
-		return err
+		return fmt.Errorf("run transaction: %w", err)
 	}
 
 	list.SetVersion(nextVersion)

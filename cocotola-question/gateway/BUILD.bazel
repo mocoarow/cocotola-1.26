@@ -33,7 +33,10 @@ go_library(
 
 smart_go_test(
     name = "gateway_test",
-    srcs = ["owned_workbook_list_repository_m_test.go"],
+    srcs = [
+        "auth_client_s_test.go",
+        "owned_workbook_list_repository_m_test.go",
+    ],
     deps = [
         ":gateway",
         "//cocotola-question/domain",

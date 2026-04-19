@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "question",
@@ -18,5 +19,25 @@ go_library(
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/workbook",
         "//cocotola-question/service/question",
+    ],
+)
+
+smart_go_test(
+    name = "question_test",
+    srcs = [
+        "add_question_command_s_test.go",
+        "delete_question_command_s_test.go",
+        "mocks_test.go",
+        "update_question_command_s_test.go",
+    ],
+    deps = [
+        ":question",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/question",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -42,59 +42,82 @@ type addPolicyRequest struct {
 	Effect   string `json:"effect"`
 }
 
-// AddPolicy handles POST /auth/authz/policy.
-func (h *AddPolicyHandler) AddPolicy(c *gin.Context) {
-	ctx := c.Request.Context()
+type addPolicyParams struct {
+	orgID    domain.OrganizationID
+	userID   domain.AppUserID
+	action   domainrbac.Action
+	resource domainrbac.Resource
+	effect   domainrbac.Effect
+}
 
+func (h *AddPolicyHandler) parseRequest(ctx context.Context, c *gin.Context) (*addPolicyParams, bool) {
 	var req addPolicyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.WarnContext(ctx, "invalid request body", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "invalid request body"))
-		return
+		return nil, false
 	}
 
 	if req.Org == "" || req.User == "" || req.Action == "" || req.Resource == "" || req.Effect == "" {
 		h.logger.WarnContext(ctx, "missing required parameters")
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org, user, action, resource, and effect are required"))
-		return
+		return nil, false
 	}
 
 	orgID, err := domain.ParseOrganizationID(req.Org)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid org parameter", slog.String("org", req.Org))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "org must be a UUID"))
-		return
+		return nil, false
 	}
 
 	userID, err := domain.ParseAppUserID(req.User)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid user parameter", slog.String("user", req.User))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "user must be a UUID"))
-		return
+		return nil, false
 	}
 
 	action, err := domainrbac.NewAction(req.Action)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid action parameter", slog.String("action", req.Action))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "invalid action"))
-		return
+		return nil, false
 	}
 
 	resource, err := domainrbac.NewResource(req.Resource)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid resource parameter", slog.String("resource", req.Resource))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "invalid resource"))
-		return
+		return nil, false
 	}
 
 	effect, err := domainrbac.NewEffect(req.Effect)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid effect parameter", slog.String("effect", req.Effect))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("bad_request", "effect must be 'allow' or 'deny'"))
+		return nil, false
+	}
+
+	return &addPolicyParams{
+		orgID:    orgID,
+		userID:   userID,
+		action:   action,
+		resource: resource,
+		effect:   effect,
+	}, true
+}
+
+// AddPolicy handles POST /auth/authz/policy.
+func (h *AddPolicyHandler) AddPolicy(c *gin.Context) {
+	ctx := c.Request.Context()
+
+	params, ok := h.parseRequest(ctx, c)
+	if !ok {
 		return
 	}
 
-	if err := h.policyAdder.AddPolicyForUser(ctx, orgID, userID, action, resource, effect); err != nil {
+	if err := h.policyAdder.AddPolicyForUser(ctx, params.orgID, params.userID, params.action, params.resource, params.effect); err != nil {
 		h.logger.ErrorContext(ctx, "add policy", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 		return

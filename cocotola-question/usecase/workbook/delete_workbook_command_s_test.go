@@ -115,7 +115,8 @@ func Test_DeleteWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
 
 	listSaver := newMockownedWorkbookListSaver(t)
-	listSaver.On("Save", mock.Anything, mock.Anything).Return(errors.New("firestore unavailable"))
+	saveErr := errors.New("firestore unavailable")
+	listSaver.On("Save", mock.Anything, mock.Anything).Return(saveErr)
 
 	cmd := workbookusecase.NewDeleteWorkbookCommand(wbFinder, wbDeleter, listFinder, listSaver, authChecker)
 	input := newDeleteWorkbookInput(t)
@@ -124,5 +125,5 @@ func Test_DeleteWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	err := cmd.DeleteWorkbook(ctx, input)
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, saveErr)
 }

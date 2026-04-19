@@ -18,8 +18,12 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// maxResponseBodySize limits the size of HTTP response bodies read from auth service.
-const maxResponseBodySize = 1 << 20 // 1 MB
+const (
+	// maxResponseBodySize limits the size of HTTP response bodies read from auth service.
+	maxResponseBodySize = 1 << 20 // 1 MB
+	// maxErrorBodySize limits the size of error response bodies read from auth service.
+	maxErrorBodySize = 512
+)
 
 // authServiceClient is a base HTTP client for calling cocotola-auth internal APIs.
 type authServiceClient struct {
@@ -63,7 +67,7 @@ func (c *authServiceClient) request(ctx context.Context, method string, reqURL s
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
 		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
@@ -267,7 +271,7 @@ func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizat
 	}()
 
 	if resp.StatusCode != http.StatusNoContent {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
 		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
