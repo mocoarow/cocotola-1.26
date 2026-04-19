@@ -31,6 +31,11 @@ type OrganizationIDResolver func(ctx context.Context, name string) (string, erro
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
 type AuthorizationChecker = domain.AuthorizationChecker
 
+// MaxWorkbooksFetcher fetches the max workbooks limit for a user.
+type MaxWorkbooksFetcher interface {
+	FetchMaxWorkbooks(ctx context.Context, userID string) (int, error)
+}
+
 // Initialize sets up the cocotola-question module: gateway, usecase, and controller layers.
 // It registers all question-related routes under the given parent router group and returns
 // a cleanup function to close the Firestore client.
@@ -41,6 +46,7 @@ func Initialize(
 	authMiddleware gin.HandlerFunc,
 	authzChecker AuthorizationChecker,
 	orgResolver OrganizationIDResolver,
+	maxWbFetcher MaxWorkbooksFetcher,
 ) (func(), error) {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "cocotola-question-init"))
 
@@ -53,13 +59,14 @@ func Initialize(
 	workbookRepo := gateway.NewWorkbookRepository(firestoreClient)
 	questionRepo := gateway.NewQuestionRepository(firestoreClient)
 	referenceRepo := gateway.NewReferenceRepository(firestoreClient)
+	ownedWorkbookListRepo := gateway.NewOwnedWorkbookListRepository(firestoreClient)
 	healthRepo := gateway.NewHealthRepository(firestoreClient)
 
 	// organization resolver middleware
 	orgResolverMiddleware := newOrganizationResolverMiddleware(orgResolver, logger)
 
 	// usecase layer
-	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, authzChecker)
+	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, authzChecker)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
 

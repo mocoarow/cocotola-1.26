@@ -13,6 +13,7 @@ go_library(
         "event.go",
         "ids.go",
         "organization.go",
+        "user_setting.go",
         "validator.go",
         "value_objects.go",
     ],
@@ -31,6 +32,7 @@ smart_go_test(
         "active_group_list_s_test.go",
         "active_user_list_s_test.go",
         "organization_s_test.go",
+        "user_setting_s_test.go",
         "value_objects_s_test.go",
     ],
     deps = [

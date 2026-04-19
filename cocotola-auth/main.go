@@ -24,6 +24,7 @@ import (
 	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
 	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
+	usersettinghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
@@ -106,6 +107,7 @@ func run() (int, error) {
 	activeUserListRepo := gateway.NewActiveUserListRepository(dbConn.DB)
 	activeGroupListRepo := gateway.NewActiveGroupListRepository(dbConn.DB)
 	orgRepo := gateway.NewOrganizationRepository(dbConn.DB)
+	userSettingRepo := gateway.NewUserSettingRepository(dbConn.DB)
 	groupRepo := gateway.NewGroupRepository(dbConn.DB)
 	spaceRepo := gateway.NewSpaceRepository(dbConn.DB)
 	eventHandlerLogger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-event-handler"))
@@ -192,6 +194,8 @@ func run() (int, error) {
 		internalAuthV1 := internalV1.Group("auth")
 		orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
 		authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
+		findUserSettingHandler := usersettinghandler.NewFindUserSettingHandler(userSettingRepo)
+		usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
 	}
 
 	authV1 := v1.Group("auth")

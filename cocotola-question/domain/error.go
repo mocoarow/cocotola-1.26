@@ -19,3 +19,12 @@ var ErrForbidden = errors.New("forbidden")
 
 // ErrInvalidArgument is returned when a required field is missing, empty, or invalid.
 var ErrInvalidArgument = errors.New("invalid argument")
+
+// ErrOwnedWorkbookLimitReached is returned when the user has reached their owned workbook limit.
+var ErrOwnedWorkbookLimitReached = errors.New("owned workbook limit reached")
+
+// ErrDuplicateOwnedWorkbook is returned when attempting to add a workbook that is already owned.
+var ErrDuplicateOwnedWorkbook = errors.New("duplicate owned workbook")
+
+// ErrConcurrentModification is returned when an optimistic lock fails due to concurrent updates.
+var ErrConcurrentModification = errors.New("concurrent modification")

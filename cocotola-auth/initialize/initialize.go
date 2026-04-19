@@ -19,9 +19,9 @@ import (
 	orghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization"
 	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 	userhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user"
+	usersettinghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
@@ -35,16 +35,6 @@ import (
 
 const eventBusBufferSize = 100
 
-// AuthorizationChecker checks if an action is allowed by RBAC policy.
-type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID domain.OrganizationID, operatorID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error)
-}
-
-// OrganizationFinder finds organizations by name.
-type OrganizationFinder interface {
-	FindByName(ctx context.Context, name string) (*domain.Organization, error)
-}
-
 // InitResult holds the results of auth module initialization for use by other modules.
 type InitResult struct {
 	// EventBusStart is the RunProcessFunc for the event bus.
@@ -53,10 +43,6 @@ type InitResult struct {
 	AuthMiddleware gin.HandlerFunc
 	// V1RouterGroup is the /api/v1 router group for registering additional routes.
 	V1RouterGroup gin.IRouter
-	// AuthzChecker is the RBAC authorization checker for use by other modules.
-	AuthzChecker AuthorizationChecker
-	// OrgFinder finds organizations by name for use by other modules.
-	OrgFinder OrganizationFinder
 	// Close releases resources held by the auth module.
 	Close func()
 }
@@ -163,9 +149,23 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 	authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
 
-	// group usecase + controller
+	// shared handlers
 	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
+	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
+	userSettingRepo := gateway.NewUserSettingRepository(db)
+	findUserSettingHandler := usersettinghandler.NewFindUserSettingHandler(userSettingRepo)
+
+	// internal auth routes (organization, authz, user-setting)
+	internalAuthV1 := internalV1.Group("auth")
+	orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
+	authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
+	usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
+
+	// external auth routes
 	authV1 := v1.Group("auth")
+
+	// group usecase + controller
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
 	grouphandler.InitGroupRouter(createGroupHandler, authV1, authMiddleware)
@@ -181,20 +181,16 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 
-	// organization lookup + controller
-	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
+	// organization lookup + controller (external)
 	orghandler.InitOrganizationRouter(findOrgHandler, authV1, authMiddleware)
 
-	// authz check + controller
-	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
+	// authz check + controller (external)
 	authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
 
 	return &InitResult{
 		EventBusStart:  eventBus.Start,
 		AuthMiddleware: authMiddleware,
 		V1RouterGroup:  v1,
-		AuthzChecker:   authzChecker,
-		OrgFinder:      orgRepo,
 		Close:          supabaseVerifier.Close,
 	}, nil
 }

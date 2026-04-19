@@ -5,7 +5,7 @@ create table user_setting (
 ,updated_at timestamp not null default current_timestamp
 ,created_by uuid not null
 ,updated_by uuid not null
-,max_workbooks int not null default 3
+,max_workbooks int not null
 ,primary key(app_user_id)
 ,foreign key(app_user_id) references app_user(id) on delete cascade
 );

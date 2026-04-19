@@ -27,3 +27,15 @@ type workbookDeleter interface {
 type authorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }
+
+type ownedWorkbookListFinder interface {
+	FindByOwnerID(ctx context.Context, ownerID string) (*domain.OwnedWorkbookList, error)
+}
+
+type ownedWorkbookListSaver interface {
+	Save(ctx context.Context, list *domain.OwnedWorkbookList) error
+}
+
+type maxWorkbooksFetcher interface {
+	FetchMaxWorkbooks(ctx context.Context, userID string) (int, error)
+}
