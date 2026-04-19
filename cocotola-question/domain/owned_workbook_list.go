@@ -3,14 +3,15 @@ package domain
 import (
 	"fmt"
 	"sort"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 )
 
 // OwnedWorkbookList is an aggregate that manages the set of workbook IDs
 // owned by a user, enforcing the "at most maxWorkbooks" invariant.
 type OwnedWorkbookList struct {
-	ownerID string
+	set     idset.Set[string, string]
 	version int
-	entries map[string]struct{}
 }
 
 // NewOwnedWorkbookList creates a validated OwnedWorkbookList.
@@ -18,14 +19,12 @@ func NewOwnedWorkbookList(ownerID string, workbookIDs []string) (*OwnedWorkbookL
 	if ownerID == "" {
 		return nil, fmt.Errorf("owned workbook list owner id is required: %w", ErrInvalidArgument)
 	}
-	m := make(map[string]struct{}, len(workbookIDs))
 	for _, id := range workbookIDs {
 		if id == "" {
 			return nil, fmt.Errorf("workbook id is required: %w", ErrInvalidArgument)
 		}
-		m[id] = struct{}{}
 	}
-	return &OwnedWorkbookList{ownerID: ownerID, entries: m}, nil
+	return &OwnedWorkbookList{set: idset.New[string, string](ownerID, workbookIDs)}, nil
 }
 
 // Add adds a workbook ID to the list. Returns ErrOwnedWorkbookLimitReached if
@@ -38,23 +37,14 @@ func (l *OwnedWorkbookList) Add(workbookID string, maxWorkbooks int) error {
 	if maxWorkbooks <= 0 {
 		return fmt.Errorf("max workbooks must be positive, got %d: %w", maxWorkbooks, ErrInvalidArgument)
 	}
-	if _, ok := l.entries[workbookID]; ok {
-		return ErrDuplicateOwnedWorkbook
-	}
-	if len(l.entries) >= maxWorkbooks {
-		return ErrOwnedWorkbookLimitReached
-	}
-	l.entries[workbookID] = struct{}{}
-	return nil
+	return l.set.AddWithLimit(workbookID, maxWorkbooks, ErrOwnedWorkbookLimitReached, ErrDuplicateOwnedWorkbook)
 }
 
 // Remove removes a workbook ID from the list.
-func (l *OwnedWorkbookList) Remove(workbookID string) {
-	delete(l.entries, workbookID)
-}
+func (l *OwnedWorkbookList) Remove(workbookID string) { l.set.Remove(workbookID) }
 
 // OwnerID returns the owner user ID.
-func (l *OwnedWorkbookList) OwnerID() string { return l.ownerID }
+func (l *OwnedWorkbookList) OwnerID() string { return l.set.OwnerID }
 
 // Version returns the persisted version (0 = new, not yet saved).
 func (l *OwnedWorkbookList) Version() int { return l.version }
@@ -66,19 +56,13 @@ func (l *OwnedWorkbookList) SetVersion(version int) {
 
 // Entries returns a sorted copy of the current workbook IDs as a slice.
 func (l *OwnedWorkbookList) Entries() []string {
-	result := make([]string, 0, len(l.entries))
-	for id := range l.entries {
-		result = append(result, id)
-	}
+	result := l.set.IDs()
 	sort.Strings(result)
 	return result
 }
 
 // Size returns the number of entries in the set.
-func (l *OwnedWorkbookList) Size() int { return len(l.entries) }
+func (l *OwnedWorkbookList) Size() int { return l.set.Size() }
 
 // Contains returns true if the given workbook ID exists in the set.
-func (l *OwnedWorkbookList) Contains(workbookID string) bool {
-	_, ok := l.entries[workbookID]
-	return ok
-}
+func (l *OwnedWorkbookList) Contains(workbookID string) bool { return l.set.Contains(workbookID) }

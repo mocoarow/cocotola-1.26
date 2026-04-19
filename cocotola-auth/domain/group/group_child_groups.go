@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 )
 
 // ChildGroups is an aggregate that manages the set of child group IDs belonging to a group.

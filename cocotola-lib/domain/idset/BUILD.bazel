@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "idset",
+    srcs = ["set.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "idset_test",
+    srcs = ["set_test.go"],
+    deps = [
+        ":idset",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

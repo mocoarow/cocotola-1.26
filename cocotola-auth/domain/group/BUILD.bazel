@@ -15,7 +15,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/domain",
-        "//cocotola-auth/domain/internal/idset",
+        "//cocotola-lib/domain/idset",
     ],
 )
 

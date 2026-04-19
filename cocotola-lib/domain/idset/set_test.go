@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 )
 
 func Test_New_shouldCreateEmptySet_whenNoIDs(t *testing.T) {

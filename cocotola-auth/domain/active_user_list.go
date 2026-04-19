@@ -3,7 +3,7 @@ package domain
 import (
 	"fmt"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 )
 
 // ActiveUserList is an aggregate that manages the set of active user IDs for an organization,
