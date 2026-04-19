@@ -31,7 +31,7 @@ func (q *GetWorkbookQuery) GetWorkbook(ctx context.Context, input *workbookservi
 
 	// Public workbooks are accessible to all
 	if !wb.Visibility().IsPublic() {
-		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceAny())
+		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceWorkbook(input.WorkbookID))
 		if err != nil {
 			return nil, fmt.Errorf("authorization check: %w", err)
 		}

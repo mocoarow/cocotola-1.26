@@ -37,7 +37,7 @@ func NewDeleteWorkbookCommand(
 
 // DeleteWorkbook deletes a workbook.
 func (c *DeleteWorkbookCommand) DeleteWorkbook(ctx context.Context, input *workbookservice.DeleteWorkbookInput) error {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteWorkbook(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(input.WorkbookID))
 	if err != nil {
 		return fmt.Errorf("authorization check: %w", err)
 	}

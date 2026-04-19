@@ -115,7 +115,7 @@ func run() (int, error) {
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
 	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
-	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, rbacRepo, eventHandlerLogger)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, spaceRepo, rbacRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer

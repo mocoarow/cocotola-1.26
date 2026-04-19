@@ -42,7 +42,7 @@ func NewCreateWorkbookCommand(
 
 // CreateWorkbook creates a new workbook.
 func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workbookservice.CreateWorkbookInput) (*workbookservice.CreateWorkbookOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(input.SpaceID))
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
@@ -108,6 +108,8 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organizationID, operatorID, workbookID string) error {
 	actions := []domain.Action{
 		domain.ActionViewWorkbook(),
+		domain.ActionUpdateWorkbook(),
+		domain.ActionDeleteWorkbook(),
 		domain.ActionCreateQuestion(),
 		domain.ActionUpdateQuestion(),
 		domain.ActionDeleteQuestion(),

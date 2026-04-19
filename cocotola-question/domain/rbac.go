@@ -72,6 +72,11 @@ func (r Resource) Value() string { return r.value }
 // ResourceAny returns a wildcard resource matching all resources.
 func ResourceAny() Resource { return Resource{value: "*"} }
 
+// ResourceSpace returns a resource representing a specific space.
+func ResourceSpace(spaceID string) Resource {
+	return Resource{value: "space:" + spaceID}
+}
+
 // ResourceWorkbook returns a resource representing a specific workbook.
 func ResourceWorkbook(workbookID string) Resource {
 	return Resource{value: "workbook:" + workbookID}

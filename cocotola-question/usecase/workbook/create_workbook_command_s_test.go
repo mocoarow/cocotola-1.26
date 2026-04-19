@@ -34,7 +34,7 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(true, nil)
 
 	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
 	listFinder := newMockownedWorkbookListFinder(t)
@@ -52,6 +52,8 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 	policyAdder := newMockpolicyAdder(t)
 	wbResource := domain.ResourceWorkbook(fixtureWorkbookID)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow).Return(nil)
@@ -73,7 +75,7 @@ func Test_CreateWorkbookCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(false, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(false, nil)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker, nil)
 	input := newCreateWorkbookInput(t)
@@ -92,7 +94,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	// given
 	authChecker := newMockauthorizationChecker(t)
 	authErr := errors.New("auth unavailable")
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(false, authErr)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(false, authErr)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, authChecker, nil)
 	input := newCreateWorkbookInput(t)
@@ -110,7 +112,7 @@ func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testi
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(true, nil)
 
 	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, []string{"wb-a", "wb-b", "wb-c"})
 	listFinder := newMockownedWorkbookListFinder(t)
@@ -135,7 +137,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testin
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(true, nil)
 
 	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
 	listFinder := newMockownedWorkbookListFinder(t)
@@ -168,7 +170,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 
 	// given
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceAny()).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(fixtureSpaceID)).Return(true, nil)
 
 	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
 	listFinder := newMockownedWorkbookListFinder(t)
@@ -186,6 +188,8 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	policyAdder := newMockpolicyAdder(t)
 	wbResource := domain.ResourceWorkbook(fixtureWorkbookID)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource, domain.EffectAllow).Return(nil)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow).Return(nil)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow).Return(nil)
