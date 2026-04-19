@@ -1,13 +1,13 @@
 // Package idset provides a shared set data structure for managing IDs
-// belonging to an owner entity. It is internal to the domain package and its subpackages.
+// belonging to an owner entity.
 package idset
 
 // Set is a shared base type for aggregates that manage a set of IDs
 // belonging to an owner entity. It is NOT safe for concurrent access;
 // callers must ensure that a Set is only accessed from a single goroutine.
 //
-// The type parameter O is the owner ID type (e.g. OrganizationID, int).
-// The type parameter M is the member ID type (e.g. AppUserID, int).
+// The type parameter O is the owner ID type (e.g. OrganizationID, string).
+// The type parameter M is the member ID type (e.g. AppUserID, string).
 type Set[O any, M comparable] struct {
 	// OwnerID is the ID of the entity that owns this set.
 	OwnerID O

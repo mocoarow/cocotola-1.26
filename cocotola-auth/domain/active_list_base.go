@@ -1,6 +1,6 @@
 package domain
 
-import "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+import "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 
 // activeListBase provides common methods for active user/group list aggregates.
 // O is the owner ID type (OrganizationID), M is the member ID type.

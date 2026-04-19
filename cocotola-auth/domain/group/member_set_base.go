@@ -2,7 +2,7 @@ package group
 
 import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/internal/idset"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 )
 
 // memberSetBase provides common methods for group member set aggregates (users and child groups).
