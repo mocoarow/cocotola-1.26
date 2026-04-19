@@ -99,7 +99,12 @@ describe("createWorkbook", () => {
       ok: true,
       json: () => Promise.resolve(workbook),
     });
-    const data = { spaceId: "sp-1", title: "New Workbook", description: "desc", visibility: "private" as const };
+    const data = {
+      spaceId: "sp-1",
+      title: "New Workbook",
+      description: "desc",
+      visibility: "private" as const,
+    };
 
     // when
     const result = await createWorkbook("test-token", data);
@@ -119,7 +124,12 @@ describe("createWorkbook", () => {
   it("should throw Response when API returns error", async () => {
     // given
     fetchMock.mockResolvedValue({ ok: false, status: 400 });
-    const data = { spaceId: "sp-1", title: "Test", description: "", visibility: "private" as const };
+    const data = {
+      spaceId: "sp-1",
+      title: "Test",
+      description: "",
+      visibility: "private" as const,
+    };
 
     // when / then
     await expect(createWorkbook("token", data)).rejects.toBeInstanceOf(Response);

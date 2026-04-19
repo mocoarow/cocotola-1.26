@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -13,7 +13,12 @@ import {
   SheetTrigger,
 } from "~/components/ui/sheet";
 import { findPrivateSpace } from "~/lib/api/space.server";
-import { createWorkbook, deleteWorkbook, listWorkbooks, type Workbook } from "~/lib/api/workbook.server";
+import {
+  createWorkbook,
+  deleteWorkbook,
+  listWorkbooks,
+  type Workbook,
+} from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.index";
 
@@ -41,7 +46,8 @@ export async function action({ request }: Route.ActionArgs) {
     }
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
-    const visibility = formData.get("visibility") === "public" ? "public" as const : "private" as const;
+    const visibility =
+      formData.get("visibility") === "public" ? ("public" as const) : ("private" as const);
 
     if (!title) {
       return { ok: false, error: "Title is required" };
@@ -180,13 +186,24 @@ function CreateWorkbookButton() {
             <label htmlFor="title" className="text-sm font-medium">
               Title <span className="text-destructive">*</span>
             </label>
-            <Input id="title" name="title" required maxLength={200} placeholder="e.g. English Vocabulary" />
+            <Input
+              id="title"
+              name="title"
+              required
+              maxLength={200}
+              placeholder="e.g. English Vocabulary"
+            />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="description" className="text-sm font-medium">
               Description
             </label>
-            <Input id="description" name="description" maxLength={1000} placeholder="Optional description" />
+            <Input
+              id="description"
+              name="description"
+              maxLength={1000}
+              placeholder="Optional description"
+            />
           </div>
           <fieldset className="space-y-1.5">
             <legend className="text-sm font-medium">Visibility</legend>

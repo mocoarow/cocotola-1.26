@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
@@ -19,12 +20,10 @@ func NewOwnedWorkbookList(ownerID string, workbookIDs []string) (*OwnedWorkbookL
 	if ownerID == "" {
 		return nil, fmt.Errorf("owned workbook list owner id is required: %w", ErrInvalidArgument)
 	}
-	for _, id := range workbookIDs {
-		if id == "" {
-			return nil, fmt.Errorf("workbook id is required: %w", ErrInvalidArgument)
-		}
+	if slices.Contains(workbookIDs, "") {
+		return nil, fmt.Errorf("workbook id is required: %w", ErrInvalidArgument)
 	}
-	return &OwnedWorkbookList{set: idset.New[string, string](ownerID, workbookIDs)}, nil
+	return &OwnedWorkbookList{set: idset.New(ownerID, workbookIDs), version: 0}, nil
 }
 
 // Add adds a workbook ID to the list. Returns ErrOwnedWorkbookLimitReached if
@@ -37,7 +36,10 @@ func (l *OwnedWorkbookList) Add(workbookID string, maxWorkbooks int) error {
 	if maxWorkbooks <= 0 {
 		return fmt.Errorf("max workbooks must be positive, got %d: %w", maxWorkbooks, ErrInvalidArgument)
 	}
-	return l.set.AddWithLimit(workbookID, maxWorkbooks, ErrOwnedWorkbookLimitReached, ErrDuplicateOwnedWorkbook)
+	if err := l.set.AddWithLimit(workbookID, maxWorkbooks, ErrOwnedWorkbookLimitReached, ErrDuplicateOwnedWorkbook); err != nil {
+		return fmt.Errorf("add workbook to owned list: %w", err)
+	}
+	return nil
 }
 
 // Remove removes a workbook ID from the list.

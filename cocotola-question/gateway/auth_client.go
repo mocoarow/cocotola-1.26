@@ -18,8 +18,12 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// maxResponseBodySize limits the size of HTTP response bodies read from auth service.
-const maxResponseBodySize = 1 << 20 // 1 MB
+const (
+	// maxResponseBodySize limits the size of HTTP response bodies read from auth service.
+	maxResponseBodySize = 1 << 20 // 1 MB
+	// maxErrorBodySize limits the size of error response bodies read from auth service.
+	maxErrorBodySize = 512
+)
 
 // authServiceClient is a base HTTP client for calling cocotola-auth internal APIs.
 type authServiceClient struct {
@@ -63,7 +67,7 @@ func (c *authServiceClient) request(ctx context.Context, method string, reqURL s
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
 		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
 	}
 
@@ -208,6 +212,70 @@ func NewAuthServiceAuthorizationChecker(authBaseURL string, apiKey string, httpC
 	return &AuthServiceAuthorizationChecker{
 		authServiceClient: newAuthServiceClient(authBaseURL, apiKey, httpClient, "AuthzChecker"),
 	}
+}
+
+// AuthServicePolicyAdder calls cocotola-auth's internal API to add RBAC policies.
+type AuthServicePolicyAdder struct {
+	authServiceClient
+}
+
+// NewAuthServicePolicyAdder creates a new AuthServicePolicyAdder.
+func NewAuthServicePolicyAdder(authBaseURL string, apiKey string, httpClient *http.Client) *AuthServicePolicyAdder {
+	return &AuthServicePolicyAdder{
+		authServiceClient: newAuthServiceClient(authBaseURL, apiKey, httpClient, "PolicyAdder"),
+	}
+}
+
+// addPolicyRequestBody is the JSON body for POST /auth/authz/policy.
+type addPolicyRequestBody struct {
+	Org      string `json:"org"`
+	User     string `json:"user"`
+	Action   string `json:"action"`
+	Resource string `json:"resource"`
+	Effect   string `json:"effect"`
+}
+
+// AddPolicyForUser adds a per-user RBAC policy via cocotola-auth's internal API.
+func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error {
+	reqURL := c.authBaseURL + "/api/v1/internal/auth/authz/policy"
+
+	body := addPolicyRequestBody{
+		Org:      organizationID,
+		User:     userID,
+		Action:   action.Value(),
+		Resource: resource.Value(),
+		Effect:   effect,
+	}
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("marshal add policy request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return fmt.Errorf("create request: %w", err)
+	}
+	if c.apiKey != "" {
+		req.Header.Set("X-Service-Api-Key", c.apiKey)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("call auth service: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
+		}
+	}()
+
+	if resp.StatusCode != http.StatusNoContent {
+		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
+		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	return nil
 }
 
 // authzCheckRequestBody is the JSON body for POST /auth/authz/check.

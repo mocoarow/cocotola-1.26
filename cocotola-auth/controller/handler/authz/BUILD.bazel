@@ -3,7 +3,10 @@ load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "authz",
-    srcs = ["check_handler.go"],
+    srcs = [
+        "add_policy_handler.go",
+        "check_handler.go",
+    ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz",
     visibility = ["//visibility:public"],
     deps = [
@@ -19,6 +22,7 @@ go_library(
 smart_go_test(
     name = "authz_test",
     srcs = [
+        "add_policy_handler_s_test.go",
         "authz_s_test.go",
         "check_handler_s_test.go",
         "helper_test.go",

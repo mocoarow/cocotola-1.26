@@ -158,6 +158,16 @@ type Effect struct {
 	value string
 }
 
+// NewEffect creates an Effect from a string value with validation.
+func NewEffect(value string) (Effect, error) {
+	switch value {
+	case "allow", "deny":
+		return Effect{value: value}, nil
+	default:
+		return Effect{}, fmt.Errorf("effect must be 'allow' or 'deny': %w", domain.ErrInvalidArgument)
+	}
+}
+
 // Value returns the string representation.
 func (e Effect) Value() string { return e.value }
 

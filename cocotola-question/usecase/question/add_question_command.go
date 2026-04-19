@@ -13,35 +13,24 @@ import (
 // AddQuestionCommand handles adding a question to a workbook.
 type AddQuestionCommand struct {
 	questionRepo questionAdder
-	workbookRepo workbookFinder
 	authChecker  authorizationChecker
 }
 
 // NewAddQuestionCommand returns a new AddQuestionCommand.
-func NewAddQuestionCommand(questionRepo questionAdder, workbookRepo workbookFinder, authChecker authorizationChecker) *AddQuestionCommand {
+func NewAddQuestionCommand(questionRepo questionAdder, authChecker authorizationChecker) *AddQuestionCommand {
 	return &AddQuestionCommand{
 		questionRepo: questionRepo,
-		workbookRepo: workbookRepo,
 		authChecker:  authChecker,
 	}
 }
 
 // AddQuestion adds a question to a workbook.
 func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionservice.AddQuestionInput) (*questionservice.AddQuestionOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateQuestion(), domain.ResourceAny())
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateQuestion(), domain.ResourceWorkbook(input.WorkbookID))
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
 	if !allowed {
-		return nil, domain.ErrForbidden
-	}
-
-	wb, err := c.workbookRepo.FindByID(ctx, input.WorkbookID)
-	if err != nil {
-		return nil, fmt.Errorf("find workbook: %w", err)
-	}
-
-	if wb.OwnerID() != input.OperatorID {
 		return nil, domain.ErrForbidden
 	}
 

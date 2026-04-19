@@ -13,11 +13,12 @@ import (
 
 // CreateWorkbookCommand handles workbook creation.
 type CreateWorkbookCommand struct {
-	workbookRepo     workbookCreator
-	ownedListFinder  ownedWorkbookListFinder
-	ownedListSaver   ownedWorkbookListSaver
-	maxWbFetcher     maxWorkbooksFetcher
-	authChecker      authorizationChecker
+	workbookRepo    workbookCreator
+	ownedListFinder ownedWorkbookListFinder
+	ownedListSaver  ownedWorkbookListSaver
+	maxWbFetcher    maxWorkbooksFetcher
+	authChecker     authorizationChecker
+	policyAdder     policyAdder
 }
 
 // NewCreateWorkbookCommand returns a new CreateWorkbookCommand.
@@ -27,6 +28,7 @@ func NewCreateWorkbookCommand(
 	ownedListSaver ownedWorkbookListSaver,
 	maxWbFetcher maxWorkbooksFetcher,
 	authChecker authorizationChecker,
+	policyAdder policyAdder,
 ) *CreateWorkbookCommand {
 	return &CreateWorkbookCommand{
 		workbookRepo:    workbookRepo,
@@ -34,6 +36,7 @@ func NewCreateWorkbookCommand(
 		ownedListSaver:  ownedListSaver,
 		maxWbFetcher:    maxWbFetcher,
 		authChecker:     authChecker,
+		policyAdder:     policyAdder,
 	}
 }
 
@@ -72,6 +75,10 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("create workbook: %w", err)
 	}
 
+	if err := c.grantWorkbookPolicies(ctx, input.OrganizationID, input.OperatorID, workbookID); err != nil {
+		return nil, err
+	}
+
 	// Add to owned list and persist (optimistic lock via version).
 	// NOTE: eventual consistency -- if Save fails, the workbook exists but is not tracked
 	// in the owned list. This is by design: OwnedWorkbookList and Workbook are separate
@@ -95,4 +102,21 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("create workbook output: %w", err)
 	}
 	return output, nil
+}
+
+// grantWorkbookPolicies grants workbook-scoped permissions via RBAC.
+func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organizationID, operatorID, workbookID string) error {
+	actions := []domain.Action{
+		domain.ActionViewWorkbook(),
+		domain.ActionCreateQuestion(),
+		domain.ActionUpdateQuestion(),
+		domain.ActionDeleteQuestion(),
+	}
+	resource := domain.ResourceWorkbook(workbookID)
+	for _, action := range actions {
+		if err := c.policyAdder.AddPolicyForUser(ctx, organizationID, operatorID, action, resource, domain.EffectAllow); err != nil {
+			return fmt.Errorf("add %s policy for workbook %s: %w", action.Value(), workbookID, err)
+		}
+	}
+	return nil
 }

@@ -20,10 +20,10 @@ func NewCommand(
 	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
-		AddQuestionCommand:    NewAddQuestionCommand(questionAdderRepo, workbookFinderRepo, authChecker),
+		AddQuestionCommand:    NewAddQuestionCommand(questionAdderRepo, authChecker),
 		GetQuestionQuery:      NewGetQuestionQuery(questionFinderRepo, workbookFinderRepo, authChecker),
 		ListQuestionsQuery:    NewListQuestionsQuery(questionFinderRepo, workbookFinderRepo, authChecker),
-		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionUpdaterRepo, workbookFinderRepo, authChecker),
-		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, workbookFinderRepo, authChecker),
+		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionUpdaterRepo, authChecker),
+		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, authChecker),
 	}
 }

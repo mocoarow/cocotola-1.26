@@ -36,6 +36,9 @@ type MaxWorkbooksFetcher interface {
 	FetchMaxWorkbooks(ctx context.Context, userID string) (int, error)
 }
 
+// PolicyAdder adds per-user RBAC policies via the auth service.
+type PolicyAdder = domain.PolicyAdder
+
 // Initialize sets up the cocotola-question module: gateway, usecase, and controller layers.
 // It registers all question-related routes under the given parent router group and returns
 // a cleanup function to close the Firestore client.
@@ -47,6 +50,7 @@ func Initialize(
 	authzChecker AuthorizationChecker,
 	orgResolver OrganizationIDResolver,
 	maxWbFetcher MaxWorkbooksFetcher,
+	policyAdder PolicyAdder,
 ) (func(), error) {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "cocotola-question-init"))
 
@@ -66,7 +70,7 @@ func Initialize(
 	orgResolverMiddleware := newOrganizationResolverMiddleware(orgResolver, logger)
 
 	// usecase layer
-	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, authzChecker)
+	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
 

@@ -28,6 +28,10 @@ type authorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }
 
+type policyAdder interface {
+	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error
+}
+
 type ownedWorkbookListFinder interface {
 	FindByOwnerID(ctx context.Context, ownerID string) (*domain.OwnedWorkbookList, error)
 }
