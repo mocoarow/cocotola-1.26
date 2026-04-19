@@ -1,4 +1,4 @@
-CREATE TABLE `healthcheck` (
+CREATE TABLE `healthcheck2` (
  `id` INT NOT NULL AUTO_INCREMENT
 ,PRIMARY KEY (`id`)
 );
