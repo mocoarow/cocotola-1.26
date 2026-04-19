@@ -14,6 +14,7 @@ vi.mock("~/lib/api/space.server", () => ({
 vi.mock("~/lib/api/workbook.server", () => ({
   listWorkbooks: vi.fn(),
   deleteWorkbook: vi.fn(),
+  createWorkbook: vi.fn(),
 }));
 
 vi.mock("react-router", async (importOriginal) => {
@@ -143,5 +144,16 @@ describe("WorkbooksIndex", () => {
     expect(
       screen.getByText("Select a workbook to study or manage its problems."),
     ).toBeInTheDocument();
+  });
+
+  it("should render New Workbook button", () => {
+    // given
+    mockedUseLoaderData.mockReturnValue({ workbooks: [], spaceId: null });
+
+    // when
+    render(<WorkbooksIndex />);
+
+    // then
+    expect(screen.getByText("New Workbook")).toBeInTheDocument();
   });
 });

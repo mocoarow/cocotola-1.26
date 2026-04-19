@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteWorkbook, listWorkbooks } from "./workbook.server";
+import { createWorkbook, deleteWorkbook, listWorkbooks } from "./workbook.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -79,6 +79,50 @@ describe("listWorkbooks", () => {
 
     // when / then
     await expect(listWorkbooks("token", "sp-1")).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("createWorkbook", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should send POST request with correct body and headers", async () => {
+    // given
+    const workbook = { workbookId: "wb-new", spaceId: "sp-1", title: "New Workbook" };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(workbook),
+    });
+    const data = { spaceId: "sp-1", title: "New Workbook", description: "desc", visibility: "private" as const };
+
+    // when
+    const result = await createWorkbook("test-token", data);
+
+    // then
+    expect(result).toEqual(workbook);
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8090/api/v1/workbook", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 400 });
+    const data = { spaceId: "sp-1", title: "Test", description: "", visibility: "private" as const };
+
+    // when / then
+    await expect(createWorkbook("token", data)).rejects.toBeInstanceOf(Response);
   });
 });
 

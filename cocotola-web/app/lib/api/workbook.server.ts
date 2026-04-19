@@ -38,6 +38,35 @@ export async function listWorkbooks(accessToken: string, spaceId: string): Promi
   return workbooks;
 }
 
+export async function createWorkbook(
+  accessToken: string,
+  data: { spaceId: string; title: string; description: string; visibility: "private" | "public" },
+): Promise<Workbook> {
+  console.info(`[workbook] createWorkbook called: spaceId=${data.spaceId}, title=${data.title}`);
+
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook`;
+  console.info(`[workbook] creating workbook: url=${url}`);
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    console.error(`[workbook] createWorkbook failed: status=${response.status}, url=${url}`);
+    throw new Response("Failed to create workbook", { status: response.status });
+  }
+
+  const workbook = (await response.json()) as Workbook;
+  console.info(`[workbook] createWorkbook succeeded: workbookId=${workbook.workbookId}`);
+  return workbook;
+}
+
 export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
   console.info(`[workbook] deleteWorkbook called: workbookId=${workbookId}`);
 

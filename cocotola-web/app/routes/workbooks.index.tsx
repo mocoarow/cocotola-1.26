@@ -1,8 +1,19 @@
-import { BookOpenIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { useState } from "react";
+import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "~/components/ui/sheet";
 import { findPrivateSpace } from "~/lib/api/space.server";
-import { deleteWorkbook, listWorkbooks, type Workbook } from "~/lib/api/workbook.server";
+import { createWorkbook, deleteWorkbook, listWorkbooks, type Workbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.index";
 
@@ -22,6 +33,33 @@ export async function action({ request }: Route.ActionArgs) {
   const { accessToken } = await requireAuth(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  if (intent === "create") {
+    const privateSpace = await findPrivateSpace(accessToken);
+    if (!privateSpace) {
+      throw new Response("No private space found", { status: 400 });
+    }
+    const title = String(formData.get("title") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const visibility = formData.get("visibility") === "public" ? "public" as const : "private" as const;
+
+    if (!title) {
+      return { ok: false, error: "Title is required" };
+    }
+    if (title.length > 200) {
+      return { ok: false, error: "Title must be 200 characters or less" };
+    }
+    if (description.length > 1000) {
+      return { ok: false, error: "Description must be 1000 characters or less" };
+    }
+
+    await createWorkbook(accessToken, {
+      spaceId: privateSpace.spaceId,
+      title,
+      description,
+      visibility,
+    });
+  }
 
   if (intent === "delete") {
     const workbookId = formData.get("workbookId");
@@ -110,16 +148,86 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
   );
 }
 
+function CreateWorkbookButton() {
+  const fetcher = useFetcher();
+  const [open, setOpen] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  const isSubmitting = fetcher.state !== "idle";
+
+  if (fetcher.data?.ok && open) {
+    setOpen(false);
+    setFormKey((k) => k + 1);
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        render={
+          <Button size="sm">
+            <PlusIcon data-icon="inline-start" className="size-4" />
+            <span>New Workbook</span>
+          </Button>
+        }
+      />
+      <SheetContent side="right">
+        <SheetHeader>
+          <SheetTitle>Create Workbook</SheetTitle>
+          <SheetDescription>Add a new workbook to organize your problems.</SheetDescription>
+        </SheetHeader>
+        <fetcher.Form key={formKey} method="post" className="flex flex-1 flex-col gap-4 px-4">
+          <input type="hidden" name="intent" value="create" />
+          <div className="space-y-1.5">
+            <label htmlFor="title" className="text-sm font-medium">
+              Title <span className="text-destructive">*</span>
+            </label>
+            <Input id="title" name="title" required maxLength={200} placeholder="e.g. English Vocabulary" />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="description" className="text-sm font-medium">
+              Description
+            </label>
+            <Input id="description" name="description" maxLength={1000} placeholder="Optional description" />
+          </div>
+          <fieldset className="space-y-1.5">
+            <legend className="text-sm font-medium">Visibility</legend>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="radio" name="visibility" value="private" defaultChecked />
+                Private
+              </label>
+              <label className="flex items-center gap-1.5 text-sm">
+                <input type="radio" name="visibility" value="public" />
+                Public
+              </label>
+            </div>
+          </fieldset>
+          {fetcher.data && !fetcher.data.ok && "error" in fetcher.data && (
+            <p className="text-sm text-destructive">{fetcher.data.error}</p>
+          )}
+          <SheetFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create"}
+            </Button>
+          </SheetFooter>
+        </fetcher.Form>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 export default function WorkbooksIndex() {
   const { workbooks } = useLoaderData<typeof loader>();
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">My Workbooks</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Select a workbook to study or manage its problems.
-        </p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My Workbooks</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Select a workbook to study or manage its problems.
+          </p>
+        </div>
+        <CreateWorkbookButton />
       </div>
 
       {workbooks.length === 0 ? (
