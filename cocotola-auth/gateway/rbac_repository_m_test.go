@@ -218,6 +218,54 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	}
 }
 
+func randSpaceID(t *testing.T) domain.SpaceID {
+	t.Helper()
+	id, err := domain.NewSpaceIDV7()
+	require.NoError(t, err)
+	return id
+}
+
+func Test_RBACRepository_AddPolicyForUser_shouldDenyCreateWorkbook_whenTargetIsOtherUsersPrivateSpace(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+
+	orgID := randOrgID(t)
+	aliceID := randAppUserID(t)
+	bobID := randAppUserID(t)
+	aliceSpaceID := randSpaceID(t)
+	bobSpaceID := randSpaceID(t)
+
+	// Simulate PrivateSpaceHandler: each user gets create_workbook scoped to their own space
+	require.NoError(t, rbacRepo.AddPolicyForUser(ctx, orgID, aliceID, domainrbac.ActionCreateWorkbook(), domainrbac.ResourceSpace(aliceSpaceID), domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicyForUser(ctx, orgID, bobID, domainrbac.ActionCreateWorkbook(), domainrbac.ResourceSpace(bobSpaceID), domainrbac.EffectAllow()))
+
+	tests := []struct {
+		name     string
+		userID   domain.AppUserID
+		resource domainrbac.Resource
+		want     bool
+	}{
+		{name: "alice_own_space", userID: aliceID, resource: domainrbac.ResourceSpace(aliceSpaceID), want: true},
+		{name: "alice_bob_space", userID: aliceID, resource: domainrbac.ResourceSpace(bobSpaceID), want: false},
+		{name: "bob_own_space", userID: bobID, resource: domainrbac.ResourceSpace(bobSpaceID), want: true},
+		{name: "bob_alice_space", userID: bobID, resource: domainrbac.ResourceSpace(aliceSpaceID), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// when
+			ok, err := rbacRepo.Enforce(orgID, tt.userID, domainrbac.ActionCreateWorkbook(), tt.resource)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, ok)
+		})
+	}
+}
+
 func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnTrue_whenUserHasPermission(t *testing.T) {
 	t.Parallel()
 	// given

@@ -27,7 +27,11 @@ func NewUpdateWorkbookCommand(workbookFinder workbookFinder, workbookUpdater wor
 
 // UpdateWorkbook updates an existing workbook.
 func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workbookservice.UpdateWorkbookInput) (*workbookservice.UpdateWorkbookOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionUpdateWorkbook(), domain.ResourceWorkbook(input.WorkbookID))
+	resource, err := domain.ResourceWorkbook(input.WorkbookID)
+	if err != nil {
+		return nil, fmt.Errorf("resource workbook: %w", err)
+	}
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionUpdateWorkbook(), resource)
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

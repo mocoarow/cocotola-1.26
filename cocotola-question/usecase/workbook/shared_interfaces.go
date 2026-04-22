@@ -29,7 +29,7 @@ type authorizationChecker interface {
 }
 
 type policyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error
+	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect) error
 }
 
 type ownedWorkbookListFinder interface {

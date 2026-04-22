@@ -605,7 +605,7 @@ func (_m *mockpolicyAdder) EXPECT() *mockpolicyAdder_Expecter {
 }
 
 // AddPolicyForUser provides a mock function for the type mockpolicyAdder
-func (_mock *mockpolicyAdder) AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error {
+func (_mock *mockpolicyAdder) AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect) error {
 	ret := _mock.Called(ctx, organizationID, userID, action, resource, effect)
 
 	if len(ret) == 0 {
@@ -613,7 +613,7 @@ func (_mock *mockpolicyAdder) AddPolicyForUser(ctx context.Context, organization
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, domain.Action, domain.Resource, string) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, domain.Action, domain.Resource, domain.Effect) error); ok {
 		r0 = returnFunc(ctx, organizationID, userID, action, resource, effect)
 	} else {
 		r0 = ret.Error(0)
@@ -632,12 +632,12 @@ type mockpolicyAdder_AddPolicyForUser_Call struct {
 //   - userID string
 //   - action domain.Action
 //   - resource domain.Resource
-//   - effect string
+//   - effect domain.Effect
 func (_e *mockpolicyAdder_Expecter) AddPolicyForUser(ctx interface{}, organizationID interface{}, userID interface{}, action interface{}, resource interface{}, effect interface{}) *mockpolicyAdder_AddPolicyForUser_Call {
 	return &mockpolicyAdder_AddPolicyForUser_Call{Call: _e.mock.On("AddPolicyForUser", ctx, organizationID, userID, action, resource, effect)}
 }
 
-func (_c *mockpolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string)) *mockpolicyAdder_AddPolicyForUser_Call {
+func (_c *mockpolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect)) *mockpolicyAdder_AddPolicyForUser_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -659,9 +659,9 @@ func (_c *mockpolicyAdder_AddPolicyForUser_Call) Run(run func(ctx context.Contex
 		if args[4] != nil {
 			arg4 = args[4].(domain.Resource)
 		}
-		var arg5 string
+		var arg5 domain.Effect
 		if args[5] != nil {
-			arg5 = args[5].(string)
+			arg5 = args[5].(domain.Effect)
 		}
 		run(
 			arg0,
@@ -680,7 +680,7 @@ func (_c *mockpolicyAdder_AddPolicyForUser_Call) Return(err error) *mockpolicyAd
 	return _c
 }
 
-func (_c *mockpolicyAdder_AddPolicyForUser_Call) RunAndReturn(run func(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error) *mockpolicyAdder_AddPolicyForUser_Call {
+func (_c *mockpolicyAdder_AddPolicyForUser_Call) RunAndReturn(run func(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect) error) *mockpolicyAdder_AddPolicyForUser_Call {
 	_c.Call.Return(run)
 	return _c
 }

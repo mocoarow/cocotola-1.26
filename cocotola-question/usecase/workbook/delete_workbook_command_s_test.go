@@ -31,8 +31,11 @@ func Test_DeleteWorkbookCommand_shouldDeleteWorkbook_whenOwnerDeletes(t *testing
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook(fixtureOperatorID), nil)
@@ -51,7 +54,7 @@ func Test_DeleteWorkbookCommand_shouldDeleteWorkbook_whenOwnerDeletes(t *testing
 	input := newDeleteWorkbookInput(t)
 
 	// when
-	err := cmd.DeleteWorkbook(ctx, input)
+	err = cmd.DeleteWorkbook(ctx, input)
 
 	// then
 	require.NoError(t, err)
@@ -62,14 +65,17 @@ func Test_DeleteWorkbookCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource).Return(false, nil)
 
 	cmd := workbookusecase.NewDeleteWorkbookCommand(nil, nil, nil, nil, authChecker)
 	input := newDeleteWorkbookInput(t)
 
 	// when
-	err := cmd.DeleteWorkbook(ctx, input)
+	err = cmd.DeleteWorkbook(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrForbidden)
@@ -80,8 +86,11 @@ func Test_DeleteWorkbookCommand_shouldReturnForbidden_whenNotOwner(t *testing.T)
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook("other-user"), nil)
@@ -90,7 +99,7 @@ func Test_DeleteWorkbookCommand_shouldReturnForbidden_whenNotOwner(t *testing.T)
 	input := newDeleteWorkbookInput(t)
 
 	// when
-	err := cmd.DeleteWorkbook(ctx, input)
+	err = cmd.DeleteWorkbook(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrForbidden)
@@ -101,8 +110,11 @@ func Test_DeleteWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource).Return(true, nil)
 
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixtureWorkbook(fixtureOperatorID), nil)
@@ -122,7 +134,7 @@ func Test_DeleteWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	input := newDeleteWorkbookInput(t)
 
 	// when
-	err := cmd.DeleteWorkbook(ctx, input)
+	err = cmd.DeleteWorkbook(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, saveErr)

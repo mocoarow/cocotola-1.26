@@ -236,7 +236,7 @@ type addPolicyRequestBody struct {
 }
 
 // AddPolicyForUser adds a per-user RBAC policy via cocotola-auth's internal API.
-func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect string) error {
+func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect) error {
 	reqURL := c.authBaseURL + "/api/v1/internal/auth/authz/policy"
 
 	body := addPolicyRequestBody{
@@ -244,7 +244,7 @@ func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizat
 		User:     userID,
 		Action:   action.Value(),
 		Resource: resource.Value(),
-		Effect:   effect,
+		Effect:   effect.Value(),
 	}
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {

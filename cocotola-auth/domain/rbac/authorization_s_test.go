@@ -101,20 +101,42 @@ func Test_ResourceWorkbook_shouldFormatWithWorkbookPrefix(t *testing.T) {
 	t.Parallel()
 
 	// when
-	resource := rbac.ResourceWorkbook("abc123")
+	resource, err := rbac.ResourceWorkbook("abc123")
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, "workbook:abc123", resource.Value())
+}
+
+func Test_ResourceWorkbook_shouldReturnError_whenIDIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// when
+	_, err := rbac.ResourceWorkbook("")
+
+	// then
+	assert.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ResourceQuestion_shouldFormatWithQuestionPrefix(t *testing.T) {
 	t.Parallel()
 
 	// when
-	resource := rbac.ResourceQuestion("q456")
+	resource, err := rbac.ResourceQuestion("q456")
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, "question:q456", resource.Value())
+}
+
+func Test_ResourceQuestion_shouldReturnError_whenIDIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// when
+	_, err := rbac.ResourceQuestion("")
+
+	// then
+	assert.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_ResourceAny_shouldReturnWildcard(t *testing.T) {

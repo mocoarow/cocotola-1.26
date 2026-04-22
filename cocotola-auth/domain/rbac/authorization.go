@@ -128,13 +128,21 @@ func ResourceSpace(spaceID domain.SpaceID) Resource {
 }
 
 // ResourceWorkbook returns a resource representing a specific workbook.
-func ResourceWorkbook(workbookID string) Resource {
-	return Resource{value: "workbook:" + workbookID}
+func ResourceWorkbook(workbookID string) (Resource, error) {
+	if workbookID == "" {
+		return Resource{}, fmt.Errorf("workbook id: %w", domain.ErrInvalidArgument)
+	}
+
+	return Resource{value: "workbook:" + workbookID}, nil
 }
 
 // ResourceQuestion returns a resource representing a specific question.
-func ResourceQuestion(questionID string) Resource {
-	return Resource{value: "question:" + questionID}
+func ResourceQuestion(questionID string) (Resource, error) {
+	if questionID == "" {
+		return Resource{}, fmt.Errorf("question id: %w", domain.ErrInvalidArgument)
+	}
+
+	return Resource{value: "question:" + questionID}, nil
 }
 
 // Group represents a named group for authorization.

@@ -25,8 +25,11 @@ func Test_DeleteQuestionCommand_shouldDeleteQuestion_whenAllowed(t *testing.T) {
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(true, nil)
 
 	questionDeleter := newMockquestionDeleter(t)
 	questionDeleter.On("Delete", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(nil)
@@ -35,7 +38,7 @@ func Test_DeleteQuestionCommand_shouldDeleteQuestion_whenAllowed(t *testing.T) {
 	input := newDeleteQuestionInput(t)
 
 	// when
-	err := cmd.DeleteQuestion(ctx, input)
+	err = cmd.DeleteQuestion(ctx, input)
 
 	// then
 	require.NoError(t, err)
@@ -46,14 +49,17 @@ func Test_DeleteQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, nil)
 
 	cmd := questionusecase.NewDeleteQuestionCommand(nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
-	err := cmd.DeleteQuestion(ctx, input)
+	err = cmd.DeleteQuestion(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrForbidden)
@@ -64,15 +70,18 @@ func Test_DeleteQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
 	authErr := errors.New("auth unavailable")
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, authErr)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, authErr)
 
 	cmd := questionusecase.NewDeleteQuestionCommand(nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
-	err := cmd.DeleteQuestion(ctx, input)
+	err = cmd.DeleteQuestion(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, authErr)
