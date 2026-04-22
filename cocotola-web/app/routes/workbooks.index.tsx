@@ -1,4 +1,4 @@
-import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { BookOpenIcon, ListIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -46,8 +46,6 @@ export async function action({ request }: Route.ActionArgs) {
     }
     const title = String(formData.get("title") ?? "").trim();
     const description = String(formData.get("description") ?? "").trim();
-    const visibility =
-      formData.get("visibility") === "public" ? ("public" as const) : ("private" as const);
 
     if (!title) {
       return { ok: false, error: "Title is required" };
@@ -63,7 +61,7 @@ export async function action({ request }: Route.ActionArgs) {
       spaceId: privateSpace.spaceId,
       title,
       description,
-      visibility,
+      visibility: "private",
     });
   }
 
@@ -128,8 +126,8 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           className="flex-1"
           render={<Link to={`/workbooks/${workbook.workbookId}`} />}
         >
-          <PencilIcon data-icon="inline-start" className="size-3.5" />
-          <span>Edit</span>
+          <ListIcon data-icon="inline-start" className="size-3.5" />
+          <span>Questions</span>
         </Button>
         <fetcher.Form method="post">
           <input type="hidden" name="intent" value="delete" />
@@ -205,19 +203,6 @@ function CreateWorkbookButton() {
               placeholder="Optional description"
             />
           </div>
-          <fieldset className="space-y-1.5">
-            <legend className="text-sm font-medium">Visibility</legend>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-1.5 text-sm">
-                <input type="radio" name="visibility" value="private" defaultChecked />
-                Private
-              </label>
-              <label className="flex items-center gap-1.5 text-sm">
-                <input type="radio" name="visibility" value="public" />
-                Public
-              </label>
-            </div>
-          </fieldset>
           {fetcher.data && !fetcher.data.ok && "error" in fetcher.data && (
             <p className="text-sm text-destructive">{fetcher.data.error}</p>
           )}

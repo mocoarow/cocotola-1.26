@@ -26,7 +26,11 @@ func NewAddQuestionCommand(questionRepo questionAdder, authChecker authorization
 
 // AddQuestion adds a question to a workbook.
 func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionservice.AddQuestionInput) (*questionservice.AddQuestionOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateQuestion(), domain.ResourceWorkbook(input.WorkbookID))
+	resource, err := domain.ResourceWorkbook(input.WorkbookID)
+	if err != nil {
+		return nil, fmt.Errorf("resource workbook: %w", err)
+	}
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateQuestion(), resource)
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

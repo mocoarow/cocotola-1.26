@@ -24,7 +24,11 @@ func NewDeleteQuestionCommand(questionDeleter questionDeleter, authChecker autho
 
 // DeleteQuestion deletes a question from a workbook.
 func (c *DeleteQuestionCommand) DeleteQuestion(ctx context.Context, input *questionservice.DeleteQuestionInput) error {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteQuestion(), domain.ResourceWorkbook(input.WorkbookID))
+	resource, err := domain.ResourceWorkbook(input.WorkbookID)
+	if err != nil {
+		return fmt.Errorf("resource workbook: %w", err)
+	}
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionDeleteQuestion(), resource)
 	if err != nil {
 		return fmt.Errorf("authorization check: %w", err)
 	}

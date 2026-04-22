@@ -40,9 +40,11 @@ func Test_AddPolicyHandler_shouldReturn204_whenPolicyAdded(t *testing.T) {
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domainrbac.ResourceWorkbook("wb-1")
+	require.NoError(t, err)
 	policyAdder := NewMockUserPolicyAdder(t)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrgID, fixtureAppUserID,
-		domainrbac.ActionCreateQuestion(), domainrbac.ResourceWorkbook("wb-1"), domainrbac.EffectAllow(),
+		domainrbac.ActionCreateQuestion(), wbResource, domainrbac.EffectAllow(),
 	).Return(nil)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
@@ -150,9 +152,11 @@ func Test_AddPolicyHandler_shouldReturn500_whenPolicyAdderFails(t *testing.T) {
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domainrbac.ResourceWorkbook("wb-1")
+	require.NoError(t, err)
 	policyAdder := NewMockUserPolicyAdder(t)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrgID, fixtureAppUserID,
-		domainrbac.ActionCreateQuestion(), domainrbac.ResourceWorkbook("wb-1"), domainrbac.EffectAllow(),
+		domainrbac.ActionCreateQuestion(), wbResource, domainrbac.EffectAllow(),
 	).Return(errors.New("db error"))
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()

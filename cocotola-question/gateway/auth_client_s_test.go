@@ -30,10 +30,11 @@ func Test_AuthServicePolicyAdder_shouldSendPolicyRequest_whenValid(t *testing.T)
 
 	adder := gateway.NewAuthServicePolicyAdder(server.URL, "test-api-key", server.Client())
 	action, _ := domain.NewAction("create_question")
-	resource := domain.ResourceWorkbook("wb-123")
+	resource, err := domain.ResourceWorkbook("wb-123")
+	require.NoError(t, err)
 
 	// when
-	err := adder.AddPolicyForUser(context.Background(), "org-1", "user-1", action, resource, "allow")
+	err = adder.AddPolicyForUser(context.Background(), "org-1", "user-1", action, resource, domain.EffectAllow())
 
 	// then
 	require.NoError(t, err)
@@ -55,10 +56,11 @@ func Test_AuthServicePolicyAdder_shouldReturnError_whenServerReturnsError(t *tes
 
 	adder := gateway.NewAuthServicePolicyAdder(server.URL, "key", server.Client())
 	action, _ := domain.NewAction("create_question")
-	resource := domain.ResourceWorkbook("wb-123")
+	resource, err := domain.ResourceWorkbook("wb-123")
+	require.NoError(t, err)
 
 	// when
-	err := adder.AddPolicyForUser(context.Background(), "org-1", "user-1", action, resource, "allow")
+	err = adder.AddPolicyForUser(context.Background(), "org-1", "user-1", action, resource, domain.EffectAllow())
 
 	// then
 	require.ErrorContains(t, err, "status 500")

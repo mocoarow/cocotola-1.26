@@ -33,8 +33,11 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(true, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(true, nil)
 
 	questionAdder := newMockquestionAdder(t)
 	questionAdder.On("Add", mock.Anything, fixtureWorkbookID, "word_fill", "What is Go?", []string{"lang:en"}, 0).Return(fixtureQuestionID, nil)
@@ -57,14 +60,17 @@ func Test_AddQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) 
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, nil)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, nil)
 
 	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
-	_, err := cmd.AddQuestion(ctx, input)
+	_, err = cmd.AddQuestion(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrForbidden)
@@ -75,15 +81,18 @@ func Test_AddQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 	ctx := context.Background()
 
 	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
 	authChecker := newMockauthorizationChecker(t)
 	authErr := errors.New("auth unavailable")
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), domain.ResourceWorkbook(fixtureWorkbookID)).Return(false, authErr)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, authErr)
 
 	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
-	_, err := cmd.AddQuestion(ctx, input)
+	_, err = cmd.AddQuestion(ctx, input)
 
 	// then
 	require.ErrorIs(t, err, authErr)

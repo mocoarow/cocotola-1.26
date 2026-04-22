@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 )
 
 // ErrEmptyActionValue is returned when an empty action value is provided.
@@ -10,6 +11,9 @@ var ErrEmptyActionValue = errors.New("action value must not be empty")
 
 // ErrEmptyResourceValue is returned when an empty resource value is provided.
 var ErrEmptyResourceValue = errors.New("resource value must not be empty")
+
+// ErrInvalidEffect is returned when an invalid effect value is provided.
+var ErrInvalidEffect = errors.New("effect must be 'allow' or 'deny'")
 
 // Action represents an RBAC operation type for authorization.
 type Action struct {
@@ -73,13 +77,21 @@ func (r Resource) Value() string { return r.value }
 func ResourceAny() Resource { return Resource{value: "*"} }
 
 // ResourceSpace returns a resource representing a specific space.
-func ResourceSpace(spaceID string) Resource {
-	return Resource{value: "space:" + spaceID}
+func ResourceSpace(spaceID string) (Resource, error) {
+	if spaceID == "" {
+		return Resource{}, fmt.Errorf("space id: %w", ErrEmptyResourceValue)
+	}
+
+	return Resource{value: "space:" + spaceID}, nil
 }
 
 // ResourceWorkbook returns a resource representing a specific workbook.
-func ResourceWorkbook(workbookID string) Resource {
-	return Resource{value: "workbook:" + workbookID}
+func ResourceWorkbook(workbookID string) (Resource, error) {
+	if workbookID == "" {
+		return Resource{}, fmt.Errorf("workbook id: %w", ErrEmptyResourceValue)
+	}
+
+	return Resource{value: "workbook:" + workbookID}, nil
 }
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
@@ -88,12 +100,30 @@ type AuthorizationChecker interface {
 }
 
 // Effect represents a policy effect (allow or deny).
-const (
-	EffectAllow = "allow"
-	EffectDeny  = "deny"
-)
+type Effect struct {
+	value string
+}
+
+// Value returns the string representation.
+func (e Effect) Value() string { return e.value }
+
+// NewEffect creates an Effect from a string value with validation.
+func NewEffect(value string) (Effect, error) {
+	switch value {
+	case "allow", "deny":
+		return Effect{value: value}, nil
+	default:
+		return Effect{}, ErrInvalidEffect
+	}
+}
+
+// EffectAllow returns the allow effect.
+func EffectAllow() Effect { return Effect{value: "allow"} }
+
+// EffectDeny returns the deny effect.
+func EffectDeny() Effect { return Effect{value: "deny"} }
 
 // PolicyAdder adds per-user RBAC policies via the auth service.
 type PolicyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action Action, resource Resource, effect string) error
+	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action Action, resource Resource, effect Effect) error
 }

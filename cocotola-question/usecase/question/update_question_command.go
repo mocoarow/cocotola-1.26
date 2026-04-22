@@ -26,7 +26,11 @@ func NewUpdateQuestionCommand(questionFinder questionFinder, questionUpdater que
 
 // UpdateQuestion updates an existing question.
 func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *questionservice.UpdateQuestionInput) (*questionservice.UpdateQuestionOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionUpdateQuestion(), domain.ResourceWorkbook(input.WorkbookID))
+	resource, err := domain.ResourceWorkbook(input.WorkbookID)
+	if err != nil {
+		return nil, fmt.Errorf("resource workbook: %w", err)
+	}
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionUpdateQuestion(), resource)
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}

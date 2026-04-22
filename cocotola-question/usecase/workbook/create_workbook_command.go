@@ -42,7 +42,11 @@ func NewCreateWorkbookCommand(
 
 // CreateWorkbook creates a new workbook.
 func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workbookservice.CreateWorkbookInput) (*workbookservice.CreateWorkbookOutput, error) {
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateWorkbook(), domain.ResourceSpace(input.SpaceID))
+	spaceResource, err := domain.ResourceSpace(input.SpaceID)
+	if err != nil {
+		return nil, fmt.Errorf("resource space: %w", err)
+	}
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionCreateWorkbook(), spaceResource)
 	if err != nil {
 		return nil, fmt.Errorf("authorization check: %w", err)
 	}
@@ -105,6 +109,10 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 }
 
 // grantWorkbookPolicies grants workbook-scoped permissions via RBAC.
+// NOTE: eventual consistency -- if a policy grant fails partway through, some policies
+// will exist and others will not. This is acceptable because cocotola-auth is a separate
+// service (cross-service consistency is eventual). A retry or reconciliation mechanism
+// can re-grant missing policies.
 func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organizationID, operatorID, workbookID string) error {
 	actions := []domain.Action{
 		domain.ActionViewWorkbook(),
@@ -114,9 +122,12 @@ func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organ
 		domain.ActionUpdateQuestion(),
 		domain.ActionDeleteQuestion(),
 	}
-	resource := domain.ResourceWorkbook(workbookID)
+	resource, err := domain.ResourceWorkbook(workbookID)
+	if err != nil {
+		return fmt.Errorf("resource workbook: %w", err)
+	}
 	for _, action := range actions {
-		if err := c.policyAdder.AddPolicyForUser(ctx, organizationID, operatorID, action, resource, domain.EffectAllow); err != nil {
+		if err := c.policyAdder.AddPolicyForUser(ctx, organizationID, operatorID, action, resource, domain.EffectAllow()); err != nil {
 			return fmt.Errorf("add %s policy for workbook %s: %w", action.Value(), workbookID, err)
 		}
 	}

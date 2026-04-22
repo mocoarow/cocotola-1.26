@@ -32,7 +32,11 @@ func (q *GetQuestionQuery) GetQuestion(ctx context.Context, input *questionservi
 	}
 
 	if !wb.Visibility().IsPublic() {
-		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), domain.ResourceWorkbook(input.WorkbookID))
+		resource, err := domain.ResourceWorkbook(input.WorkbookID)
+		if err != nil {
+			return nil, fmt.Errorf("resource workbook: %w", err)
+		}
+		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionViewWorkbook(), resource)
 		if err != nil {
 			return nil, fmt.Errorf("authorization check: %w", err)
 		}
