@@ -1,4 +1,4 @@
-import { BookOpenIcon, ListIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -126,8 +126,8 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           className="flex-1"
           render={<Link to={`/workbooks/${workbook.workbookId}`} />}
         >
-          <ListIcon data-icon="inline-start" className="size-3.5" />
-          <span>Questions</span>
+          <PencilIcon data-icon="inline-start" className="size-3.5" />
+          <span>Edit</span>
         </Button>
         <fetcher.Form method="post">
           <input type="hidden" name="intent" value="delete" />

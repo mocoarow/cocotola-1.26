@@ -104,7 +104,7 @@ describe("WorkbooksIndex", () => {
     expect(screen.getByText("Learn basic words")).toBeInTheDocument();
   });
 
-  it("should render Study button as disabled and Questions button as link", () => {
+  it("should render Study button as disabled and Edit button as link", () => {
     // given
     const workbooks = [createWorkbook({ workbookId: "wb-1" })];
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
@@ -114,9 +114,9 @@ describe("WorkbooksIndex", () => {
 
     // then
     expect(screen.getByText("Study").closest("button")).toBeDisabled();
-    const questionsLink = screen.getByText("Questions").closest("a");
-    expect(questionsLink).toBeInTheDocument();
-    expect(questionsLink).toHaveAttribute("href", "/workbooks/wb-1");
+    const editLink = screen.getByText("Edit").closest("a");
+    expect(editLink).toBeInTheDocument();
+    expect(editLink).toHaveAttribute("href", "/workbooks/wb-1");
   });
 
   it("should render delete button with hidden workbookId input", () => {

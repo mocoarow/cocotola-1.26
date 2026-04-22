@@ -37,6 +37,38 @@ export async function listQuestions(accessToken: string, workbookId: string): Pr
   return data.questions ?? [];
 }
 
+type UpdateQuestionBody = {
+  content: string;
+  tags?: string[];
+  orderIndex: number;
+};
+
+export async function updateQuestion(
+  accessToken: string,
+  workbookId: string,
+  questionId: string,
+  body: UpdateQuestionBody,
+): Promise<Question> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question/${encodeURIComponent(questionId)}`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Response(text || "Failed to update question", { status: response.status });
+  }
+
+  return (await response.json()) as Question;
+}
+
 export async function addQuestion(
   accessToken: string,
   workbookId: string,
