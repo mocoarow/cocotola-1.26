@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createWorkbook, deleteWorkbook, listWorkbooks } from "./workbook.server";
+import {
+  createWorkbook,
+  deleteWorkbook,
+  getWorkbook,
+  listWorkbooks,
+  updateWorkbook,
+} from "./workbook.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -180,5 +186,103 @@ describe("deleteWorkbook", () => {
 
     // when / then
     await expect(deleteWorkbook("token", "wb-1")).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("getWorkbook", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should return workbook on success", async () => {
+    // given
+    const workbook = { workbookId: "wb-1", title: "Test Workbook" };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(workbook),
+    });
+
+    // when
+    const result = await getWorkbook("test-token", "wb-1");
+
+    // then
+    expect(result).toEqual(workbook);
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8090/api/v1/workbook/wb-1", {
+      headers: { Authorization: "Bearer test-token" },
+    });
+  });
+
+  it("should encode workbookId in URL", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    // when
+    await getWorkbook("token", "wb/special&id");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb%2Fspecial%26id",
+      expect.any(Object),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 404 });
+
+    // when / then
+    await expect(getWorkbook("token", "wb-1")).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("updateWorkbook", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should send PUT request with correct body and headers", async () => {
+    // given
+    const workbook = { workbookId: "wb-1", title: "Updated Title" };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(workbook),
+    });
+    const data = { title: "Updated Title", description: "desc", visibility: "private" as const };
+
+    // when
+    const result = await updateWorkbook("test-token", "wb-1", data);
+
+    // then
+    expect(result).toEqual(workbook);
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8090/api/v1/workbook/wb-1", {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 400 });
+    const data = { title: "Test", description: "", visibility: "private" as const };
+
+    // when / then
+    await expect(updateWorkbook("token", "wb-1", data)).rejects.toBeInstanceOf(Response);
   });
 });

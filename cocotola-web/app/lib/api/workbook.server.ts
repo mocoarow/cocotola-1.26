@@ -67,6 +67,45 @@ export async function createWorkbook(
   return workbook;
 }
 
+export async function getWorkbook(accessToken: string, workbookId: string): Promise<Workbook> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to fetch workbook", { status: response.status });
+  }
+
+  return (await response.json()) as Workbook;
+}
+
+export async function updateWorkbook(
+  accessToken: string,
+  workbookId: string,
+  data: { title: string; description: string; visibility: "private" | "public" },
+): Promise<Workbook> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to update workbook", { status: response.status });
+  }
+
+  return (await response.json()) as Workbook;
+}
+
 export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
   console.info(`[workbook] deleteWorkbook called: workbookId=${workbookId}`);
 
