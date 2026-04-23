@@ -124,6 +124,7 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           variant="outline"
           size="sm"
           className="flex-1"
+          nativeButton={false}
           render={<Link to={`/workbooks/${workbook.workbookId}`} />}
         >
           <PencilIcon data-icon="inline-start" className="size-3.5" />

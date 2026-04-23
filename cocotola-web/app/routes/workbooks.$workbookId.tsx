@@ -1,10 +1,11 @@
-import { ArrowLeftIcon, CheckIcon, PencilIcon, PlusIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
   addQuestion,
+  deleteQuestion,
   listQuestions,
   type Question,
   updateQuestion,
@@ -93,6 +94,15 @@ export async function action({ request, params }: Route.ActionArgs) {
       tags: tags.length > 0 ? tags : undefined,
       orderIndex,
     });
+    return { ok: true };
+  }
+
+  if (intent === "deleteQuestion") {
+    const questionId = formData.get("questionId");
+    if (typeof questionId !== "string" || !questionId) {
+      throw new Response("questionId is required", { status: 400 });
+    }
+    await deleteQuestion(accessToken, workbookId, questionId);
     return { ok: true };
   }
 
@@ -270,9 +280,10 @@ function WordFillEditForm({
 
 function QuestionCard({ question }: { question: Question }) {
   const [editing, setEditing] = useState(false);
-  const fetcher = useFetcher();
+  const editFetcher = useFetcher();
+  const deleteFetcher = useFetcher();
 
-  if (fetcher.data?.ok && editing) {
+  if (editFetcher.data?.ok && editing) {
     setEditing(false);
   }
 
@@ -296,17 +307,34 @@ function QuestionCard({ question }: { question: Question }) {
             ))}
           </div>
           {!editing && (
-            <Button size="icon-sm" variant="ghost" onClick={() => setEditing(true)}>
-              <PencilIcon className="size-3.5" />
-              <span className="sr-only">Edit question</span>
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button size="icon-sm" variant="ghost" onClick={() => setEditing(true)}>
+                <PencilIcon className="size-3.5" />
+                <span className="sr-only">Edit question</span>
+              </Button>
+              <deleteFetcher.Form
+                method="post"
+                onSubmit={(e) => {
+                  if (!window.confirm("Are you sure you want to delete this question?")) {
+                    e.preventDefault();
+                  }
+                }}
+              >
+                <input type="hidden" name="intent" value="deleteQuestion" />
+                <input type="hidden" name="questionId" value={question.questionId} />
+                <Button type="submit" size="icon-sm" variant="ghost">
+                  <Trash2Icon className="size-3.5 text-destructive" />
+                  <span className="sr-only">Delete question</span>
+                </Button>
+              </deleteFetcher.Form>
+            </div>
           )}
         </div>
         {editing && parsed ? (
           <WordFillEditForm
             question={question}
             parsed={parsed}
-            fetcher={fetcher}
+            fetcher={editFetcher}
             onCancel={() => setEditing(false)}
           />
         ) : parsed ? (
@@ -455,6 +483,7 @@ function WorkbookHeader({
   const fetcher = useFetcher();
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(title);
+  const [editDescription, setEditDescription] = useState(description);
   const isSubmitting = fetcher.state !== "idle";
 
   if (fetcher.data?.ok && editing) {
@@ -471,49 +500,73 @@ function WorkbookHeader({
         Back to Workbooks
       </Link>
       {editing ? (
-        <fetcher.Form method="post" className="flex items-center gap-2">
+        <fetcher.Form method="post" className="space-y-3">
           <input type="hidden" name="intent" value="updateTitle" />
-          <input type="hidden" name="description" value={description} />
           <input type="hidden" name="visibility" value={visibility} />
-          <Input
-            name="title"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="max-w-md text-lg font-bold"
-            maxLength={200}
-            required
-            autoFocus
-          />
-          <Button type="submit" size="icon-sm" variant="ghost" disabled={isSubmitting}>
-            <CheckIcon className="size-4" />
-            <span className="sr-only">Save</span>
-          </Button>
-          <Button
-            type="button"
-            size="icon-sm"
-            variant="ghost"
-            onClick={() => {
-              setEditing(false);
-              setEditTitle(title);
-            }}
-          >
-            <XIcon className="size-4" />
-            <span className="sr-only">Cancel</span>
-          </Button>
+          <div className="space-y-2">
+            <label htmlFor="edit-wb-title" className="block text-sm font-medium">
+              Title
+            </label>
+            <Input
+              id="edit-wb-title"
+              name="title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="max-w-md text-lg font-bold"
+              maxLength={200}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="edit-wb-description" className="block text-sm font-medium">
+              Description
+            </label>
+            <Input
+              id="edit-wb-description"
+              name="description"
+              value={editDescription}
+              onChange={(e) => setEditDescription(e.target.value)}
+              className="max-w-md"
+              placeholder="Workbook description"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              <CheckIcon data-icon="inline-start" className="size-3.5" />
+              <span>{isSubmitting ? "Saving..." : "Save"}</span>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setEditing(false);
+                setEditTitle(title);
+                setEditDescription(description);
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
           {fetcher.data && !fetcher.data.ok && "error" in fetcher.data && (
             <p className="text-sm text-destructive">{fetcher.data.error}</p>
           )}
         </fetcher.Form>
       ) : (
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{title}</h1>
-          <Button size="icon-sm" variant="ghost" onClick={() => setEditing(true)}>
-            <PencilIcon className="size-4" />
-            <span className="sr-only">Edit title</span>
-          </Button>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{title}</h1>
+            <Button size="icon-sm" variant="ghost" onClick={() => setEditing(true)}>
+              <PencilIcon className="size-4" />
+              <span className="sr-only">Edit workbook</span>
+            </Button>
+          </div>
+          {description && (
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
       )}
-      <p className="mt-1 text-sm text-muted-foreground">Manage questions in this workbook.</p>
     </div>
   );
 }

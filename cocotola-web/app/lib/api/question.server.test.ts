@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addQuestion, listQuestions, updateQuestion } from "./question.server";
+import { addQuestion, deleteQuestion, listQuestions, updateQuestion } from "./question.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -166,5 +166,55 @@ describe("updateQuestion", () => {
     await expect(
       updateQuestion("token", "wb-1", "q-1", { content: "{}", orderIndex: 0 }),
     ).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("deleteQuestion", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should send DELETE request with correct URL and headers", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true });
+
+    // when
+    await deleteQuestion("test-token", "wb-1", "q-1");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/question/q-1",
+      {
+        method: "DELETE",
+        headers: { Authorization: "Bearer test-token" },
+      },
+    );
+  });
+
+  it("should encode workbookId and questionId in URL", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true });
+
+    // when
+    await deleteQuestion("token", "wb/1", "q/2");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb%2F1/question/q%2F2",
+      expect.any(Object),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 403 });
+
+    // when / then
+    await expect(deleteQuestion("token", "wb-1", "q-1")).rejects.toBeInstanceOf(Response);
   });
 });
