@@ -69,6 +69,24 @@ export async function updateQuestion(
   return (await response.json()) as Question;
 }
 
+export async function deleteQuestion(
+  accessToken: string,
+  workbookId: string,
+  questionId: string,
+): Promise<void> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question/${encodeURIComponent(questionId)}`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to delete question", { status: response.status });
+  }
+}
+
 export async function addQuestion(
   accessToken: string,
   workbookId: string,
