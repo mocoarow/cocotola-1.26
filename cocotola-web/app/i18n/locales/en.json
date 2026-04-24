@@ -1,0 +1,108 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit"
+  },
+  "login": {
+    "title": "Login",
+    "signInWithGoogle": "Sign in with Google"
+  },
+  "signup": {
+    "title": "Sign Up",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "submitButton": "Sign Up",
+    "alreadyHaveAccount": "Already have an account?",
+    "loginLink": "Login",
+    "errors": {
+      "emailPasswordRequired": "Email and password are required.",
+      "authUnavailable": "Authentication service is temporarily unavailable."
+    },
+    "confirmEmail": "Check your email to confirm your account."
+  },
+  "workbooks": {
+    "nav": {
+      "myWorkbooks": "My Workbooks",
+      "public": "Public",
+      "comingSoon": "soon",
+      "logout": "Logout",
+      "sidebarLabel": "Workbooks"
+    },
+    "index": {
+      "title": "My Workbooks",
+      "description": "Select a workbook to study or manage its problems.",
+      "empty": {
+        "title": "No workbooks yet",
+        "description": "Create your first workbook to get started."
+      },
+      "newWorkbook": "New Workbook",
+      "createTitle": "Create Workbook",
+      "createDescription": "Add a new workbook to organize your problems.",
+      "titleLabel": "Title",
+      "descriptionLabel": "Description",
+      "titlePlaceholder": "e.g. English Vocabulary",
+      "descriptionPlaceholder": "Optional description",
+      "creating": "Creating...",
+      "updated": "Updated:",
+      "study": "Study",
+      "edit": "Edit",
+      "deleteConfirm": "Delete \"{{title}}\"?",
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 200 characters or less",
+        "descriptionTooLong": "Description must be 1000 characters or less"
+      }
+    },
+    "detail": {
+      "backToWorkbooks": "Back to Workbooks",
+      "titleLabel": "Title",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Workbook description",
+      "editWorkbook": "Edit workbook",
+      "emptyTitle": "No questions yet",
+      "emptyDescription": "Use the form above to add your first question.",
+      "editQuestion": "Edit question",
+      "deleteQuestion": "Delete question",
+      "deleteQuestionConfirm": "Are you sure you want to delete this question?",
+      "errors": {
+        "titleRequired": "Title is required",
+        "titleTooLong": "Title must be 200 characters or less"
+      }
+    },
+    "addQuestion": {
+      "title": "Add Word Fill Question",
+      "sourceLang": "Source Language",
+      "sourceText": "Source Text",
+      "targetLang": "Target Language",
+      "targetText": "Target Text",
+      "targetHint": "Wrap words in double curly braces to mark blanks. e.g. throw it away → blanks on throw, away",
+      "explanation": "Explanation (optional)",
+      "tags": "Tags (optional)",
+      "tagsHint": "Comma-separated, key:value format",
+      "adding": "Adding...",
+      "submit": "Add Question"
+    }
+  },
+  "errors": {
+    "oops": "Oops!",
+    "unexpected": "An unexpected error occurred.",
+    "notFound": "404",
+    "error": "Error",
+    "pageNotFound": "The requested page could not be found."
+  },
+  "languages": {
+    "ja": "Japanese",
+    "en": "English",
+    "it": "Italian",
+    "fr": "French",
+    "de": "German",
+    "es": "Spanish",
+    "zh": "Chinese",
+    "ko": "Korean",
+    "pt": "Portuguese"
+  }
+}

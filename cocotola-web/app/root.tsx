@@ -1,3 +1,4 @@
+import { I18nextProvider, useTranslation } from "react-i18next";
 import {
   isRouteErrorResponse,
   Links,
@@ -5,10 +6,12 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import i18n, { createServerInstance, detectLanguageFromRequest } from "~/i18n/config";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,9 +26,21 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+export async function loader({ request }: Route.LoaderArgs) {
+  const locale = detectLanguageFromRequest(request);
+  return { locale };
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
+  const data = useLoaderData<typeof loader>();
+  const { i18n: i18nInstance } = useTranslation();
+
+  const locale = data?.locale ?? i18nInstance.language;
+  const isServer = typeof window === "undefined";
+  const serverI18n = isServer ? createServerInstance(locale) : undefined;
+
+  const html = (
+    <html lang={locale}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -39,6 +54,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
+
+  if (serverI18n) {
+    return <I18nextProvider i18n={serverI18n}>{html}</I18nextProvider>;
+  }
+
+  return html;
 }
 
 export default function App() {
@@ -46,14 +67,15 @@ export default function App() {
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
+  const { t } = useTranslation();
+
+  let message = t("errors.oops");
+  let details = t("errors.unexpected");
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404 ? "The requested page could not be found." : error.statusText || details;
+    message = error.status === 404 ? t("errors.notFound") : t("errors.error");
+    details = error.status === 404 ? t("errors.pageNotFound") : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
     details = error.message;
     stack = error.stack;

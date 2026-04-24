@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { Workbook } from "~/lib/api/workbook.server";
 
+import "~/i18n/config";
+
 vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));

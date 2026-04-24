@@ -1,0 +1,108 @@
+{
+  "common": {
+    "save": "저장",
+    "saving": "저장 중...",
+    "cancel": "취소",
+    "create": "생성",
+    "delete": "삭제",
+    "edit": "편집"
+  },
+  "login": {
+    "title": "로그인",
+    "signInWithGoogle": "Google로 로그인"
+  },
+  "signup": {
+    "title": "회원가입",
+    "emailLabel": "이메일",
+    "passwordLabel": "비밀번호",
+    "submitButton": "회원가입",
+    "alreadyHaveAccount": "이미 계정이 있으신가요?",
+    "loginLink": "로그인",
+    "errors": {
+      "emailPasswordRequired": "이메일과 비밀번호를 입력해 주세요.",
+      "authUnavailable": "인증 서비스를 일시적으로 사용할 수 없습니다."
+    },
+    "confirmEmail": "확인 이메일을 보냈습니다. 이메일을 확인해 주세요."
+  },
+  "workbooks": {
+    "nav": {
+      "myWorkbooks": "내 워크북",
+      "public": "공개",
+      "comingSoon": "준비 중",
+      "logout": "로그아웃",
+      "sidebarLabel": "워크북"
+    },
+    "index": {
+      "title": "내 워크북",
+      "description": "워크북을 선택하여 학습하거나 문제를 관리하세요.",
+      "empty": {
+        "title": "워크북이 없습니다",
+        "description": "첫 번째 워크북을 만들어 시작하세요."
+      },
+      "newWorkbook": "새 워크북",
+      "createTitle": "워크북 만들기",
+      "createDescription": "새 워크북을 추가하여 문제를 정리하세요.",
+      "titleLabel": "제목",
+      "descriptionLabel": "설명",
+      "titlePlaceholder": "예: 영어 어휘",
+      "descriptionPlaceholder": "선택 사항 설명",
+      "creating": "생성 중...",
+      "updated": "업데이트:",
+      "study": "학습",
+      "edit": "편집",
+      "deleteConfirm": "\"{{title}}\"을(를) 삭제하시겠습니까?",
+      "errors": {
+        "titleRequired": "제목은 필수입니다",
+        "titleTooLong": "제목은 200자 이하로 입력해 주세요",
+        "descriptionTooLong": "설명은 1000자 이하로 입력해 주세요"
+      }
+    },
+    "detail": {
+      "backToWorkbooks": "워크북 목록으로 돌아가기",
+      "titleLabel": "제목",
+      "descriptionLabel": "설명",
+      "descriptionPlaceholder": "워크북 설명",
+      "editWorkbook": "워크북 편집",
+      "emptyTitle": "문제가 없습니다",
+      "emptyDescription": "위의 양식에서 첫 번째 문제를 추가하세요.",
+      "editQuestion": "문제 편집",
+      "deleteQuestion": "문제 삭제",
+      "deleteQuestionConfirm": "이 문제를 삭제하시겠습니까?",
+      "errors": {
+        "titleRequired": "제목은 필수입니다",
+        "titleTooLong": "제목은 200자 이하로 입력해 주세요"
+      }
+    },
+    "addQuestion": {
+      "title": "빈칸 채우기 문제 추가",
+      "sourceLang": "원문 언어",
+      "sourceText": "원문 텍스트",
+      "targetLang": "번역 언어",
+      "targetText": "번역 텍스트",
+      "targetHint": "이중 중괄호로 단어를 감싸 빈칸을 지정합니다. 예: throw it away → throw, away가 빈칸",
+      "explanation": "설명 (선택 사항)",
+      "tags": "태그 (선택 사항)",
+      "tagsHint": "쉼표로 구분, key:value 형식",
+      "adding": "추가 중...",
+      "submit": "문제 추가"
+    }
+  },
+  "errors": {
+    "oops": "오류가 발생했습니다",
+    "unexpected": "예기치 않은 오류가 발생했습니다.",
+    "notFound": "404",
+    "error": "오류",
+    "pageNotFound": "요청하신 페이지를 찾을 수 없습니다."
+  },
+  "languages": {
+    "ja": "일본어",
+    "en": "영어",
+    "it": "이탈리아어",
+    "fr": "프랑스어",
+    "de": "독일어",
+    "es": "스페인어",
+    "zh": "중국어",
+    "ko": "한국어",
+    "pt": "포르투갈어"
+  }
+}

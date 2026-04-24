@@ -1,0 +1,108 @@
+{
+  "common": {
+    "save": "保存",
+    "saving": "保存中...",
+    "cancel": "キャンセル",
+    "create": "作成",
+    "delete": "削除",
+    "edit": "編集"
+  },
+  "login": {
+    "title": "ログイン",
+    "signInWithGoogle": "Googleでログイン"
+  },
+  "signup": {
+    "title": "新規登録",
+    "emailLabel": "メールアドレス",
+    "passwordLabel": "パスワード",
+    "submitButton": "新規登録",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+    "loginLink": "ログイン",
+    "errors": {
+      "emailPasswordRequired": "メールアドレスとパスワードを入力してください。",
+      "authUnavailable": "認証サービスが一時的に利用できません。"
+    },
+    "confirmEmail": "確認メールを送信しました。メールをご確認ください。"
+  },
+  "workbooks": {
+    "nav": {
+      "myWorkbooks": "マイワークブック",
+      "public": "公開",
+      "comingSoon": "準備中",
+      "logout": "ログアウト",
+      "sidebarLabel": "ワークブック"
+    },
+    "index": {
+      "title": "マイワークブック",
+      "description": "ワークブックを選択して学習または問題を管理します。",
+      "empty": {
+        "title": "ワークブックがありません",
+        "description": "最初のワークブックを作成して始めましょう。"
+      },
+      "newWorkbook": "新規ワークブック",
+      "createTitle": "ワークブックを作成",
+      "createDescription": "新しいワークブックを追加して問題を整理します。",
+      "titleLabel": "タイトル",
+      "descriptionLabel": "説明",
+      "titlePlaceholder": "例: 英語ボキャブラリー",
+      "descriptionPlaceholder": "任意の説明",
+      "creating": "作成中...",
+      "updated": "更新日:",
+      "study": "学習",
+      "edit": "編集",
+      "deleteConfirm": "「{{title}}」を削除しますか？",
+      "errors": {
+        "titleRequired": "タイトルは必須です",
+        "titleTooLong": "タイトルは200文字以下にしてください",
+        "descriptionTooLong": "説明は1000文字以下にしてください"
+      }
+    },
+    "detail": {
+      "backToWorkbooks": "ワークブック一覧に戻る",
+      "titleLabel": "タイトル",
+      "descriptionLabel": "説明",
+      "descriptionPlaceholder": "ワークブックの説明",
+      "editWorkbook": "ワークブックを編集",
+      "emptyTitle": "問題がありません",
+      "emptyDescription": "上のフォームから最初の問題を追加してください。",
+      "editQuestion": "問題を編集",
+      "deleteQuestion": "問題を削除",
+      "deleteQuestionConfirm": "この問題を削除してもよろしいですか？",
+      "errors": {
+        "titleRequired": "タイトルは必須です",
+        "titleTooLong": "タイトルは200文字以下にしてください"
+      }
+    },
+    "addQuestion": {
+      "title": "穴埋め問題を追加",
+      "sourceLang": "原文の言語",
+      "sourceText": "原文テキスト",
+      "targetLang": "訳文の言語",
+      "targetText": "訳文テキスト",
+      "targetHint": "二重中括弧で単語を囲んで空欄を指定します。例: throw it away → throw, awayが空欄",
+      "explanation": "解説（任意）",
+      "tags": "タグ（任意）",
+      "tagsHint": "カンマ区切り、key:value形式",
+      "adding": "追加中...",
+      "submit": "問題を追加"
+    }
+  },
+  "errors": {
+    "oops": "エラーが発生しました",
+    "unexpected": "予期しないエラーが発生しました。",
+    "notFound": "404",
+    "error": "エラー",
+    "pageNotFound": "お探しのページが見つかりませんでした。"
+  },
+  "languages": {
+    "ja": "日本語",
+    "en": "英語",
+    "it": "イタリア語",
+    "fr": "フランス語",
+    "de": "ドイツ語",
+    "es": "スペイン語",
+    "zh": "中国語",
+    "ko": "韓国語",
+    "pt": "ポルトガル語"
+  }
+}
