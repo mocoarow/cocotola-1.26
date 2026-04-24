@@ -1,5 +1,6 @@
 import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -48,13 +49,13 @@ export async function action({ request }: Route.ActionArgs) {
     const description = String(formData.get("description") ?? "").trim();
 
     if (!title) {
-      return { ok: false, error: "Title is required" };
+      return { ok: false, errorKey: "workbooks.index.errors.titleRequired" };
     }
     if (title.length > 200) {
-      return { ok: false, error: "Title must be 200 characters or less" };
+      return { ok: false, errorKey: "workbooks.index.errors.titleTooLong" };
     }
     if (description.length > 1000) {
-      return { ok: false, error: "Description must be 1000 characters or less" };
+      return { ok: false, errorKey: "workbooks.index.errors.descriptionTooLong" };
     }
 
     await createWorkbook(accessToken, {
@@ -75,9 +76,10 @@ export async function action({ request }: Route.ActionArgs) {
   return { ok: true };
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleDateString("ja-JP", {
+  const localeMap: Record<string, string> = { ja: "ja-JP", en: "en-US", ko: "ko-KR" };
+  return date.toLocaleDateString(localeMap[locale] ?? locale, {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -86,6 +88,7 @@ function formatDate(dateStr: string): string {
 
 function WorkbookCard({ workbook }: { workbook: Workbook }) {
   const fetcher = useFetcher();
+  const { t, i18n } = useTranslation();
   const isDeleting = fetcher.state !== "idle";
 
   return (
@@ -112,13 +115,13 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
       )}
 
       <p className="mb-4 text-xs text-muted-foreground">
-        Updated: {formatDate(workbook.updatedAt)}
+        {t("workbooks.index.updated")} {formatDate(workbook.updatedAt, i18n.language)}
       </p>
 
       <div className="flex items-center gap-2">
         <Button size="sm" className="flex-1" disabled>
           <BookOpenIcon data-icon="inline-start" className="size-3.5" />
-          <span>Study</span>
+          <span>{t("workbooks.index.study")}</span>
         </Button>
         <Button
           variant="outline"
@@ -128,7 +131,7 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           render={<Link to={`/workbooks/${workbook.workbookId}`} />}
         >
           <PencilIcon data-icon="inline-start" className="size-3.5" />
-          <span>Edit</span>
+          <span>{t("workbooks.index.edit")}</span>
         </Button>
         <fetcher.Form method="post">
           <input type="hidden" name="intent" value="delete" />
@@ -139,13 +142,13 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
             type="submit"
             disabled={isDeleting}
             onClick={(e) => {
-              if (!confirm(`Delete "${workbook.title}"?`)) {
+              if (!confirm(t("workbooks.index.deleteConfirm", { title: workbook.title }))) {
                 e.preventDefault();
               }
             }}
           >
             <Trash2Icon className="size-3.5" />
-            <span className="sr-only">Delete</span>
+            <span className="sr-only">{t("common.delete")}</span>
           </Button>
         </fetcher.Form>
       </div>
@@ -155,6 +158,7 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
 
 function CreateWorkbookButton() {
   const fetcher = useFetcher();
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const isSubmitting = fetcher.state !== "idle";
@@ -170,46 +174,46 @@ function CreateWorkbookButton() {
         render={
           <Button size="sm">
             <PlusIcon data-icon="inline-start" className="size-4" />
-            <span>New Workbook</span>
+            <span>{t("workbooks.index.newWorkbook")}</span>
           </Button>
         }
       />
       <SheetContent side="right">
         <SheetHeader>
-          <SheetTitle>Create Workbook</SheetTitle>
-          <SheetDescription>Add a new workbook to organize your problems.</SheetDescription>
+          <SheetTitle>{t("workbooks.index.createTitle")}</SheetTitle>
+          <SheetDescription>{t("workbooks.index.createDescription")}</SheetDescription>
         </SheetHeader>
         <fetcher.Form key={formKey} method="post" className="flex flex-1 flex-col gap-4 px-4">
           <input type="hidden" name="intent" value="create" />
           <div className="space-y-1.5">
             <label htmlFor="title" className="text-sm font-medium">
-              Title <span className="text-destructive">*</span>
+              {t("workbooks.index.titleLabel")} <span className="text-destructive">*</span>
             </label>
             <Input
               id="title"
               name="title"
               required
               maxLength={200}
-              placeholder="e.g. English Vocabulary"
+              placeholder={t("workbooks.index.titlePlaceholder")}
             />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="description" className="text-sm font-medium">
-              Description
+              {t("workbooks.index.descriptionLabel")}
             </label>
             <Input
               id="description"
               name="description"
               maxLength={1000}
-              placeholder="Optional description"
+              placeholder={t("workbooks.index.descriptionPlaceholder")}
             />
           </div>
-          {fetcher.data && !fetcher.data.ok && "error" in fetcher.data && (
-            <p className="text-sm text-destructive">{fetcher.data.error}</p>
+          {fetcher.data && !fetcher.data.ok && "errorKey" in fetcher.data && (
+            <p className="text-sm text-destructive">{t(fetcher.data.errorKey)}</p>
           )}
           <SheetFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create"}
+              {isSubmitting ? t("workbooks.index.creating") : t("common.create")}
             </Button>
           </SheetFooter>
         </fetcher.Form>
@@ -220,15 +224,14 @@ function CreateWorkbookButton() {
 
 export default function WorkbooksIndex() {
   const { workbooks } = useLoaderData<typeof loader>();
+  const { t } = useTranslation();
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Workbooks</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Select a workbook to study or manage its problems.
-          </p>
+          <h1 className="text-2xl font-bold">{t("workbooks.index.title")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("workbooks.index.description")}</p>
         </div>
         <CreateWorkbookButton />
       </div>
@@ -236,9 +239,11 @@ export default function WorkbooksIndex() {
       {workbooks.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
           <BookOpenIcon className="mb-4 size-12 text-muted-foreground/50" />
-          <p className="text-lg font-medium text-muted-foreground">No workbooks yet</p>
+          <p className="text-lg font-medium text-muted-foreground">
+            {t("workbooks.index.empty.title")}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground/70">
-            Create your first workbook to get started.
+            {t("workbooks.index.empty.description")}
           </p>
         </div>
       ) : (

@@ -1,4 +1,6 @@
-import { BookOpenIcon, GlobeIcon, LogOutIcon } from "lucide-react";
+import { BookOpenIcon, GlobeIcon, LanguagesIcon, LogOutIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { supportedLanguages, type SupportedLanguage } from "~/i18n/config";
 import { Form, Link, Outlet, redirect, useLoaderData, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -61,13 +63,13 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 const navItems = [
   {
-    title: "My Workbooks",
+    titleKey: "workbooks.nav.myWorkbooks",
     href: "/workbooks",
     icon: BookOpenIcon,
     disabled: false,
   },
   {
-    title: "Public",
+    titleKey: "workbooks.nav.public",
     href: "/workbooks/public",
     icon: GlobeIcon,
     disabled: true,
@@ -77,6 +79,15 @@ const navItems = [
 export default function WorkbooksLayout() {
   const { user } = useLoaderData<typeof loader>();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
+
+  function cycleLanguage() {
+    const currentIndex = supportedLanguages.indexOf(
+      i18n.language as SupportedLanguage,
+    );
+    const nextIndex = (currentIndex + 1) % supportedLanguages.length;
+    i18n.changeLanguage(supportedLanguages[nextIndex]);
+  }
 
   return (
     <SidebarProvider>
@@ -90,32 +101,37 @@ export default function WorkbooksLayout() {
         <SidebarSeparator />
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Workbooks</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("workbooks.nav.sidebarLabel")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      isActive={!item.disabled && location.pathname === item.href}
-                      render={
-                        item.disabled ? (
-                          <span className="opacity-50 cursor-not-allowed" />
-                        ) : (
-                          <Link to={item.href} />
-                        )
-                      }
-                      tooltip={item.disabled ? `${item.title} (coming soon)` : item.title}
-                    >
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                      {item.disabled && (
-                        <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                          soon
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {navItems.map((item) => {
+                  const title = t(item.titleKey);
+                  return (
+                    <SidebarMenuItem key={item.titleKey}>
+                      <SidebarMenuButton
+                        isActive={!item.disabled && location.pathname === item.href}
+                        render={
+                          item.disabled ? (
+                            <span className="opacity-50 cursor-not-allowed" />
+                          ) : (
+                            <Link to={item.href} />
+                          )
+                        }
+                        tooltip={
+                          item.disabled ? `${title} (${t("workbooks.nav.comingSoon")})` : title
+                        }
+                      >
+                        <item.icon className="size-4" />
+                        <span>{title}</span>
+                        {item.disabled && (
+                          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                            {t("workbooks.nav.comingSoon")}
+                          </span>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -128,12 +144,18 @@ export default function WorkbooksLayout() {
                 <p className="truncate text-sm font-medium">{user.loginId}</p>
                 <p className="truncate text-xs text-muted-foreground">{user.organizationName}</p>
               </div>
-              <Form method="post" action="/logout">
-                <Button variant="ghost" size="icon-sm" type="submit">
-                  <LogOutIcon className="size-4" />
-                  <span className="sr-only">Logout</span>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon-sm" type="button" onClick={cycleLanguage}>
+                  <LanguagesIcon className="size-4" />
+                  <span className="sr-only">{i18n.language.toUpperCase()}</span>
                 </Button>
-              </Form>
+                <Form method="post" action="/logout">
+                  <Button variant="ghost" size="icon-sm" type="submit">
+                    <LogOutIcon className="size-4" />
+                    <span className="sr-only">{t("workbooks.nav.logout")}</span>
+                  </Button>
+                </Form>
+              </div>
             </div>
           )}
         </SidebarFooter>

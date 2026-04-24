@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Form, redirect, useActionData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -20,7 +21,7 @@ export async function action({ request }: Route.ActionArgs) {
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
-    return { error: "Email and password are required." };
+    return { errorKey: "signup.errors.emailPasswordRequired" };
   }
 
   const headers = new Headers();
@@ -29,10 +30,10 @@ export async function action({ request }: Route.ActionArgs) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) {
     console.error("signup: signUp failed", error);
-    return { error: error.message };
+    return { errorMessage: error.message };
   }
   if (!data.session) {
-    return { message: "Check your email to confirm your account." };
+    return { messageKey: "signup.confirmEmail" };
   }
 
   const organizationName = process.env.ORGANIZATION_NAME ?? "";
@@ -41,7 +42,7 @@ export async function action({ request }: Route.ActionArgs) {
     tokens = await exchangeSupabaseToken(data.session.access_token, organizationName);
   } catch (e) {
     console.error("signup: exchangeSupabaseToken failed", e);
-    return { error: "Authentication service is temporarily unavailable." };
+    return { errorKey: "signup.errors.authUnavailable" };
   }
 
   const session = await getSession(request);
@@ -54,29 +55,33 @@ export async function action({ request }: Route.ActionArgs) {
 
 export default function SignupPage() {
   const actionData = useActionData<typeof action>();
+  const { t } = useTranslation();
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="w-full max-w-sm space-y-6 p-6">
-        <h1 className="text-center text-2xl font-bold">Sign Up</h1>
+        <h1 className="text-center text-2xl font-bold">{t("signup.title")}</h1>
 
-        {actionData?.error && (
-          <p className="text-center text-sm text-red-600">{actionData.error}</p>
+        {actionData && "errorKey" in actionData && actionData.errorKey && (
+          <p className="text-center text-sm text-red-600">{t(actionData.errorKey)}</p>
         )}
-        {actionData && "message" in actionData && (
-          <p className="text-center text-sm text-green-600">{actionData.message}</p>
+        {actionData && "errorMessage" in actionData && actionData.errorMessage && (
+          <p className="text-center text-sm text-red-600">{actionData.errorMessage}</p>
+        )}
+        {actionData && "messageKey" in actionData && actionData.messageKey && (
+          <p className="text-center text-sm text-green-600">{t(actionData.messageKey)}</p>
         )}
 
         <Form method="post" className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium">
-              Email
+              {t("signup.emailLabel")}
             </label>
             <Input id="email" name="email" type="email" required autoComplete="email" />
           </div>
           <div>
             <label htmlFor="password" className="block text-sm font-medium">
-              Password
+              {t("signup.passwordLabel")}
             </label>
             <Input
               id="password"
@@ -88,14 +93,14 @@ export default function SignupPage() {
             />
           </div>
           <Button type="submit" className="w-full">
-            Sign Up
+            {t("signup.submitButton")}
           </Button>
         </Form>
 
         <p className="text-center text-sm">
-          Already have an account?{" "}
+          {t("signup.alreadyHaveAccount")}{" "}
           <a href="/login" className="underline">
-            Login
+            {t("signup.loginLink")}
           </a>
         </p>
       </div>
