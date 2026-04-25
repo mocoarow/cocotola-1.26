@@ -34,7 +34,13 @@ func Test_DeleteQuestionCommand_shouldDeleteQuestion_whenAllowed(t *testing.T) {
 	questionDeleter := newMockquestionDeleter(t)
 	questionDeleter.On("Delete", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(nil)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(questionDeleter, authChecker)
+	activeListFinder := newMockactiveQuestionListFinder(t)
+	activeListFinder.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	activeListSaver := newMockactiveQuestionListSaver(t)
+	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+
+	cmd := questionusecase.NewDeleteQuestionCommand(questionDeleter, activeListFinder, activeListSaver, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
@@ -55,7 +61,7 @@ func Test_DeleteQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(nil, authChecker)
+	cmd := questionusecase.NewDeleteQuestionCommand(nil, nil, nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
@@ -77,7 +83,7 @@ func Test_DeleteQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(nil, authChecker)
+	cmd := questionusecase.NewDeleteQuestionCommand(nil, nil, nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when

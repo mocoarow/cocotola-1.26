@@ -16,10 +16,12 @@ import (
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health"
 	questionhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question"
 	sharinghandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing"
+	studyhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study"
 	workbookhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 	sharingusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing"
+	studyusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study"
 	workbookusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -64,6 +66,8 @@ func Initialize(
 	questionRepo := gateway.NewQuestionRepository(firestoreClient)
 	referenceRepo := gateway.NewReferenceRepository(firestoreClient)
 	ownedWorkbookListRepo := gateway.NewOwnedWorkbookListRepository(firestoreClient)
+	studyRecordRepo := gateway.NewStudyRecordRepository(firestoreClient)
+	activeQuestionListRepo := gateway.NewActiveQuestionListRepository(firestoreClient)
 	healthRepo := gateway.NewHealthRepository(firestoreClient)
 
 	// organization resolver middleware
@@ -71,8 +75,9 @@ func Initialize(
 
 	// usecase layer
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, authzChecker, policyAdder)
-	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker)
+	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
+	studyCommand := studyusecase.NewCommand(studyRecordRepo, studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{})
 
 	// controller layer
 	checkHandler := healthhandler.NewCheckHandler(healthRepo)
@@ -97,6 +102,10 @@ func Initialize(
 	unshareHandler := sharinghandler.NewUnshareHandler(sharingCommand)
 	listPublicHandler := sharinghandler.NewListPublicHandler(sharingCommand)
 	sharinghandler.InitSharingRouter(shareWorkbookHandler, listSharedHandler, unshareHandler, listPublicHandler, parent, authMiddleware, orgResolverMiddleware)
+
+	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand)
+	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
+	studyhandler.InitStudyRouter(getStudyQuestionsHandler, recordAnswerHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	cleanup := func() {
 		if err := firestoreClient.Close(); err != nil {

@@ -18,12 +18,14 @@ func NewCommand(
 	questionDeleterRepo questionDeleter,
 	workbookFinderRepo workbookFinder,
 	authChecker authorizationChecker,
+	activeListFinder activeQuestionListFinder,
+	activeListSaver activeQuestionListSaver,
 ) *Command {
 	return &Command{
-		AddQuestionCommand:    NewAddQuestionCommand(questionAdderRepo, authChecker),
+		AddQuestionCommand:    NewAddQuestionCommand(questionAdderRepo, activeListFinder, activeListSaver, authChecker),
 		GetQuestionQuery:      NewGetQuestionQuery(questionFinderRepo, workbookFinderRepo, authChecker),
 		ListQuestionsQuery:    NewListQuestionsQuery(questionFinderRepo, workbookFinderRepo, authChecker),
 		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionUpdaterRepo, authChecker),
-		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, authChecker),
+		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, activeListFinder, activeListSaver, authChecker),
 	}
 }

@@ -1,0 +1,142 @@
+---
+study:
+  get:
+    summary: Get study questions
+    deprecated: false
+    description: Get questions due for study based on spaced repetition algorithm
+    operationId: getStudyQuestions
+    tags:
+      - study
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+    responses:
+      '200':
+        description: Successfully retrieved study questions
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/study.yaml#/GetStudyQuestionsResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+study-answer:
+  post:
+    summary: Record an answer
+    deprecated: false
+    description: Record a study answer and update spaced repetition schedule
+    operationId: recordAnswer
+    tags:
+      - study
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/study.yaml#/RecordAnswerRequest'
+          examples: {}
+      required: true
+    responses:
+      '200':
+        description: Successfully recorded answer
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/study.yaml#/RecordAnswerResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

@@ -114,6 +114,41 @@ func (r *QuestionRepository) FindByWorkbookID(ctx context.Context, workbookID st
 	return questions, nil
 }
 
+// FindByIDs returns questions matching the given IDs within a workbook.
+// Missing documents are silently skipped.
+func (r *QuestionRepository) FindByIDs(ctx context.Context, workbookID string, questionIDs []string) ([]domainquestion.Question, error) {
+	if len(questionIDs) == 0 {
+		return nil, nil
+	}
+
+	refs := make([]*firestore.DocumentRef, len(questionIDs))
+	for i, id := range questionIDs {
+		refs[i] = r.questionsCol(workbookID).Doc(id)
+	}
+
+	docs, err := r.client.GetAll(ctx, refs)
+	if err != nil {
+		return nil, fmt.Errorf("get questions by ids: %w", err)
+	}
+
+	questions := make([]domainquestion.Question, 0, len(docs))
+	for _, doc := range docs {
+		if !doc.Exists() {
+			continue
+		}
+		var record questionRecord
+		if err := doc.DataTo(&record); err != nil {
+			return nil, fmt.Errorf("decode question: %w", err)
+		}
+		q, err := toQuestionDomain(doc.Ref.ID, &record)
+		if err != nil {
+			return nil, fmt.Errorf("convert question domain: %w", err)
+		}
+		questions = append(questions, *q)
+	}
+	return questions, nil
+}
+
 // Update updates an existing question.
 func (r *QuestionRepository) Update(ctx context.Context, workbookID string, questionID string, content string, tags []string, orderIndex int) error {
 	now := time.Now()

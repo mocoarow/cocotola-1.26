@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "study",
+    srcs = [
+        "interval.go",
+        "study_record.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-question/domain"],
+)
+
+smart_go_test(
+    name = "study_test",
+    srcs = [
+        "interval_s_test.go",
+        "study_record_s_test.go",
+    ],
+    deps = [
+        ":study",
+        "//cocotola-question/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

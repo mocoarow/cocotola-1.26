@@ -1,0 +1,80 @@
+---
+StudyQuestionResponse:
+  type: object
+  required:
+    - questionId
+    - questionType
+    - content
+    - orderIndex
+  properties:
+    questionId:
+      type: string
+      pattern: ^.*$
+    questionType:
+      type: string
+      pattern: ^.*$
+    content:
+      type: string
+      pattern: ^.*$
+    tags:
+      type: array
+      items:
+        type: string
+        pattern: ^.*$
+        maxLength: 100
+      maxItems: 20
+    orderIndex:
+      type: integer
+      format: int32
+
+GetStudyQuestionsResponse:
+  type: object
+  required:
+    - questions
+    - totalDue
+    - newCount
+    - reviewCount
+  properties:
+    questions:
+      type: array
+      maxItems: 100
+      items:
+        $ref: '#/StudyQuestionResponse'
+    totalDue:
+      type: integer
+      format: int32
+    newCount:
+      type: integer
+      format: int32
+    reviewCount:
+      type: integer
+      format: int32
+
+RecordAnswerRequest:
+  type: object
+  required:
+    - correct
+  properties:
+    correct:
+      type: boolean
+
+RecordAnswerResponse:
+  type: object
+  required:
+    - nextDueAt
+    - consecutiveCorrect
+    - totalCorrect
+    - totalIncorrect
+  properties:
+    nextDueAt:
+      type: string
+      format: date-time
+    consecutiveCorrect:
+      type: integer
+      format: int32
+    totalCorrect:
+      type: integer
+      format: int32
+    totalIncorrect:
+      type: integer
+      format: int32

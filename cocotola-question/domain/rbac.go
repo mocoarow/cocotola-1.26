@@ -56,6 +56,9 @@ func ActionUpdateQuestion() Action { return Action{value: "update_question"} }
 // ActionDeleteQuestion returns the action for deleting a question.
 func ActionDeleteQuestion() Action { return Action{value: "delete_question"} }
 
+// ActionStudyWorkbook returns the action for studying a workbook.
+func ActionStudyWorkbook() Action { return Action{value: "study_workbook"} }
+
 // Resource represents a target resource for authorization.
 type Resource struct {
 	value string
