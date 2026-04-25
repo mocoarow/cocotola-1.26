@@ -63,42 +63,16 @@ func (r *ActiveQuestionListRepository) FindByWorkbookID(ctx context.Context, wor
 // Save persists the active question list atomically using a Firestore transaction.
 // It uses optimistic locking via a version field.
 func (r *ActiveQuestionListRepository) Save(ctx context.Context, list *domain.ActiveQuestionList) error {
-	nextVersion := list.Version() + 1
-	if err := r.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
-		listRef := r.listDoc(list.WorkbookID())
-
-		// Verify version (optimistic lock).
-		snap, err := tx.Get(listRef)
-		currentVersion := 0
-		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				return fmt.Errorf("get active question list doc in tx: %w", err)
-			}
-		} else {
-			var record activeQuestionListRecord
-			if err := snap.DataTo(&record); err != nil {
-				return fmt.Errorf("decode active question list doc in tx: %w", err)
-			}
-			currentVersion = record.Version
-		}
-
-		if currentVersion != list.Version() {
-			return domain.ErrConcurrentModification
-		}
-
-		record := activeQuestionListRecord{
-			QuestionIDs: list.Entries(),
-			Version:     nextVersion,
-		}
-		if err := tx.Set(listRef, record); err != nil {
-			return fmt.Errorf("save active question list: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("run transaction: %w", err)
+	record := activeQuestionListRecord{
+		QuestionIDs: list.Entries(),
+		Version:     list.Version() + 1,
 	}
-
-	list.SetVersion(nextVersion)
-	return nil
+	return saveVersionedEntity(ctx, r.client, list, r.listDoc(list.WorkbookID()), record,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
+			var rec activeQuestionListRecord
+			if err := snap.DataTo(&rec); err != nil {
+				return 0, fmt.Errorf("decode active question list: %w", err)
+			}
+			return rec.Version, nil
+		}, "active question list")
 }

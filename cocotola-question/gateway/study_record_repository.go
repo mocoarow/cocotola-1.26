@@ -48,57 +48,30 @@ func (r *StudyRecordRepository) recordsCol(userID string) *firestore.CollectionR
 
 // Save persists a study record atomically using a Firestore transaction.
 // It uses optimistic locking via a version field.
-func (r *StudyRecordRepository) Save(ctx context.Context, userID string, record *study.StudyRecord) error {
-	nextVersion := record.Version() + 1
+func (r *StudyRecordRepository) Save(ctx context.Context, userID string, record *study.Record) error {
 	docID := studyRecordDocID(record.WorkbookID(), record.QuestionID())
-
-	if err := r.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
-		docRef := r.recordsCol(userID).Doc(docID)
-
-		// Verify version (optimistic lock).
-		snap, err := tx.Get(docRef)
-		currentVersion := 0
-		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				return fmt.Errorf("get study record in tx: %w", err)
-			}
-		} else {
-			var rec studyRecordRecord
-			if err := snap.DataTo(&rec); err != nil {
-				return fmt.Errorf("decode study record in tx: %w", err)
-			}
-			currentVersion = rec.Version
-		}
-
-		if currentVersion != record.Version() {
-			return domain.ErrConcurrentModification
-		}
-
-		rec := studyRecordRecord{
-			WorkbookID:         record.WorkbookID(),
-			QuestionID:         record.QuestionID(),
-			ConsecutiveCorrect: record.ConsecutiveCorrect(),
-			LastAnsweredAt:     record.LastAnsweredAt(),
-			NextDueAt:          record.NextDueAt(),
-			TotalCorrect:       record.TotalCorrect(),
-			TotalIncorrect:     record.TotalIncorrect(),
-			Version:            nextVersion,
-		}
-		if err := tx.Set(docRef, rec); err != nil {
-			return fmt.Errorf("save study record: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("run transaction: %w", err)
+	rec := studyRecordRecord{
+		WorkbookID:         record.WorkbookID(),
+		QuestionID:         record.QuestionID(),
+		ConsecutiveCorrect: record.ConsecutiveCorrect(),
+		LastAnsweredAt:     record.LastAnsweredAt(),
+		NextDueAt:          record.NextDueAt(),
+		TotalCorrect:       record.TotalCorrect(),
+		TotalIncorrect:     record.TotalIncorrect(),
+		Version:            record.Version() + 1,
 	}
-
-	record.SetVersion(nextVersion)
-	return nil
+	return saveVersionedEntity(ctx, r.client, record, r.recordsCol(userID).Doc(docID), rec,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
+			var r studyRecordRecord
+			if err := snap.DataTo(&r); err != nil {
+				return 0, fmt.Errorf("decode study record: %w", err)
+			}
+			return r.Version, nil
+		}, "study record")
 }
 
 // FindByID looks up a study record by user, workbook, and question IDs.
-func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*study.StudyRecord, error) {
+func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*study.Record, error) {
 	docID := studyRecordDocID(workbookID, questionID)
 	doc, err := r.recordsCol(userID).Doc(docID).Get(ctx)
 	if err != nil {
@@ -111,7 +84,7 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 	if err := doc.DataTo(&rec); err != nil {
 		return nil, fmt.Errorf("decode study record: %w", err)
 	}
-	result := study.ReconstructStudyRecord(
+	result := study.ReconstructRecord(
 		rec.WorkbookID,
 		rec.QuestionID,
 		rec.ConsecutiveCorrect,
@@ -125,11 +98,11 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 }
 
 // FindByWorkbookID returns all study records for a user and workbook.
-func (r *StudyRecordRepository) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.StudyRecord, error) {
+func (r *StudyRecordRepository) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.Record, error) {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
 	defer iter.Stop()
 
-	var records []study.StudyRecord
+	var records []study.Record
 
 	for {
 		doc, err := iter.Next()
@@ -143,7 +116,7 @@ func (r *StudyRecordRepository) FindByWorkbookID(ctx context.Context, userID str
 		if err := doc.DataTo(&rec); err != nil {
 			return nil, fmt.Errorf("decode study record: %w", err)
 		}
-		result := study.ReconstructStudyRecord(
+		result := study.ReconstructRecord(
 			rec.WorkbookID,
 			rec.QuestionID,
 			rec.ConsecutiveCorrect,

@@ -77,7 +77,10 @@ func Initialize(
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
-	studyCommand := studyusecase.NewCommand(studyRecordRepo, studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{})
+	studyCommand := studyusecase.NewCommand(studyRecordRepo, studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{
+		ClockFunc:   nil,
+		ShuffleFunc: nil,
+	})
 
 	// controller layer
 	checkHandler := healthhandler.NewCheckHandler(healthRepo)

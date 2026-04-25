@@ -45,7 +45,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnNewQuestions_whenNoStudyRecords(t *
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(fixtureQuestions(), nil)
 
 	studyRecordRepo := newMockstudyRecordFinder(t)
-	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.StudyRecord{}, nil)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
 
 	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
 	input := newGetStudyQuestionsInput(t, 10)
@@ -55,7 +55,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnNewQuestions_whenNoStudyRecords(t *
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(output.Questions))
+	assert.Len(t, output.Questions, 1)
 	assert.Equal(t, fixtureQuestionID, output.Questions[0].QuestionID)
 	assert.Equal(t, 1, output.TotalDue)
 	assert.Equal(t, 1, output.NewCount)
@@ -83,8 +83,8 @@ func Test_GetStudyQuestionsQuery_shouldReturnDueQuestions_whenRecordIsDue(t *tes
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(fixtureQuestions(), nil)
 
 	pastDue := fixtureClock.Add(-24 * time.Hour)
-	records := []domainstudy.StudyRecord{
-		*domainstudy.ReconstructStudyRecord(fixtureWorkbookID, fixtureQuestionID, 1, pastDue, pastDue, 1, 0),
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 1, pastDue, pastDue, 1, 0),
 	}
 	studyRecordRepo := newMockstudyRecordFinder(t)
 	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
@@ -97,7 +97,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnDueQuestions_whenRecordIsDue(t *tes
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(output.Questions))
+	assert.Len(t, output.Questions, 1)
 	assert.Equal(t, 1, output.ReviewCount)
 	assert.Equal(t, 0, output.NewCount)
 }
@@ -120,8 +120,8 @@ func Test_GetStudyQuestionsQuery_shouldReturnEmpty_whenNotDue(t *testing.T) {
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
 
 	futureDue := fixtureClock.Add(24 * time.Hour)
-	records := []domainstudy.StudyRecord{
-		*domainstudy.ReconstructStudyRecord(fixtureWorkbookID, fixtureQuestionID, 1, fixtureClock, futureDue, 1, 0),
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 1, fixtureClock, futureDue, 1, 0),
 	}
 	studyRecordRepo := newMockstudyRecordFinder(t)
 	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
@@ -134,7 +134,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnEmpty_whenNotDue(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(output.Questions))
+	assert.Empty(t, output.Questions)
 	assert.Equal(t, 0, output.TotalDue)
 }
 
@@ -166,7 +166,7 @@ func Test_GetStudyQuestionsQuery_shouldRespectLimit(t *testing.T) {
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
 
 	studyRecordRepo := newMockstudyRecordFinder(t)
-	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.StudyRecord{}, nil)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
 
 	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
 	input := newGetStudyQuestionsInput(t, 2)
@@ -176,7 +176,7 @@ func Test_GetStudyQuestionsQuery_shouldRespectLimit(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(output.Questions))
+	assert.Len(t, output.Questions, 2)
 	assert.Equal(t, 3, output.TotalDue)
 	assert.Equal(t, 3, output.NewCount)
 }
@@ -199,16 +199,16 @@ func Test_GetStudyQuestionsQuery_shouldMix90PercentReviewAnd10PercentNew(t *test
 	pastDue := fixtureClock.Add(-24 * time.Hour)
 
 	// 10 review questions + 10 new questions
-	var activeIDs []string
-	var allQuestions []domainquestion.Question
-	var records []domainstudy.StudyRecord
-	for i := 0; i < 20; i++ {
+	activeIDs := make([]string, 0, 20)
+	allQuestions := make([]domainquestion.Question, 0, 20)
+	var records []domainstudy.Record
+	for i := range 20 {
 		qID := "q-" + string(rune('a'+i))
 		activeIDs = append(activeIDs, qID)
 		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, now, now))
 		if i < 10 {
 			// First 10 have study records (due)
-			records = append(records, *domainstudy.ReconstructStudyRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
+			records = append(records, *domainstudy.ReconstructRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
 		}
 	}
 
@@ -229,7 +229,7 @@ func Test_GetStudyQuestionsQuery_shouldMix90PercentReviewAnd10PercentNew(t *test
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 10, len(output.Questions))
+	assert.Len(t, output.Questions, 10)
 	assert.Equal(t, 10, output.ReviewCount)
 	assert.Equal(t, 10, output.NewCount)
 	assert.Equal(t, 20, output.TotalDue)
@@ -253,15 +253,15 @@ func Test_GetStudyQuestionsQuery_shouldFillWithNew_whenNotEnoughReview(t *testin
 	pastDue := fixtureClock.Add(-24 * time.Hour)
 
 	// 2 review questions + 10 new questions
-	var activeIDs []string
-	var allQuestions []domainquestion.Question
-	var records []domainstudy.StudyRecord
-	for i := 0; i < 12; i++ {
+	activeIDs := make([]string, 0, 12)
+	allQuestions := make([]domainquestion.Question, 0, 12)
+	var records []domainstudy.Record
+	for i := range 12 {
 		qID := "q-" + string(rune('a'+i))
 		activeIDs = append(activeIDs, qID)
 		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, now, now))
 		if i < 2 {
-			records = append(records, *domainstudy.ReconstructStudyRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
+			records = append(records, *domainstudy.ReconstructRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
 		}
 	}
 
@@ -282,7 +282,7 @@ func Test_GetStudyQuestionsQuery_shouldFillWithNew_whenNotEnoughReview(t *testin
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 10, len(output.Questions))
+	assert.Len(t, output.Questions, 10)
 	assert.Equal(t, 2, output.ReviewCount)
 	assert.Equal(t, 10, output.NewCount)
 }
@@ -305,7 +305,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnEmpty_whenActiveListIsEmpty(t *test
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t), nil)
 
 	studyRecordRepo := newMockstudyRecordFinder(t)
-	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.StudyRecord{}, nil)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
 
 	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, nil, workbookRepo, authChecker, testConfig)
 	input := newGetStudyQuestionsInput(t, 10)
@@ -315,7 +315,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnEmpty_whenActiveListIsEmpty(t *test
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 0, len(output.Questions))
+	assert.Empty(t, output.Questions)
 	assert.Equal(t, 0, output.TotalDue)
 	assert.Equal(t, 0, output.NewCount)
 	assert.Equal(t, 0, output.ReviewCount)
@@ -347,8 +347,8 @@ func Test_GetStudyQuestionsQuery_shouldReturnOneQuestion_whenLimitIsOne(t *testi
 	questionRepo := newMockquestionBatchFinder(t)
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
 
-	records := []domainstudy.StudyRecord{
-		*domainstudy.ReconstructStudyRecord(fixtureWorkbookID, "q-1", 1, pastDue, pastDue, 1, 0),
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, "q-1", 1, pastDue, pastDue, 1, 0),
 	}
 	studyRecordRepo := newMockstudyRecordFinder(t)
 	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
@@ -361,7 +361,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnOneQuestion_whenLimitIsOne(t *testi
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(output.Questions))
+	assert.Len(t, output.Questions, 1)
 	assert.Equal(t, 2, output.TotalDue)
 }
 

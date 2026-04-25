@@ -71,7 +71,7 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 		if !errors.Is(err, domain.ErrStudyRecordNotFound) {
 			return nil, fmt.Errorf("find study record: %w", err)
 		}
-		newRecord, err := domainstudy.NewStudyRecord(input.WorkbookID, input.QuestionID)
+		newRecord, err := domainstudy.NewRecord(input.WorkbookID, input.QuestionID)
 		if err != nil {
 			return nil, fmt.Errorf("new study record: %w", err)
 		}
