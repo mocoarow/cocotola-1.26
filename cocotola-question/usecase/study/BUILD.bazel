@@ -1,0 +1,41 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "study",
+    srcs = [
+        "command.go",
+        "get_study_questions_query.go",
+        "record_answer_command.go",
+        "shared_interfaces.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "//cocotola-question/domain/study",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/study",
+    ],
+)
+
+smart_go_test(
+    name = "study_test",
+    srcs = [
+        "get_study_questions_query_s_test.go",
+        "mocks_test.go",
+        "record_answer_command_s_test.go",
+    ],
+    deps = [
+        ":study",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "//cocotola-question/domain/study",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/study",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

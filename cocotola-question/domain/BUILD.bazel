@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "domain",
     srcs = [
+        "active_question_list.go",
         "const.go",
         "doc.go",
         "error.go",

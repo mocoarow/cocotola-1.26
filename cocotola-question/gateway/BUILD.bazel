@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "gateway",
     srcs = [
+        "active_question_list_repository.go",
         "auth_client.go",
         "doc.go",
         "firestore_client.go",
@@ -11,6 +12,7 @@ go_library(
         "owned_workbook_list_repository.go",
         "question_repository.go",
         "reference_repository.go",
+        "study_record_repository.go",
         "workbook_repository.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway",
@@ -21,6 +23,7 @@ go_library(
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/reference",
+        "//cocotola-question/domain/study",
         "//cocotola-question/domain/workbook",
         "@com_github_gin_gonic_gin//:gin",
         "@com_google_cloud_go_firestore//:firestore",
@@ -36,10 +39,12 @@ smart_go_test(
     srcs = [
         "auth_client_s_test.go",
         "owned_workbook_list_repository_m_test.go",
+        "study_record_repository_m_test.go",
     ],
     deps = [
         ":gateway",
         "//cocotola-question/domain",
+        "//cocotola-question/domain/study",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@com_google_cloud_go_firestore//:firestore",

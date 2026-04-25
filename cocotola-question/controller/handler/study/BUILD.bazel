@@ -1,0 +1,46 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "study",
+    srcs = [
+        "get_study_questions_handler.go",
+        "record_answer_handler.go",
+        "study.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/logging",
+        "//cocotola-question/api",
+        "//cocotola-question/controller",
+        "//cocotola-question/domain",
+        "//cocotola-question/service/study",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "study_test",
+    srcs = [
+        "get_study_questions_handler_s_test.go",
+        "helper_test.go",
+        "mocks_test.go",
+        "record_answer_handler_s_test.go",
+        "study_s_test.go",
+    ],
+    deps = [
+        ":study",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "//cocotola-question/controller",
+        "//cocotola-question/domain",
+        "//cocotola-question/service/study",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_ohler55_ojg//jp",
+        "@com_github_ohler55_ojg//oj",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

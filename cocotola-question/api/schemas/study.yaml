@@ -9,14 +9,18 @@ StudyQuestionResponse:
   properties:
     questionId:
       type: string
+      pattern: ^.*$
     questionType:
       type: string
+      pattern: ^.*$
     content:
       type: string
+      pattern: ^.*$
     tags:
       type: array
       items:
         type: string
+        pattern: ^.*$
         maxLength: 100
       maxItems: 20
     orderIndex:
@@ -33,6 +37,7 @@ GetStudyQuestionsResponse:
   properties:
     questions:
       type: array
+      maxItems: 100
       items:
         $ref: '#/StudyQuestionResponse'
     totalDue:
