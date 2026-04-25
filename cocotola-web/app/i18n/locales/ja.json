@@ -5,7 +5,8 @@
     "cancel": "キャンセル",
     "create": "作成",
     "delete": "削除",
-    "edit": "編集"
+    "edit": "編集",
+    "confirm": "確認"
   },
   "login": {
     "title": "ログイン",
@@ -50,6 +51,7 @@
       "updated": "更新日:",
       "study": "学習",
       "edit": "編集",
+      "deleteConfirmTitle": "ワークブックを削除",
       "deleteConfirm": "「{{title}}」を削除しますか？",
       "errors": {
         "titleRequired": "タイトルは必須です",
@@ -68,6 +70,7 @@
       "emptyDescription": "最初の問題を追加してください。",
       "editQuestion": "問題を編集",
       "deleteQuestion": "問題を削除",
+      "deleteQuestionConfirmTitle": "問題を削除",
       "deleteQuestionConfirm": "この問題を削除してもよろしいですか？",
       "errors": {
         "titleRequired": "タイトルは必須です",

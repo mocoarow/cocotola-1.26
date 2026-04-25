@@ -128,7 +128,11 @@ export function MultipleChoiceEditForm({
         <label htmlFor="edit-mc-explanation" className="text-sm font-medium">
           {t("workbooks.addQuestion.explanation")}
         </label>
-        <Input id="edit-mc-explanation" name="explanation" defaultValue={parsed.explanation ?? ""} />
+        <Input
+          id="edit-mc-explanation"
+          name="explanation"
+          defaultValue={parsed.explanation ?? ""}
+        />
       </div>
 
       <div className="space-y-1.5">

@@ -107,10 +107,7 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <fetcher.Form
-      method="post"
-      className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
-    >
+    <fetcher.Form method="post" className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
       <input type="hidden" name="intent" value="addMultipleChoice" />
       <input type="hidden" name="choices" value={JSON.stringify(choices)} />
       <input type="hidden" name="shuffleChoices" value={String(shuffleChoices)} />
@@ -300,9 +297,7 @@ export function AddQuestionSection() {
           </div>
         )}
 
-        {selectedType === "word_fill" && (
-          <WordFillForm key={formKey} onAdded={handleClose} />
-        )}
+        {selectedType === "word_fill" && <WordFillForm key={formKey} onAdded={handleClose} />}
         {selectedType === "multiple_choice" && (
           <MultipleChoiceForm key={formKey} onAdded={handleClose} />
         )}

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
-import { parseMultipleChoiceContent, type Choice } from "~/components/workbook/schemas";
+import { type Choice, parseMultipleChoiceContent } from "~/components/workbook/schemas";
 
 type MultipleChoiceCardProps = {
   content: string;
@@ -57,7 +57,8 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
           if (answered) {
             if (choice.isCorrect) {
               variant = "default";
-              extraClass = "border-green-500 bg-green-100 text-green-900 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300";
+              extraClass =
+                "border-green-500 bg-green-100 text-green-900 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300";
             } else if (choice.id === selectedId) {
               variant = "destructive";
             }
@@ -81,19 +82,20 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
         <p className="text-sm text-muted-foreground">{parsed.explanation}</p>
       )}
 
-      {answered && (() => {
-        const isCorrect = choices.find((c) => c.id === selectedId)?.isCorrect ?? false;
-        return (
-          <div className="flex items-center justify-end gap-3">
-            <span
-              className={`text-sm font-medium ${isCorrect ? "text-green-600" : "text-red-600"}`}
-            >
-              {isCorrect ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
-            </span>
-            <Button onClick={handleNext}>{t("workbooks.study.next")}</Button>
-          </div>
-        );
-      })()}
+      {answered &&
+        (() => {
+          const isCorrect = choices.find((c) => c.id === selectedId)?.isCorrect ?? false;
+          return (
+            <div className="flex items-center justify-end gap-3">
+              <span
+                className={`text-sm font-medium ${isCorrect ? "text-green-600" : "text-red-600"}`}
+              >
+                {isCorrect ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
+              </span>
+              <Button onClick={handleNext}>{t("workbooks.study.next")}</Button>
+            </div>
+          );
+        })()}
     </div>
   );
 }

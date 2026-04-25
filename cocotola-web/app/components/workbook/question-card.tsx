@@ -1,6 +1,7 @@
 import { CircleCheckIcon, CircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
+import { useConfirm } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import type { Question } from "~/lib/api/question.server";
 import { parseMultipleChoiceContent, parseWordFillContent } from "./schemas";
@@ -8,9 +9,13 @@ import { parseMultipleChoiceContent, parseWordFillContent } from "./schemas";
 export function QuestionCard({
   question,
   onEdit,
-}: { question: Question; onEdit: (question: Question) => void }) {
+}: {
+  question: Question;
+  onEdit: (question: Question) => void;
+}) {
   const { t } = useTranslation();
   const deleteFetcher = useFetcher();
+  const confirm = useConfirm();
 
   const typeBadge =
     question.questionType === "word_fill" ? (
@@ -29,21 +34,26 @@ export function QuestionCard({
         <PencilIcon className="size-3.5" />
         <span className="sr-only">{t("workbooks.detail.editQuestion")}</span>
       </Button>
-      <deleteFetcher.Form
-        method="post"
-        onSubmit={(e) => {
-          if (!window.confirm(t("workbooks.detail.deleteQuestionConfirm"))) {
-            e.preventDefault();
+      <Button
+        size="icon-sm"
+        variant="ghost"
+        onClick={async () => {
+          const confirmed = await confirm({
+            title: t("workbooks.detail.deleteQuestionConfirmTitle"),
+            description: t("workbooks.detail.deleteQuestionConfirm"),
+            confirmLabel: t("common.delete"),
+          });
+          if (confirmed) {
+            deleteFetcher.submit(
+              { intent: "deleteQuestion", questionId: question.questionId },
+              { method: "post" },
+            );
           }
         }}
       >
-        <input type="hidden" name="intent" value="deleteQuestion" />
-        <input type="hidden" name="questionId" value={question.questionId} />
-        <Button type="submit" size="icon-sm" variant="ghost">
-          <Trash2Icon className="size-3.5 text-destructive" />
-          <span className="sr-only">{t("workbooks.detail.deleteQuestion")}</span>
-        </Button>
-      </deleteFetcher.Form>
+        <Trash2Icon className="size-3.5 text-destructive" />
+        <span className="sr-only">{t("workbooks.detail.deleteQuestion")}</span>
+      </Button>
     </div>
   );
 

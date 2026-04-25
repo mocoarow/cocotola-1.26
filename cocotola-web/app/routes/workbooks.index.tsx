@@ -2,6 +2,7 @@ import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useLoaderData } from "react-router";
+import { useConfirm } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -89,6 +90,7 @@ function formatDate(dateStr: string, locale: string): string {
 function WorkbookCard({ workbook }: { workbook: Workbook }) {
   const fetcher = useFetcher();
   const { t, i18n } = useTranslation();
+  const confirm = useConfirm();
   const isDeleting = fetcher.state !== "idle";
 
   return (
@@ -138,24 +140,27 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
           <PencilIcon data-icon="inline-start" className="size-3.5" />
           <span>{t("workbooks.index.edit")}</span>
         </Button>
-        <fetcher.Form method="post">
-          <input type="hidden" name="intent" value="delete" />
-          <input type="hidden" name="workbookId" value={workbook.workbookId} />
-          <Button
-            variant="destructive"
-            size="icon-sm"
-            type="submit"
-            disabled={isDeleting}
-            onClick={(e) => {
-              if (!confirm(t("workbooks.index.deleteConfirm", { title: workbook.title }))) {
-                e.preventDefault();
-              }
-            }}
-          >
-            <Trash2Icon className="size-3.5" />
-            <span className="sr-only">{t("common.delete")}</span>
-          </Button>
-        </fetcher.Form>
+        <Button
+          variant="destructive"
+          size="icon-sm"
+          disabled={isDeleting}
+          onClick={async () => {
+            const confirmed = await confirm({
+              title: t("workbooks.index.deleteConfirmTitle"),
+              description: t("workbooks.index.deleteConfirm", { title: workbook.title }),
+              confirmLabel: t("common.delete"),
+            });
+            if (confirmed) {
+              fetcher.submit(
+                { intent: "delete", workbookId: workbook.workbookId },
+                { method: "post" },
+              );
+            }
+          }}
+        >
+          <Trash2Icon className="size-3.5" />
+          <span className="sr-only">{t("common.delete")}</span>
+        </Button>
       </div>
     </div>
   );

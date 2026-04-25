@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import type { Workbook } from "~/lib/api/workbook.server";
 
 import "~/i18n/config";
@@ -19,12 +21,14 @@ vi.mock("~/lib/api/workbook.server", () => ({
   createWorkbook: vi.fn(),
 }));
 
+const submitMock = vi.fn();
+
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
   return {
     ...actual,
     useLoaderData: vi.fn(),
-    useFetcher: vi.fn(() => ({ state: "idle", Form: "form" })),
+    useFetcher: vi.fn(() => ({ state: "idle", Form: "form", submit: submitMock })),
     Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
       <a href={to} {...props}>
         {children}
@@ -75,7 +79,11 @@ describe("WorkbooksIndex", () => {
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
     // when
-    render(<WorkbooksIndex />);
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
 
     // then
     expect(screen.getByText("English Vocabulary")).toBeInTheDocument();
@@ -88,7 +96,11 @@ describe("WorkbooksIndex", () => {
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
     // when
-    render(<WorkbooksIndex />);
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
 
     // then
     expect(screen.getByText("public")).toBeInTheDocument();
@@ -100,7 +112,11 @@ describe("WorkbooksIndex", () => {
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
     // when
-    render(<WorkbooksIndex />);
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
 
     // then
     expect(screen.getByText("Learn basic words")).toBeInTheDocument();
@@ -112,7 +128,11 @@ describe("WorkbooksIndex", () => {
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
     // when
-    render(<WorkbooksIndex />);
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
 
     // then
     const studyLink = screen.getByText("Study").closest("a");
@@ -123,17 +143,70 @@ describe("WorkbooksIndex", () => {
     expect(editLink).toHaveAttribute("href", "/workbooks/wb-1");
   });
 
-  it("should render delete button with hidden workbookId input", () => {
+  it("should render delete button", () => {
     // given
     const workbooks = [createWorkbook({ workbookId: "wb-123" })];
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
     // when
-    render(<WorkbooksIndex />);
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
 
     // then
-    const hiddenInput = document.querySelector('input[name="workbookId"][value="wb-123"]');
-    expect(hiddenInput).toBeInTheDocument();
+    expect(screen.getByText("Delete")).toBeInTheDocument();
+  });
+
+  it("should open confirm dialog and submit delete when confirmed", async () => {
+    // given
+    submitMock.mockReset();
+    const workbooks = [createWorkbook({ workbookId: "wb-123", title: "Sample Book" })];
+    mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
+    const user = userEvent.setup();
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
+
+    // when
+    const deleteTrigger = screen.getByText("Delete").closest("button");
+    expect(deleteTrigger).not.toBeNull();
+    await user.click(deleteTrigger as HTMLElement);
+    expect(screen.getByText('Delete "Sample Book"?')).toBeInTheDocument();
+    const confirmButtons = screen.getAllByRole("button").filter((b) => b.textContent === "Delete");
+    expect(confirmButtons.length).toBeGreaterThan(0);
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    // then
+    expect(submitMock).toHaveBeenCalledWith(
+      { intent: "delete", workbookId: "wb-123" },
+      { method: "post" },
+    );
+  });
+
+  it("should not submit delete when confirm dialog is cancelled", async () => {
+    // given
+    submitMock.mockReset();
+    const workbooks = [createWorkbook({ workbookId: "wb-456", title: "Other Book" })];
+    mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
+    const user = userEvent.setup();
+    render(
+      <ConfirmDialogProvider>
+        <WorkbooksIndex />
+      </ConfirmDialogProvider>,
+    );
+
+    // when
+    const deleteTrigger = screen.getByText("Delete").closest("button");
+    expect(deleteTrigger).not.toBeNull();
+    await user.click(deleteTrigger as HTMLElement);
+    await user.click(screen.getByText("Cancel"));
+
+    // then
+    expect(submitMock).not.toHaveBeenCalled();
   });
 
   it("should show page title and description", () => {
