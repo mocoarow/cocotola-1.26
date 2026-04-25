@@ -1,9 +1,24 @@
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLoaderData } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
 import { AddQuestionSection } from "~/components/workbook/add-question-section";
+import { MultipleChoiceEditForm } from "~/components/workbook/multiple-choice-edit-form";
 import { QuestionCard } from "~/components/workbook/question-card";
-import { parseMultipleChoiceFormData } from "~/components/workbook/schemas";
+import {
+  parseMultipleChoiceContent,
+  parseMultipleChoiceFormData,
+  parseWordFillContent,
+} from "~/components/workbook/schemas";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "~/components/ui/sheet";
+import { WordFillEditForm } from "~/components/workbook/word-fill-edit-form";
 import { WorkbookHeader } from "~/components/workbook/workbook-header";
+import type { Question } from "~/lib/api/question.server";
 import {
   addQuestion,
   deleteQuestion,
@@ -183,12 +198,28 @@ export async function action({ request, params }: Route.ActionArgs) {
     return { ok: true, added: true };
   }
 
-  return { ok: true };
+  throw new Response(`Unknown intent: ${String(intent)}`, { status: 400 });
 }
 
 export default function WorkbookDetail() {
   const { workbook, questions } = useLoaderData<typeof loader>();
   const { t } = useTranslation();
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const editFetcher = useFetcher<{ ok: boolean }>();
+
+  const saved = useRef(false);
+  if (editFetcher.data?.ok && !saved.current) {
+    saved.current = true;
+    setEditingQuestion(null);
+  }
+  if (editFetcher.state === "submitting") {
+    saved.current = false;
+  }
+
+  const sheetTitle =
+    editingQuestion?.questionType === "word_fill"
+      ? t("workbooks.addQuestion.titleWordFill")
+      : t("workbooks.addQuestion.titleMultipleChoice");
 
   return (
     <div>
@@ -198,7 +229,8 @@ export default function WorkbookDetail() {
         visibility={workbook.visibility}
       />
 
-      <div className="mb-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{t("workbooks.detail.questionsTitle")}</h2>
         <AddQuestionSection />
       </div>
 
@@ -214,10 +246,44 @@ export default function WorkbookDetail() {
       ) : (
         <div className="space-y-3">
           {questions.map((question) => (
-            <QuestionCard key={question.questionId} question={question} />
+            <QuestionCard
+              key={question.questionId}
+              question={question}
+              onEdit={setEditingQuestion}
+            />
           ))}
         </div>
       )}
+
+      <Sheet
+        open={editingQuestion !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingQuestion(null);
+        }}
+      >
+        <SheetContent side="right">
+          <SheetHeader>
+            <SheetTitle>{sheetTitle}</SheetTitle>
+            <SheetDescription>{t("workbooks.detail.editQuestion")}</SheetDescription>
+          </SheetHeader>
+          {editingQuestion?.questionType === "word_fill" && (
+            <WordFillEditForm
+              question={editingQuestion}
+              parsed={parseWordFillContent(editingQuestion.content) ?? {}}
+              fetcher={editFetcher}
+              onCancel={() => setEditingQuestion(null)}
+            />
+          )}
+          {editingQuestion?.questionType === "multiple_choice" && (
+            <MultipleChoiceEditForm
+              question={editingQuestion}
+              parsed={parseMultipleChoiceContent(editingQuestion.content) ?? {}}
+              fetcher={editFetcher}
+              onCancel={() => setEditingQuestion(null)}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

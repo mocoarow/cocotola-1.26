@@ -1,22 +1,16 @@
 import { CircleCheckIcon, CircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import type { Question } from "~/lib/api/question.server";
-import { MultipleChoiceEditForm } from "./multiple-choice-edit-form";
 import { parseMultipleChoiceContent, parseWordFillContent } from "./schemas";
-import { WordFillEditForm } from "./word-fill-edit-form";
 
-export function QuestionCard({ question }: { question: Question }) {
-  const [editing, setEditing] = useState(false);
+export function QuestionCard({
+  question,
+  onEdit,
+}: { question: Question; onEdit: (question: Question) => void }) {
   const { t } = useTranslation();
-  const editFetcher = useFetcher();
   const deleteFetcher = useFetcher();
-
-  if (editFetcher.data?.ok && editing) {
-    setEditing(false);
-  }
 
   const typeBadge =
     question.questionType === "word_fill" ? (
@@ -29,9 +23,9 @@ export function QuestionCard({ question }: { question: Question }) {
       </span>
     );
 
-  const actionButtons = !editing && (
+  const actionButtons = (
     <div className="flex items-center gap-1">
-      <Button size="icon-sm" variant="ghost" onClick={() => setEditing(true)}>
+      <Button size="icon-sm" variant="ghost" onClick={() => onEdit(question)}>
         <PencilIcon className="size-3.5" />
         <span className="sr-only">{t("workbooks.detail.editQuestion")}</span>
       </Button>
@@ -72,14 +66,7 @@ export function QuestionCard({ question }: { question: Question }) {
           </div>
           {actionButtons}
         </div>
-        {editing && parsed ? (
-          <WordFillEditForm
-            question={question}
-            parsed={parsed}
-            fetcher={editFetcher}
-            onCancel={() => setEditing(false)}
-          />
-        ) : parsed ? (
+        {parsed ? (
           <div className="space-y-1 text-sm">
             <p>
               <span className="font-medium text-muted-foreground">[{parsed.source?.lang}]</span>{" "}
@@ -119,14 +106,7 @@ export function QuestionCard({ question }: { question: Question }) {
           </div>
           {actionButtons}
         </div>
-        {editing && parsed ? (
-          <MultipleChoiceEditForm
-            question={question}
-            parsed={parsed}
-            fetcher={editFetcher}
-            onCancel={() => setEditing(false)}
-          />
-        ) : parsed ? (
+        {parsed ? (
           <div className="space-y-2 text-sm">
             <p className="font-medium">{parsed.questionText}</p>
             <div className="space-y-1 pl-2">
