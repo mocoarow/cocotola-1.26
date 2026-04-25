@@ -74,7 +74,13 @@
       }
     },
     "addQuestion": {
-      "title": "Add Word Fill Question",
+      "selectType": "Select Question Type",
+      "wordFill": "Word Fill",
+      "wordFillDescription": "Fill in the blanks with the correct words",
+      "multipleChoice": "Multiple Choice",
+      "multipleChoiceDescription": "Choose the correct answer from multiple options",
+      "titleWordFill": "Add Word Fill Question",
+      "titleMultipleChoice": "Add Multiple Choice Question",
       "sourceLang": "Source Language",
       "sourceText": "Source Text",
       "targetLang": "Target Language",
@@ -84,7 +90,17 @@
       "tags": "Tags (optional)",
       "tagsHint": "Comma-separated, key:value format",
       "adding": "Adding...",
-      "submit": "Add Question"
+      "submit": "Add Question",
+      "continueAdding": "Continue Adding",
+      "changeType": "Change Type",
+      "questionText": "Question Text",
+      "questionTextPlaceholder": "What is the Japanese word for 'thank you'?",
+      "choices": "Choices",
+      "choiceText": "Choice text",
+      "correct": "Correct",
+      "addChoice": "Add Choice",
+      "removeChoice": "Remove Choice",
+      "shuffleChoices": "Shuffle choices"
     }
   },
   "errors": {

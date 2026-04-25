@@ -74,7 +74,13 @@
       }
     },
     "addQuestion": {
-      "title": "穴埋め問題を追加",
+      "selectType": "問題タイプを選択",
+      "wordFill": "穴埋め問題",
+      "wordFillDescription": "文中の単語を空欄にして回答させます",
+      "multipleChoice": "選択問題",
+      "multipleChoiceDescription": "複数の選択肢から正解を選ばせます",
+      "titleWordFill": "穴埋め問題を追加",
+      "titleMultipleChoice": "選択問題を追加",
       "sourceLang": "原文の言語",
       "sourceText": "原文テキスト",
       "targetLang": "訳文の言語",
@@ -84,7 +90,17 @@
       "tags": "タグ（任意）",
       "tagsHint": "カンマ区切り、key:value形式",
       "adding": "追加中...",
-      "submit": "問題を追加"
+      "submit": "問題を追加",
+      "continueAdding": "続けて追加",
+      "changeType": "問題タイプを変更",
+      "questionText": "問題文",
+      "questionTextPlaceholder": "日本語で「ありがとう」は何と言いますか？",
+      "choices": "選択肢",
+      "choiceText": "選択肢テキスト",
+      "correct": "正解",
+      "addChoice": "選択肢を追加",
+      "removeChoice": "選択肢を削除",
+      "shuffleChoices": "選択肢をシャッフルする"
     }
   },
   "errors": {

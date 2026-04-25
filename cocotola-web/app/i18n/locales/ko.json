@@ -74,7 +74,13 @@
       }
     },
     "addQuestion": {
-      "title": "빈칸 채우기 문제 추가",
+      "selectType": "문제 유형 선택",
+      "wordFill": "빈칸 채우기",
+      "wordFillDescription": "문장의 빈칸에 올바른 단어를 채웁니다",
+      "multipleChoice": "객관식",
+      "multipleChoiceDescription": "여러 선택지에서 정답을 고릅니다",
+      "titleWordFill": "빈칸 채우기 문제 추가",
+      "titleMultipleChoice": "객관식 문제 추가",
       "sourceLang": "원문 언어",
       "sourceText": "원문 텍스트",
       "targetLang": "번역 언어",
@@ -84,7 +90,17 @@
       "tags": "태그 (선택 사항)",
       "tagsHint": "쉼표로 구분, key:value 형식",
       "adding": "추가 중...",
-      "submit": "문제 추가"
+      "submit": "문제 추가",
+      "continueAdding": "계속 추가",
+      "changeType": "유형 변경",
+      "questionText": "문제 텍스트",
+      "questionTextPlaceholder": "일본어로 '감사합니다'는 무엇인가요?",
+      "choices": "선택지",
+      "choiceText": "선택지 텍스트",
+      "correct": "정답",
+      "addChoice": "선택지 추가",
+      "removeChoice": "선택지 삭제",
+      "shuffleChoices": "선택지 섞기"
     }
   },
   "errors": {
