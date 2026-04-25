@@ -28,3 +28,6 @@ var ErrDuplicateOwnedWorkbook = errors.New("duplicate owned workbook")
 
 // ErrConcurrentModification is returned when an optimistic lock fails due to concurrent updates.
 var ErrConcurrentModification = errors.New("concurrent modification")
+
+// ErrStudyRecordNotFound is returned when a study record cannot be found.
+var ErrStudyRecordNotFound = errors.New("study record not found")

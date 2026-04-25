@@ -3,6 +3,7 @@ package question
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -10,15 +11,19 @@ import (
 
 // DeleteQuestionCommand handles question deletion.
 type DeleteQuestionCommand struct {
-	questionDeleter questionDeleter
-	authChecker     authorizationChecker
+	questionDeleter  questionDeleter
+	activeListFinder activeQuestionListFinder
+	activeListSaver  activeQuestionListSaver
+	authChecker      authorizationChecker
 }
 
 // NewDeleteQuestionCommand returns a new DeleteQuestionCommand.
-func NewDeleteQuestionCommand(questionDeleter questionDeleter, authChecker authorizationChecker) *DeleteQuestionCommand {
+func NewDeleteQuestionCommand(questionDeleter questionDeleter, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker) *DeleteQuestionCommand {
 	return &DeleteQuestionCommand{
-		questionDeleter: questionDeleter,
-		authChecker:     authChecker,
+		questionDeleter:  questionDeleter,
+		activeListFinder: activeListFinder,
+		activeListSaver:  activeListSaver,
+		authChecker:      authChecker,
 	}
 }
 
@@ -40,5 +45,27 @@ func (c *DeleteQuestionCommand) DeleteQuestion(ctx context.Context, input *quest
 		return fmt.Errorf("delete question: %w", err)
 	}
 
+	// Remove from active question list (eventual consistency).
+	if err := c.removeFromActiveList(ctx, input.WorkbookID, input.QuestionID); err != nil {
+		slog.ErrorContext(ctx, "active question list save failed after question deletion",
+			slog.String("question_id", input.QuestionID),
+			slog.String("workbook_id", input.WorkbookID),
+			slog.Any("error", err),
+		)
+		return fmt.Errorf("save active question list: %w", err)
+	}
+
+	return nil
+}
+
+func (c *DeleteQuestionCommand) removeFromActiveList(ctx context.Context, workbookID string, questionID string) error {
+	activeList, err := c.activeListFinder.FindByWorkbookID(ctx, workbookID)
+	if err != nil {
+		return fmt.Errorf("find active question list: %w", err)
+	}
+	activeList.Remove(questionID)
+	if err := c.activeListSaver.Save(ctx, activeList); err != nil {
+		return fmt.Errorf("save active question list: %w", err)
+	}
 	return nil
 }

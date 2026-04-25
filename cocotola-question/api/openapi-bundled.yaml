@@ -20,6 +20,7 @@ tags:
   - name: workbook
   - name: question
   - name: sharing
+  - name: study
 paths:
   /api/v1/question/health:
     get:
@@ -715,6 +716,149 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/workbook/{workbookId}/study:
+    get:
+      summary: Get study questions
+      deprecated: false
+      description: Get questions due for study based on spaced repetition algorithm
+      operationId: getStudyQuestions
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+        - name: limit
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Successfully retrieved study questions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetStudyQuestionsResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+  /api/v1/workbook/{workbookId}/study/{questionId}/answer:
+    post:
+      summary: Record an answer
+      deprecated: false
+      description: Record a study answer and update spaced repetition schedule
+      operationId: recordAnswer
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordAnswerRequest'
+            examples: {}
+        required: true
+      responses:
+        '200':
+          description: Successfully recorded answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordAnswerResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
 components:
   schemas:
     CreateWorkbookRequest:
@@ -1012,6 +1156,77 @@ components:
             $ref: '#/components/schemas/PublicWorkbookResponse'
       required:
         - workbooks
+    StudyQuestionResponse:
+      type: object
+      required:
+        - questionId
+        - questionType
+        - content
+        - orderIndex
+      properties:
+        questionId:
+          type: string
+        questionType:
+          type: string
+        content:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 20
+        orderIndex:
+          type: integer
+          format: int32
+    GetStudyQuestionsResponse:
+      type: object
+      required:
+        - questions
+        - totalDue
+        - newCount
+        - reviewCount
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudyQuestionResponse'
+        totalDue:
+          type: integer
+          format: int32
+        newCount:
+          type: integer
+          format: int32
+        reviewCount:
+          type: integer
+          format: int32
+    RecordAnswerRequest:
+      type: object
+      required:
+        - correct
+      properties:
+        correct:
+          type: boolean
+    RecordAnswerResponse:
+      type: object
+      required:
+        - nextDueAt
+        - consecutiveCorrect
+        - totalCorrect
+        - totalIncorrect
+      properties:
+        nextDueAt:
+          type: string
+          format: date-time
+        consecutiveCorrect:
+          type: integer
+          format: int32
+        totalCorrect:
+          type: integer
+          format: int32
+        totalIncorrect:
+          type: integer
+          format: int32
     HealthCheckResponse:
       type: object
       properties:

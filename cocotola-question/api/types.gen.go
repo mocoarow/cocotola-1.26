@@ -55,6 +55,14 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// GetStudyQuestionsResponse defines model for GetStudyQuestionsResponse.
+type GetStudyQuestionsResponse struct {
+	Questions   []StudyQuestionResponse `json:"questions"`
+	TotalDue    int32                   `json:"totalDue"`
+	NewCount    int32                   `json:"newCount"`
+	ReviewCount int32                   `json:"reviewCount"`
+}
+
 // HealthCheckResponse defines model for HealthCheckResponse.
 type HealthCheckResponse struct {
 	Status string `json:"status"`
@@ -112,6 +120,28 @@ type SharedItemResponse struct {
 	AddedAt     time.Time `json:"addedAt"`
 	ReferenceID string    `json:"referenceId"`
 	WorkbookID  string    `json:"workbookId"`
+}
+
+// RecordAnswerRequest defines model for RecordAnswerRequest.
+type RecordAnswerRequest struct {
+	Correct bool `json:"correct"`
+}
+
+// RecordAnswerResponse defines model for RecordAnswerResponse.
+type RecordAnswerResponse struct {
+	NextDueAt          time.Time `json:"nextDueAt"`
+	ConsecutiveCorrect int32     `json:"consecutiveCorrect"`
+	TotalCorrect       int32     `json:"totalCorrect"`
+	TotalIncorrect     int32     `json:"totalIncorrect"`
+}
+
+// StudyQuestionResponse defines model for StudyQuestionResponse.
+type StudyQuestionResponse struct {
+	QuestionId   string   `json:"questionId"`
+	QuestionType string   `json:"questionType"`
+	Content      string   `json:"content"`
+	Tags         []string `json:"tags,omitempty"`
+	OrderIndex   int32    `json:"orderIndex"`
 }
 
 // UpdateQuestionRequest defines model for UpdateQuestionRequest.

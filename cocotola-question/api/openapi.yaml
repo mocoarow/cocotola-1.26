@@ -17,6 +17,7 @@ tags:
   - name: workbook
   - name: question
   - name: sharing
+  - name: study
 paths:
   /api/v1/question/health:
     $ref: 'paths/health.yaml#/health'
@@ -36,6 +37,10 @@ paths:
     $ref: 'paths/sharing.yaml#/unshare'
   /api/v1/workbook/public:
     $ref: 'paths/sharing.yaml#/public'
+  /api/v1/workbook/{workbookId}/study:
+    $ref: 'paths/study.yaml#/study'
+  /api/v1/workbook/{workbookId}/study/{questionId}/answer:
+    $ref: 'paths/study.yaml#/study-answer'
 components:
   schemas:
     CreateWorkbookRequest:
@@ -64,6 +69,14 @@ components:
       $ref: 'schemas/sharing.yaml#/PublicWorkbookResponse'
     ListPublicResponse:
       $ref: 'schemas/sharing.yaml#/ListPublicResponse'
+    StudyQuestionResponse:
+      $ref: 'schemas/study.yaml#/StudyQuestionResponse'
+    GetStudyQuestionsResponse:
+      $ref: 'schemas/study.yaml#/GetStudyQuestionsResponse'
+    RecordAnswerRequest:
+      $ref: 'schemas/study.yaml#/RecordAnswerRequest'
+    RecordAnswerResponse:
+      $ref: 'schemas/study.yaml#/RecordAnswerResponse'
     HealthCheckResponse:
       $ref: 'schemas/health.yaml#/HealthCheckResponse'
     ErrorResponse:

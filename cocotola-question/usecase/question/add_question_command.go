@@ -3,6 +3,7 @@ package question
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
@@ -12,15 +13,19 @@ import (
 
 // AddQuestionCommand handles adding a question to a workbook.
 type AddQuestionCommand struct {
-	questionRepo questionAdder
-	authChecker  authorizationChecker
+	questionRepo     questionAdder
+	activeListFinder activeQuestionListFinder
+	activeListSaver  activeQuestionListSaver
+	authChecker      authorizationChecker
 }
 
 // NewAddQuestionCommand returns a new AddQuestionCommand.
-func NewAddQuestionCommand(questionRepo questionAdder, authChecker authorizationChecker) *AddQuestionCommand {
+func NewAddQuestionCommand(questionRepo questionAdder, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker) *AddQuestionCommand {
 	return &AddQuestionCommand{
-		questionRepo: questionRepo,
-		authChecker:  authChecker,
+		questionRepo:     questionRepo,
+		activeListFinder: activeListFinder,
+		activeListSaver:  activeListSaver,
+		authChecker:      authChecker,
 	}
 }
 
@@ -47,6 +52,16 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("add question: %w", err)
 	}
 
+	// Add to active question list (eventual consistency).
+	if err := c.saveActiveList(ctx, input.WorkbookID, questionID); err != nil {
+		slog.ErrorContext(ctx, "active question list save failed after question creation",
+			slog.String("question_id", questionID),
+			slog.String("workbook_id", input.WorkbookID),
+			slog.Any("error", err),
+		)
+		return nil, fmt.Errorf("save active question list: %w", err)
+	}
+
 	now := time.Now()
 	return &questionservice.AddQuestionOutput{
 		Item: questionservice.Item{
@@ -59,4 +74,18 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 			UpdatedAt:    now,
 		},
 	}, nil
+}
+
+func (c *AddQuestionCommand) saveActiveList(ctx context.Context, workbookID string, questionID string) error {
+	activeList, err := c.activeListFinder.FindByWorkbookID(ctx, workbookID)
+	if err != nil {
+		return fmt.Errorf("find active question list: %w", err)
+	}
+	if err := activeList.Add(questionID); err != nil {
+		return fmt.Errorf("add to active question list: %w", err)
+	}
+	if err := c.activeListSaver.Save(ctx, activeList); err != nil {
+		return fmt.Errorf("save active question list: %w", err)
+	}
+	return nil
 }

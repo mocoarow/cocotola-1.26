@@ -29,6 +29,14 @@ type workbookFinder interface {
 	FindByID(ctx context.Context, id string) (*domainworkbook.Workbook, error)
 }
 
+type activeQuestionListFinder interface {
+	FindByWorkbookID(ctx context.Context, workbookID string) (*domain.ActiveQuestionList, error)
+}
+
+type activeQuestionListSaver interface {
+	Save(ctx context.Context, list *domain.ActiveQuestionList) error
+}
+
 type authorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }

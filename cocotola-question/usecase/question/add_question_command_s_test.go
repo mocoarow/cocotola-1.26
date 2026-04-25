@@ -21,6 +21,13 @@ const (
 	fixtureQuestionID     = "q-1"
 )
 
+func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.ActiveQuestionList {
+	t.Helper()
+	list, err := domain.NewActiveQuestionList(fixtureWorkbookID, questionIDs)
+	require.NoError(t, err)
+	return list
+}
+
 func newAddQuestionInput(t *testing.T) *questionservice.AddQuestionInput {
 	t.Helper()
 	input, err := questionservice.NewAddQuestionInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, "word_fill", "What is Go?", []string{"lang:en"}, 0)
@@ -42,7 +49,13 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	questionAdder := newMockquestionAdder(t)
 	questionAdder.On("Add", mock.Anything, fixtureWorkbookID, "word_fill", "What is Go?", []string{"lang:en"}, 0).Return(fixtureQuestionID, nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(questionAdder, authChecker)
+	activeListFinder := newMockactiveQuestionListFinder(t)
+	activeListFinder.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t), nil)
+
+	activeListSaver := newMockactiveQuestionListSaver(t)
+	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+
+	cmd := questionusecase.NewAddQuestionCommand(questionAdder, activeListFinder, activeListSaver, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
@@ -66,7 +79,7 @@ func Test_AddQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) 
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
@@ -88,7 +101,7 @@ func Test_AddQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
