@@ -1,9 +1,10 @@
-import { CheckIcon, CircleCheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
+import { CircleCheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
 import type { Choice } from "./schemas";
 
@@ -34,7 +35,7 @@ export function MultipleChoiceEditForm({
   const [shuffleChoices, setShuffleChoices] = useState(parsed.shuffleChoices ?? true);
 
   return (
-    <fetcher.Form method="post" className="space-y-3">
+    <fetcher.Form method="post" className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
       <input type="hidden" name="intent" value="updateQuestion" />
       <input type="hidden" name="questionId" value={question.questionId} />
       <input type="hidden" name="questionType" value="multiple_choice" />
@@ -42,8 +43,8 @@ export function MultipleChoiceEditForm({
       <input type="hidden" name="choices" value={JSON.stringify(choices)} />
       <input type="hidden" name="shuffleChoices" value={String(shuffleChoices)} />
 
-      <div className="space-y-1">
-        <label htmlFor="edit-mc-questionText" className="text-xs font-medium">
+      <div className="space-y-1.5">
+        <label htmlFor="edit-mc-questionText" className="text-sm font-medium">
           {t("workbooks.addQuestion.questionText")}
         </label>
         <Input
@@ -55,7 +56,7 @@ export function MultipleChoiceEditForm({
       </div>
 
       <div className="space-y-2">
-        <span className="text-xs font-medium">{t("workbooks.addQuestion.choices")}</span>
+        <span className="text-sm font-medium">{t("workbooks.addQuestion.choices")}</span>
         {choices.map((choice, index) => (
           <div key={choice.id} className="flex items-center gap-2">
             <button
@@ -118,38 +119,33 @@ export function MultipleChoiceEditForm({
           onChange={(e) => setShuffleChoices(e.target.checked)}
           className="size-4 rounded border-input"
         />
-        <label htmlFor="edit-mc-shuffle" className="text-xs font-medium">
+        <label htmlFor="edit-mc-shuffle" className="text-sm font-medium">
           {t("workbooks.addQuestion.shuffleChoices")}
         </label>
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="edit-mc-explanation" className="text-xs font-medium">
+      <div className="space-y-1.5">
+        <label htmlFor="edit-mc-explanation" className="text-sm font-medium">
           {t("workbooks.addQuestion.explanation")}
         </label>
-        <Input
-          id="edit-mc-explanation"
-          name="explanation"
-          defaultValue={parsed.explanation ?? ""}
-        />
+        <Input id="edit-mc-explanation" name="explanation" defaultValue={parsed.explanation ?? ""} />
       </div>
 
-      <div className="space-y-1">
-        <label htmlFor="edit-mc-tags" className="text-xs font-medium">
+      <div className="space-y-1.5">
+        <label htmlFor="edit-mc-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
         <Input id="edit-mc-tags" name="tags" defaultValue={question.tags?.join(", ") ?? ""} />
       </div>
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={isSubmitting}>
-          <CheckIcon data-icon="inline-start" className="size-3.5" />
-          <span>{isSubmitting ? t("common.saving") : t("common.save")}</span>
+      <SheetFooter>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? t("common.saving") : t("common.save")}
         </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           {t("common.cancel")}
         </Button>
-      </div>
+      </SheetFooter>
     </fetcher.Form>
   );
 }
