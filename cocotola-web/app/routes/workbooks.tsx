@@ -1,6 +1,5 @@
 import { BookOpenIcon, GlobeIcon, LanguagesIcon, LogOutIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { supportedLanguages, type SupportedLanguage } from "~/i18n/config";
 import { Form, Link, Outlet, redirect, useLoaderData, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -20,6 +19,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
+import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
 import { fetchWithIdToken } from "~/lib/api/fetch.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { destroySession, getSession } from "~/lib/auth/session.server";
@@ -82,9 +82,7 @@ export default function WorkbooksLayout() {
   const { t, i18n } = useTranslation();
 
   function cycleLanguage() {
-    const currentIndex = supportedLanguages.indexOf(
-      i18n.language as SupportedLanguage,
-    );
+    const currentIndex = supportedLanguages.indexOf(i18n.language as SupportedLanguage);
     const nextIndex = (currentIndex + 1) % supportedLanguages.length;
     i18n.changeLanguage(supportedLanguages[nextIndex]);
   }
