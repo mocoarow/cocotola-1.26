@@ -10,12 +10,12 @@ import (
 )
 
 type studyRecordFinder interface {
-	FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*domainstudy.StudyRecord, error)
-	FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]domainstudy.StudyRecord, error)
+	FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*domainstudy.Record, error)
+	FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]domainstudy.Record, error)
 }
 
 type studyRecordSaver interface {
-	Save(ctx context.Context, userID string, record *domainstudy.StudyRecord) error
+	Save(ctx context.Context, userID string, record *domainstudy.Record) error
 }
 
 type activeQuestionListFinder interface {

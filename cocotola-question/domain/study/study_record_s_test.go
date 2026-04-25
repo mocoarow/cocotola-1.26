@@ -10,31 +10,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewStudyRecord_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
+func Test_NewRecord_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// when
-	_, err := study.NewStudyRecord("", "q1")
+	_, err := study.NewRecord("", "q1")
 
 	// then
 	assert.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
-func Test_NewStudyRecord_shouldReturnError_whenQuestionIDIsEmpty(t *testing.T) {
+func Test_NewRecord_shouldReturnError_whenQuestionIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// when
-	_, err := study.NewStudyRecord("wb1", "")
+	_, err := study.NewRecord("wb1", "")
 
 	// then
 	assert.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
-func Test_NewStudyRecord_shouldReturnRecord_whenValid(t *testing.T) {
+func Test_NewRecord_shouldReturnRecord_whenValid(t *testing.T) {
 	t.Parallel()
 
 	// when
-	record, err := study.NewStudyRecord("wb1", "q1")
+	record, err := study.NewRecord("wb1", "q1")
 
 	// then
 	require.NoError(t, err)
@@ -45,11 +45,11 @@ func Test_NewStudyRecord_shouldReturnRecord_whenValid(t *testing.T) {
 	assert.Equal(t, 0, record.TotalIncorrect())
 }
 
-func Test_StudyRecord_RecordCorrect_shouldIncrementConsecutiveCorrect(t *testing.T) {
+func Test_Record_RecordCorrect_shouldIncrementConsecutiveCorrect(t *testing.T) {
 	t.Parallel()
 
 	// given
-	record, err := study.NewStudyRecord("wb1", "q1")
+	record, err := study.NewRecord("wb1", "q1")
 	require.NoError(t, err)
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
@@ -64,11 +64,11 @@ func Test_StudyRecord_RecordCorrect_shouldIncrementConsecutiveCorrect(t *testing
 	assert.Equal(t, now.AddDate(0, 0, 1), record.NextDueAt())
 }
 
-func Test_StudyRecord_RecordCorrect_shouldDoubleInterval_whenConsecutive(t *testing.T) {
+func Test_Record_RecordCorrect_shouldDoubleInterval_whenConsecutive(t *testing.T) {
 	t.Parallel()
 
 	// given
-	record, err := study.NewStudyRecord("wb1", "q1")
+	record, err := study.NewRecord("wb1", "q1")
 	require.NoError(t, err)
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
@@ -83,11 +83,11 @@ func Test_StudyRecord_RecordCorrect_shouldDoubleInterval_whenConsecutive(t *test
 	assert.Equal(t, now.AddDate(0, 0, 7), record.NextDueAt())
 }
 
-func Test_StudyRecord_RecordIncorrect_shouldResetConsecutiveCorrect(t *testing.T) {
+func Test_Record_RecordIncorrect_shouldResetConsecutiveCorrect(t *testing.T) {
 	t.Parallel()
 
 	// given
-	record, err := study.NewStudyRecord("wb1", "q1")
+	record, err := study.NewRecord("wb1", "q1")
 	require.NoError(t, err)
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 	record.RecordCorrect(now)
@@ -103,11 +103,11 @@ func Test_StudyRecord_RecordIncorrect_shouldResetConsecutiveCorrect(t *testing.T
 	assert.Equal(t, now.AddDate(0, 0, 1), record.NextDueAt())
 }
 
-func Test_StudyRecord_RecordCorrectAfterIncorrect_shouldRestartInterval(t *testing.T) {
+func Test_Record_RecordCorrectAfterIncorrect_shouldRestartInterval(t *testing.T) {
 	t.Parallel()
 
 	// given
-	record, err := study.NewStudyRecord("wb1", "q1")
+	record, err := study.NewRecord("wb1", "q1")
 	require.NoError(t, err)
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 	record.RecordCorrect(now)

@@ -42,23 +42,23 @@ func (_m *mockstudyRecordFinder) EXPECT() *mockstudyRecordFinder_Expecter {
 }
 
 // FindByID provides a mock function for the type mockstudyRecordFinder
-func (_mock *mockstudyRecordFinder) FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*study.StudyRecord, error) {
+func (_mock *mockstudyRecordFinder) FindByID(ctx context.Context, userID string, workbookID string, questionID string) (*study.Record, error) {
 	ret := _mock.Called(ctx, userID, workbookID, questionID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByID")
 	}
 
-	var r0 *study.StudyRecord
+	var r0 *study.Record
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (*study.StudyRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) (*study.Record, error)); ok {
 		return returnFunc(ctx, userID, workbookID, questionID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) *study.StudyRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string) *study.Record); ok {
 		r0 = returnFunc(ctx, userID, workbookID, questionID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*study.StudyRecord)
+			r0 = ret.Get(0).(*study.Record)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string) error); ok {
@@ -111,34 +111,34 @@ func (_c *mockstudyRecordFinder_FindByID_Call) Run(run func(ctx context.Context,
 	return _c
 }
 
-func (_c *mockstudyRecordFinder_FindByID_Call) Return(studyRecord *study.StudyRecord, err error) *mockstudyRecordFinder_FindByID_Call {
-	_c.Call.Return(studyRecord, err)
+func (_c *mockstudyRecordFinder_FindByID_Call) Return(record *study.Record, err error) *mockstudyRecordFinder_FindByID_Call {
+	_c.Call.Return(record, err)
 	return _c
 }
 
-func (_c *mockstudyRecordFinder_FindByID_Call) RunAndReturn(run func(ctx context.Context, userID string, workbookID string, questionID string) (*study.StudyRecord, error)) *mockstudyRecordFinder_FindByID_Call {
+func (_c *mockstudyRecordFinder_FindByID_Call) RunAndReturn(run func(ctx context.Context, userID string, workbookID string, questionID string) (*study.Record, error)) *mockstudyRecordFinder_FindByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FindByWorkbookID provides a mock function for the type mockstudyRecordFinder
-func (_mock *mockstudyRecordFinder) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.StudyRecord, error) {
+func (_mock *mockstudyRecordFinder) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.Record, error) {
 	ret := _mock.Called(ctx, userID, workbookID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByWorkbookID")
 	}
 
-	var r0 []study.StudyRecord
+	var r0 []study.Record
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]study.StudyRecord, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) ([]study.Record, error)); ok {
 		return returnFunc(ctx, userID, workbookID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []study.StudyRecord); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string) []study.Record); ok {
 		r0 = returnFunc(ctx, userID, workbookID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]study.StudyRecord)
+			r0 = ret.Get(0).([]study.Record)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
@@ -185,12 +185,12 @@ func (_c *mockstudyRecordFinder_FindByWorkbookID_Call) Run(run func(ctx context.
 	return _c
 }
 
-func (_c *mockstudyRecordFinder_FindByWorkbookID_Call) Return(studyRecords []study.StudyRecord, err error) *mockstudyRecordFinder_FindByWorkbookID_Call {
-	_c.Call.Return(studyRecords, err)
+func (_c *mockstudyRecordFinder_FindByWorkbookID_Call) Return(records []study.Record, err error) *mockstudyRecordFinder_FindByWorkbookID_Call {
+	_c.Call.Return(records, err)
 	return _c
 }
 
-func (_c *mockstudyRecordFinder_FindByWorkbookID_Call) RunAndReturn(run func(ctx context.Context, userID string, workbookID string) ([]study.StudyRecord, error)) *mockstudyRecordFinder_FindByWorkbookID_Call {
+func (_c *mockstudyRecordFinder_FindByWorkbookID_Call) RunAndReturn(run func(ctx context.Context, userID string, workbookID string) ([]study.Record, error)) *mockstudyRecordFinder_FindByWorkbookID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -223,7 +223,7 @@ func (_m *mockstudyRecordSaver) EXPECT() *mockstudyRecordSaver_Expecter {
 }
 
 // Save provides a mock function for the type mockstudyRecordSaver
-func (_mock *mockstudyRecordSaver) Save(ctx context.Context, userID string, record *study.StudyRecord) error {
+func (_mock *mockstudyRecordSaver) Save(ctx context.Context, userID string, record *study.Record) error {
 	ret := _mock.Called(ctx, userID, record)
 
 	if len(ret) == 0 {
@@ -231,7 +231,7 @@ func (_mock *mockstudyRecordSaver) Save(ctx context.Context, userID string, reco
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *study.StudyRecord) error); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, *study.Record) error); ok {
 		r0 = returnFunc(ctx, userID, record)
 	} else {
 		r0 = ret.Error(0)
@@ -247,12 +247,12 @@ type mockstudyRecordSaver_Save_Call struct {
 // Save is a helper method to define mock.On call
 //   - ctx context.Context
 //   - userID string
-//   - record *study.StudyRecord
+//   - record *study.Record
 func (_e *mockstudyRecordSaver_Expecter) Save(ctx interface{}, userID interface{}, record interface{}) *mockstudyRecordSaver_Save_Call {
 	return &mockstudyRecordSaver_Save_Call{Call: _e.mock.On("Save", ctx, userID, record)}
 }
 
-func (_c *mockstudyRecordSaver_Save_Call) Run(run func(ctx context.Context, userID string, record *study.StudyRecord)) *mockstudyRecordSaver_Save_Call {
+func (_c *mockstudyRecordSaver_Save_Call) Run(run func(ctx context.Context, userID string, record *study.Record)) *mockstudyRecordSaver_Save_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -262,9 +262,9 @@ func (_c *mockstudyRecordSaver_Save_Call) Run(run func(ctx context.Context, user
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 *study.StudyRecord
+		var arg2 *study.Record
 		if args[2] != nil {
-			arg2 = args[2].(*study.StudyRecord)
+			arg2 = args[2].(*study.Record)
 		}
 		run(
 			arg0,
@@ -280,7 +280,7 @@ func (_c *mockstudyRecordSaver_Save_Call) Return(err error) *mockstudyRecordSave
 	return _c
 }
 
-func (_c *mockstudyRecordSaver_Save_Call) RunAndReturn(run func(ctx context.Context, userID string, record *study.StudyRecord) error) *mockstudyRecordSaver_Save_Call {
+func (_c *mockstudyRecordSaver_Save_Call) RunAndReturn(run func(ctx context.Context, userID string, record *study.Record) error) *mockstudyRecordSaver_Save_Call {
 	_c.Call.Return(run)
 	return _c
 }

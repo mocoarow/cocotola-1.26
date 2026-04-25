@@ -61,42 +61,16 @@ func (r *OwnedWorkbookListRepository) FindByOwnerID(ctx context.Context, ownerID
 // Save persists the owned workbook list atomically using a Firestore transaction.
 // It uses optimistic locking via a version field on the owner document.
 func (r *OwnedWorkbookListRepository) Save(ctx context.Context, list *domain.OwnedWorkbookList) error {
-	nextVersion := list.Version() + 1
-	if err := r.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
-		ownerRef := r.ownerDoc(list.OwnerID())
-
-		// Verify version (optimistic lock).
-		snap, err := tx.Get(ownerRef)
-		currentVersion := 0
-		if err != nil {
-			if status.Code(err) != codes.NotFound {
-				return fmt.Errorf("get owner doc in tx: %w", err)
-			}
-		} else {
-			var record ownedWorkbookListRecord
-			if err := snap.DataTo(&record); err != nil {
-				return fmt.Errorf("decode owner doc in tx: %w", err)
-			}
-			currentVersion = record.Version
-		}
-
-		if currentVersion != list.Version() {
-			return domain.ErrConcurrentModification
-		}
-
-		record := ownedWorkbookListRecord{
-			WorkbookIDs: list.Entries(),
-			Version:     nextVersion,
-		}
-		if err := tx.Set(ownerRef, record); err != nil {
-			return fmt.Errorf("save owned workbook list: %w", err)
-		}
-
-		return nil
-	}); err != nil {
-		return fmt.Errorf("run transaction: %w", err)
+	record := ownedWorkbookListRecord{
+		WorkbookIDs: list.Entries(),
+		Version:     list.Version() + 1,
 	}
-
-	list.SetVersion(nextVersion)
-	return nil
+	return saveVersionedEntity(ctx, r.client, list, r.ownerDoc(list.OwnerID()), record,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
+			var rec ownedWorkbookListRecord
+			if err := snap.DataTo(&rec); err != nil {
+				return 0, fmt.Errorf("decode owned workbook list: %w", err)
+			}
+			return rec.Version, nil
+		}, "owned workbook list")
 }

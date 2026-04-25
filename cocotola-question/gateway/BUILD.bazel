@@ -13,6 +13,7 @@ go_library(
         "question_repository.go",
         "reference_repository.go",
         "study_record_repository.go",
+        "versioned_save.go",
         "workbook_repository.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway",

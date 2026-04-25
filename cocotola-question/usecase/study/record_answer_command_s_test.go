@@ -27,7 +27,7 @@ const (
 
 var fixtureClock = time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
-var noShuffle = func(n int, swap func(i, j int)) {}
+var noShuffle = func(_ int, _ func(i, j int)) {}
 
 var testConfig = studyusecase.UsecaseConfig{
 	ClockFunc:   func() time.Time { return fixtureClock },
@@ -81,7 +81,7 @@ func Test_RecordAnswerCommand_shouldRecordCorrectAnswer_whenAllowed(t *testing.T
 	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
 
 	saver := newMockstudyRecordSaver(t)
-	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.StudyRecord")).Return(nil)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
 
 	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
 	input := newRecordAnswerInput(t, true)
@@ -114,13 +114,13 @@ func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenAllowed(t *testing
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
 
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
-	existingRecord := domainstudy.ReconstructStudyRecord(fixtureWorkbookID, fixtureQuestionID, 3, now, now, 3, 0)
+	existingRecord := domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 3, now, now, 3, 0)
 
 	finder := newMockstudyRecordFinder(t)
 	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(existingRecord, nil)
 
 	saver := newMockstudyRecordSaver(t)
-	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.StudyRecord")).Return(nil)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
 
 	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
 	input := newRecordAnswerInput(t, false)

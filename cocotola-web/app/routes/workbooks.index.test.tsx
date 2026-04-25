@@ -187,7 +187,7 @@ describe("WorkbooksIndex", () => {
     );
   });
 
-  it("should not submit delete when confirm dialog is cancelled", async () => {
+  it("should not submit delete when confirm dialog is canceled", async () => {
     // given
     submitMock.mockReset();
     const workbooks = [createWorkbook({ workbookId: "wb-456", title: "Other Book" })];

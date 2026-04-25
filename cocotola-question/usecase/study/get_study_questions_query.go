@@ -89,7 +89,7 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 	}, nil
 }
 
-func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.StudyRecord) (dueIDs, newIDs []string, reviewCount, newCount int) {
+func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record) (dueIDs, newIDs []string, reviewCount, newCount int) {
 	recordMap := make(map[string]int, len(studyRecords))
 	for i, r := range studyRecords {
 		recordMap[r.QuestionID()] = i
@@ -132,15 +132,18 @@ func (q *GetStudyQuestionsQuery) fetchQuestionItems(ctx context.Context, workboo
 	return items, nil
 }
 
+const reviewRatioNumerator = 9
+const reviewRatioDenominator = 10
+
 // mixIDs selects IDs with 90% review and 10% new ratio.
 // If one pool has fewer than its allocated slots, the surplus is filled from the other.
-func mixIDs(review, new []string, limit int) []string {
-	reviewSlots := limit * 9 / 10
+func mixIDs(review, unseen []string, limit int) []string {
+	reviewSlots := limit * reviewRatioNumerator / reviewRatioDenominator
 	newSlots := limit - reviewSlots
 
 	// Take from each pool, capped by availability
 	takeReview := min(reviewSlots, len(review))
-	takeNew := min(newSlots, len(new))
+	takeNew := min(newSlots, len(unseen))
 
 	// Fill surplus from the other pool
 	remaining := limit - takeReview - takeNew
@@ -150,12 +153,12 @@ func mixIDs(review, new []string, limit int) []string {
 		remaining -= extraReview
 	}
 	if remaining > 0 {
-		extraNew := min(remaining, len(new)-takeNew)
+		extraNew := min(remaining, len(unseen)-takeNew)
 		takeNew += extraNew
 	}
 
 	result := make([]string, 0, takeReview+takeNew)
 	result = append(result, review[:takeReview]...)
-	result = append(result, new[:takeNew]...)
+	result = append(result, unseen[:takeNew]...)
 	return result
 }

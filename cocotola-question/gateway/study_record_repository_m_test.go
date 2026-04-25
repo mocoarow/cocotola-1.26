@@ -26,7 +26,7 @@ func Test_StudyRecordRepository_Save_shouldPersistRecord(t *testing.T) {
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 	nextDue := now.Add(24 * time.Hour)
 
-	record := study.ReconstructStudyRecord(workbookID, questionID, 1, now, nextDue, 1, 0)
+	record := study.ReconstructRecord(workbookID, questionID, 1, now, nextDue, 1, 0)
 
 	// when
 	err := repo.Save(ctx, userID, record)
@@ -60,12 +60,12 @@ func Test_StudyRecordRepository_Save_shouldUpdateExistingRecord(t *testing.T) {
 	questionID := "q-1"
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
-	record1 := study.ReconstructStudyRecord(workbookID, questionID, 1, now, now.Add(24*time.Hour), 1, 0)
+	record1 := study.ReconstructRecord(workbookID, questionID, 1, now, now.Add(24*time.Hour), 1, 0)
 	require.NoError(t, repo.Save(ctx, userID, record1))
 
 	// when - update with new values (use version from first save)
 	later := now.Add(1 * time.Hour)
-	record2 := study.ReconstructStudyRecord(workbookID, questionID, 2, later, later.Add(48*time.Hour), 2, 0)
+	record2 := study.ReconstructRecord(workbookID, questionID, 2, later, later.Add(48*time.Hour), 2, 0)
 	record2.SetVersion(record1.Version())
 	err := repo.Save(ctx, userID, record2)
 
@@ -106,11 +106,11 @@ func Test_StudyRecordRepository_Save_shouldReturnError_whenVersionConflict(t *te
 	questionID := "q-1"
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
-	record := study.ReconstructStudyRecord(workbookID, questionID, 1, now, now.Add(24*time.Hour), 1, 0)
+	record := study.ReconstructRecord(workbookID, questionID, 1, now, now.Add(24*time.Hour), 1, 0)
 	require.NoError(t, repo.Save(ctx, userID, record))
 
 	// when - attempt to save with stale version (0 instead of 1)
-	staleRecord := study.ReconstructStudyRecord(workbookID, questionID, 2, now, now.Add(48*time.Hour), 2, 0)
+	staleRecord := study.ReconstructRecord(workbookID, questionID, 2, now, now.Add(48*time.Hour), 2, 0)
 	err := repo.Save(ctx, userID, staleRecord)
 
 	// then
@@ -131,7 +131,7 @@ func Test_StudyRecordRepository_FindByWorkbookID_shouldReturnEmpty_whenNoRecords
 
 	// then
 	require.NoError(t, err)
-	assert.Len(t, records, 0)
+	assert.Empty(t, records)
 }
 
 func Test_StudyRecordRepository_FindByWorkbookID_shouldReturnRecords_whenRecordsExist(t *testing.T) {
@@ -145,8 +145,8 @@ func Test_StudyRecordRepository_FindByWorkbookID_shouldReturnRecords_whenRecords
 	workbookID := "wb-1"
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
-	record1 := study.ReconstructStudyRecord(workbookID, "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
-	record2 := study.ReconstructStudyRecord(workbookID, "q-2", 0, now, now.Add(10*time.Minute), 0, 1)
+	record1 := study.ReconstructRecord(workbookID, "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
+	record2 := study.ReconstructRecord(workbookID, "q-2", 0, now, now.Add(10*time.Minute), 0, 1)
 	require.NoError(t, repo.Save(ctx, userID, record1))
 	require.NoError(t, repo.Save(ctx, userID, record2))
 
@@ -168,7 +168,7 @@ func Test_StudyRecordRepository_FindByWorkbookID_shouldNotReturnRecords_whenDiff
 	userID := "test-user-filter-" + t.Name()
 	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
 
-	record := study.ReconstructStudyRecord("wb-A", "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
+	record := study.ReconstructRecord("wb-A", "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
 	require.NoError(t, repo.Save(ctx, userID, record))
 
 	// when
@@ -176,5 +176,5 @@ func Test_StudyRecordRepository_FindByWorkbookID_shouldNotReturnRecords_whenDiff
 
 	// then
 	require.NoError(t, err)
-	assert.Len(t, records, 0)
+	assert.Empty(t, records)
 }

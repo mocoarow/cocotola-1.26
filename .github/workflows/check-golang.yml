@@ -18,6 +18,10 @@ jobs:
       matrix:
         workdir:
           - hello-world
+          - cocotola-auth
+          - cocotola-init
+          - cocotola-lib
+          - cocotola-question
     name: golang
     runs-on: ubuntu-latest
     steps:
