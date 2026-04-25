@@ -43,10 +43,7 @@ export function StudyResult({ correctCount, incorrectCount, workbookId }: StudyR
         </div>
       </div>
 
-      <Button
-        nativeButton={false}
-        render={<Link to={`/workbooks/${workbookId}`} />}
-      >
+      <Button nativeButton={false} render={<Link to={`/workbooks/${workbookId}`} />}>
         {t("workbooks.study.backToWorkbook")}
       </Button>
     </div>

@@ -5,7 +5,8 @@
     "cancel": "취소",
     "create": "생성",
     "delete": "삭제",
-    "edit": "편집"
+    "edit": "편집",
+    "confirm": "확인"
   },
   "login": {
     "title": "로그인",
@@ -50,6 +51,7 @@
       "updated": "업데이트:",
       "study": "학습",
       "edit": "편집",
+      "deleteConfirmTitle": "워크북 삭제",
       "deleteConfirm": "\"{{title}}\"을(를) 삭제하시겠습니까?",
       "errors": {
         "titleRequired": "제목은 필수입니다",
@@ -68,6 +70,7 @@
       "emptyDescription": "첫 번째 문제를 추가하세요.",
       "editQuestion": "문제 편집",
       "deleteQuestion": "문제 삭제",
+      "deleteQuestionConfirmTitle": "문제 삭제",
       "deleteQuestionConfirm": "이 문제를 삭제하시겠습니까?",
       "errors": {
         "titleRequired": "제목은 필수입니다",

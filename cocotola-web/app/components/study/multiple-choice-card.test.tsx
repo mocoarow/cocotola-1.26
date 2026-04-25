@@ -6,7 +6,10 @@ import "~/i18n/config";
 
 import { MultipleChoiceCard } from "./multiple-choice-card";
 
-function makeContent(questionText: string, choices: { id: string; text: string; isCorrect: boolean }[]) {
+function makeContent(
+  questionText: string,
+  choices: { id: string; text: string; isCorrect: boolean }[],
+) {
   return JSON.stringify({ questionText, choices, shuffleChoices: false });
 }
 

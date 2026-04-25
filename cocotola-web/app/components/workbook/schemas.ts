@@ -1,4 +1,4 @@
-import { z, type ZodError } from "zod";
+import { type ZodError, z } from "zod";
 
 export type QuestionType = "word_fill" | "multiple_choice";
 

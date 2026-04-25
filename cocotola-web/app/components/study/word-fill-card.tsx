@@ -58,11 +58,11 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
       <div className="flex flex-wrap items-center gap-1 text-lg">
         {segments.map((segment, i) => {
           if (i % 2 === 0) {
-            return <span key={i}>{segment}</span>;
+            return <span key={`text-${segment}`}>{segment}</span>;
           }
           const inputIndex = Math.floor(i / 2);
           return (
-            <span key={i} className="inline-flex flex-col items-center">
+            <span key={`blank-${inputIndex}`} className="inline-flex flex-col items-center">
               <Input
                 aria-label={t("workbooks.study.blankInput", { number: inputIndex + 1 })}
                 className={`mx-1 inline-block w-32 text-center ${

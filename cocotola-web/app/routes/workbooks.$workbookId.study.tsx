@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useLoaderData } from "react-router";
-import { Button } from "~/components/ui/button";
 import { MultipleChoiceCard } from "~/components/study/multiple-choice-card";
 import { ProgressBar } from "~/components/study/progress-bar";
 import { StudyResult } from "~/components/study/study-result";
 import { WordFillCard } from "~/components/study/word-fill-card";
+import { Button } from "~/components/ui/button";
 import { getStudyQuestions, recordAnswer, type StudyQuestion } from "~/lib/api/study.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId.study";
@@ -53,10 +53,7 @@ function StudySession({
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <p className="mb-4 text-lg text-muted-foreground">{t("workbooks.study.noQuestions")}</p>
-        <Button
-          nativeButton={false}
-          render={<Link to={`/workbooks/${workbookId}`} />}
-        >
+        <Button nativeButton={false} render={<Link to={`/workbooks/${workbookId}`} />}>
           {t("workbooks.study.backToWorkbook")}
         </Button>
       </div>
@@ -104,9 +101,17 @@ function StudySession({
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         {question.questionType === "multiple_choice" ? (
-          <MultipleChoiceCard key={question.questionId} content={question.content} onAnswer={handleAnswer} />
+          <MultipleChoiceCard
+            key={question.questionId}
+            content={question.content}
+            onAnswer={handleAnswer}
+          />
         ) : (
-          <WordFillCard key={question.questionId} content={question.content} onAnswer={handleAnswer} />
+          <WordFillCard
+            key={question.questionId}
+            content={question.content}
+            onAnswer={handleAnswer}
+          />
         )}
       </div>
     </div>
