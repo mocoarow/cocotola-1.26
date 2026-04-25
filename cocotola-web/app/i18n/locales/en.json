@@ -102,6 +102,25 @@
       "addChoice": "Add Choice",
       "removeChoice": "Remove Choice",
       "shuffleChoices": "Shuffle choices"
+    },
+    "study": {
+      "title": "Study Session",
+      "description": "{{count}} questions to study",
+      "noQuestions": "No questions due for study right now.",
+      "backToWorkbook": "Back to Workbook",
+      "blankInput": "Blank {{number}}",
+      "check": "Check",
+      "next": "Next",
+      "correct": "Correct!",
+      "incorrect": "Incorrect",
+      "progress": "{{current}} / {{total}}",
+      "result": {
+        "title": "Session Complete!",
+        "score": "You scored {{percent}}%",
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "total": "Total"
+      }
     }
   },
   "errors": {

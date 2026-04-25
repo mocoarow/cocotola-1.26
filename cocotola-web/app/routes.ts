@@ -9,5 +9,6 @@ export default [
   layout("routes/workbooks.tsx", [
     route("workbooks", "routes/workbooks.index.tsx"),
     route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
+    route("workbooks/:workbookId/study", "routes/workbooks.$workbookId.study.tsx"),
   ]),
 ] satisfies RouteConfig;

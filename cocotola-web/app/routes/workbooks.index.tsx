@@ -119,7 +119,12 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
       </p>
 
       <div className="flex items-center gap-2">
-        <Button size="sm" className="flex-1" disabled>
+        <Button
+          size="sm"
+          className="flex-1"
+          nativeButton={false}
+          render={<Link to={`/workbooks/${workbook.workbookId}/study`} />}
+        >
           <BookOpenIcon data-icon="inline-start" className="size-3.5" />
           <span>{t("workbooks.index.study")}</span>
         </Button>
