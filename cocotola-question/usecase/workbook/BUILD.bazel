@@ -27,6 +27,7 @@ smart_go_test(
         "create_workbook_command_s_test.go",
         "delete_workbook_command_s_test.go",
         "mocks_test.go",
+        "update_workbook_command_s_test.go",
     ],
     deps = [
         ":workbook",

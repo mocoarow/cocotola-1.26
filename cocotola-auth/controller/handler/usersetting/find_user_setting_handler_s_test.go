@@ -19,7 +19,7 @@ func Test_FindUserSettingHandler_shouldReturn200_whenSettingExists(t *testing.T)
 	ctx := context.Background()
 
 	// given
-	setting, err := domain.NewUserSetting(fixtureAppUserID, 5)
+	setting, err := domain.NewUserSetting(fixtureAppUserID, 5, "ja")
 	require.NoError(t, err)
 	settingFinder := newMockuserSettingFinder(t)
 	settingFinder.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(setting, nil)

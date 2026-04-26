@@ -72,6 +72,7 @@ type CreateWorkbookRequest struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Visibility  string `json:"visibility"`
+	Language    string `json:"language"`
 }
 
 // WorkbookResponse mirrors cocotola-question's WorkbookResponse.

@@ -23,7 +23,7 @@ func newDeleteWorkbookInput(t *testing.T) *workbookservice.DeleteWorkbookInput {
 }
 
 func newFixtureWorkbook(ownerID string) *domainworkbook.Workbook {
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, ownerID, fixtureOrganizationID, "title", "desc", domainworkbook.VisibilityPrivate(), time.Now(), time.Now())
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, ownerID, fixtureOrganizationID, "title", "desc", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), time.Now(), time.Now())
 }
 
 func Test_DeleteWorkbookCommand_shouldDeleteWorkbook_whenOwnerDeletes(t *testing.T) {

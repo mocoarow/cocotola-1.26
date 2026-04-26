@@ -10,3 +10,6 @@ type ContextFieldOrganizationName = libcontroller.ContextFieldOrganizationName
 
 // ContextFieldOrganizationID is a Gin context key for storing the resolved organization ID.
 type ContextFieldOrganizationID = libcontroller.ContextFieldOrganizationID
+
+// ContextFieldUserLanguage is a Gin context key for storing the authenticated user's preferred language.
+type ContextFieldUserLanguage = libcontroller.ContextFieldUserLanguage

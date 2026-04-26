@@ -34,6 +34,7 @@ workbooks:
   - seedKey: fillblank-en-jp-v1
     title: "穴埋め問題: 日常英会話 10問"
     description: "日本語の意味から英文の空欄を埋める穴埋め問題集です。日常生活で使う基本表現を10問収録しています。"
+    language: ja
     questions:
       - seedKey: q01
         questionType: word_fill
@@ -131,6 +132,7 @@ workbooks:
   - seedKey: multichoice-general-v1
     title: "選択問題: 一般常識クイズ 10問"
     description: "選択肢の数や正解の数が様々な一般常識の選択問題です。1択の確認問題から最大40択の問題まで、様々なパターンを収録しています。"
+    language: ja
     questions:
       # 最小選択肢 (1) / 最小正解 (1)
       - seedKey: q01
@@ -250,6 +252,7 @@ workbooks:
   - seedKey: mixed-en-learning-v1
     title: "混合問題: 英語学習 10問"
     description: "穴埋め問題と選択問題を交互に組み合わせた英語学習問題集です。挨拶・色・数字・動物・食べ物などの基礎テーマを扱います。"
+    language: ja
     questions:
       - seedKey: q01
         questionType: word_fill

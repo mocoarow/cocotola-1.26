@@ -54,6 +54,11 @@ func initAuthRouter(ctx context.Context, t *testing.T, usecase *MockAuthUsecase)
 
 func initAuthRouterWithMiddleware(ctx context.Context, t *testing.T, usecase *MockAuthUsecase, authMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
+	return initAuthRouterWithDeps(ctx, t, usecase, authMiddleware, newMockuserSettingFinder(t))
+}
+
+func initAuthRouterWithDeps(ctx context.Context, t *testing.T, usecase *MockAuthUsecase, authMiddleware gin.HandlerFunc, settingFinder *mockuserSettingFinder) *gin.Engine {
+	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, config, domain.AppName)
 	require.NoError(t, err)
@@ -64,7 +69,7 @@ func initAuthRouterWithMiddleware(ctx context.Context, t *testing.T, usecase *Mo
 	guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(usecase)
 	refreshHandler := authhandler.NewRefreshHandler(usecase)
 	revokeHandler := authhandler.NewRevokeHandler(usecase, testCookieConfig)
-	getMeHandler := authhandler.NewGetMeHandler()
+	getMeHandler := authhandler.NewGetMeHandler(settingFinder)
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	// internal routes (no API key middleware in tests)

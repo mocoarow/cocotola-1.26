@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "sharing",
@@ -17,5 +18,23 @@ go_library(
         "//cocotola-question/domain/reference",
         "//cocotola-question/domain/workbook",
         "//cocotola-question/service/reference",
+    ],
+)
+
+smart_go_test(
+    name = "sharing_test",
+    srcs = [
+        "list_public_query_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":sharing",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/reference",
+        "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/reference",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "i18n",
+    srcs = [
+        "doc.go",
+        "language.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "i18n_test",
+    srcs = ["language_s_test.go"],
+    deps = [
+        ":i18n",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

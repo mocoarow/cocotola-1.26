@@ -58,12 +58,7 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		return
 	}
 
-	description := ""
-	if req.Description != nil {
-		description = *req.Description
-	}
-
-	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, description, string(req.Visibility))
+	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, req.Description, string(req.Visibility), req.Language)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "invalid create workbook input", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -84,6 +79,7 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		Title:          output.Title,
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),
+		Language:       output.Language,
 		CreatedAt:      output.CreatedAt,
 		UpdatedAt:      output.UpdatedAt,
 	})

@@ -21,6 +21,9 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing:
+    config:
+      all: true
   github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study:
     config:
       all: true

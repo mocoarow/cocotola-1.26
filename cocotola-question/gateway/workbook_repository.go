@@ -24,6 +24,7 @@ type workbookRecord struct {
 	Title          string    `firestore:"title"`
 	Description    string    `firestore:"description"`
 	Visibility     string    `firestore:"visibility"`
+	Language       string    `firestore:"language"`
 	CreatedAt      time.Time `firestore:"createdAt"`
 	UpdatedAt      time.Time `firestore:"updatedAt"`
 }
@@ -33,7 +34,11 @@ func toWorkbookDomain(id string, r *workbookRecord) (*domainworkbook.Workbook, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid visibility %q: %w", r.Visibility, err)
 	}
-	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, r.CreatedAt, r.UpdatedAt), nil
+	lang, err := domainworkbook.NewLanguage(r.Language)
+	if err != nil {
+		return nil, fmt.Errorf("invalid language %q: %w", r.Language, err)
+	}
+	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, lang, r.CreatedAt, r.UpdatedAt), nil
 }
 
 // WorkbookRepository manages workbook persistence in Firestore.
@@ -47,7 +52,7 @@ func NewWorkbookRepository(client *firestore.Client) *WorkbookRepository {
 }
 
 // Create inserts a new workbook and returns the auto-generated document ID.
-func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error) {
+func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error) {
 	now := time.Now()
 	record := workbookRecord{
 		SpaceID:        spaceID,
@@ -56,6 +61,7 @@ func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID
 		Title:          title,
 		Description:    description,
 		Visibility:     visibility,
+		Language:       language,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -114,11 +120,14 @@ func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) 
 	return workbooks, nil
 }
 
-// FindPublicByOrganizationID returns all public workbooks for the given organization.
-func (r *WorkbookRepository) FindPublicByOrganizationID(ctx context.Context, organizationID string) ([]domainworkbook.Workbook, error) {
+// FindPublicByOrganizationIDAndLanguage returns all public workbooks for the given
+// organization filtered by the given language. Documents without a language field
+// are excluded by the equality filter.
+func (r *WorkbookRepository) FindPublicByOrganizationIDAndLanguage(ctx context.Context, organizationID string, language string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).
 		Where("organizationID", "==", organizationID).
 		Where("visibility", "==", "public").
+		Where("language", "==", language).
 		Documents(ctx)
 	defer iter.Stop()
 
@@ -155,6 +164,7 @@ func (r *WorkbookRepository) Update(ctx context.Context, wb *domainworkbook.Work
 		Title:          wb.Title(),
 		Description:    wb.Description(),
 		Visibility:     wb.Visibility().Value(),
+		Language:       wb.Language().Value(),
 		CreatedAt:      wb.CreatedAt(),
 		UpdatedAt:      now,
 	})

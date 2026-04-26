@@ -140,7 +140,8 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(authUsecase)
 	refreshHandler := authhandler.NewRefreshHandler(authUsecase)
 	revokeHandler := authhandler.NewRevokeHandler(authUsecase, authConfig.Cookie)
-	getMeHandler := authhandler.NewGetMeHandler()
+	userSettingRepo := gateway.NewUserSettingRepository(db)
+	getMeHandler := authhandler.NewGetMeHandler(userSettingRepo)
 	authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 
 	// internal (service-to-service) routes protected by API key
@@ -153,7 +154,6 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
 	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
-	userSettingRepo := gateway.NewUserSettingRepository(db)
 	findUserSettingHandler := usersettinghandler.NewFindUserSettingHandler(userSettingRepo)
 
 	// internal auth routes (organization, authz, user-setting)

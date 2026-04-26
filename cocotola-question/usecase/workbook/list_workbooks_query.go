@@ -51,6 +51,7 @@ func (q *ListWorkbooksQuery) ListWorkbooks(ctx context.Context, input *workbooks
 			Title:          wb.Title(),
 			Description:    wb.Description(),
 			Visibility:     wb.Visibility().Value(),
+			Language:       wb.Language().Value(),
 			CreatedAt:      wb.CreatedAt(),
 			UpdatedAt:      wb.UpdatedAt(),
 		}

@@ -89,13 +89,15 @@ func NewUnshareInput(operatorID string, organizationID string, referenceID strin
 type ListPublicInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
+	Language       string `validate:"required,len=2"`
 }
 
 // NewListPublicInput creates a validated ListPublicInput.
-func NewListPublicInput(operatorID string, organizationID string) (*ListPublicInput, error) {
+func NewListPublicInput(operatorID string, organizationID string, language string) (*ListPublicInput, error) {
 	m := &ListPublicInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
+		Language:       language,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate list public input: %w", err)
@@ -109,6 +111,7 @@ type PublicWorkbookItem struct {
 	OwnerID     string
 	Title       string
 	Description string
+	Language    string
 	CreatedAt   time.Time
 }
 

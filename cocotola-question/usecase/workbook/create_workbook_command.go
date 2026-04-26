@@ -59,12 +59,20 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, err
 	}
 
+	// Validate language via the domain value object so anything that slips
+	// past the service-layer length check (e.g. "JA", "あa") is rejected
+	// before it reaches Firestore.
+	lang, err := domainworkbook.NewLanguage(input.Language)
+	if err != nil {
+		return nil, fmt.Errorf("new language: %w", err)
+	}
+
 	ownedList, maxWorkbooks, err := c.loadOwnedListWithLimit(ctx, input.OperatorID)
 	if err != nil {
 		return nil, err
 	}
 
-	workbookID, err := c.workbookRepo.Create(ctx, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility)
+	workbookID, err := c.workbookRepo.Create(ctx, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang.Value())
 	if err != nil {
 		return nil, fmt.Errorf("create workbook: %w", err)
 	}
@@ -78,7 +86,7 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 	}
 
 	now := time.Now()
-	output, err := workbookservice.NewCreateWorkbookOutput(workbookID, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, now, now)
+	output, err := workbookservice.NewCreateWorkbookOutput(workbookID, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang.Value(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("create workbook output: %w", err)
 	}

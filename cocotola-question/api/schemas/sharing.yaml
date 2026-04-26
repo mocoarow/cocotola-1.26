@@ -65,6 +65,9 @@ PublicWorkbookResponse:
     description:
       type: string
       pattern: ^.*$
+    language:
+      type: string
+      pattern: ^[a-z]{2}$
     createdAt:
       type: string
       format: date-time
@@ -73,6 +76,7 @@ PublicWorkbookResponse:
     - ownerId
     - title
     - description
+    - language
     - createdAt
 
 ListPublicResponse:

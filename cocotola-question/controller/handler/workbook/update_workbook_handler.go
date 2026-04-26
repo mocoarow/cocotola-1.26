@@ -65,12 +65,7 @@ func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 		return
 	}
 
-	description := ""
-	if req.Description != nil {
-		description = *req.Description
-	}
-
-	input, err := workbookservice.NewUpdateWorkbookInput(userID, organizationID, workbookID, req.Title, description, string(req.Visibility))
+	input, err := workbookservice.NewUpdateWorkbookInput(userID, organizationID, workbookID, req.Title, req.Description, string(req.Visibility), req.Language)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "invalid update workbook input", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -91,6 +86,7 @@ func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 		Title:          output.Title,
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),
+		Language:       output.Language,
 		CreatedAt:      output.CreatedAt,
 		UpdatedAt:      output.UpdatedAt,
 	})

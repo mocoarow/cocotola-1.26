@@ -1204,10 +1204,16 @@ components:
           enum:
             - private
             - public
+        language:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,len=2
+          pattern: ^[a-z]{2}$
       required:
         - spaceId
         - title
         - visibility
+        - language
     UpdateWorkbookRequest:
       type: object
       properties:
@@ -1230,9 +1236,15 @@ components:
           enum:
             - private
             - public
+        language:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: required,len=2
+          pattern: ^[a-z]{2}$
       required:
         - title
         - visibility
+        - language
     WorkbookResponse:
       type: object
       properties:
@@ -1263,6 +1275,9 @@ components:
           enum:
             - private
             - public
+        language:
+          type: string
+          pattern: ^[a-z]{2}$
         createdAt:
           type: string
           format: date-time
@@ -1277,6 +1292,7 @@ components:
         - title
         - description
         - visibility
+        - language
         - createdAt
         - updatedAt
     ListWorkbooksResponse:
@@ -1452,6 +1468,9 @@ components:
         description:
           type: string
           pattern: ^.*$
+        language:
+          type: string
+          pattern: ^[a-z]{2}$
         createdAt:
           type: string
           format: date-time
@@ -1460,6 +1479,7 @@ components:
         - ownerId
         - title
         - description
+        - language
         - createdAt
     ListPublicResponse:
       type: object

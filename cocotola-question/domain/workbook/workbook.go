@@ -21,12 +21,13 @@ type Workbook struct {
 	title          string
 	description    string
 	visibility     Visibility
+	language       Language
 	createdAt      time.Time
 	updatedAt      time.Time
 }
 
 // NewWorkbook creates a validated Workbook.
-func NewWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) (*Workbook, error) {
+func NewWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, createdAt time.Time, updatedAt time.Time) (*Workbook, error) {
 	m := &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -35,6 +36,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 		title:          title,
 		description:    description,
 		visibility:     visibility,
+		language:       language,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
 	}
@@ -45,7 +47,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 }
 
 // ReconstructWorkbook reconstitutes a Workbook from persistence without validation.
-func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, createdAt time.Time, updatedAt time.Time) *Workbook {
+func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, createdAt time.Time, updatedAt time.Time) *Workbook {
 	return &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -54,6 +56,7 @@ func ReconstructWorkbook(id string, spaceID string, ownerID string, organization
 		title:          title,
 		description:    description,
 		visibility:     visibility,
+		language:       language,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
 	}
@@ -84,6 +87,9 @@ func (w *Workbook) validate() error {
 	if w.visibility.Value() == "" {
 		return fmt.Errorf("workbook visibility is required: %w", domain.ErrInvalidArgument)
 	}
+	if w.language.IsZero() {
+		return fmt.Errorf("workbook language is required: %w", domain.ErrInvalidArgument)
+	}
 	return nil
 }
 
@@ -108,6 +114,9 @@ func (w *Workbook) Description() string { return w.description }
 // Visibility returns the visibility setting.
 func (w *Workbook) Visibility() Visibility { return w.visibility }
 
+// Language returns the workbook language.
+func (w *Workbook) Language() Language { return w.language }
+
 // CreatedAt returns the creation timestamp.
 func (w *Workbook) CreatedAt() time.Time { return w.createdAt }
 
@@ -117,6 +126,13 @@ func (w *Workbook) UpdatedAt() time.Time { return w.updatedAt }
 // ChangeVisibility changes the workbook's visibility setting.
 func (w *Workbook) ChangeVisibility(v Visibility) {
 	w.visibility = v
+}
+
+// ChangeLanguage changes the workbook's language setting. Callers must pass a
+// non-zero Language constructed via NewLanguage; the type system already
+// guarantees the new value has been validated.
+func (w *Workbook) ChangeLanguage(l Language) {
+	w.language = l
 }
 
 // UpdateTitle updates the workbook title.

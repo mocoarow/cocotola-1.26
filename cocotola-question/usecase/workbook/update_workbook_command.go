@@ -61,6 +61,12 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 	}
 	wb.ChangeVisibility(vis)
 
+	lang, err := domainworkbook.NewLanguage(input.Language)
+	if err != nil {
+		return nil, fmt.Errorf("new language: %w", err)
+	}
+	wb.ChangeLanguage(lang)
+
 	if err := c.workbookUpdater.Update(ctx, wb); err != nil {
 		return nil, fmt.Errorf("update workbook: %w", err)
 	}
@@ -74,6 +80,7 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 			Title:          wb.Title(),
 			Description:    wb.Description(),
 			Visibility:     wb.Visibility().Value(),
+			Language:       wb.Language().Value(),
 			CreatedAt:      wb.CreatedAt(),
 			UpdatedAt:      wb.UpdatedAt(),
 		},

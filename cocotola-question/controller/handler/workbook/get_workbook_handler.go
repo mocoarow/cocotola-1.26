@@ -79,6 +79,7 @@ func (h *GetWorkbookHandler) GetWorkbook(c *gin.Context) {
 		Title:          output.Title,
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),
+		Language:       output.Language,
 		CreatedAt:      output.CreatedAt,
 		UpdatedAt:      output.UpdatedAt,
 	})
