@@ -15,6 +15,7 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain",
     visibility = ["//visibility:public"],
     deps = [
+        "//cocotola-lib/domain",
         "//cocotola-lib/domain/idset",
         "@com_github_go_playground_validator_v10//:validator",
     ],

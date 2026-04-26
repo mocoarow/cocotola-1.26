@@ -35,6 +35,22 @@ func InitQuestionRouter(
 	questionGroup.DELETE("/:questionId", deleteHandler.DeleteQuestion)
 }
 
+// InitInternalQuestionRouter mounts question CRUD endpoints on the internal
+// parent router (protected by X-Service-Api-Key). Read endpoints are not
+// exposed because the public ones already permit visibility=public reads
+// without authentication concerns.
+func InitInternalQuestionRouter(
+	addHandler *AddQuestionHandler,
+	updateHandler *UpdateQuestionHandler,
+	deleteHandler *DeleteQuestionHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	questionGroup := parentRouterGroup.Group("workbook/:workbookId/question")
+	questionGroup.POST("", addHandler.AddQuestion)
+	questionGroup.PUT("/:questionId", updateHandler.UpdateQuestion)
+	questionGroup.DELETE("/:questionId", deleteHandler.DeleteQuestion)
+}
+
 func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
 	if errors.Is(err, domain.ErrForbidden) {
 		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))

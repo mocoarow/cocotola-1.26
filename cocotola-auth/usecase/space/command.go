@@ -5,6 +5,7 @@ package space
 type Command struct {
 	*CreateSpaceCommand
 	*ListSpacesQuery
+	*FindSpaceQuery
 }
 
 // NewCommand returns a new Command with the given dependencies.
@@ -18,5 +19,6 @@ func NewCommand(
 	return &Command{
 		CreateSpaceCommand: NewCreateSpaceCommand(spaceRepo, orgRepo, publisher, authChecker),
 		ListSpacesQuery:    NewListSpacesQuery(spaceFinderRepo, orgRepo, authChecker),
+		FindSpaceQuery:     NewFindSpaceQuery(spaceFinderRepo),
 	}
 }

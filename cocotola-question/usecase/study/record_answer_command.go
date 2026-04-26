@@ -7,6 +7,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
+	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
 
@@ -39,6 +40,46 @@ func NewRecordAnswerCommand(
 	}
 }
 
+func (c *RecordAnswerCommand) checkStudyAuthorization(ctx context.Context, input *studyservice.RecordAnswerInput, wb *domainworkbook.Workbook) error {
+	if wb.Visibility().IsPublic() {
+		return nil
+	}
+
+	resource, err := domain.ResourceWorkbook(wb.ID())
+	if err != nil {
+		return fmt.Errorf("resource workbook: %w", err)
+	}
+
+	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionStudyWorkbook(), resource)
+	if err != nil {
+		return fmt.Errorf("authorization check: %w", err)
+	}
+
+	if !allowed {
+		return domain.ErrForbidden
+	}
+
+	return nil
+}
+
+func (c *RecordAnswerCommand) findOrCreateRecord(ctx context.Context, input *studyservice.RecordAnswerInput) (*domainstudy.Record, error) {
+	record, err := c.studyRecordFinder.FindByID(ctx, input.OperatorID, input.WorkbookID, input.QuestionID)
+	if err != nil {
+		if !errors.Is(err, domain.ErrStudyRecordNotFound) {
+			return nil, fmt.Errorf("find study record: %w", err)
+		}
+
+		newRecord, err := domainstudy.NewRecord(input.WorkbookID, input.QuestionID)
+		if err != nil {
+			return nil, fmt.Errorf("new study record: %w", err)
+		}
+
+		record = newRecord
+	}
+
+	return record, nil
+}
+
 // RecordAnswer records an answer and updates the study record.
 func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyservice.RecordAnswerInput) (*studyservice.RecordAnswerOutput, error) {
 	wb, err := c.workbookRepo.FindByID(ctx, input.WorkbookID)
@@ -46,16 +87,8 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 		return nil, fmt.Errorf("find workbook: %w", err)
 	}
 
-	resource, err := domain.ResourceWorkbook(wb.ID())
-	if err != nil {
-		return nil, fmt.Errorf("resource workbook: %w", err)
-	}
-	allowed, err := c.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionStudyWorkbook(), resource)
-	if err != nil {
-		return nil, fmt.Errorf("authorization check: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrForbidden
+	if err := c.checkStudyAuthorization(ctx, input, wb); err != nil {
+		return nil, err
 	}
 
 	activeList, err := c.activeListRepo.FindByWorkbookID(ctx, input.WorkbookID)
@@ -66,16 +99,9 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 		return nil, fmt.Errorf("question %s not found in workbook %s: %w", input.QuestionID, input.WorkbookID, domain.ErrQuestionNotFound)
 	}
 
-	record, err := c.studyRecordFinder.FindByID(ctx, input.OperatorID, input.WorkbookID, input.QuestionID)
+	record, err := c.findOrCreateRecord(ctx, input)
 	if err != nil {
-		if !errors.Is(err, domain.ErrStudyRecordNotFound) {
-			return nil, fmt.Errorf("find study record: %w", err)
-		}
-		newRecord, err := domainstudy.NewRecord(input.WorkbookID, input.QuestionID)
-		if err != nil {
-			return nil, fmt.Errorf("new study record: %w", err)
-		}
-		record = newRecord
+		return nil, err
 	}
 
 	now := c.config.Now()

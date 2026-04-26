@@ -9,6 +9,7 @@ import (
 	"time"
 
 	authinit "github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize"
+	questionmiddleware "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware"
 	questiongateway "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
 
@@ -92,10 +93,14 @@ func run() (int, error) {
 	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
 	orgResolver := questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient)
 	maxWbFetcher := questiongateway.NewAuthServiceMaxWorkbooksFetcher(authClientBaseURL, authClientAPIKey, httpClient)
+	spaceTypeFetcher := questiongateway.NewAuthServiceSpaceTypeFetcher(authClientBaseURL, authClientAPIKey, httpClient)
 	policyAdder := questiongateway.NewAuthServicePolicyAdder(authClientBaseURL, authClientAPIKey, httpClient)
 
+	// internal API key middleware (protects /api/v1/internal endpoints)
+	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.App.Question.ServiceAPIKey)
+
 	// initialize question module
-	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher, policyAdder)
+	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}

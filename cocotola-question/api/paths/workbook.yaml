@@ -230,3 +230,117 @@ workbook-by-id:
     security:
       - BearerAuth: []
       - CookieAuth: []
+
+internal-workbook:
+  post:
+    summary: Create a workbook (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to create a workbook in the target space. Visibility is auto-determined from the SpaceType.
+    operationId: internalCreateWorkbook
+    tags:
+      - internal
+      - workbook
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workbook.yaml#/CreateWorkbookRequest'
+      required: true
+    responses:
+      '201':
+        description: Successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
+
+internal-workbook-by-id:
+  put:
+    summary: Update a workbook (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to update a workbook.
+    operationId: internalUpdateWorkbook
+    tags:
+      - internal
+      - workbook
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/workbook.yaml#/UpdateWorkbookRequest'
+      required: true
+    responses:
+      '200':
+        description: Successfully updated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
+  delete:
+    summary: Delete a workbook (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to delete a workbook.
+    operationId: internalDeleteWorkbook
+    tags:
+      - internal
+      - workbook
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    responses:
+      '204':
+        description: Successfully deleted
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []

@@ -115,7 +115,7 @@ func run() (int, error) {
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, activeUserListHandler.Handle)
 	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
-	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, spaceRepo, rbacRepo, eventHandlerLogger)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, rbacRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer
@@ -185,13 +185,15 @@ func run() (int, error) {
 	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
 
 	// internal (service-to-service) routes protected by API key
+	apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Auth.APIKey)
+	internalV1 := api.Group("v1/internal", apiKeyMiddleware)
 	{
-		apiKeyMiddleware := middleware.NewAPIKeyMiddleware(cfg.Auth.APIKey)
-		internalV1 := api.Group("v1/internal", apiKeyMiddleware)
 		supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 		authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
+	}
 
-		internalAuthV1 := internalV1.Group("auth")
+	internalAuthV1 := internalV1.Group("auth")
+	{
 		orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
 		authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
 		findUserSettingHandler := usersettinghandler.NewFindUserSettingHandler(userSettingRepo)
@@ -223,6 +225,9 @@ func run() (int, error) {
 		createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
 		listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
 		spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
+
+		findSpaceHandler := spacehandler.NewFindSpaceHandler(spaceCommand)
+		spacehandler.InitInternalSpaceRouter(findSpaceHandler, internalAuthV1)
 	}
 
 	// user

@@ -1,10 +1,12 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "space",
     srcs = [
         "command.go",
         "create_space_command.go",
+        "find_space_query.go",
         "list_spaces_query.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space",
@@ -14,5 +16,23 @@ go_library(
         "//cocotola-auth/domain/rbac",
         "//cocotola-auth/domain/space",
         "//cocotola-auth/service/space",
+    ],
+)
+
+smart_go_test(
+    name = "space_test",
+    srcs = [
+        "find_space_query_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":space",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
+        "//cocotola-auth/service/space",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

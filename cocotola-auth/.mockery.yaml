@@ -39,6 +39,12 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space:
+    config:
+      all: true
   github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user:
     config:
       all: true

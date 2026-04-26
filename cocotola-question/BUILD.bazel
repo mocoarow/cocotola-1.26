@@ -14,6 +14,7 @@ go_library(
         "//cocotola-lib/logging",
         "//cocotola-lib/process",
         "//cocotola-question/config",
+        "//cocotola-question/controller/middleware",
         "//cocotola-question/domain",
         "//cocotola-question/gateway",
         "//cocotola-question/initialize",

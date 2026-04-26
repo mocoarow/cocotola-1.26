@@ -86,7 +86,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	activeGroupListHandler := eventusecase.NewActiveGroupListHandler(activeGroupListRepo, orgRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeGroupCreated, activeGroupListHandler.Handle)
 	spaceRepo := gateway.NewSpaceRepository(db)
-	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, spaceRepo, rbacRepo, eventHandlerLogger)
+	privateSpaceHandler := eventusecase.NewPrivateSpaceHandler(spaceRepo, rbacRepo, eventHandlerLogger)
 	eventBus.Subscribe(domain.EventTypeAppUserCreated, privateSpaceHandler.Handle)
 
 	// usecase layer
@@ -177,6 +177,10 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
 	listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
 	spacehandler.InitSpaceRouter(createSpaceHandler, listSpacesHandler, authV1, authMiddleware)
+
+	// internal space router (service-to-service)
+	findSpaceHandler := spacehandler.NewFindSpaceHandler(spaceCommand)
+	spacehandler.InitInternalSpaceRouter(findSpaceHandler, internalAuthV1)
 
 	// user usecase + controller
 	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)

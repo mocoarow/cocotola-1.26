@@ -19,11 +19,12 @@ func NewCommand(
 	ownedListFinder ownedWorkbookListFinder,
 	ownedListSaver ownedWorkbookListSaver,
 	maxWbFetcher maxWorkbooksFetcher,
+	spaceTypeFetcher spaceTypeFetcher,
 	authChecker authorizationChecker,
 	policyAdder policyAdder,
 ) *Command {
 	return &Command{
-		CreateWorkbookCommand: NewCreateWorkbookCommand(workbookCreatorRepo, ownedListFinder, ownedListSaver, maxWbFetcher, authChecker, policyAdder),
+		CreateWorkbookCommand: NewCreateWorkbookCommand(workbookCreatorRepo, ownedListFinder, ownedListSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder),
 		GetWorkbookQuery:      NewGetWorkbookQuery(workbookFinderRepo, authChecker),
 		ListWorkbooksQuery:    NewListWorkbooksQuery(workbookFinderRepo, authChecker),
 		UpdateWorkbookCommand: NewUpdateWorkbookCommand(workbookFinderRepo, workbookUpdaterRepo, authChecker),

@@ -17,6 +17,9 @@ import (
 // QuestionConfig holds configuration for the cocotola-question service.
 type QuestionConfig struct {
 	FirestoreProjectID string `yaml:"firestoreProjectId" validate:"required"`
+	// ServiceAPIKey is the shared secret that protects the internal /api/v1/internal
+	// endpoints used by trusted system callers (e.g. cocotola-init batch jobs).
+	ServiceAPIKey string `yaml:"serviceApiKey" validate:"required"`
 }
 
 // AuthClientConfig holds configuration for the auth service HTTP client.

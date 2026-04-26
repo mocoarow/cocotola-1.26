@@ -109,3 +109,43 @@ ListSpacesResponse:
         $ref: '#/SpaceItem'
   required:
     - spaces
+
+FindSpaceResponse:
+  type: object
+  properties:
+    spaceId:
+      type: string
+      x-go-name: SpaceID
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    organizationId:
+      type: string
+      x-go-name: OrganizationID
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    ownerId:
+      type: string
+      x-go-name: OwnerID
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    keyName:
+      type: string
+      pattern: ^.*$
+    name:
+      type: string
+      pattern: ^.*$
+    spaceType:
+      type: string
+      enum:
+        - public
+        - private
+    deleted:
+      type: boolean
+  required:
+    - spaceId
+    - organizationId
+    - ownerId
+    - keyName
+    - name
+    - spaceType
+    - deleted
