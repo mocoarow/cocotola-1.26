@@ -323,7 +323,7 @@ internal-question:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
   get:
     summary: List questions (internal)
     deprecated: false
@@ -359,7 +359,7 @@ internal-question:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
 
 internal-question-by-id:
   put:
@@ -409,7 +409,7 @@ internal-question-by-id:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
   delete:
     summary: Delete a question (internal)
     deprecated: false
@@ -447,4 +447,4 @@ internal-question-by-id:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []

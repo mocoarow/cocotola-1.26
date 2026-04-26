@@ -128,4 +128,4 @@ internal-find-space-by-id:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
     security:
-      - ServiceApiKey: []
+      - ApiKey: []

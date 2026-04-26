@@ -267,7 +267,7 @@ internal-workbook:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
   get:
     summary: List workbooks (internal)
     deprecated: false
@@ -297,7 +297,7 @@ internal-workbook:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
 
 internal-workbook-by-id:
   put:
@@ -341,7 +341,7 @@ internal-workbook-by-id:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
   delete:
     summary: Delete a workbook (internal)
     deprecated: false
@@ -373,4 +373,4 @@ internal-workbook-by-id:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
-      - ServiceApiKey: []
+      - ApiKey: []

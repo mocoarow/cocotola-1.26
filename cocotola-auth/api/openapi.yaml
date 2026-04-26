@@ -104,7 +104,7 @@ components:
       type: apiKey
       in: cookie
       name: session_token
-    ServiceApiKey:
+    ApiKey:
       type: apiKey
       in: header
       name: X-Service-Api-Key

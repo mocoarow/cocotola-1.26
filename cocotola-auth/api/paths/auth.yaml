@@ -268,7 +268,7 @@ supabase-exchange:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
     security:
-      - ServiceApiKey: []
+      - ApiKey: []
 
 me:
   get:

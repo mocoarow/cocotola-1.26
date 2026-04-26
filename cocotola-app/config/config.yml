@@ -2,7 +2,7 @@
 app:
   question:
     firestoreProjectId: ${APP_QUESTION_FIRESTORE_PROJECT_ID:-local}
-    serviceApiKey: ${APP_QUESTION_SERVICE_API_KEY}
+    apiKey: ${APP_QUESTION_API_KEY}
   authClient:
     baseUrl: ${APP_AUTH_CLIENT_BASE_URL:-http://localhost:8000}
     timeoutSec: ${APP_AUTH_CLIENT_TIMEOUT_SEC:-10}
