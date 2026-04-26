@@ -36,17 +36,20 @@ func InitQuestionRouter(
 }
 
 // InitInternalQuestionRouter mounts question CRUD endpoints on the internal
-// parent router (protected by X-Service-Api-Key). Read endpoints are not
-// exposed because the public ones already permit visibility=public reads
-// without authentication concerns.
+// parent router (protected by X-Service-Api-Key).
+//
+// The list endpoint is included so that batch jobs (e.g. cocotola-init seeding)
+// can perform idempotency checks before adding questions.
 func InitInternalQuestionRouter(
 	addHandler *AddQuestionHandler,
+	listHandler *ListQuestionsHandler,
 	updateHandler *UpdateQuestionHandler,
 	deleteHandler *DeleteQuestionHandler,
 	parentRouterGroup gin.IRouter,
 ) {
 	questionGroup := parentRouterGroup.Group("workbook/:workbookId/question")
 	questionGroup.POST("", addHandler.AddQuestion)
+	questionGroup.GET("", listHandler.ListQuestions)
 	questionGroup.PUT("/:questionId", updateHandler.UpdateQuestion)
 	questionGroup.DELETE("/:questionId", deleteHandler.DeleteQuestion)
 }

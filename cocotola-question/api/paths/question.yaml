@@ -13,7 +13,7 @@ question:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -73,7 +73,7 @@ question:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '200':
         description: Successfully retrieved
@@ -121,13 +121,13 @@ question-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '200':
         description: Successfully retrieved
@@ -173,13 +173,13 @@ question-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -239,13 +239,13 @@ question-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '204':
         description: Successfully deleted
@@ -290,7 +290,7 @@ internal-question:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -324,6 +324,42 @@ internal-question:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
       - ServiceApiKey: []
+  get:
+    summary: List questions (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to list questions in a workbook.
+    operationId: internalListQuestions
+    tags:
+      - internal
+      - question
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/question.yaml#/ListQuestionsResponse'
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
 
 internal-question-by-id:
   put:
@@ -340,13 +376,13 @@ internal-question-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -388,13 +424,13 @@ internal-question-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '204':
         description: Successfully deleted

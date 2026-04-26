@@ -123,8 +123,8 @@ func Initialize(
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)
-	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, updateWorkbookHandler, deleteWorkbookHandler, internalParent)
-	questionhandler.InitInternalQuestionRouter(addQuestionHandler, updateQuestionHandler, deleteQuestionHandler, internalParent)
+	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, internalParent)
+	questionhandler.InitInternalQuestionRouter(addQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, internalParent)
 
 	cleanup := func() {
 		if err := firestoreClient.Close(); err != nil {

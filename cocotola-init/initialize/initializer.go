@@ -16,6 +16,14 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
+// PublicWorkbookSeeder seeds public workbooks (and their questions) into
+// cocotola-question via its internal HTTP API. The interface keeps the
+// cocotola-init flow decoupled from the concrete HTTP client and lets the
+// seeding step be swapped out or mocked in tests.
+type PublicWorkbookSeeder interface {
+	SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error
+}
+
 const (
 	organizationName = "cocotola"
 	// CocotolaOrganizationIDString is the well-known UUID of the "cocotola" tenant
@@ -32,7 +40,10 @@ func cocotolaOrganizationID() domain.OrganizationID {
 
 // Initialize bootstraps the cocotola tenant organization, creates the first owner user,
 // adds them to the active user list, sets up RBAC policies, and assigns the admin group.
-func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPassword string) error {
+//
+// seeder is invoked after the public space and SystemOwner policies are in place
+// to populate the public workbooks. It must be non-nil.
+func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, ownerLoginID string, ownerPassword string) error {
 	logger := slog.Default()
 
 	// 1. Find or create "cocotola" organization
@@ -82,7 +93,7 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 	}
 
 	// 8. Setup system owner and public space
-	if err := setupSystemOwnerAndSpace(ctx, db, appUserRepo, hasher, rbacRepo, org.ID(), logger); err != nil {
+	if err := setupSystemOwnerAndSpace(ctx, db, seeder, appUserRepo, hasher, rbacRepo, org.ID(), logger); err != nil {
 		return fmt.Errorf("setup system owner and space: %w", err)
 	}
 
@@ -94,7 +105,7 @@ func Initialize(ctx context.Context, db *gorm.DB, ownerLoginID string, ownerPass
 	return nil
 }
 
-func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
+func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, orgID, logger)
 	if err != nil {
 		return fmt.Errorf("find or create system owner: %w", err)
@@ -116,6 +127,10 @@ func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gat
 
 	if err := grantPublicSpacePoliciesToSystemOwner(ctx, rbacRepo, orgID, publicSpace.ID(), logger); err != nil {
 		return fmt.Errorf("grant public space policies to system owner: %w", err)
+	}
+
+	if err := seeder.SeedPublicWorkbooks(ctx, orgID.String(), publicSpace.ID().String()); err != nil {
+		return fmt.Errorf("seed public workbooks: %w", err)
 	}
 
 	return nil
