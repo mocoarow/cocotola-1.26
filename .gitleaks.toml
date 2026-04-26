@@ -8,4 +8,5 @@ paths = [
   '''local.yml''',
   '''go\.work\.sum''',
   '''go\.sum''',
+  '''cocotola-init/seed/seeds/public_workbooks\.yaml''',
 ]

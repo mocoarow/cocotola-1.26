@@ -14,8 +14,10 @@ const (
 	seedKeyMarker = "[seedKey:"
 	seedKeyEnd    = "]"
 	// questionTagPrefix is added to each question's Tags slice for the same
-	// idempotency purpose. Format: seed:<workbookSeedKey>:<questionSeedKey>.
-	questionTagPrefix = "seed:"
+	// idempotency purpose. Format: seed-<workbookSeedKey>:<questionSeedKey>.
+	// The hyphen (not a second colon) is required so the resulting tag still
+	// matches cocotola-question's single-colon tag validation pattern.
+	questionTagPrefix = "seed-"
 )
 
 // WorkbookAPIClient is the subset of QuestionAPIClient required by WorkbookSeeder.

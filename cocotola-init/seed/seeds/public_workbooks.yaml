@@ -1,14 +1,350 @@
 ---
+# Public workbook seeds.
+#
+# Idempotency: workbook identity is the seedKey, embedded in the workbook
+# description as `[seedKey:<value>]`. Question identity is the per-workbook
+# seedKey, embedded as a tag `seed-<workbookSeedKey>:<questionSeedKey>`.
+# Renaming a Title or Description is safe (the workbook is matched by
+# seedKey, not by Title). Renaming a seedKey creates a new entity.
+#
+# Content schema by questionType (see cocotola-question/domain/question/content.go):
+#   word_fill:
+#     {
+#       "source": {"text": "...", "lang": "ja|en|..."},
+#       "target": {"text": "... {{blank}} ...", "lang": "ja|en|..."},
+#       "explanation": "optional, no HTML",
+#       "allowPartialCredit": bool
+#     }
+#     - source.lang must differ from target.lang.
+#     - target.text must contain at least one {{blank}}.
+#   multiple_choice:
+#     {
+#       "questionText": "...",
+#       "explanation": "optional, no HTML",
+#       "choices": [{"id": "c1", "text": "...", "isCorrect": bool}, ...],
+#       "displayCount": 1..20,
+#       "showCorrectCount": bool,
+#       "shuffleChoices": bool,
+#       "allowPartialCredit": bool
+#     }
+#     - 1..40 choices; at least one isCorrect.
+#     - displayCount must be in [1,20], <= len(choices), >= number of correct.
 workbooks:
-  - seedKey: sample-vocabulary-v1
-    title: Sample Vocabulary
-    description: Basic vocabulary workbook for beginners
-    questions: []
-  - seedKey: sample-grammar-v1
-    title: Sample Grammar
-    description: Grammar exercises and practice questions
-    questions: []
-  - seedKey: sample-conversation-v1
-    title: Sample Conversation
-    description: Everyday conversation phrases and dialogs
-    questions: []
+  # ---------- Workbook 1: 穴埋め問題 10問 ----------
+  - seedKey: fillblank-en-jp-v1
+    title: "穴埋め問題: 日常英会話 10問"
+    description: "日本語の意味から英文の空欄を埋める穴埋め問題集です。日常生活で使う基本表現を10問収録しています。"
+    questions:
+      - seedKey: q01
+        questionType: word_fill
+        content: '{"source":{"text":"りんごを食べる","lang":"ja"},"target":{"text":"eat an {{apple}}","lang":"en"},"explanation":"apple は「りんご」を意味する基本単語です。母音から始まるので冠詞は a ではなく an を使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 1
+      - seedKey: q02
+        questionType: word_fill
+        content: '{"source":{"text":"犬が走る","lang":"ja"},"target":{"text":"A {{dog}} runs","lang":"en"},"explanation":"dog は「犬」を意味します。三人称単数現在では動詞に s を付けて runs となります。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:animals
+          - lang:en-ja
+        orderIndex: 2
+      - seedKey: q03
+        questionType: word_fill
+        content: '{"source":{"text":"私は本を読む","lang":"ja"},"target":{"text":"I read a {{book}}","lang":"en"},"explanation":"book は「本」を意味します。read は「読む」の動詞です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:vocabulary
+          - lang:en-ja
+        orderIndex: 3
+      - seedKey: q04
+        questionType: word_fill
+        content: '{"source":{"text":"水を飲む","lang":"ja"},"target":{"text":"drink {{water}}","lang":"en"},"explanation":"water は「水」を意味する不可算名詞です。冠詞は付けません。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 4
+      - seedKey: q05
+        questionType: word_fill
+        content: '{"source":{"text":"学校に行く","lang":"ja"},"target":{"text":"go to {{school}}","lang":"en"},"explanation":"school は「学校」です。go to school のように冠詞を付けない慣用表現です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 5
+      - seedKey: q06
+        questionType: word_fill
+        content: '{"source":{"text":"友達と遊ぶ","lang":"ja"},"target":{"text":"play with {{friends}}","lang":"en"},"explanation":"friend は「友達」、複数形は friends です。play with someone で「誰かと遊ぶ」となります。","allowPartialCredit":true}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 6
+      - seedKey: q07
+        questionType: word_fill
+        content: '{"source":{"text":"私は嬉しい","lang":"ja"},"target":{"text":"I am {{happy}}","lang":"en"},"explanation":"happy は「嬉しい・幸せな」を意味する形容詞です。be 動詞と一緒に使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:emotions
+          - lang:en-ja
+        orderIndex: 7
+      - seedKey: q08
+        questionType: word_fill
+        content: '{"source":{"text":"彼は先生です","lang":"ja"},"target":{"text":"He is a {{teacher}}","lang":"en"},"explanation":"teacher は「先生・教師」を意味する名詞です。職業を表す名詞には冠詞 a を付けます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:occupation
+          - lang:en-ja
+        orderIndex: 8
+      - seedKey: q09
+        questionType: word_fill
+        content: '{"source":{"text":"高い山","lang":"ja"},"target":{"text":"a high {{mountain}}","lang":"en"},"explanation":"mountain は「山」、high は「高い」を意味します。形容詞は名詞の前に置きます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:nature
+          - lang:en-ja
+        orderIndex: 9
+      - seedKey: q10
+        questionType: word_fill
+        content: '{"source":{"text":"私は東京を旅行する","lang":"ja"},"target":{"text":"I {{travel}} to {{Tokyo}}","lang":"en"},"explanation":"travel は「旅行する」を意味する動詞です。地名は固有名詞なので大文字で始めます。複数の空欄がある問題です。","allowPartialCredit":true}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:travel
+          - format:multi-blank
+          - lang:en-ja
+        orderIndex: 10
+
+  # ---------- Workbook 2: 選択問題 10問 ----------
+  - seedKey: multichoice-general-v1
+    title: "選択問題: 一般常識クイズ 10問"
+    description: "選択肢の数や正解の数が様々な一般常識の選択問題です。1択の確認問題から最大40択の問題まで、様々なパターンを収録しています。"
+    questions:
+      # 最小選択肢 (1) / 最小正解 (1)
+      - seedKey: q01
+        questionType: multiple_choice
+        content: '{"questionText":"確認問題: 学習を開始する準備はできましたか？","explanation":"選択肢が1つだけの確認問題です。学習開始の意思を確認するために使います。","choices":[{"id":"c1","text":"はい、開始します","isCorrect":true}],"displayCount":1,"showCorrectCount":false,"shuffleChoices":false,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:meta
+          - choices:1
+          - correct:1
+        orderIndex: 1
+      # 最小実用選択肢 (2) / 正解 (1)
+      - seedKey: q02
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち果物はどれですか？","explanation":"りんごは代表的な果物です。鉛筆は文房具です。","choices":[{"id":"c1","text":"りんご","isCorrect":true},{"id":"c2","text":"鉛筆","isCorrect":false}],"displayCount":2,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:food
+          - choices:2
+          - correct:1
+        orderIndex: 2
+      # 標準4択 / 正解 (1) - 一般的なパターン
+      - seedKey: q03
+        questionType: multiple_choice
+        content: '{"questionText":"日本の首都はどこですか？","explanation":"日本の首都は東京です。明治時代以降、京都から東京へ遷都されました。","choices":[{"id":"c1","text":"東京","isCorrect":true},{"id":"c2","text":"大阪","isCorrect":false},{"id":"c3","text":"京都","isCorrect":false},{"id":"c4","text":"名古屋","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:geography
+          - choices:4
+          - correct:1
+        orderIndex: 3
+      # 4択 / 正解 (2) - 複数正解
+      - seedKey: q04
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち世界の海洋を2つ選びなさい","explanation":"太平洋と大西洋は世界の主要な海洋です。富士山は山、アマゾン川は川です。","choices":[{"id":"c1","text":"太平洋","isCorrect":true},{"id":"c2","text":"大西洋","isCorrect":true},{"id":"c3","text":"富士山","isCorrect":false},{"id":"c4","text":"アマゾン川","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:geography
+          - choices:4
+          - correct:2
+        orderIndex: 4
+      # 4択 / 正解 (3) - 複数正解
+      - seedKey: q05
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち哺乳類を3つ選びなさい","explanation":"犬、猫、牛は哺乳類です。鳩は鳥類に分類されます。","choices":[{"id":"c1","text":"犬","isCorrect":true},{"id":"c2","text":"猫","isCorrect":true},{"id":"c3","text":"牛","isCorrect":true},{"id":"c4","text":"鳩","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:animals
+          - choices:4
+          - correct:3
+        orderIndex: 5
+      # 5択 / 正解 (5) - 全選択肢が正解
+      - seedKey: q06
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち1から5までの自然数をすべて選びなさい","explanation":"1, 2, 3, 4, 5 はすべて1以上5以下の自然数です。","choices":[{"id":"c1","text":"1","isCorrect":true},{"id":"c2","text":"2","isCorrect":true},{"id":"c3","text":"3","isCorrect":true},{"id":"c4","text":"4","isCorrect":true},{"id":"c5","text":"5","isCorrect":true}],"displayCount":5,"showCorrectCount":false,"shuffleChoices":false,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:numbers
+          - choices:5
+          - correct:5
+          - format:all-correct
+        orderIndex: 6
+      # 8択 / 正解 (1)
+      - seedKey: q07
+        questionType: multiple_choice
+        content: '{"questionText":"次のうちプログラミング言語はどれですか？(1つ選択)","explanation":"Python は汎用プログラミング言語です。他は果物・動物・国名・地名などです。","choices":[{"id":"c1","text":"Python","isCorrect":true},{"id":"c2","text":"Banana","isCorrect":false},{"id":"c3","text":"Tiger","isCorrect":false},{"id":"c4","text":"France","isCorrect":false},{"id":"c5","text":"Apple","isCorrect":false},{"id":"c6","text":"Mountain","isCorrect":false},{"id":"c7","text":"Dolphin","isCorrect":false},{"id":"c8","text":"Tokyo","isCorrect":false}],"displayCount":8,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:programming
+          - choices:8
+          - correct:1
+        orderIndex: 7
+      # 10択 / 正解 (4)
+      - seedKey: q08
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち果物を4つ選びなさい","explanation":"りんご、バナナ、ぶどう、みかんは果物です。それ以外は野菜に分類されます。","choices":[{"id":"c01","text":"りんご","isCorrect":true},{"id":"c02","text":"バナナ","isCorrect":true},{"id":"c03","text":"ぶどう","isCorrect":true},{"id":"c04","text":"みかん","isCorrect":true},{"id":"c05","text":"にんじん","isCorrect":false},{"id":"c06","text":"トマト","isCorrect":false},{"id":"c07","text":"きゅうり","isCorrect":false},{"id":"c08","text":"ピーマン","isCorrect":false},{"id":"c09","text":"なす","isCorrect":false},{"id":"c10","text":"だいこん","isCorrect":false}],"displayCount":10,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:food
+          - choices:10
+          - correct:4
+        orderIndex: 8
+      # 20択 / 正解 (1) - 最大displayCount
+      - seedKey: q09
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち日本の都道府県でないものを1つ選びなさい","explanation":"釜山は大韓民国の広域市であり、日本の都道府県ではありません。それ以外はすべて日本の都道府県です。","choices":[{"id":"c01","text":"北海道","isCorrect":false},{"id":"c02","text":"青森県","isCorrect":false},{"id":"c03","text":"秋田県","isCorrect":false},{"id":"c04","text":"山形県","isCorrect":false},{"id":"c05","text":"福島県","isCorrect":false},{"id":"c06","text":"東京都","isCorrect":false},{"id":"c07","text":"神奈川県","isCorrect":false},{"id":"c08","text":"新潟県","isCorrect":false},{"id":"c09","text":"長野県","isCorrect":false},{"id":"c10","text":"静岡県","isCorrect":false},{"id":"c11","text":"愛知県","isCorrect":false},{"id":"c12","text":"京都府","isCorrect":false},{"id":"c13","text":"大阪府","isCorrect":false},{"id":"c14","text":"兵庫県","isCorrect":false},{"id":"c15","text":"岡山県","isCorrect":false},{"id":"c16","text":"広島県","isCorrect":false},{"id":"c17","text":"福岡県","isCorrect":false},{"id":"c18","text":"熊本県","isCorrect":false},{"id":"c19","text":"沖縄県","isCorrect":false},{"id":"c20","text":"釜山広域市","isCorrect":true}],"displayCount":20,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:advanced
+          - topic:geography
+          - choices:20
+          - correct:1
+          - format:max-display
+        orderIndex: 9
+      # 40択 (最大) / 正解 (5) - 最大選択肢
+      - seedKey: q10
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち色を表す英単語を5つ選びなさい (40選択肢からランダムに20表示)","explanation":"red, blue, green, yellow, purple は色を表す英単語です。それ以外は動物・果物・物などを表します。","choices":[{"id":"c01","text":"red","isCorrect":true},{"id":"c02","text":"blue","isCorrect":true},{"id":"c03","text":"green","isCorrect":true},{"id":"c04","text":"yellow","isCorrect":true},{"id":"c05","text":"purple","isCorrect":true},{"id":"c06","text":"apple","isCorrect":false},{"id":"c07","text":"dog","isCorrect":false},{"id":"c08","text":"car","isCorrect":false},{"id":"c09","text":"book","isCorrect":false},{"id":"c10","text":"house","isCorrect":false},{"id":"c11","text":"river","isCorrect":false},{"id":"c12","text":"mountain","isCorrect":false},{"id":"c13","text":"computer","isCorrect":false},{"id":"c14","text":"music","isCorrect":false},{"id":"c15","text":"friend","isCorrect":false},{"id":"c16","text":"school","isCorrect":false},{"id":"c17","text":"teacher","isCorrect":false},{"id":"c18","text":"water","isCorrect":false},{"id":"c19","text":"food","isCorrect":false},{"id":"c20","text":"table","isCorrect":false},{"id":"c21","text":"chair","isCorrect":false},{"id":"c22","text":"window","isCorrect":false},{"id":"c23","text":"door","isCorrect":false},{"id":"c24","text":"phone","isCorrect":false},{"id":"c25","text":"road","isCorrect":false},{"id":"c26","text":"train","isCorrect":false},{"id":"c27","text":"plane","isCorrect":false},{"id":"c28","text":"ship","isCorrect":false},{"id":"c29","text":"sun","isCorrect":false},{"id":"c30","text":"moon","isCorrect":false},{"id":"c31","text":"star","isCorrect":false},{"id":"c32","text":"rain","isCorrect":false},{"id":"c33","text":"snow","isCorrect":false},{"id":"c34","text":"wind","isCorrect":false},{"id":"c35","text":"fire","isCorrect":false},{"id":"c36","text":"tree","isCorrect":false},{"id":"c37","text":"bird","isCorrect":false},{"id":"c38","text":"fish","isCorrect":false},{"id":"c39","text":"bread","isCorrect":false},{"id":"c40","text":"cheese","isCorrect":false}],"displayCount":20,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:advanced
+          - topic:colors
+          - choices:40
+          - correct:5
+          - format:max-choices
+        orderIndex: 10
+
+  # ---------- Workbook 3: 混合問題 10問 ----------
+  - seedKey: mixed-en-learning-v1
+    title: "混合問題: 英語学習 10問"
+    description: "穴埋め問題と選択問題を交互に組み合わせた英語学習問題集です。挨拶・色・数字・動物・食べ物などの基礎テーマを扱います。"
+    questions:
+      - seedKey: q01
+        questionType: word_fill
+        content: '{"source":{"text":"おはよう","lang":"ja"},"target":{"text":"Good {{morning}}","lang":"en"},"explanation":"morning は「朝」を意味します。Good morning は朝の挨拶として使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 1
+      - seedKey: q02
+        questionType: multiple_choice
+        content: '{"questionText":"草 (grass) の典型的な色は次のうちどれですか？","explanation":"草は通常、緑色 (green) をしています。","choices":[{"id":"c1","text":"green","isCorrect":true},{"id":"c2","text":"red","isCorrect":false},{"id":"c3","text":"blue","isCorrect":false},{"id":"c4","text":"yellow","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:colors
+          - choices:4
+          - correct:1
+        orderIndex: 2
+      - seedKey: q03
+        questionType: word_fill
+        content: '{"source":{"text":"ありがとう","lang":"ja"},"target":{"text":"Thank {{you}}","lang":"en"},"explanation":"Thank you は感謝を表す最も一般的なフレーズです。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 3
+      - seedKey: q04
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち果物 (fruit) を2つ選びなさい","explanation":"apple と banana は果物です。carrot は野菜です。","choices":[{"id":"c1","text":"apple","isCorrect":true},{"id":"c2","text":"banana","isCorrect":true},{"id":"c3","text":"carrot","isCorrect":false}],"displayCount":3,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:food
+          - choices:3
+          - correct:2
+        orderIndex: 4
+      - seedKey: q05
+        questionType: word_fill
+        content: '{"source":{"text":"私の名前はジョンです","lang":"ja"},"target":{"text":"My {{name}} is John","lang":"en"},"explanation":"name は「名前」を意味します。My name is ... は自己紹介の定型表現です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 5
+      - seedKey: q06
+        questionType: multiple_choice
+        content: '{"questionText":"太陽系で最も大きい惑星はどれですか？","explanation":"木星 (Jupiter) は太陽系で最も大きい惑星です。","choices":[{"id":"c1","text":"Jupiter","isCorrect":true},{"id":"c2","text":"Mars","isCorrect":false},{"id":"c3","text":"Venus","isCorrect":false},{"id":"c4","text":"Mercury","isCorrect":false},{"id":"c5","text":"Earth","isCorrect":false}],"displayCount":5,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:science
+          - choices:5
+          - correct:1
+        orderIndex: 6
+      - seedKey: q07
+        questionType: word_fill
+        content: '{"source":{"text":"彼女は学生です","lang":"ja"},"target":{"text":"She is a {{student}}","lang":"en"},"explanation":"student は「学生・生徒」を意味します。職業や身分を表すときは冠詞 a を付けます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:occupation
+          - lang:en-ja
+        orderIndex: 7
+      - seedKey: q08
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち1週間の曜日をすべて選びなさい","explanation":"月曜日から日曜日まですべて1週間の曜日です。","choices":[{"id":"c1","text":"Monday","isCorrect":true},{"id":"c2","text":"Tuesday","isCorrect":true},{"id":"c3","text":"Wednesday","isCorrect":true},{"id":"c4","text":"Thursday","isCorrect":true},{"id":"c5","text":"Friday","isCorrect":true},{"id":"c6","text":"Saturday","isCorrect":true},{"id":"c7","text":"Sunday","isCorrect":true}],"displayCount":7,"showCorrectCount":false,"shuffleChoices":false,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:calendar
+          - choices:7
+          - correct:7
+          - format:all-correct
+        orderIndex: 8
+      - seedKey: q09
+        questionType: word_fill
+        content: '{"source":{"text":"私は毎日本を読みます","lang":"ja"},"target":{"text":"I read a {{book}} every {{day}}","lang":"en"},"explanation":"book は「本」、every day は「毎日」を意味します。複数の空欄を含む問題です。","allowPartialCredit":true}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:daily-life
+          - format:multi-blank
+          - lang:en-ja
+        orderIndex: 9
+      - seedKey: q10
+        questionType: multiple_choice
+        content: '{"questionText":"1年は何日ですか？(平年の場合)","explanation":"平年は365日、うるう年は366日です。","choices":[{"id":"c1","text":"365日","isCorrect":true},{"id":"c2","text":"360日","isCorrect":false},{"id":"c3","text":"366日","isCorrect":false},{"id":"c4","text":"364日","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:calendar
+          - choices:4
+          - correct:1
+        orderIndex: 10
