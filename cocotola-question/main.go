@@ -86,7 +86,7 @@ func run() (int, error) {
 	policyAdder := gateway.NewAuthServicePolicyAdder(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
 	// internal API key middleware (protects /api/v1/internal endpoints)
-	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.Question.ServiceAPIKey)
+	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.Question.APIKey)
 
 	// initialize question module
 	api := router.Group("api")

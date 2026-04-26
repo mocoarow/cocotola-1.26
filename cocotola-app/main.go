@@ -97,7 +97,7 @@ func run() (int, error) {
 	policyAdder := questiongateway.NewAuthServicePolicyAdder(authClientBaseURL, authClientAPIKey, httpClient)
 
 	// internal API key middleware (protects /api/v1/internal endpoints)
-	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.App.Question.ServiceAPIKey)
+	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.App.Question.APIKey)
 
 	// initialize question module
 	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)

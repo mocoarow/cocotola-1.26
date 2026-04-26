@@ -8,9 +8,9 @@ import (
 )
 
 const (
-	BearerAuthScopes    = "BearerAuth.Scopes"
-	CookieAuthScopes    = "CookieAuth.Scopes"
-	ServiceApiKeyScopes = "ServiceApiKey.Scopes"
+	ApiKeyScopes     = "ApiKey.Scopes"
+	BearerAuthScopes = "BearerAuth.Scopes"
+	CookieAuthScopes = "CookieAuth.Scopes"
 )
 
 // Defines values for CreateSpaceRequestSpaceType.

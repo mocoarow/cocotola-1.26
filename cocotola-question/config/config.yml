@@ -40,7 +40,7 @@ log:
     dsn: ${LOG_UPTRACE_DSN:-dummy}
 question:
   firestoreProjectId: ${QUESTION_FIRESTORE_PROJECT_ID:-cocotola-local}
-  serviceApiKey: ${QUESTION_SERVICE_API_KEY}
+  apiKey: ${QUESTION_API_KEY}
 auth:
   baseUrl: ${AUTH_BASE_URL:-http://localhost:8080}
   apiKey: ${AUTH_API_KEY}

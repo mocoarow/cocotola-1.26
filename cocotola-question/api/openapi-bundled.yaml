@@ -143,7 +143,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '200':
           description: Successfully retrieved
@@ -189,7 +189,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -249,7 +249,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '204':
           description: Successfully deleted
@@ -292,7 +292,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -352,7 +352,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '200':
           description: Successfully retrieved
@@ -399,13 +399,13 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '200':
           description: Successfully retrieved
@@ -451,13 +451,13 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -517,13 +517,13 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '204':
           description: Successfully deleted
@@ -896,7 +896,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
+    get:
+      summary: List workbooks (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to list workbooks in the target space. Uses the X-Organization-Id header to scope the lookup.
+      operationId: internalListWorkbooks
+      tags:
+        - internal
+        - workbook
+      parameters:
+        - name: spaceId
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      responses:
+        '200':
+          description: Successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListWorkbooksResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ApiKey: []
   /api/v1/internal/workbook/{workbookId}:
     put:
       summary: Update a workbook (internal)
@@ -912,7 +942,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -939,7 +969,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
     delete:
       summary: Delete a workbook (internal)
       deprecated: false
@@ -954,7 +984,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '204':
           description: Successfully deleted
@@ -971,7 +1001,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
   /api/v1/internal/workbook/{workbookId}/question:
     post:
       summary: Add a question (internal)
@@ -987,7 +1017,7 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -1020,7 +1050,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
+    get:
+      summary: List questions (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to list questions in a workbook.
+      operationId: internalListQuestions
+      tags:
+        - internal
+        - question
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+      responses:
+        '200':
+          description: Successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListQuestionsResponse'
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ApiKey: []
   /api/v1/internal/workbook/{workbookId}/question/{questionId}:
     put:
       summary: Update a question (internal)
@@ -1036,13 +1102,13 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       requestBody:
         content:
           application/json:
@@ -1069,7 +1135,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
     delete:
       summary: Delete a question (internal)
       deprecated: false
@@ -1084,13 +1150,13 @@ paths:
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
         - name: questionId
           in: path
           required: true
           schema:
             type: string
-            pattern: ^.*$
+            pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
       responses:
         '204':
           description: Successfully deleted
@@ -1107,7 +1173,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
 components:
   schemas:
     CreateWorkbookRequest:
@@ -1511,7 +1577,7 @@ components:
       type: apiKey
       in: cookie
       name: session_token
-    ServiceApiKey:
+    ApiKey:
       type: apiKey
       in: header
       name: X-Service-Api-Key

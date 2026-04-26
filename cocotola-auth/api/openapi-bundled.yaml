@@ -316,7 +316,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
   /api/v1/auth/me:
     get:
       summary: Get current user
@@ -534,7 +534,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
       security:
-        - ServiceApiKey: []
+        - ApiKey: []
   /api/v1/auth/user:
     post:
       summary: Create a user
@@ -1088,7 +1088,7 @@ components:
       type: apiKey
       in: cookie
       name: session_token
-    ServiceApiKey:
+    ApiKey:
       type: apiKey
       in: header
       name: X-Service-Api-Key
