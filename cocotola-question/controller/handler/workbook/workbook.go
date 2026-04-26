@@ -39,14 +39,19 @@ func InitWorkbookRouter(
 // parent router (which is expected to be protected by X-Service-Api-Key).
 // The handler funcs are shared with the public router; the only difference is
 // that operatorID/organizationID are populated from the API-key middleware.
+//
+// The list endpoint is included so that batch jobs (e.g. cocotola-init seeding)
+// can perform idempotency checks before creating workbooks.
 func InitInternalWorkbookRouter(
 	createHandler *CreateWorkbookHandler,
+	listHandler *ListWorkbooksHandler,
 	updateHandler *UpdateWorkbookHandler,
 	deleteHandler *DeleteWorkbookHandler,
 	parentRouterGroup gin.IRouter,
 ) {
 	workbookGroup := parentRouterGroup.Group("workbook")
 	workbookGroup.POST("", createHandler.CreateWorkbook)
+	workbookGroup.GET("", listHandler.ListWorkbooks)
 	workbookGroup.PUT("/:workbookId", updateHandler.UpdateWorkbook)
 	workbookGroup.DELETE("/:workbookId", deleteHandler.DeleteWorkbook)
 }

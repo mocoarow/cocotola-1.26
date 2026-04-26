@@ -20,11 +20,24 @@ type InitConfig struct {
 	OwnerPassword string `yaml:"ownerPassword" validate:"required,min=8"`
 }
 
+// QuestionClientConfig holds connection settings for the cocotola-question
+// internal API used to seed public workbooks. When BaseURL is empty the
+// seeding step is skipped (useful for infra bootstrap or tests).
+//
+// TimeoutSec accepts 0 as a sentinel meaning "use the built-in default"
+// (see buildSeeder in main.go). Negative values are rejected by validation.
+type QuestionClientConfig struct {
+	BaseURL    string `yaml:"baseUrl"`
+	APIKey     string `yaml:"apiKey" validate:"required_with=BaseURL"`
+	TimeoutSec int    `yaml:"timeoutSec" validate:"gte=0"`
+}
+
 // Config holds all configuration for the cocotola-init application.
 type Config struct {
-	App InitConfig           `yaml:"app" validate:"required"`
-	DB  libgateway.DBConfig  `yaml:"db" validate:"required"`
-	Log libgateway.LogConfig `yaml:"log" validate:"required"`
+	App      InitConfig           `yaml:"app" validate:"required"`
+	DB       libgateway.DBConfig  `yaml:"db" validate:"required"`
+	Question QuestionClientConfig `yaml:"question"`
+	Log      libgateway.LogConfig `yaml:"log" validate:"required"`
 }
 
 //go:embed config.yml

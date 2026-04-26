@@ -1,0 +1,37 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "seed",
+    srcs = [
+        "client.go",
+        "doc.go",
+        "loader.go",
+        "types.go",
+        "workbook_seeder.go",
+    ],
+    embedsrcs = [
+        "seeds/public_workbooks.yaml",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/seed",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@in_yaml_go_yaml_v4//:yaml",
+    ],
+)
+
+smart_go_test(
+    name = "seed_test",
+    srcs = [
+        "client_s_test.go",
+        "loader_s_test.go",
+        "mocks_test.go",
+        "workbook_seeder_s_test.go",
+    ],
+    deps = [
+        ":seed",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

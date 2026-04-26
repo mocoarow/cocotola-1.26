@@ -1,0 +1,14 @@
+---
+workbooks:
+  - seedKey: sample-vocabulary-v1
+    title: Sample Vocabulary
+    description: Basic vocabulary workbook for beginners
+    questions: []
+  - seedKey: sample-grammar-v1
+    title: Sample Grammar
+    description: Grammar exercises and practice questions
+    questions: []
+  - seedKey: sample-conversation-v1
+    title: Sample Conversation
+    description: Everyday conversation phrases and dialogs
+    questions: []

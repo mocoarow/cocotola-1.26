@@ -10,6 +10,7 @@ go_library(
     deps = [
         "//cocotola-init/config",
         "//cocotola-init/initialize",
+        "//cocotola-init/seed",
         "//cocotola-lib/gateway",
     ],
 )

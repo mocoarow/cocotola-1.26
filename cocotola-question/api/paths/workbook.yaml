@@ -95,7 +95,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '200':
         description: Successfully retrieved
@@ -141,7 +141,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -201,7 +201,7 @@ workbook-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '204':
         description: Successfully deleted
@@ -268,6 +268,36 @@ internal-workbook:
               $ref: '../schemas/common.yaml#/ErrorResponse'
     security:
       - ServiceApiKey: []
+  get:
+    summary: List workbooks (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to list workbooks in the target space. Uses the X-Organization-Id header to scope the lookup.
+    operationId: internalListWorkbooks
+    tags:
+      - internal
+      - workbook
+    parameters:
+      - name: spaceId
+        in: query
+        required: true
+        schema:
+          type: string
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/workbook.yaml#/ListWorkbooksResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
 
 internal-workbook-by-id:
   put:
@@ -284,7 +314,7 @@ internal-workbook-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     requestBody:
       content:
         application/json:
@@ -326,7 +356,7 @@ internal-workbook-by-id:
         required: true
         schema:
           type: string
-          pattern: ^.*$
+          pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
     responses:
       '204':
         description: Successfully deleted
