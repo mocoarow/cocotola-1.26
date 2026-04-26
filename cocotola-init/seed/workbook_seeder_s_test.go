@@ -5,6 +5,7 @@ package seed_test
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -14,6 +15,11 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
+
+// questionTagPattern mirrors the validation regex used by cocotola-question's
+// domain layer. It is duplicated here on purpose so the seed package does not
+// take a hard dependency on the question domain just for this regression test.
+var questionTagPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$`)
 
 const (
 	testOrgID         = "org-1"
@@ -86,8 +92,8 @@ func Test_WorkbookSeeder_shouldBeIdempotent_onSecondRun(t *testing.T) {
 		}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return([]seed.QuestionListItem{
-			{QuestionID: "q-1", Tags: []string{"seed:vocab-v1:q1"}},
-			{QuestionID: "q-2", Tags: []string{"seed:vocab-v1:q2"}},
+			{QuestionID: "q-1", Tags: []string{"seed-vocab-v1:q1"}},
+			{QuestionID: "q-2", Tags: []string{"seed-vocab-v1:q2"}},
 		}, nil)
 
 	seeder := seed.NewWorkbookSeeder(client, sampleSeeds())
@@ -144,10 +150,10 @@ func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return([]seed.QuestionListItem{{
 			QuestionID: "q-existing",
-			Tags:       []string{"seed:vocab-v1:q1"},
+			Tags:       []string{"seed-vocab-v1:q1"},
 		}}, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2" && assert.Contains(t, body.Tags, "seed:vocab-v1:q2")
+		return body.Content == "C2" && assert.Contains(t, body.Tags, "seed-vocab-v1:q2")
 	})).Return(nil)
 
 	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
@@ -197,6 +203,41 @@ func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T)
 
 	// then
 	require.ErrorIs(t, err, createErr)
+}
+
+func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuestion(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	var captured []seed.AddQuestionRequest
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return(nil, nil)
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
+		Return("wb-Vocabulary", nil)
+	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
+		Return(nil, nil)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
+		Run(func(_ context.Context, _, _ string, body seed.AddQuestionRequest) {
+			captured = append(captured, body)
+		}).Return(nil).Times(2)
+
+	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, captured, 2)
+	for _, body := range captured {
+		assert.NotEmpty(t, body.Tags, "seeder must prepend the seed identity tag")
+		for _, tag := range body.Tags {
+			assert.Regexp(t, questionTagPattern, tag,
+				"every emitted tag must satisfy cocotola-question's tag pattern")
+		}
+	}
 }
 
 func Test_WorkbookSeeder_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {

@@ -147,6 +147,8 @@ func Test_NewQuestion_shouldReturnError_whenTagFormatIsInvalid(t *testing.T) {
 		{name: "empty_value", tag: "key:"},
 		{name: "spaces", tag: "key: value"},
 		{name: "special_chars", tag: "key:val@ue"},
+		{name: "multiple_colons", tag: "seed:wb-v1:q1"},
+		{name: "trailing_colon_segment", tag: "key:value:extra"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
