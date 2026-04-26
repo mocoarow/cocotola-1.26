@@ -27,6 +27,17 @@ func InitSpaceRouter(
 	spaceGroup.GET("", authMiddleware, listSpacesHandler.ListSpaces)
 }
 
+// InitInternalSpaceRouter wires the internal (service-to-service) space routes
+// under the given parent router. The parent is expected to be already protected
+// by the X-Service-Api-Key middleware.
+func InitInternalSpaceRouter(
+	findSpaceHandler *FindSpaceHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	spaceGroup := parentRouterGroup.Group("space")
+	spaceGroup.GET("/:spaceId", findSpaceHandler.FindSpace)
+}
+
 func handleSpaceError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
 	if errors.Is(err, domain.ErrForbidden) {
 		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))

@@ -4,3 +4,7 @@ package: api
 generate:
   models: true
 output: types.gen.go
+compatibility:
+  always-prefix-enum-values: false
+output-options:
+  skip-optional-pointer: true

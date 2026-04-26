@@ -274,3 +274,141 @@ question-by-id:
     security:
       - BearerAuth: []
       - CookieAuth: []
+
+internal-question:
+  post:
+    summary: Add a question (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to add a question to a workbook.
+    operationId: internalAddQuestion
+    tags:
+      - internal
+      - question
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/question.yaml#/AddQuestionRequest'
+      required: true
+    responses:
+      '201':
+        description: Successfully created
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/question.yaml#/QuestionResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
+
+internal-question-by-id:
+  put:
+    summary: Update a question (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to update a question.
+    operationId: internalUpdateQuestion
+    tags:
+      - internal
+      - question
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/question.yaml#/UpdateQuestionRequest'
+      required: true
+    responses:
+      '200':
+        description: Successfully updated
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/question.yaml#/QuestionResponse'
+      '404':
+        description: Question not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []
+  delete:
+    summary: Delete a question (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to delete a question.
+    operationId: internalDeleteQuestion
+    tags:
+      - internal
+      - question
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+      - name: questionId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    responses:
+      '204':
+        description: Successfully deleted
+      '404':
+        description: Question not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+    security:
+      - ServiceApiKey: []

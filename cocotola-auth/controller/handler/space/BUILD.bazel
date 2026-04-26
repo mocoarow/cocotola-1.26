@@ -1,9 +1,11 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "space",
     srcs = [
         "create_space_handler.go",
+        "find_space_handler.go",
         "list_spaces_handler.go",
         "space.go",
     ],
@@ -17,5 +19,23 @@ go_library(
         "//cocotola-auth/service/space",
         "//cocotola-lib/logging",
         "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "space_test",
+    srcs = [
+        "find_space_handler_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":space",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/space",
+        "//cocotola-auth/service/space",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

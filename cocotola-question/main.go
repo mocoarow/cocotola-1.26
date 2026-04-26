@@ -15,6 +15,7 @@ import (
 	libprocess "github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
+	questionmiddleware "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questioninit "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize"
@@ -78,14 +79,20 @@ func run() (int, error) {
 	// max workbooks fetcher (fetches user setting via cocotola-auth internal API)
 	maxWbFetcher := gateway.NewAuthServiceMaxWorkbooksFetcher(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
+	// space type fetcher (resolves SpaceType for visibility enforcement)
+	spaceTypeFetcher := gateway.NewAuthServiceSpaceTypeFetcher(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
+
 	// policy adder (adds per-user RBAC policies via cocotola-auth internal API)
 	policyAdder := gateway.NewAuthServicePolicyAdder(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
+
+	// internal API key middleware (protects /api/v1/internal endpoints)
+	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.Question.ServiceAPIKey)
 
 	// initialize question module
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
-	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, authzChecker, orgResolver, maxWbFetcher, policyAdder)
+	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}

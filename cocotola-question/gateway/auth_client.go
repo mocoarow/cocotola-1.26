@@ -166,6 +166,66 @@ func AuthServiceOrganizationResolver(authBaseURL string, apiKey string, httpClie
 	}
 }
 
+// AuthServiceSpaceTypeFetcher calls cocotola-auth's internal API to look up a space record by ID.
+type AuthServiceSpaceTypeFetcher struct {
+	authServiceClient
+}
+
+// NewAuthServiceSpaceTypeFetcher creates a new AuthServiceSpaceTypeFetcher.
+func NewAuthServiceSpaceTypeFetcher(authBaseURL string, apiKey string, httpClient *http.Client) *AuthServiceSpaceTypeFetcher {
+	return &AuthServiceSpaceTypeFetcher{
+		authServiceClient: newAuthServiceClient(authBaseURL, apiKey, httpClient, "SpaceTypeFetcher"),
+	}
+}
+
+// FetchSpaceType returns the SpaceType ("public" or "private") of the given space.
+// Returns domain.ErrSpaceNotFound when cocotola-auth responds with 404.
+func (f *AuthServiceSpaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceID string) (string, error) {
+	if spaceID == "" {
+		return "", fmt.Errorf("space id is required: %w", domain.ErrInvalidArgument)
+	}
+
+	reqURL := f.authBaseURL + "/api/v1/internal/auth/space/" + url.PathEscape(spaceID)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("X-Service-Api-Key", f.apiKey)
+
+	resp, err := f.httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("call auth service: %w", err)
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			f.logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
+		}
+	}()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return "", domain.ErrSpaceNotFound
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
+		return "", fmt.Errorf("auth service returned status %d for space %s: %s", resp.StatusCode, spaceID, string(body))
+	}
+
+	var result struct {
+		SpaceType string `json:"spaceType"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode response: %w", err)
+	}
+
+	switch result.SpaceType {
+	case "public", "private":
+		return result.SpaceType, nil
+	default:
+		return "", fmt.Errorf("unexpected space type %q for space %s: %w", result.SpaceType, spaceID, domain.ErrInvalidSpaceType)
+	}
+}
+
 // AuthServiceMaxWorkbooksFetcher calls cocotola-auth's internal API to fetch the max workbooks setting for a user.
 type AuthServiceMaxWorkbooksFetcher struct {
 	authServiceClient

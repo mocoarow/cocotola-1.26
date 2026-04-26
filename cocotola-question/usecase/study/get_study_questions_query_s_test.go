@@ -431,3 +431,36 @@ func Test_GetStudyQuestionsQuery_shouldReturnError_whenAuthCheckFails(t *testing
 	// then
 	require.ErrorIs(t, err, authErr)
 }
+
+func Test_GetStudyQuestionsQuery_shouldReturnQuestions_whenWorkbookIsPublic(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixturePublicWorkbook(), nil)
+
+	// authChecker should NOT be called for public workbooks.
+	authChecker := newMockauthorizationChecker(t)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionRepo := newMockquestionBatchFinder(t)
+	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(fixtureQuestions(), nil)
+
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInput(t, 10)
+
+	// when
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Len(t, output.Questions, 1)
+	assert.Equal(t, fixtureQuestionID, output.Questions[0].QuestionID)
+	authChecker.AssertNotCalled(t, "IsAllowed")
+}

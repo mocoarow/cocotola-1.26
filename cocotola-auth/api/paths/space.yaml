@@ -80,3 +80,52 @@ space:
     security:
       - BearerAuth: []
       - CookieAuth: []
+
+internal-find-space-by-id:
+  get:
+    summary: Find a space by ID (internal)
+    deprecated: false
+    description: Internal service-to-service endpoint to resolve a space record by its UUID. Authentication is performed via X-Service-Api-Key.
+    operationId: internalFindSpaceByID
+    tags:
+      - internal
+      - space
+    parameters:
+      - name: spaceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    responses:
+      '200':
+        description: Successfully retrieved
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/space.yaml#/FindSpaceResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Space not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - ServiceApiKey: []

@@ -35,6 +35,22 @@ func InitWorkbookRouter(
 	workbookGroup.DELETE("/:workbookId", deleteHandler.DeleteWorkbook)
 }
 
+// InitInternalWorkbookRouter mounts workbook CRUD endpoints on the internal
+// parent router (which is expected to be protected by X-Service-Api-Key).
+// The handler funcs are shared with the public router; the only difference is
+// that operatorID/organizationID are populated from the API-key middleware.
+func InitInternalWorkbookRouter(
+	createHandler *CreateWorkbookHandler,
+	updateHandler *UpdateWorkbookHandler,
+	deleteHandler *DeleteWorkbookHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	workbookGroup := parentRouterGroup.Group("workbook")
+	workbookGroup.POST("", createHandler.CreateWorkbook)
+	workbookGroup.PUT("/:workbookId", updateHandler.UpdateWorkbook)
+	workbookGroup.DELETE("/:workbookId", deleteHandler.DeleteWorkbook)
+}
+
 func handleWorkbookError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
 	if errors.Is(err, domain.ErrForbidden) {
 		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))

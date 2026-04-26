@@ -21,6 +21,7 @@ tags:
   - name: question
   - name: sharing
   - name: study
+  - name: internal
 paths:
   /api/v1/question/health:
     get:
@@ -859,6 +860,254 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/internal/workbook:
+    post:
+      summary: Create a workbook (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to create a workbook in the target space. Visibility is auto-determined from the SpaceType.
+      operationId: internalCreateWorkbook
+      tags:
+        - internal
+        - workbook
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkbookRequest'
+        required: true
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkbookResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
+  /api/v1/internal/workbook/{workbookId}:
+    put:
+      summary: Update a workbook (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to update a workbook.
+      operationId: internalUpdateWorkbook
+      tags:
+        - internal
+        - workbook
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWorkbookRequest'
+        required: true
+      responses:
+        '200':
+          description: Successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkbookResponse'
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
+    delete:
+      summary: Delete a workbook (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to delete a workbook.
+      operationId: internalDeleteWorkbook
+      tags:
+        - internal
+        - workbook
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      responses:
+        '204':
+          description: Successfully deleted
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
+  /api/v1/internal/workbook/{workbookId}/question:
+    post:
+      summary: Add a question (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to add a question to a workbook.
+      operationId: internalAddQuestion
+      tags:
+        - internal
+        - question
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddQuestionRequest'
+        required: true
+      responses:
+        '201':
+          description: Successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
+  /api/v1/internal/workbook/{workbookId}/question/{questionId}:
+    put:
+      summary: Update a question (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to update a question.
+      operationId: internalUpdateQuestion
+      tags:
+        - internal
+        - question
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateQuestionRequest'
+        required: true
+      responses:
+        '200':
+          description: Successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
+    delete:
+      summary: Delete a question (internal)
+      deprecated: false
+      description: Internal service-to-service endpoint to delete a question.
+      operationId: internalDeleteQuestion
+      tags:
+        - internal
+        - question
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      responses:
+        '204':
+          description: Successfully deleted
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - ServiceApiKey: []
 components:
   schemas:
     CreateWorkbookRequest:
@@ -1262,3 +1511,7 @@ components:
       type: apiKey
       in: cookie
       name: session_token
+    ServiceApiKey:
+      type: apiKey
+      in: header
+      name: X-Service-Api-Key

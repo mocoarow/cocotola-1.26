@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
 // OrganizationID is the value-object identifier for an Organization aggregate.
@@ -576,7 +578,7 @@ const (
 	// SystemOrganizationIDString is the UUID of the bootstrap "system" organization.
 	SystemOrganizationIDString = "00000000-0000-7000-8000-000000000001"
 	// SystemAppUserIDString is the UUID of the bootstrap "__system_admin" user.
-	SystemAppUserIDString = "00000000-0000-7000-8000-000000000002"
+	SystemAppUserIDString = libdomain.SystemAppUserIDString
 )
 
 // SystemOrganizationID returns the bootstrap organization ID as a value object.

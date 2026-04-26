@@ -110,3 +110,25 @@ type Item struct {
 type ListSpacesOutput struct {
 	Spaces []Item
 }
+
+// --- FindSpace (internal API) ---
+
+// FindSpaceInput holds the parameters for looking up a single space by ID via the
+// internal service-to-service API. No operator is required because the caller is
+// authenticated via the X-Service-Api-Key middleware.
+type FindSpaceInput struct {
+	SpaceID domain.SpaceID
+}
+
+// NewFindSpaceInput creates a validated FindSpaceInput.
+func NewFindSpaceInput(spaceID domain.SpaceID) (*FindSpaceInput, error) {
+	if spaceID.IsZero() {
+		return nil, errors.New("find space input space id must not be zero")
+	}
+	return &FindSpaceInput{SpaceID: spaceID}, nil
+}
+
+// FindSpaceOutput is the resolved space record.
+type FindSpaceOutput struct {
+	Item Item
+}

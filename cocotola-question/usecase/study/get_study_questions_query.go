@@ -45,16 +45,19 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 		return nil, fmt.Errorf("find workbook: %w", err)
 	}
 
-	resource, err := domain.ResourceWorkbook(wb.ID())
-	if err != nil {
-		return nil, fmt.Errorf("resource workbook: %w", err)
-	}
-	allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionStudyWorkbook(), resource)
-	if err != nil {
-		return nil, fmt.Errorf("authorization check: %w", err)
-	}
-	if !allowed {
-		return nil, domain.ErrForbidden
+	// Public workbooks are studyable by all users; study records are scoped per user.
+	if !wb.Visibility().IsPublic() {
+		resource, err := domain.ResourceWorkbook(wb.ID())
+		if err != nil {
+			return nil, fmt.Errorf("resource workbook: %w", err)
+		}
+		allowed, err := q.authChecker.IsAllowed(ctx, input.OrganizationID, input.OperatorID, domain.ActionStudyWorkbook(), resource)
+		if err != nil {
+			return nil, fmt.Errorf("authorization check: %w", err)
+		}
+		if !allowed {
+			return nil, domain.ErrForbidden
+		}
 	}
 
 	activeList, err := q.activeListRepo.FindByWorkbookID(ctx, input.WorkbookID)

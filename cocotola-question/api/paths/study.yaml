@@ -13,6 +13,7 @@ study:
         required: true
         schema:
           type: string
+          pattern: ^.*$
       - name: limit
         in: query
         required: true
@@ -82,11 +83,13 @@ study-answer:
         required: true
         schema:
           type: string
+          pattern: ^.*$
       - name: questionId
         in: path
         required: true
         schema:
           type: string
+          pattern: ^.*$
     requestBody:
       content:
         application/json:

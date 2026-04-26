@@ -43,3 +43,8 @@ type ownedWorkbookListSaver interface {
 type maxWorkbooksFetcher interface {
 	FetchMaxWorkbooks(ctx context.Context, userID string) (int, error)
 }
+
+// spaceTypeFetcher resolves a space's type ("public" or "private") via cocotola-auth.
+type spaceTypeFetcher interface {
+	FetchSpaceType(ctx context.Context, spaceID string) (string, error)
+}

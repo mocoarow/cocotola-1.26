@@ -42,6 +42,8 @@ paths:
     $ref: 'paths/group.yaml#/group'
   /api/v1/auth/space:
     $ref: 'paths/space.yaml#/space'
+  /api/v1/internal/auth/space/{spaceId}:
+    $ref: 'paths/space.yaml#/internal-find-space-by-id'
   /api/v1/auth/user:
     $ref: 'paths/user.yaml#/user'
   /api/v1/auth/organization:
@@ -78,6 +80,8 @@ components:
       $ref: 'schemas/space.yaml#/SpaceItem'
     ListSpacesResponse:
       $ref: 'schemas/space.yaml#/ListSpacesResponse'
+    FindSpaceResponse:
+      $ref: 'schemas/space.yaml#/FindSpaceResponse'
     CreateUserRequest:
       $ref: 'schemas/user.yaml#/CreateUserRequest'
     CreateUserResponse:

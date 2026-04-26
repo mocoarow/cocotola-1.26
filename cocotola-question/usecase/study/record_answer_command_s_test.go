@@ -39,6 +39,11 @@ func fixtureWorkbook() *domainworkbook.Workbook {
 	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "Test WB", "desc", domainworkbook.VisibilityPrivate(), now, now)
 }
 
+func fixturePublicWorkbook() *domainworkbook.Workbook {
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "public-space-1", "system-owner", fixtureOrganizationID, "Public WB", "desc", domainworkbook.VisibilityPublic(), now, now)
+}
+
 func fixtureQuestions() []domainquestion.Question {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
 	return []domainquestion.Question{
@@ -228,4 +233,38 @@ func Test_RecordAnswerCommand_shouldReturnError_whenAuthCheckFails(t *testing.T)
 
 	// then
 	require.ErrorIs(t, err, authErr)
+}
+
+func Test_RecordAnswerCommand_shouldRecordAnswer_whenWorkbookIsPublic(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixturePublicWorkbook(), nil)
+
+	// authChecker should NOT be called for public workbooks.
+	authChecker := newMockauthorizationChecker(t)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInput(t, true)
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.ConsecutiveCorrect)
+	assert.Equal(t, 1, output.TotalCorrect)
+	assert.Equal(t, 0, output.TotalIncorrect)
+	authChecker.AssertNotCalled(t, "IsAllowed")
 }

@@ -31,3 +31,10 @@ var ErrConcurrentModification = errors.New("concurrent modification")
 
 // ErrStudyRecordNotFound is returned when a study record cannot be found.
 var ErrStudyRecordNotFound = errors.New("study record not found")
+
+// ErrSpaceNotFound is returned when a space lookup against cocotola-auth returns 404.
+var ErrSpaceNotFound = errors.New("space not found")
+
+// ErrInvalidSpaceType is returned when a space lookup against cocotola-auth
+// returns a SpaceType value that this service does not recognize.
+var ErrInvalidSpaceType = errors.New("invalid space type")

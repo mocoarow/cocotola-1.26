@@ -25,10 +25,16 @@ const (
 	CreateSpaceResponseSpaceTypePublic  CreateSpaceResponseSpaceType = "public"
 )
 
+// Defines values for FindSpaceResponseSpaceType.
+const (
+	FindSpaceResponseSpaceTypePrivate FindSpaceResponseSpaceType = "private"
+	FindSpaceResponseSpaceTypePublic  FindSpaceResponseSpaceType = "public"
+)
+
 // Defines values for SpaceItemSpaceType.
 const (
-	Private SpaceItemSpaceType = "private"
-	Public  SpaceItemSpaceType = "public"
+	SpaceItemSpaceTypePrivate SpaceItemSpaceType = "private"
+	SpaceItemSpaceTypePublic  SpaceItemSpaceType = "public"
 )
 
 // Defines values for PasswordAuthenticationParamsXTokenDelivery.
@@ -112,6 +118,20 @@ type FindOrganizationResponse struct {
 	ID   openapi_types.UUID `json:"id"`
 	Name string             `json:"name"`
 }
+
+// FindSpaceResponse defines model for FindSpaceResponse.
+type FindSpaceResponse struct {
+	Deleted        bool                       `json:"deleted"`
+	KeyName        string                     `json:"keyName"`
+	Name           string                     `json:"name"`
+	OrganizationID openapi_types.UUID         `json:"organizationId"`
+	OwnerID        openapi_types.UUID         `json:"ownerId"`
+	SpaceID        openapi_types.UUID         `json:"spaceId"`
+	SpaceType      FindSpaceResponseSpaceType `json:"spaceType"`
+}
+
+// FindSpaceResponseSpaceType defines model for FindSpaceResponse.SpaceType.
+type FindSpaceResponseSpaceType string
 
 // GetMeResponse defines model for GetMeResponse.
 type GetMeResponse struct {

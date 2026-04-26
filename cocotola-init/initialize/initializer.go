@@ -109,8 +109,13 @@ func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, appUserRepo *gat
 	}
 
 	spaceRepo := gateway.NewSpaceRepository(db)
-	if err := findOrCreatePublicSpace(ctx, spaceRepo, orgID, systemOwnerID, logger); err != nil {
+	publicSpace, err := findOrCreatePublicSpace(ctx, spaceRepo, orgID, systemOwnerID, logger)
+	if err != nil {
 		return fmt.Errorf("find or create public space: %w", err)
+	}
+
+	if err := grantPublicSpacePoliciesToSystemOwner(ctx, rbacRepo, orgID, publicSpace.ID(), logger); err != nil {
+		return fmt.Errorf("grant public space policies to system owner: %w", err)
 	}
 
 	return nil
@@ -348,26 +353,61 @@ func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID d
 	return nil
 }
 
-func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID domain.OrganizationID, systemOwnerID domain.AppUserID, logger *slog.Logger) error {
+func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID domain.OrganizationID, systemOwnerID domain.AppUserID, logger *slog.Logger) (*domainspace.Space, error) {
 	keyName := domainspace.PublicSpaceKeyName(organizationName)
 
-	_, err := repo.FindByKeyName(ctx, orgID, keyName)
+	existing, err := repo.FindByKeyName(ctx, orgID, keyName)
 	if err == nil {
 		logger.InfoContext(ctx, "public space already exists", slog.String("key_name", keyName))
-		return nil
+		return existing, nil
 	}
 	if !errors.Is(err, domain.ErrSpaceNotFound) {
-		return fmt.Errorf("find public space by key name: %w", err)
+		return nil, fmt.Errorf("find public space by key name: %w", err)
 	}
 
 	s, err := domainspace.Provision(ctx, repo, orgID, systemOwnerID, keyName, "Public", domainspace.TypePublic())
 	if err != nil {
-		return fmt.Errorf("provision public space: %w", err)
+		return nil, fmt.Errorf("provision public space: %w", err)
 	}
 
 	logger.InfoContext(ctx, "public space created",
 		slog.String("space_id", s.ID().String()),
 		slog.String("key_name", keyName),
+	)
+	return s, nil
+}
+
+// grantPublicSpacePoliciesToSystemOwner grants workbook/question CRUD policies on the
+// public space to the system_owner group. This function is idempotent: Casbin's
+// AddNamedPolicy returns (false, nil) when the policy already exists, so repeated
+// calls during re-initialization are safe.
+func grantPublicSpacePoliciesToSystemOwner(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, publicSpaceID domain.SpaceID, logger *slog.Logger) error {
+	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
+	if err != nil {
+		return fmt.Errorf("new rbac group: %w", err)
+	}
+
+	resource := domainrbac.ResourceSpace(publicSpaceID)
+	actions := []domainrbac.Action{
+		domainrbac.ActionCreateWorkbook(),
+		domainrbac.ActionViewWorkbook(),
+		domainrbac.ActionUpdateWorkbook(),
+		domainrbac.ActionDeleteWorkbook(),
+		domainrbac.ActionCreateQuestion(),
+		domainrbac.ActionUpdateQuestion(),
+		domainrbac.ActionDeleteQuestion(),
+	}
+
+	for _, action := range actions {
+		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, resource, domainrbac.EffectAllow()); err != nil {
+			return fmt.Errorf("add system owner policy %s on public space: %w", action.Value(), err)
+		}
+	}
+
+	logger.InfoContext(ctx, "system owner policies granted on public space",
+		slog.String("organization_id", orgID.String()),
+		slog.String("public_space_id", publicSpaceID.String()),
+		slog.Int("policy_count", len(actions)),
 	)
 	return nil
 }
