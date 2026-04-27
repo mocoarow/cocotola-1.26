@@ -28,8 +28,9 @@ func (organizationRecord) TableName() string {
 }
 
 func toOrganizationDomain(r *organizationRecord) *domain.Organization {
-	return domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups).
-		WithVersion(r.Version)
+	o := domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
+	o.SetVersion(r.Version)
+	return o
 }
 
 // OrganizationRepository implements organization persistence using GORM.
@@ -64,7 +65,7 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert organization: %w", err)
 		}
-		org.WithVersion(nextVersion)
+		org.SetVersion(nextVersion)
 		return nil
 	}
 
@@ -83,7 +84,7 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 	if result.RowsAffected == 0 {
 		return domain.ErrOrganizationConcurrentModification
 	}
-	org.WithVersion(nextVersion)
+	org.SetVersion(nextVersion)
 	return nil
 }
 

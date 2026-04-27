@@ -81,8 +81,8 @@ func (g *Group) Disable() { g.enabled = false }
 // Version returns the persisted row version (0 = new, not yet saved).
 func (g *Group) Version() int { return g.version }
 
-// WithVersion sets the persisted row version on a reconstituted aggregate.
-func (g *Group) WithVersion(version int) *Group {
+// SetVersion sets the persisted row version.
+// Only the gateway/repository layer should call this, after a successful load or save.
+func (g *Group) SetVersion(version int) {
 	g.version = version
-	return g
 }

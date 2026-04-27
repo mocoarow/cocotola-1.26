@@ -123,8 +123,8 @@ func PrivateSpaceKeyName(loginID string) string {
 // Version returns the persisted row version (0 = new, not yet saved).
 func (s *Space) Version() int { return s.version }
 
-// WithVersion sets the persisted row version on a reconstituted aggregate.
-func (s *Space) WithVersion(version int) *Space {
+// SetVersion sets the persisted row version.
+// Only the gateway/repository layer should call this, after a successful load or save.
+func (s *Space) SetVersion(version int) {
 	s.version = version
-	return s
 }

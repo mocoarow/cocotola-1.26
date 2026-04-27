@@ -47,10 +47,10 @@ func ReconstructAppUserProvider(id domain.AppUserProviderID, appUserID domain.Ap
 	}
 }
 
-// WithVersion sets the persisted row version on a reconstituted aggregate.
-func (p *AppUserProvider) WithVersion(version int) *AppUserProvider {
+// SetVersion sets the persisted row version.
+// Only the gateway/repository layer should call this, after a successful load or save.
+func (p *AppUserProvider) SetVersion(version int) {
 	p.version = version
-	return p
 }
 
 // Version returns the aggregate version (0 = new, not yet saved).

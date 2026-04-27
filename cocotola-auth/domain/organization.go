@@ -73,8 +73,8 @@ func (o *Organization) MaxActiveGroups() int { return o.maxActiveGroups }
 // Version returns the persisted row version (0 = new, not yet saved).
 func (o *Organization) Version() int { return o.version }
 
-// WithVersion sets the persisted row version on a reconstituted aggregate.
-func (o *Organization) WithVersion(version int) *Organization {
+// SetVersion sets the persisted row version.
+// Only the gateway/repository layer should call this, after a successful load or save.
+func (o *Organization) SetVersion(version int) {
 	o.version = version
-	return o
 }
