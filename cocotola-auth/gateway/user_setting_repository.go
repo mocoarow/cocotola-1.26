@@ -19,6 +19,7 @@ type userSettingRecord struct {
 	CreatedBy    string    `gorm:"column:created_by;<-:create"`
 	UpdatedBy    string    `gorm:"column:updated_by"`
 	MaxWorkbooks int       `gorm:"column:max_workbooks"`
+	Language     string    `gorm:"column:language"`
 }
 
 func (userSettingRecord) TableName() string {
@@ -30,7 +31,7 @@ func toUserSettingDomain(r *userSettingRecord) (*domain.UserSetting, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse app user id %s: %w", r.AppUserID, err)
 	}
-	setting, err := domain.ReconstructUserSetting(appUserID, r.MaxWorkbooks)
+	setting, err := domain.ReconstructUserSetting(appUserID, r.MaxWorkbooks, r.Language)
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct user setting: %w", err)
 	}
@@ -61,6 +62,7 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		CreatedBy:    operatorID,
 		UpdatedBy:    operatorID,
 		MaxWorkbooks: setting.MaxWorkbooks(),
+		Language:     setting.Language(),
 	}
 	if setting.Version() == 0 {
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
@@ -75,6 +77,7 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		Where("app_user_id = ? AND version = ?", record.AppUserID, setting.Version()).
 		Updates(map[string]any{
 			"max_workbooks": record.MaxWorkbooks,
+			"language":      record.Language,
 			"version":       nextVersion,
 			"updated_by":    operatorID,
 		})

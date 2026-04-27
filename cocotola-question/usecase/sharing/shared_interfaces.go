@@ -26,7 +26,7 @@ type workbookFinder interface {
 }
 
 type publicWorkbookFinder interface {
-	FindPublicByOrganizationID(ctx context.Context, organizationID string) ([]domainworkbook.Workbook, error)
+	FindPublicByOrganizationIDAndLanguage(ctx context.Context, organizationID string, language string) ([]domainworkbook.Workbook, error)
 }
 
 type authorizationChecker interface {

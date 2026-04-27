@@ -36,12 +36,12 @@ var testConfig = studyusecase.UsecaseConfig{
 
 func fixtureWorkbook() *domainworkbook.Workbook {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "Test WB", "desc", domainworkbook.VisibilityPrivate(), now, now)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "Test WB", "desc", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), now, now)
 }
 
 func fixturePublicWorkbook() *domainworkbook.Workbook {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "public-space-1", "system-owner", fixtureOrganizationID, "Public WB", "desc", domainworkbook.VisibilityPublic(), now, now)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "public-space-1", "system-owner", fixtureOrganizationID, "Public WB", "desc", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), now, now)
 }
 
 func fixtureQuestions() []domainquestion.Question {

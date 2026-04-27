@@ -83,6 +83,7 @@ type getMeResponse struct {
 	UserID           string `json:"userId"`
 	LoginID          string `json:"loginId"`
 	OrganizationName string `json:"organizationName"`
+	Language         string `json:"language"`
 }
 
 // NewAuthMiddleware returns a Gin middleware that validates requests
@@ -141,6 +142,7 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 
 		c.Set(controller.ContextFieldUserID{}, me.UserID)
 		c.Set(controller.ContextFieldOrganizationName{}, me.OrganizationName)
+		c.Set(controller.ContextFieldUserLanguage{}, me.Language)
 		c.Next()
 	}
 }

@@ -11,3 +11,6 @@ type ContextFieldOrganizationName struct{}
 
 // ContextFieldOrganizationID is a Gin context key for storing the resolved organization ID.
 type ContextFieldOrganizationID struct{}
+
+// ContextFieldUserLanguage is a Gin context key for storing the authenticated user's preferred language.
+type ContextFieldUserLanguage struct{}

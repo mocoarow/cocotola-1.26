@@ -8,6 +8,7 @@ type PublicWorkbookSeed struct {
 	SeedKey     string         `yaml:"seedKey"`
 	Title       string         `yaml:"title"`
 	Description string         `yaml:"description"`
+	Language    string         `yaml:"language"`
 	Questions   []QuestionSeed `yaml:"questions"`
 }
 

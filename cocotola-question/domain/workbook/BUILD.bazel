@@ -4,17 +4,22 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "workbook",
     srcs = [
+        "language.go",
         "visibility.go",
         "workbook.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook",
     visibility = ["//visibility:public"],
-    deps = ["//cocotola-question/domain"],
+    deps = [
+        "//cocotola-lib/i18n",
+        "//cocotola-question/domain",
+    ],
 )
 
 smart_go_test(
     name = "workbook_test",
     srcs = [
+        "language_s_test.go",
         "visibility_s_test.go",
         "workbook_s_test.go",
     ],

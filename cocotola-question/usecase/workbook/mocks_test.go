@@ -40,8 +40,8 @@ func (_m *mockworkbookCreator) EXPECT() *mockworkbookCreator_Expecter {
 }
 
 // Create provides a mock function for the type mockworkbookCreator
-func (_mock *mockworkbookCreator) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error) {
-	ret := _mock.Called(ctx, spaceID, ownerID, organizationID, title, description, visibility)
+func (_mock *mockworkbookCreator) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error) {
+	ret := _mock.Called(ctx, spaceID, ownerID, organizationID, title, description, visibility, language)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
@@ -49,16 +49,16 @@ func (_mock *mockworkbookCreator) Create(ctx context.Context, spaceID string, ow
 
 	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string) (string, error)); ok {
-		return returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string, string) (string, error)); ok {
+		return returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility, language)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string) string); ok {
-		r0 = returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, string, string, string, string, string) string); ok {
+		r0 = returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility, language)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string, string) error); ok {
-		r1 = returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, string, string, string, string, string) error); ok {
+		r1 = returnFunc(ctx, spaceID, ownerID, organizationID, title, description, visibility, language)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -78,11 +78,12 @@ type mockworkbookCreator_Create_Call struct {
 //   - title string
 //   - description string
 //   - visibility string
-func (_e *mockworkbookCreator_Expecter) Create(ctx interface{}, spaceID interface{}, ownerID interface{}, organizationID interface{}, title interface{}, description interface{}, visibility interface{}) *mockworkbookCreator_Create_Call {
-	return &mockworkbookCreator_Create_Call{Call: _e.mock.On("Create", ctx, spaceID, ownerID, organizationID, title, description, visibility)}
+//   - language string
+func (_e *mockworkbookCreator_Expecter) Create(ctx interface{}, spaceID interface{}, ownerID interface{}, organizationID interface{}, title interface{}, description interface{}, visibility interface{}, language interface{}) *mockworkbookCreator_Create_Call {
+	return &mockworkbookCreator_Create_Call{Call: _e.mock.On("Create", ctx, spaceID, ownerID, organizationID, title, description, visibility, language)}
 }
 
-func (_c *mockworkbookCreator_Create_Call) Run(run func(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string)) *mockworkbookCreator_Create_Call {
+func (_c *mockworkbookCreator_Create_Call) Run(run func(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string)) *mockworkbookCreator_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -112,6 +113,10 @@ func (_c *mockworkbookCreator_Create_Call) Run(run func(ctx context.Context, spa
 		if args[6] != nil {
 			arg6 = args[6].(string)
 		}
+		var arg7 string
+		if args[7] != nil {
+			arg7 = args[7].(string)
+		}
 		run(
 			arg0,
 			arg1,
@@ -120,6 +125,7 @@ func (_c *mockworkbookCreator_Create_Call) Run(run func(ctx context.Context, spa
 			arg4,
 			arg5,
 			arg6,
+			arg7,
 		)
 	})
 	return _c
@@ -130,7 +136,7 @@ func (_c *mockworkbookCreator_Create_Call) Return(s string, err error) *mockwork
 	return _c
 }
 
-func (_c *mockworkbookCreator_Create_Call) RunAndReturn(run func(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error)) *mockworkbookCreator_Create_Call {
+func (_c *mockworkbookCreator_Create_Call) RunAndReturn(run func(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error)) *mockworkbookCreator_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

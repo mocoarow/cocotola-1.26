@@ -175,7 +175,7 @@ func run() (int, error) {
 		guestAuthenticateHandler := authhandler.NewGuestAuthenticateHandler(authUsecase)
 		refreshHandler := authhandler.NewRefreshHandler(authUsecase)
 		revokeHandler := authhandler.NewRevokeHandler(authUsecase, cfg.Auth.Cookie)
-		getMeHandler := authhandler.NewGetMeHandler()
+		getMeHandler := authhandler.NewGetMeHandler(userSettingRepo)
 		authhandler.InitAuthRouter(authenticateHandler, guestAuthenticateHandler, refreshHandler, revokeHandler, getMeHandler, v1, authMiddleware)
 	}
 

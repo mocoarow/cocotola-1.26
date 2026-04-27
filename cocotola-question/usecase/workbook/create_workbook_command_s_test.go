@@ -23,7 +23,7 @@ const (
 
 func newCreateWorkbookInput(t *testing.T) *workbookservice.CreateWorkbookInput {
 	t.Helper()
-	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private")
+	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja")
 	require.NoError(t, err)
 	return input
 }
@@ -53,7 +53,7 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
 
 	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
+	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
 
 	policyAdder := newMockpolicyAdder(t)
 	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
@@ -102,7 +102,7 @@ func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(
 
 	wbCreator := newMockworkbookCreator(t)
 	// Visibility passed to Create must be "public" even though caller sent "private".
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "public").Return(fixtureWorkbookID, nil)
+	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "public", "ja").Return(fixtureWorkbookID, nil)
 
 	policyAdder := newMockpolicyAdder(t)
 	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
@@ -111,7 +111,7 @@ func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	// Caller sends visibility=private but PublicSpace must override it to public.
-	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private")
+	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja")
 	require.NoError(t, err)
 
 	// when
@@ -217,7 +217,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testin
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
 	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
+	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
 
 	policyErr := errors.New("auth service unavailable")
 	policyAdder := newMockpolicyAdder(t)
@@ -260,7 +260,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
 	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private").Return(fixtureWorkbookID, nil)
+	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
 
 	policyAdder := newMockpolicyAdder(t)
 	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)

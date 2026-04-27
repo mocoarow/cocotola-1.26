@@ -32,6 +32,7 @@ func sampleSeeds() []seed.PublicWorkbookSeed {
 			SeedKey:     "vocab-v1",
 			Title:       "Vocabulary",
 			Description: "vocab desc",
+			Language:    "ja",
 			Questions: []seed.QuestionSeed{
 				{SeedKey: "q1", QuestionType: "word_fill", Content: "C1", OrderIndex: 0},
 				{SeedKey: "q2", QuestionType: "word_fill", Content: "C2", OrderIndex: 1},
@@ -41,6 +42,7 @@ func sampleSeeds() []seed.PublicWorkbookSeed {
 			SeedKey:     "grammar-v1",
 			Title:       "Grammar",
 			Description: "grammar desc",
+			Language:    "ja",
 		},
 	}
 }

@@ -53,6 +53,7 @@ func (q *GetWorkbookQuery) GetWorkbook(ctx context.Context, input *workbookservi
 			Title:          wb.Title(),
 			Description:    wb.Description(),
 			Visibility:     wb.Visibility().Value(),
+			Language:       wb.Language().Value(),
 			CreatedAt:      wb.CreatedAt(),
 			UpdatedAt:      wb.UpdatedAt(),
 		},

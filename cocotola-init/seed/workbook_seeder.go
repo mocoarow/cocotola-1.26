@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
 )
 
 const (
@@ -79,11 +81,20 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 		return id, nil
 	}
 
+	// Catch malformed `language` early — without this, the cocotola-question
+	// API rejects the request with a generic 400 that is hard to map back
+	// to the offending seed entry. Reject anything outside the canonical
+	// lowercase ISO 639-1 form (e.g. "JA", "jpn", "ja-JP").
+	if !i18n.IsValidISO6391(sd.Language) {
+		return "", fmt.Errorf("seed %q: language %q must be a lowercase ISO 639-1 code", sd.SeedKey, sd.Language)
+	}
+
 	body := CreateWorkbookRequest{
 		SpaceID:     publicSpaceID,
 		Title:       sd.Title,
 		Description: encodeDescription(sd.Description, sd.SeedKey),
 		Visibility:  "public",
+		Language:    sd.Language,
 	}
 	workbookID, err := s.client.CreateWorkbook(ctx, organizationID, body)
 	if err != nil {

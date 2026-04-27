@@ -22,6 +22,7 @@ go_library(
     deps = [
         "//cocotola-lib/domain",
         "//cocotola-lib/domain/idset",
+        "//cocotola-lib/i18n",
         "@com_github_go_playground_validator_v10//:validator",
         "@com_github_google_uuid//:uuid",
     ],

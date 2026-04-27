@@ -9,6 +9,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
+	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	referenceservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -51,7 +52,12 @@ func (h *ListPublicHandler) ListPublic(c *gin.Context) {
 		return
 	}
 
-	input, err := referenceservice.NewListPublicInput(userID, organizationID)
+	language := c.GetString(controller.ContextFieldUserLanguage{})
+	if language == "" {
+		language = domainworkbook.LanguageEn().Value()
+	}
+
+	input, err := referenceservice.NewListPublicInput(userID, organizationID, language)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "invalid list public input", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -71,6 +77,7 @@ func (h *ListPublicHandler) ListPublic(c *gin.Context) {
 			OwnerID:     wb.OwnerID,
 			Title:       wb.Title,
 			Description: wb.Description,
+			Language:    wb.Language,
 			CreatedAt:   wb.CreatedAt,
 		}
 	}

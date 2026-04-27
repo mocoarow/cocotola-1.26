@@ -8,7 +8,7 @@ import (
 )
 
 type workbookCreator interface {
-	Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string) (string, error)
+	Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error)
 }
 
 type workbookFinder interface {

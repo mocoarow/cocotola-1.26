@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	referenceservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference"
 )
 
@@ -19,9 +20,18 @@ func NewListPublicQuery(workbookRepo publicWorkbookFinder) *ListPublicQuery {
 	}
 }
 
-// ListPublic returns all public workbooks for the organization.
+// ListPublic returns all public workbooks for the organization that match
+// the requested language.
 func (q *ListPublicQuery) ListPublic(ctx context.Context, input *referenceservice.ListPublicInput) (*referenceservice.ListPublicOutput, error) {
-	workbooks, err := q.workbookRepo.FindPublicByOrganizationID(ctx, input.OrganizationID)
+	// Re-validate language via the domain value object so the Firestore
+	// query never receives a value that slipped past service-layer
+	// length checks (e.g. uppercase, digits).
+	lang, err := domainworkbook.NewLanguage(input.Language)
+	if err != nil {
+		return nil, fmt.Errorf("new language: %w", err)
+	}
+
+	workbooks, err := q.workbookRepo.FindPublicByOrganizationIDAndLanguage(ctx, input.OrganizationID, lang.Value())
 	if err != nil {
 		return nil, fmt.Errorf("find public workbooks: %w", err)
 	}
@@ -33,6 +43,7 @@ func (q *ListPublicQuery) ListPublic(ctx context.Context, input *referenceservic
 			OwnerID:     wb.OwnerID(),
 			Title:       wb.Title(),
 			Description: wb.Description(),
+			Language:    wb.Language().Value(),
 			CreatedAt:   wb.CreatedAt(),
 		}
 	}

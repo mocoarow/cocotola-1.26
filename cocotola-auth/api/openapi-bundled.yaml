@@ -811,10 +811,14 @@ components:
         organizationName:
           type: string
           pattern: ^.*$
+        language:
+          type: string
+          pattern: ^[a-z]{2}$
       required:
         - userId
         - loginId
         - organizationName
+        - language
     CreateGroupRequest:
       type: object
       properties:

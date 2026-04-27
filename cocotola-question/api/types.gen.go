@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	ApiKeyScopes     = "ApiKey.Scopes"
 	BearerAuthScopes = "BearerAuth.Scopes"
 	CookieAuthScopes = "CookieAuth.Scopes"
 )
@@ -40,7 +41,8 @@ type AddQuestionRequest struct {
 
 // CreateWorkbookRequest defines model for CreateWorkbookRequest.
 type CreateWorkbookRequest struct {
-	Description *string                         `binding:"max=1000" json:"description,omitempty"`
+	Description string                          `binding:"max=1000" json:"description,omitempty"`
+	Language    string                          `binding:"required,len=2" json:"language"`
 	SpaceID     string                          `binding:"required" json:"spaceId"`
 	Title       string                          `binding:"required,max=200" json:"title"`
 	Visibility  CreateWorkbookRequestVisibility `binding:"required,oneof=private public" json:"visibility"`
@@ -57,10 +59,10 @@ type ErrorResponse struct {
 
 // GetStudyQuestionsResponse defines model for GetStudyQuestionsResponse.
 type GetStudyQuestionsResponse struct {
-	Questions   []StudyQuestionResponse `json:"questions"`
-	TotalDue    int32                   `json:"totalDue"`
 	NewCount    int32                   `json:"newCount"`
+	Questions   []StudyQuestionResponse `json:"questions"`
 	ReviewCount int32                   `json:"reviewCount"`
+	TotalDue    int32                   `json:"totalDue"`
 }
 
 // HealthCheckResponse defines model for HealthCheckResponse.
@@ -92,6 +94,7 @@ type ListWorkbooksResponse struct {
 type PublicWorkbookResponse struct {
 	CreatedAt   time.Time `json:"createdAt"`
 	Description string    `json:"description"`
+	Language    string    `json:"language"`
 	OwnerID     string    `json:"ownerId"`
 	Title       string    `json:"title"`
 	WorkbookID  string    `json:"workbookId"`
@@ -108,6 +111,19 @@ type QuestionResponse struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
+// RecordAnswerRequest defines model for RecordAnswerRequest.
+type RecordAnswerRequest struct {
+	Correct bool `json:"correct"`
+}
+
+// RecordAnswerResponse defines model for RecordAnswerResponse.
+type RecordAnswerResponse struct {
+	ConsecutiveCorrect int32     `json:"consecutiveCorrect"`
+	NextDueAt          time.Time `json:"nextDueAt"`
+	TotalCorrect       int32     `json:"totalCorrect"`
+	TotalIncorrect     int32     `json:"totalIncorrect"`
+}
+
 // ShareWorkbookResponse defines model for ShareWorkbookResponse.
 type ShareWorkbookResponse struct {
 	AddedAt     time.Time `json:"addedAt"`
@@ -122,26 +138,13 @@ type SharedItemResponse struct {
 	WorkbookID  string    `json:"workbookId"`
 }
 
-// RecordAnswerRequest defines model for RecordAnswerRequest.
-type RecordAnswerRequest struct {
-	Correct bool `json:"correct"`
-}
-
-// RecordAnswerResponse defines model for RecordAnswerResponse.
-type RecordAnswerResponse struct {
-	NextDueAt          time.Time `json:"nextDueAt"`
-	ConsecutiveCorrect int32     `json:"consecutiveCorrect"`
-	TotalCorrect       int32     `json:"totalCorrect"`
-	TotalIncorrect     int32     `json:"totalIncorrect"`
-}
-
 // StudyQuestionResponse defines model for StudyQuestionResponse.
 type StudyQuestionResponse struct {
+	Content      string   `json:"content"`
+	OrderIndex   int32    `json:"orderIndex"`
 	QuestionId   string   `json:"questionId"`
 	QuestionType string   `json:"questionType"`
-	Content      string   `json:"content"`
 	Tags         []string `json:"tags,omitempty"`
-	OrderIndex   int32    `json:"orderIndex"`
 }
 
 // UpdateQuestionRequest defines model for UpdateQuestionRequest.
@@ -153,7 +156,8 @@ type UpdateQuestionRequest struct {
 
 // UpdateWorkbookRequest defines model for UpdateWorkbookRequest.
 type UpdateWorkbookRequest struct {
-	Description *string                         `binding:"max=1000" json:"description,omitempty"`
+	Description string                          `binding:"max=1000" json:"description,omitempty"`
+	Language    string                          `binding:"required,len=2" json:"language"`
 	Title       string                          `binding:"required,max=200" json:"title"`
 	Visibility  UpdateWorkbookRequestVisibility `binding:"required,oneof=private public" json:"visibility"`
 }
@@ -165,6 +169,7 @@ type UpdateWorkbookRequestVisibility string
 type WorkbookResponse struct {
 	CreatedAt      time.Time                  `json:"createdAt"`
 	Description    string                     `json:"description"`
+	Language       string                     `json:"language"`
 	OrganizationID string                     `json:"organizationId"`
 	OwnerID        string                     `json:"ownerId"`
 	SpaceID        string                     `json:"spaceId"`
@@ -177,6 +182,28 @@ type WorkbookResponse struct {
 // WorkbookResponseVisibility defines model for WorkbookResponse.Visibility.
 type WorkbookResponseVisibility string
 
+// InternalListWorkbooksParams defines parameters for InternalListWorkbooks.
+type InternalListWorkbooksParams struct {
+	SpaceId string `form:"spaceId" json:"spaceId"`
+}
+
+// GetStudyQuestionsParams defines parameters for GetStudyQuestions.
+type GetStudyQuestionsParams struct {
+	Limit int32 `form:"limit" json:"limit"`
+}
+
+// InternalCreateWorkbookJSONRequestBody defines body for InternalCreateWorkbook for application/json ContentType.
+type InternalCreateWorkbookJSONRequestBody = CreateWorkbookRequest
+
+// InternalUpdateWorkbookJSONRequestBody defines body for InternalUpdateWorkbook for application/json ContentType.
+type InternalUpdateWorkbookJSONRequestBody = UpdateWorkbookRequest
+
+// InternalAddQuestionJSONRequestBody defines body for InternalAddQuestion for application/json ContentType.
+type InternalAddQuestionJSONRequestBody = AddQuestionRequest
+
+// InternalUpdateQuestionJSONRequestBody defines body for InternalUpdateQuestion for application/json ContentType.
+type InternalUpdateQuestionJSONRequestBody = UpdateQuestionRequest
+
 // CreateWorkbookJSONRequestBody defines body for CreateWorkbook for application/json ContentType.
 type CreateWorkbookJSONRequestBody = CreateWorkbookRequest
 
@@ -188,3 +215,6 @@ type AddQuestionJSONRequestBody = AddQuestionRequest
 
 // UpdateQuestionJSONRequestBody defines body for UpdateQuestion for application/json ContentType.
 type UpdateQuestionJSONRequestBody = UpdateQuestionRequest
+
+// RecordAnswerJSONRequestBody defines body for RecordAnswer for application/json ContentType.
+type RecordAnswerJSONRequestBody = RecordAnswerRequest

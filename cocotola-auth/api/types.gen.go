@@ -135,6 +135,7 @@ type FindSpaceResponseSpaceType string
 
 // GetMeResponse defines model for GetMeResponse.
 type GetMeResponse struct {
+	Language         string             `json:"language"`
 	LoginID          string             `json:"loginId"`
 	OrganizationName string             `json:"organizationName"`
 	UserID           openapi_types.UUID `json:"userId"`
