@@ -39,9 +39,9 @@ func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	if r.HashedPassword != nil {
 		hashedPw = *r.HashedPassword
 	}
-	return domainuser.
-		ReconstructAppUser(domain.MustParseAppUserID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.LoginID(r.LoginID), hashedPw, r.Enabled).
-		WithVersion(r.Version)
+	u := domainuser.ReconstructAppUser(domain.MustParseAppUserID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.LoginID(r.LoginID), hashedPw, r.Enabled)
+	u.SetVersion(r.Version)
+	return u
 }
 
 func toAppUserRecord(user *domainuser.AppUser) appUserRecord {
@@ -93,7 +93,7 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 			Create(&record).Error; err != nil {
 			return fmt.Errorf("insert app user: %w", err)
 		}
-		user.WithVersion(nextVersion)
+		user.SetVersion(nextVersion)
 		return nil
 	}
 
@@ -113,7 +113,7 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 	if result.RowsAffected == 0 {
 		return domain.ErrAppUserConcurrentModification
 	}
-	user.WithVersion(nextVersion)
+	user.SetVersion(nextVersion)
 	return nil
 }
 

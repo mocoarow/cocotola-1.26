@@ -36,8 +36,9 @@ func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid space type %q: %w", r.SpaceType, err)
 	}
-	return domainspace.ReconstructSpace(domain.MustParseSpaceID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted).
-		WithVersion(r.Version), nil
+	s := domainspace.ReconstructSpace(domain.MustParseSpaceID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted)
+	s.SetVersion(r.Version)
+	return s, nil
 }
 
 // SpaceRepository implements space persistence using GORM.
@@ -75,7 +76,7 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert space: %w", err)
 		}
-		space.WithVersion(nextVersion)
+		space.SetVersion(nextVersion)
 		return nil
 	}
 
@@ -97,7 +98,7 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 	if result.RowsAffected == 0 {
 		return domain.ErrSpaceConcurrentModification
 	}
-	space.WithVersion(nextVersion)
+	space.SetVersion(nextVersion)
 	return nil
 }
 

@@ -34,7 +34,7 @@ func NewAppUser(id domain.AppUserID, organizationID domain.OrganizationID, login
 }
 
 // ReconstructAppUser reconstitutes an AppUser from persistence.
-// Callers that load from storage must call WithVersion to set the persisted
+// Callers that load from storage must call SetVersion to set the persisted
 // version so Save can perform an optimistic-lock compare-and-swap.
 func ReconstructAppUser(id domain.AppUserID, organizationID domain.OrganizationID, loginID domain.LoginID, hashedPassword string, enabled bool) *AppUser {
 	return &AppUser{
@@ -47,11 +47,10 @@ func ReconstructAppUser(id domain.AppUserID, organizationID domain.OrganizationI
 	}
 }
 
-// WithVersion sets the persisted row version on a reconstituted aggregate.
-// Only the gateway/repository layer should call this when loading from storage.
-func (u *AppUser) WithVersion(version int) *AppUser {
+// SetVersion sets the persisted row version.
+// Only the gateway/repository layer should call this, after a successful load or save.
+func (u *AppUser) SetVersion(version int) {
 	u.version = version
-	return u
 }
 
 // Version returns the aggregate version (0 = new, not yet saved).

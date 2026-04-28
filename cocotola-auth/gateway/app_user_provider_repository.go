@@ -30,15 +30,15 @@ func (appUserProviderRecord) TableName() string {
 }
 
 func toAppUserProviderDomain(r *appUserProviderRecord) *domainuser.AppUserProvider {
-	return domainuser.
-		ReconstructAppUserProvider(
-			domain.MustParseAppUserProviderID(r.ID),
-			domain.MustParseAppUserID(r.AppUserID),
-			domain.MustParseOrganizationID(r.OrganizationID),
-			r.Provider,
-			r.ProviderID,
-		).
-		WithVersion(r.Version)
+	p := domainuser.ReconstructAppUserProvider(
+		domain.MustParseAppUserProviderID(r.ID),
+		domain.MustParseAppUserID(r.AppUserID),
+		domain.MustParseOrganizationID(r.OrganizationID),
+		r.Provider,
+		r.ProviderID,
+	)
+	p.SetVersion(r.Version)
+	return p
 }
 
 // AppUserProviderRepository implements app user provider persistence using GORM.
@@ -72,7 +72,7 @@ func (r *AppUserProviderRepository) Save(ctx context.Context, p *domainuser.AppU
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert app user provider: %w", err)
 		}
-		p.WithVersion(nextVersion)
+		p.SetVersion(nextVersion)
 		return nil
 	}
 
@@ -92,7 +92,7 @@ func (r *AppUserProviderRepository) Save(ctx context.Context, p *domainuser.AppU
 	if result.RowsAffected == 0 {
 		return domain.ErrAppUserProviderConcurrentModification
 	}
-	p.WithVersion(nextVersion)
+	p.SetVersion(nextVersion)
 	return nil
 }
 

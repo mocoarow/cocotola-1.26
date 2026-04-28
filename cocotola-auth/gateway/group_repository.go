@@ -29,8 +29,9 @@ func (groupRecord) TableName() string {
 }
 
 func toGroupDomain(r *groupRecord) *domaingroup.Group {
-	return domaingroup.ReconstructGroup(domain.MustParseGroupID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled).
-		WithVersion(r.Version)
+	g := domaingroup.ReconstructGroup(domain.MustParseGroupID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled)
+	g.SetVersion(r.Version)
+	return g
 }
 
 // GroupRepository implements group persistence using GORM.
@@ -65,7 +66,7 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
 			return fmt.Errorf("insert group: %w", err)
 		}
-		group.WithVersion(nextVersion)
+		group.SetVersion(nextVersion)
 		return nil
 	}
 
@@ -84,7 +85,7 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 	if result.RowsAffected == 0 {
 		return domain.ErrGroupConcurrentModification
 	}
-	group.WithVersion(nextVersion)
+	group.SetVersion(nextVersion)
 	return nil
 }
 

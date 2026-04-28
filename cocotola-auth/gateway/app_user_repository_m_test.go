@@ -134,9 +134,8 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	loaded, err := repo.FindByID(ctx, insertedID)
 	require.NoError(t, err)
 	newHashedPw := "$2a$10$newhashedpw"
-	updated := domainuser.
-		ReconstructAppUser(loaded.ID(), loaded.OrganizationID(), loaded.LoginID(), newHashedPw, false).
-		WithVersion(loaded.Version())
+	updated := domainuser.ReconstructAppUser(loaded.ID(), loaded.OrganizationID(), loaded.LoginID(), newHashedPw, false)
+	updated.SetVersion(loaded.Version())
 	err = repo.Save(ctx, updated)
 
 	// then
