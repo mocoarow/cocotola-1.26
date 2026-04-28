@@ -93,7 +93,7 @@ func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, o
 	}
 
 	// 8. Setup system owner and public space
-	if err := setupSystemOwnerAndSpace(ctx, db, seeder, appUserRepo, hasher, rbacRepo, org.ID(), logger); err != nil {
+	if err := setupSystemOwnerAndSpace(ctx, db, seeder, rbacRepo, org.ID(), logger); err != nil {
 		return fmt.Errorf("setup system owner and space: %w", err)
 	}
 
@@ -105,11 +105,19 @@ func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, o
 	return nil
 }
 
-func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, appUserRepo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
-	systemOwnerID, err := findOrCreateSystemOwner(ctx, appUserRepo, hasher, orgID, logger)
-	if err != nil {
-		return fmt.Errorf("find or create system owner: %w", err)
-	}
+// setupSystemOwnerAndSpace binds the cocotola tenant's system_owner RBAC group
+// to the well-known SystemAppUserID rather than creating a separate per-tenant
+// system_owner app_user row.
+//
+// The internal API-key middleware on cocotola-question stamps every internal
+// service-to-service call with operator = SystemAppUserID (a global identity
+// pre-seeded by the SQL migration in the "system" organization). RBAC bindings
+// are scoped per-organization in Casbin, so granting the system_owner group
+// to that UUID inside the cocotola org is what lets cocotola-init's seed
+// requests pass authorization. Creating a fresh per-tenant system user instead
+// would diverge from the impersonated UUID and fail authz.
+func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
+	systemOwnerID := domain.SystemAppUserID()
 
 	if err := setupSystemOwnerRBACPolicies(ctx, rbacRepo, orgID, logger); err != nil {
 		return fmt.Errorf("setup system owner rbac policies: %w", err)
@@ -218,40 +226,6 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 	logger.InfoContext(ctx, "guest user created",
 		slog.String("user_id", user.ID().String()),
 		slog.String("login_id", guestLoginID),
-	)
-	return user.ID(), nil
-}
-
-const systemOwnerLoginID = "__system_owner"
-
-func findOrCreateSystemOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
-	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(systemOwnerLoginID))
-	if err == nil {
-		logger.InfoContext(ctx, "system owner user already exists",
-			slog.String("user_id", user.ID().String()),
-			slog.String("login_id", string(user.LoginID())),
-		)
-		return user.ID(), nil
-	}
-	if !errors.Is(err, domain.ErrAppUserNotFound) {
-		return domain.AppUserID{}, fmt.Errorf("find system owner by login id: %w", err)
-	}
-
-	// SystemOwner uses a random long password since it cannot login.
-	dummyPassword := "system_owner_no_login_00000000"
-	hashedPassword, err := domainuser.HashPassword(dummyPassword, hasher)
-	if err != nil {
-		return domain.AppUserID{}, fmt.Errorf("hash password: %w", err)
-	}
-
-	user, err = domainuser.Provision(ctx, repo, orgID, domain.LoginID(systemOwnerLoginID), hashedPassword, true)
-	if err != nil {
-		return domain.AppUserID{}, fmt.Errorf("provision system owner: %w", err)
-	}
-
-	logger.InfoContext(ctx, "system owner user created",
-		slog.String("user_id", user.ID().String()),
-		slog.String("login_id", systemOwnerLoginID),
 	)
 	return user.ID(), nil
 }
