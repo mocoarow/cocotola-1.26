@@ -22,7 +22,6 @@ import {
 } from "~/components/ui/sidebar";
 import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
 import { fetchWithIdToken } from "~/lib/api/fetch.server";
-import { updateUserLanguage } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { destroySession, getSession } from "~/lib/auth/session.server";
 import type { Route } from "./+types/workbooks";
@@ -66,26 +65,6 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { user };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
-  const formData = await request.formData();
-  const intent = formData.get("intent");
-
-  if (intent === "changeLanguage") {
-    const language = formData.get("language");
-    if (
-      typeof language !== "string" ||
-      !supportedLanguages.includes(language as SupportedLanguage)
-    ) {
-      throw new Response("language is invalid", { status: 400 });
-    }
-    await updateUserLanguage(accessToken, language);
-    return { ok: true };
-  }
-
-  throw new Response("Unknown intent", { status: 400 });
-}
-
 const navItems = [
   {
     titleKey: "workbooks.nav.myWorkbooks",
@@ -113,8 +92,8 @@ export default function WorkbooksLayout() {
     const nextLanguage = supportedLanguages[(currentIndex + 1) % supportedLanguages.length];
     i18n.changeLanguage(nextLanguage);
     languageFetcher.submit(
-      { intent: "changeLanguage", language: nextLanguage },
-      { method: "post", action: "/workbooks" },
+      { language: nextLanguage },
+      { method: "post", action: "/user-language" },
     );
   }
 
