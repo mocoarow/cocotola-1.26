@@ -295,6 +295,43 @@ describe("MultipleChoiceCard", () => {
     expect(screen.getByText("Select 2")).toBeInTheDocument();
   });
 
+  it("should keep choice order stable across selections when shuffleChoices is true", async () => {
+    // given
+    const choices = [
+      { id: "1", text: "Alpha", isCorrect: true },
+      { id: "2", text: "Bravo", isCorrect: false },
+      { id: "3", text: "Charlie", isCorrect: false },
+      { id: "4", text: "Delta", isCorrect: false },
+      { id: "5", text: "Echo", isCorrect: false },
+    ];
+    const content = JSON.stringify({
+      questionText: "Pick one",
+      choices,
+      shuffleChoices: true,
+      showCorrectCount: false,
+      explanation: "",
+    });
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    const initialOrder = screen
+      .getAllByRole("button")
+      .map((b) => b.textContent ?? "")
+      .filter((text) => choices.some((c) => c.text === text));
+    await user.click(screen.getByText("Bravo"));
+    await user.click(screen.getByText("Charlie"));
+    await user.click(screen.getByText("Bravo"));
+    const orderAfterClicks = screen
+      .getAllByRole("button")
+      .map((b) => b.textContent ?? "")
+      .filter((text) => choices.some((c) => c.text === text));
+
+    // then
+    expect(orderAfterClicks).toEqual(initialOrder);
+  });
+
   it("should not show the 'Select N' hint when showCorrectCount is false", () => {
     // given
     const content = makeContent(

@@ -31,7 +31,7 @@ function setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
 
 export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProps) {
   const { t } = useTranslation();
-  const parsed = parseMultipleChoiceContent(content);
+  const parsed = useMemo(() => parseMultipleChoiceContent(content), [content]);
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [checked, setChecked] = useState(false);
 

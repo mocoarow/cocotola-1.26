@@ -7,7 +7,7 @@ export function ProgressBar({ current, total }: { current: number; total: number
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-sm text-muted-foreground">
-        <span>{t("workbooks.study.progress", { current: current + 1, total })}</span>
+        <span>{t("workbooks.study.progress", { current, total })}</span>
         <span>{percent}%</span>
       </div>
       <div className="h-2 w-full rounded-full bg-muted">

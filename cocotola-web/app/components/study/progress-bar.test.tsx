@@ -11,7 +11,7 @@ describe("ProgressBar", () => {
     render(<ProgressBar current={2} total={10} />);
 
     // then
-    expect(screen.getByText("3 / 10")).toBeInTheDocument();
+    expect(screen.getByText("2 / 10")).toBeInTheDocument();
     expect(screen.getByText("20%")).toBeInTheDocument();
   });
 
