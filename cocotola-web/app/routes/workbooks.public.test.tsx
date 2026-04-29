@@ -196,6 +196,20 @@ describe("WorkbooksPublic component", () => {
     expect(screen.queryByText("Added")).not.toBeInTheDocument();
   });
 
+  it("should render Study link even when workbook is not yet shared", () => {
+    // given
+    const workbooks = [buildWorkbook({ workbookId: "wb-1" })];
+    mockedUseLoaderData.mockReturnValue({ workbooks, references: [] });
+
+    // when
+    renderPublic();
+
+    // then
+    const studyLink = screen.getByText("Study").closest("a");
+    expect(studyLink).toBeInTheDocument();
+    expect(studyLink).toHaveAttribute("href", "/workbooks/wb-1/study");
+  });
+
   it("should render Added button and Study link when workbook is already shared", () => {
     // given
     const workbooks = [buildWorkbook({ workbookId: "wb-1" })];
