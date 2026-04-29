@@ -122,17 +122,15 @@ function PublicWorkbookCard({
       </p>
 
       <div className="flex items-center gap-2">
-        {isShared && (
-          <Button
-            size="sm"
-            className="flex-1"
-            nativeButton={false}
-            render={<Link to={`/workbooks/${workbook.workbookId}/study`} />}
-          >
-            <BookOpenIcon data-icon="inline-start" className="size-3.5" />
-            <span>{t("workbooks.public.study")}</span>
-          </Button>
-        )}
+        <Button
+          size="sm"
+          className="flex-1"
+          nativeButton={false}
+          render={<Link to={`/workbooks/${workbook.workbookId}/study`} />}
+        >
+          <BookOpenIcon data-icon="inline-start" className="size-3.5" />
+          <span>{t("workbooks.public.study")}</span>
+        </Button>
         {isShared ? (
           <fetcher.Form method="post" className="flex-1" onSubmit={handleUnshare}>
             <Button
