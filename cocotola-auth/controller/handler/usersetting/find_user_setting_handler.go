@@ -93,3 +93,19 @@ func InitUserSettingRouter(
 	handlers = append(handlers, findHandler.FindUserSetting)
 	settingGroup.GET("", handlers...)
 }
+
+// InitExternalUserSettingRouter sets up the externally-exposed user-setting
+// routes. These are protected by the auth middleware (JWT/cookie) so that the
+// authenticated user can mutate only their own settings.
+func InitExternalUserSettingRouter(
+	updateLanguageHandler *UpdateLanguageHandler,
+	parentRouterGroup gin.IRouter,
+	authMiddleware gin.HandlerFunc,
+	middleware ...gin.HandlerFunc,
+) {
+	settingGroup := parentRouterGroup.Group("user-setting")
+	settingGroup.Use(authMiddleware)
+	settingGroup.Use(middleware...)
+
+	settingGroup.PUT("/language", updateLanguageHandler.UpdateLanguage)
+}

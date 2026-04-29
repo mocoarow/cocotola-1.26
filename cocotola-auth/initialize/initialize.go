@@ -167,6 +167,10 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	// external auth routes
 	authV1 := v1.Group("auth")
 
+	// external user-setting routes (authenticated)
+	updateLanguageHandler := usersettinghandler.NewUpdateLanguageHandler(userSettingRepo)
+	usersettinghandler.InitExternalUserSettingRouter(updateLanguageHandler, authV1, authMiddleware)
+
 	// group usecase + controller
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)

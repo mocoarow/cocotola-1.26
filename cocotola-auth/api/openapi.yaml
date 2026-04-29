@@ -38,6 +38,8 @@ paths:
     $ref: 'paths/auth.yaml#/supabase-exchange'
   /api/v1/auth/me:
     $ref: 'paths/auth.yaml#/me'
+  /api/v1/auth/user-setting/language:
+    $ref: 'paths/user-setting.yaml#/update-language'
   /api/v1/auth/group:
     $ref: 'paths/group.yaml#/group'
   /api/v1/auth/space:
@@ -68,6 +70,8 @@ components:
       $ref: 'schemas/auth.yaml#/SupabaseExchangeRequest'
     GetMeResponse:
       $ref: 'schemas/auth.yaml#/GetMeResponse'
+    UpdateUserLanguageRequest:
+      $ref: 'schemas/user-setting.yaml#/UpdateUserLanguageRequest'
     CreateGroupRequest:
       $ref: 'schemas/group.yaml#/CreateGroupRequest'
     CreateGroupResponse:

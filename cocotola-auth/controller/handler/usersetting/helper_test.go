@@ -13,6 +13,7 @@ import (
 
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
 	usersettinghandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
@@ -32,6 +33,28 @@ func initUserSettingRouter(_ context.Context, t *testing.T, settingFinder *mocku
 
 	findHandler := usersettinghandler.NewFindUserSettingHandler(settingFinder)
 	usersettinghandler.InitUserSettingRouter(findHandler, internalV1)
+
+	return router
+}
+
+func fakeAuthMiddleware(userID domain.AppUserID) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set(controller.ContextFieldUserID{}, userID.String())
+		c.Next()
+	}
+}
+
+func initExternalUserSettingRouter(_ context.Context, t *testing.T, settingSaver *mockuserSettingSaver, authMiddleware gin.HandlerFunc) *gin.Engine {
+	t.Helper()
+
+	router, err := libhandler.InitRootRouterGroup(context.Background(), serverConfig, domain.AppName)
+	require.NoError(t, err)
+	api := router.Group("api")
+	v1 := api.Group("v1")
+	authV1 := v1.Group("auth")
+
+	updateLanguageHandler := usersettinghandler.NewUpdateLanguageHandler(settingSaver)
+	usersettinghandler.InitExternalUserSettingRouter(updateLanguageHandler, authV1, authMiddleware)
 
 	return router
 }

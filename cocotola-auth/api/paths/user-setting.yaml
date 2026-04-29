@@ -1,0 +1,52 @@
+---
+update-language:
+  put:
+    summary: Update preferred language
+    deprecated: false
+    description: Update the authenticated user's preferred language.
+    operationId: updateUserLanguage
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-setting.yaml#/UpdateUserLanguageRequest'
+          examples: {}
+      required: true
+    responses:
+      '204':
+        description: Successfully updated
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Conflict (concurrent modification)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

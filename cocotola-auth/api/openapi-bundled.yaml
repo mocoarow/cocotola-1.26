@@ -351,6 +351,57 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/auth/user-setting/language:
+    put:
+      summary: Update preferred language
+      deprecated: false
+      description: Update the authenticated user's preferred language.
+      operationId: updateUserLanguage
+      tags:
+        - auth
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserLanguageRequest'
+            examples: {}
+        required: true
+      responses:
+        '204':
+          description: Successfully updated
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '409':
+          description: Conflict (concurrent modification)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
   /api/v1/auth/group:
     post:
       summary: Create a group
@@ -818,6 +869,19 @@ components:
         - userId
         - loginId
         - organizationName
+        - language
+    UpdateUserLanguageRequest:
+      type: object
+      properties:
+        language:
+          type: string
+          description: ISO 639-1 lowercase language code (e.g. "ja", "en").
+          x-oapi-codegen-extra-tags:
+            binding: required,len=2
+          pattern: ^[a-z]{2}$
+          minLength: 2
+          maxLength: 2
+      required:
         - language
     CreateGroupRequest:
       type: object

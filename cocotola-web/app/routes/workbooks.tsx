@@ -1,6 +1,6 @@
 import { BookOpenIcon, GlobeIcon, LanguagesIcon, LogOutIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, Outlet, redirect, useLoaderData, useLocation } from "react-router";
+import { Form, Link, Outlet, redirect, useFetcher, useLoaderData, useLocation } from "react-router";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -22,6 +22,7 @@ import {
 } from "~/components/ui/sidebar";
 import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
 import { fetchWithIdToken } from "~/lib/api/fetch.server";
+import { updateUserLanguage } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { destroySession, getSession } from "~/lib/auth/session.server";
 import type { Route } from "./+types/workbooks";
@@ -57,9 +58,32 @@ export async function loader({ request }: Route.LoaderArgs) {
     userId: string;
     loginId: string;
     organizationName: string;
+    language: string;
   };
-  console.info(`[workbooks] user loaded: userId=${user.userId}, loginId=${user.loginId}`);
+  console.info(
+    `[workbooks] user loaded: userId=${user.userId}, loginId=${user.loginId}, language=${user.language}`,
+  );
   return { user };
+}
+
+export async function action({ request }: Route.ActionArgs) {
+  const { accessToken } = await requireAuth(request);
+  const formData = await request.formData();
+  const intent = formData.get("intent");
+
+  if (intent === "changeLanguage") {
+    const language = formData.get("language");
+    if (
+      typeof language !== "string" ||
+      !supportedLanguages.includes(language as SupportedLanguage)
+    ) {
+      throw new Response("language is invalid", { status: 400 });
+    }
+    await updateUserLanguage(accessToken, language);
+    return { ok: true };
+  }
+
+  throw new Response("Unknown intent", { status: 400 });
 }
 
 const navItems = [
@@ -81,11 +105,17 @@ export default function WorkbooksLayout() {
   const { user } = useLoaderData<typeof loader>();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const languageFetcher = useFetcher();
+  const isChangingLanguage = languageFetcher.state !== "idle";
 
   function cycleLanguage() {
     const currentIndex = supportedLanguages.indexOf(i18n.language as SupportedLanguage);
-    const nextIndex = (currentIndex + 1) % supportedLanguages.length;
-    i18n.changeLanguage(supportedLanguages[nextIndex]);
+    const nextLanguage = supportedLanguages[(currentIndex + 1) % supportedLanguages.length];
+    i18n.changeLanguage(nextLanguage);
+    languageFetcher.submit(
+      { intent: "changeLanguage", language: nextLanguage },
+      { method: "post", action: "/workbooks" },
+    );
   }
 
   return (
@@ -145,7 +175,13 @@ export default function WorkbooksLayout() {
                   <p className="truncate text-xs text-muted-foreground">{user.organizationName}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" type="button" onClick={cycleLanguage}>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    type="button"
+                    onClick={cycleLanguage}
+                    disabled={isChangingLanguage}
+                  >
                     <LanguagesIcon className="size-4" />
                     <span className="sr-only">{i18n.language.toUpperCase()}</span>
                   </Button>

@@ -1,0 +1,14 @@
+---
+UpdateUserLanguageRequest:
+  type: object
+  properties:
+    language:
+      type: string
+      description: ISO 639-1 lowercase language code (e.g. "ja", "en").
+      x-oapi-codegen-extra-tags:
+        binding: required,len=2
+      pattern: ^[a-z]{2}$
+      minLength: 2
+      maxLength: 2
+  required:
+    - language

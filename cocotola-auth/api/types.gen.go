@@ -200,6 +200,12 @@ type SupabaseExchangeRequest struct {
 	SupabaseJWT      string `binding:"required" json:"supabaseJwt"`
 }
 
+// UpdateUserLanguageRequest defines model for UpdateUserLanguageRequest.
+type UpdateUserLanguageRequest struct {
+	// Language ISO 639-1 lowercase language code (e.g. "ja", "en").
+	Language string `binding:"required,len=2" json:"language"`
+}
+
 // CheckAuthorizationParams defines parameters for CheckAuthorization.
 type CheckAuthorizationParams struct {
 	// Org Organization ID
@@ -250,6 +256,9 @@ type CreateSpaceJSONRequestBody = CreateSpaceRequest
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserRequest
+
+// UpdateUserLanguageJSONRequestBody defines body for UpdateUserLanguage for application/json ContentType.
+type UpdateUserLanguageJSONRequestBody = UpdateUserLanguageRequest
 
 // SupabaseExchangeJSONRequestBody defines body for SupabaseExchange for application/json ContentType.
 type SupabaseExchangeJSONRequestBody = SupabaseExchangeRequest
