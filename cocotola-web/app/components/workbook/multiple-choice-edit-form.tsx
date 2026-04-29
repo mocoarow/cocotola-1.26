@@ -20,6 +20,7 @@ export function MultipleChoiceEditForm({
     explanation?: string;
     choices?: Choice[];
     shuffleChoices?: boolean;
+    showCorrectCount?: boolean;
   };
   fetcher: ReturnType<typeof useFetcher>;
   onCancel: () => void;
@@ -33,6 +34,7 @@ export function MultipleChoiceEditForm({
     ],
   );
   const [shuffleChoices, setShuffleChoices] = useState(parsed.shuffleChoices ?? true);
+  const [showCorrectCount, setShowCorrectCount] = useState(parsed.showCorrectCount ?? false);
 
   return (
     <fetcher.Form method="post" className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
@@ -42,6 +44,7 @@ export function MultipleChoiceEditForm({
       <input type="hidden" name="orderIndex" value={question.orderIndex} />
       <input type="hidden" name="choices" value={JSON.stringify(choices)} />
       <input type="hidden" name="shuffleChoices" value={String(shuffleChoices)} />
+      <input type="hidden" name="showCorrectCount" value={String(showCorrectCount)} />
 
       <div className="space-y-1.5">
         <label htmlFor="edit-mc-questionText" className="text-sm font-medium">
@@ -121,6 +124,19 @@ export function MultipleChoiceEditForm({
         />
         <label htmlFor="edit-mc-shuffle" className="text-sm font-medium">
           {t("workbooks.addQuestion.shuffleChoices")}
+        </label>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="edit-mc-show-correct-count"
+          checked={showCorrectCount}
+          onChange={(e) => setShowCorrectCount(e.target.checked)}
+          className="size-4 rounded border-input"
+        />
+        <label htmlFor="edit-mc-show-correct-count" className="text-sm font-medium">
+          {t("workbooks.addQuestion.showCorrectCount")}
         </label>
       </div>
 

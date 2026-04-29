@@ -1,5 +1,10 @@
 import { createCookieSessionStorage } from "react-router";
 
+// IMPORTANT: the cookie spec below is mirrored in
+// cocotola-test/playwright/tests/helpers/session-cookie.ts so that Playwright
+// can mint cookies the loaders here will accept. Any change to the cookie name,
+// sameSite, path, or maxAge must be reflected in the test helper as well.
+
 type SessionData = {
   accessToken: string;
   refreshToken: string;

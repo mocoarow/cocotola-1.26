@@ -1,6 +1,11 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import {
+  Link,
+  type ShouldRevalidateFunctionArgs,
+  useFetcher,
+  useLoaderData,
+} from "react-router";
 import { MultipleChoiceCard } from "~/components/study/multiple-choice-card";
 import { ProgressBar } from "~/components/study/progress-bar";
 import { StudyResult } from "~/components/study/study-result";
@@ -15,6 +20,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const { workbookId } = params;
   const data = await getStudyQuestions(accessToken, workbookId, 20);
   return { workbookId, questions: data.questions };
+}
+
+// Skip revalidation only for the "answer" action submit. Otherwise the loader
+// reruns after every answer and prunes already-answered questions, leaving the
+// component reading questions[currentIndex] after the array has shrunk past
+// the local index — crashing the study screen mid-session. Navigation and any
+// other revalidation triggers fall through to the default behavior so that
+// re-entering the route still picks up a fresh question queue.
+export function shouldRevalidate({
+  formData,
+  defaultShouldRevalidate,
+}: ShouldRevalidateFunctionArgs) {
+  if (formData?.get("intent") === "answer") return false;
+  return defaultShouldRevalidate;
 }
 
 export async function action({ request, params }: Route.ActionArgs) {

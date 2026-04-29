@@ -122,7 +122,8 @@
       "correct": "정답",
       "addChoice": "선택지 추가",
       "removeChoice": "선택지 삭제",
-      "shuffleChoices": "선택지 섞기"
+      "shuffleChoices": "선택지 섞기",
+      "showCorrectCount": "정답 개수 표시"
     },
     "study": {
       "title": "학습 세션",
@@ -130,6 +131,7 @@
       "noQuestions": "현재 학습할 문제가 없습니다.",
       "backToWorkbook": "워크북으로 돌아가기",
       "blankInput": "빈칸 {{number}}",
+      "selectCount": "{{count}}개 선택",
       "check": "확인",
       "next": "다음",
       "correct": "정답!",

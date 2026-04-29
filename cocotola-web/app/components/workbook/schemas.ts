@@ -16,6 +16,7 @@ export const multipleChoiceFormSchema = z
     choices: z.array(choiceSchema).min(1),
     explanation: z.string().optional().default(""),
     shuffleChoices: z.boolean(),
+    showCorrectCount: z.boolean(),
   })
   .refine((data) => data.choices.some((c) => c.isCorrect), {
     message: "At least one choice must be marked as correct",
@@ -37,6 +38,7 @@ export const multipleChoiceContentSchema = z.object({
   explanation: z.string().optional(),
   choices: z.array(choiceSchema).optional(),
   shuffleChoices: z.boolean().optional(),
+  showCorrectCount: z.boolean().optional(),
 });
 
 export function parseWordFillContent(
@@ -86,6 +88,7 @@ export function parseMultipleChoiceFormData(formData: FormData) {
         ? (formData.get("explanation") as string)
         : "",
     shuffleChoices: formData.get("shuffleChoices") === "true",
+    showCorrectCount: formData.get("showCorrectCount") === "true",
   });
 
   if (!result.success) {
@@ -99,7 +102,7 @@ export function parseMultipleChoiceFormData(formData: FormData) {
     choices: parsed.choices,
     explanation: parsed.explanation,
     displayCount: parsed.choices.length,
-    showCorrectCount: false,
+    showCorrectCount: parsed.showCorrectCount,
     shuffleChoices: parsed.shuffleChoices,
     allowPartialCredit: false,
   });

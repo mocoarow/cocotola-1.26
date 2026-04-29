@@ -42,12 +42,21 @@ docs/
 /bazel-*
 kics-results/
 
+# go-task local cache (sources/generates checksums, timestamps)
+.task/
+
 # Supabase
 supabase/.env
 supabase/.temp/
 supabase/migrations/
 
 node_modules/
+
+# Playwright
+cocotola-test/playwright/test-results/
+cocotola-test/playwright/playwright-report/
+cocotola-test/playwright/playwright/.cache/
+
 cocotola-empty/cocotola-empty
 cocotola-auth/cocotola-auth
 cocotola-app/cocotola-app
