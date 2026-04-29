@@ -1555,6 +1555,7 @@ components:
           items:
             type: string
             maxLength: 100
+            pattern: ^[A-Za-z0-9_-]+$
     RecordAnswerResponse:
       type: object
       required:
