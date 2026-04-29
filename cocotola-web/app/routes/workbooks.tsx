@@ -1,6 +1,6 @@
-import { BookOpenIcon, GlobeIcon, LanguagesIcon, LogOutIcon } from "lucide-react";
+import { BookOpenIcon, GlobeIcon, LogOutIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, Outlet, redirect, useLoaderData, useLocation } from "react-router";
+import { Form, Link, Outlet, redirect, useFetcher, useLoaderData, useLocation } from "react-router";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -81,11 +81,17 @@ export default function WorkbooksLayout() {
   const { user } = useLoaderData<typeof loader>();
   const location = useLocation();
   const { t, i18n } = useTranslation();
+  const languageFetcher = useFetcher();
+  const isChangingLanguage = languageFetcher.state !== "idle";
 
-  function cycleLanguage() {
-    const currentIndex = supportedLanguages.indexOf(i18n.language as SupportedLanguage);
-    const nextIndex = (currentIndex + 1) % supportedLanguages.length;
-    i18n.changeLanguage(supportedLanguages[nextIndex]);
+  function handleLanguageChange(event: React.ChangeEvent<HTMLSelectElement>) {
+    const nextLanguage = event.target.value as SupportedLanguage;
+    if (nextLanguage === i18n.language) return;
+    i18n.changeLanguage(nextLanguage);
+    languageFetcher.submit(
+      { language: nextLanguage },
+      { method: "post", action: "/user-language" },
+    );
   }
 
   return (
@@ -145,10 +151,20 @@ export default function WorkbooksLayout() {
                   <p className="truncate text-xs text-muted-foreground">{user.organizationName}</p>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" type="button" onClick={cycleLanguage}>
-                    <LanguagesIcon className="size-4" />
-                    <span className="sr-only">{i18n.language.toUpperCase()}</span>
-                  </Button>
+                  <select
+                    value={i18n.language}
+                    onChange={handleLanguageChange}
+                    disabled={isChangingLanguage}
+                    aria-label={t("workbooks.nav.languageLabel")}
+                    aria-busy={isChangingLanguage}
+                    className="h-8 rounded-md border border-input bg-transparent px-2 text-xs"
+                  >
+                    {supportedLanguages.map((lang) => (
+                      <option key={lang} value={lang}>
+                        {t(`languages.${lang}`, { defaultValue: lang.toUpperCase() })}
+                      </option>
+                    ))}
+                  </select>
                   <Form method="post" action="/logout">
                     <Button variant="ghost" size="icon-sm" type="submit">
                       <LogOutIcon className="size-4" />

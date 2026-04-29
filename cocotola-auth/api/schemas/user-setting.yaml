@@ -1,0 +1,18 @@
+---
+UpdateUserLanguageRequest:
+  type: object
+  properties:
+    language:
+      type: string
+      description: User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
+      x-oapi-codegen-extra-tags:
+        binding: required,oneof=en ja ko
+      enum:
+        - en
+        - ja
+        - ko
+      pattern: ^(en|ja|ko)$
+      minLength: 2
+      maxLength: 2
+  required:
+    - language

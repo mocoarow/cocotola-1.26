@@ -37,6 +37,13 @@ const (
 	SpaceItemSpaceTypePublic  SpaceItemSpaceType = "public"
 )
 
+// Defines values for UpdateUserLanguageRequestLanguage.
+const (
+	En UpdateUserLanguageRequestLanguage = "en"
+	Ja UpdateUserLanguageRequestLanguage = "ja"
+	Ko UpdateUserLanguageRequestLanguage = "ko"
+)
+
 // Defines values for PasswordAuthenticationParamsXTokenDelivery.
 const (
 	Cookie PasswordAuthenticationParamsXTokenDelivery = "cookie"
@@ -200,6 +207,15 @@ type SupabaseExchangeRequest struct {
 	SupabaseJWT      string `binding:"required" json:"supabaseJwt"`
 }
 
+// UpdateUserLanguageRequest defines model for UpdateUserLanguageRequest.
+type UpdateUserLanguageRequest struct {
+	// Language User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
+	Language UpdateUserLanguageRequestLanguage `binding:"required,oneof=en ja ko" json:"language"`
+}
+
+// UpdateUserLanguageRequestLanguage User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
+type UpdateUserLanguageRequestLanguage string
+
 // CheckAuthorizationParams defines parameters for CheckAuthorization.
 type CheckAuthorizationParams struct {
 	// Org Organization ID
@@ -250,6 +266,9 @@ type CreateSpaceJSONRequestBody = CreateSpaceRequest
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserRequest
+
+// UpdateUserLanguageJSONRequestBody defines body for UpdateUserLanguage for application/json ContentType.
+type UpdateUserLanguageJSONRequestBody = UpdateUserLanguageRequest
 
 // SupabaseExchangeJSONRequestBody defines body for SupabaseExchange for application/json ContentType.
 type SupabaseExchangeJSONRequestBody = SupabaseExchangeRequest
