@@ -30,6 +30,11 @@ func InitStudyRouter(
 }
 
 func handleStudyError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
+	if errors.Is(err, domain.ErrInvalidArgument) {
+		logger.WarnContext(ctx, "invalid argument", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+		return
+	}
 	if errors.Is(err, domain.ErrForbidden) {
 		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))
 		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))

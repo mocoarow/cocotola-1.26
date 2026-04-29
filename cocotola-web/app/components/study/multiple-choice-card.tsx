@@ -5,7 +5,11 @@ import { type Choice, parseMultipleChoiceContent } from "~/components/workbook/s
 
 type MultipleChoiceCardProps = {
   content: string;
-  onAnswer: (correct: boolean) => void;
+  // The card reports both the user's selection and the locally-computed strict-match
+  // result. The selection is what the server scores authoritatively; the boolean is
+  // an optimistic UX value (counter on the result page). Once partial-credit math
+  // ships server-side, the counter must switch to read the server's response score.
+  onAnswer: (selectedChoiceIds: string[], correct: boolean) => void;
 };
 
 function shuffle<T>(arr: T[]): T[] {
@@ -65,7 +69,7 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
   }
 
   function handleNext() {
-    onAnswer(allCorrect);
+    onAnswer(Array.from(selectedIds), allCorrect);
   }
 
   const showCorrectCount = parsed.showCorrectCount === true;

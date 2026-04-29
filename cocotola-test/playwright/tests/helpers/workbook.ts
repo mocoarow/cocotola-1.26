@@ -192,20 +192,40 @@ export async function getStudyQuestions(
   return (await response.json()) as GetStudyQuestionsResponse;
 }
 
-export async function recordAnswer(
+async function postRecordAnswer(
+  request: APIRequestContext,
+  userToken: string,
+  workbookId: string,
+  questionId: string,
+  data: Record<string, unknown>,
+): Promise<RecordAnswerResponse> {
+  const response = await request.post(
+    `/api/v1/workbook/${encodeURIComponent(workbookId)}/study/${encodeURIComponent(questionId)}/answer`,
+    {
+      headers: bearer(userToken),
+      data,
+    },
+  );
+  expect(response.status()).toBe(200);
+  return (await response.json()) as RecordAnswerResponse;
+}
+
+export function recordAnswerForWordFill(
   request: APIRequestContext,
   userToken: string,
   workbookId: string,
   questionId: string,
   correct: boolean,
 ): Promise<RecordAnswerResponse> {
-  const response = await request.post(
-    `/api/v1/workbook/${encodeURIComponent(workbookId)}/study/${encodeURIComponent(questionId)}/answer`,
-    {
-      headers: bearer(userToken),
-      data: { correct },
-    },
-  );
-  expect(response.status()).toBe(200);
-  return (await response.json()) as RecordAnswerResponse;
+  return postRecordAnswer(request, userToken, workbookId, questionId, { correct });
+}
+
+export function recordAnswerForMultipleChoice(
+  request: APIRequestContext,
+  userToken: string,
+  workbookId: string,
+  questionId: string,
+  selectedChoiceIds: string[],
+): Promise<RecordAnswerResponse> {
+  return postRecordAnswer(request, userToken, workbookId, questionId, { selectedChoiceIds });
 }

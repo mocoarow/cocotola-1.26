@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getStudyQuestions, recordAnswer } from "./study.server";
+import {
+  getStudyQuestions,
+  recordAnswerForMultipleChoice,
+  recordAnswerForWordFill,
+} from "./study.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -98,7 +102,7 @@ describe("getStudyQuestions", () => {
   });
 });
 
-describe("recordAnswer", () => {
+describe("recordAnswerForWordFill", () => {
   beforeEach(() => {
     vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
   });
@@ -108,7 +112,7 @@ describe("recordAnswer", () => {
     vi.restoreAllMocks();
   });
 
-  it("should send POST request with correct body for correct answer", async () => {
+  it("should send POST request with correct=true body", async () => {
     // given
     const response = {
       nextDueAt: "2026-04-26T00:00:00Z",
@@ -122,7 +126,7 @@ describe("recordAnswer", () => {
     });
 
     // when
-    const result = await recordAnswer("test-token", "wb-1", "q-1", true);
+    const result = await recordAnswerForWordFill("test-token", "wb-1", "q-1", true);
 
     // then
     expect(result).toEqual(response);
@@ -147,7 +151,7 @@ describe("recordAnswer", () => {
     });
 
     // when
-    await recordAnswer("token", "wb-1", "q-1", false);
+    await recordAnswerForWordFill("token", "wb-1", "q-1", false);
 
     // then
     expect(fetchMock).toHaveBeenCalledWith(
@@ -166,7 +170,7 @@ describe("recordAnswer", () => {
     });
 
     // when
-    await recordAnswer("token", "wb/1", "q/2", true);
+    await recordAnswerForWordFill("token", "wb/1", "q/2", true);
 
     // then
     expect(fetchMock).toHaveBeenCalledWith(
@@ -180,6 +184,79 @@ describe("recordAnswer", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 400 });
 
     // when / then
-    await expect(recordAnswer("token", "wb-1", "q-1", true)).rejects.toBeInstanceOf(Response);
+    await expect(recordAnswerForWordFill("token", "wb-1", "q-1", true)).rejects.toBeInstanceOf(
+      Response,
+    );
+  });
+});
+
+describe("recordAnswerForMultipleChoice", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should send POST request with selectedChoiceIds body", async () => {
+    // given
+    const response = {
+      nextDueAt: "2026-04-26T00:00:00Z",
+      consecutiveCorrect: 1,
+      totalCorrect: 1,
+      totalIncorrect: 0,
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(response),
+    });
+
+    // when
+    const result = await recordAnswerForMultipleChoice("test-token", "wb-1", "q-1", ["c1", "c2"]);
+
+    // then
+    expect(result).toEqual(response);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study/q-1/answer",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer test-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ selectedChoiceIds: ["c1", "c2"] }),
+      },
+    );
+  });
+
+  it("should send empty selectedChoiceIds when nothing selected", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    // when
+    await recordAnswerForMultipleChoice("token", "wb-1", "q-1", []);
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ selectedChoiceIds: [] }),
+      }),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 400 });
+
+    // when / then
+    await expect(
+      recordAnswerForMultipleChoice("token", "wb-1", "q-1", ["c1"]),
+    ).rejects.toBeInstanceOf(Response);
   });
 });

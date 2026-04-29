@@ -5,8 +5,14 @@ import { authenticatePassword, createUser, updateUserLanguage } from "./helpers/
 import {
   getStudyQuestions,
   listPublicWorkbooks,
-  recordAnswer,
+  recordAnswerForMultipleChoice,
+  recordAnswerForWordFill,
+  type RecordAnswerResponse,
 } from "./helpers/workbook";
+
+type MultipleChoiceContent = {
+  choices: { id: string; isCorrect: boolean }[];
+};
 
 // Public workbooks are seeded by `cocotola-init` (see
 // cocotola-init/seed/seeds/public_workbooks.yaml). Regular users cannot create
@@ -57,13 +63,26 @@ test.describe("study: public workbook", () => {
     expect(firstQuestion).toBeDefined();
     if (!firstQuestion) return;
 
-    const answer = await recordAnswer(
-      request,
-      userToken,
-      target.workbookId,
-      firstQuestion.questionId,
-      true,
-    );
+    let answer: RecordAnswerResponse;
+    if (firstQuestion.questionType === "multiple_choice") {
+      const parsed = JSON.parse(firstQuestion.content) as MultipleChoiceContent;
+      const correctIds = parsed.choices.filter((c) => c.isCorrect).map((c) => c.id);
+      answer = await recordAnswerForMultipleChoice(
+        request,
+        userToken,
+        target.workbookId,
+        firstQuestion.questionId,
+        correctIds,
+      );
+    } else {
+      answer = await recordAnswerForWordFill(
+        request,
+        userToken,
+        target.workbookId,
+        firstQuestion.questionId,
+        true,
+      );
+    }
     expect(answer.totalCorrect).toBe(1);
     expect(answer.totalIncorrect).toBe(0);
     expect(answer.consecutiveCorrect).toBe(1);

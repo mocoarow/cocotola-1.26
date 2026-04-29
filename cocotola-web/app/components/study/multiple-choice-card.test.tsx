@@ -77,7 +77,7 @@ describe("MultipleChoiceCard", () => {
     expect(screen.getByText("Incorrect")).toBeInTheDocument();
   });
 
-  it("should call onAnswer with true when only the correct choice is selected then Next", async () => {
+  it("should call onAnswer with the selection and true when only the correct choice is selected then Next", async () => {
     // given
     const content = makeContent("Q?", [
       { id: "1", text: "Right", isCorrect: true },
@@ -93,10 +93,13 @@ describe("MultipleChoiceCard", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(true);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    const [ids, correct] = onAnswer.mock.calls[0];
+    expect([...ids].sort()).toEqual(["1"]);
+    expect(correct).toBe(true);
   });
 
-  it("should call onAnswer with false when the wrong choice is selected then Next", async () => {
+  it("should call onAnswer with the selection and false when the wrong choice is selected then Next", async () => {
     // given
     const content = makeContent("Q?", [
       { id: "1", text: "Right", isCorrect: true },
@@ -112,10 +115,13 @@ describe("MultipleChoiceCard", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(false);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    const [ids, correct] = onAnswer.mock.calls[0];
+    expect([...ids].sort()).toEqual(["2"]);
+    expect(correct).toBe(false);
   });
 
-  it("should call onAnswer with true when all correct choices are selected for a multi-correct question", async () => {
+  it("should call onAnswer with all correct ids and true for a multi-correct question", async () => {
     // given
     const content = makeContent("Pick the oceans", [
       { id: "1", text: "Pacific", isCorrect: true },
@@ -134,10 +140,13 @@ describe("MultipleChoiceCard", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(true);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    const [ids, correct] = onAnswer.mock.calls[0];
+    expect([...ids].sort()).toEqual(["1", "2"]);
+    expect(correct).toBe(true);
   });
 
-  it("should call onAnswer with false when only one of multiple correct choices is selected", async () => {
+  it("should call onAnswer with the partial selection and false when only one of multiple correct choices is selected", async () => {
     // given
     const content = makeContent("Pick the oceans", [
       { id: "1", text: "Pacific", isCorrect: true },
@@ -155,10 +164,13 @@ describe("MultipleChoiceCard", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(false);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    const [ids, correct] = onAnswer.mock.calls[0];
+    expect([...ids].sort()).toEqual(["1"]);
+    expect(correct).toBe(false);
   });
 
-  it("should call onAnswer with false when an incorrect choice is added to all correct ones", async () => {
+  it("should call onAnswer with the superset and false when an incorrect choice is added to all correct ones", async () => {
     // given
     const content = makeContent("Pick the oceans", [
       { id: "1", text: "Pacific", isCorrect: true },
@@ -177,7 +189,10 @@ describe("MultipleChoiceCard", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(false);
+    expect(onAnswer).toHaveBeenCalledTimes(1);
+    const [ids, correct] = onAnswer.mock.calls[0];
+    expect([...ids].sort()).toEqual(["1", "2", "3"]);
+    expect(correct).toBe(false);
   });
 
   it("should toggle off a previously selected choice when clicked again before Check", async () => {

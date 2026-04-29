@@ -235,3 +235,138 @@ func Test_ValidateContent_shouldReturnError_whenMultipleChoiceHasHTMLInQuestion(
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
+
+func fixtureMultipleChoiceContent() *question.MultipleChoiceContent {
+	return &question.MultipleChoiceContent{
+		QuestionText: "Pick the oceans",
+		Choices: []question.ChoiceJSON{
+			{ID: "c1", Text: "Pacific", IsCorrect: true},
+			{ID: "c2", Text: "Atlantic", IsCorrect: true},
+			{ID: "c3", Text: "Mt Fuji", IsCorrect: false},
+			{ID: "c4", Text: "Amazon River", IsCorrect: false},
+		},
+		DisplayCount: 4,
+	}
+}
+
+func Test_ParseMultipleChoiceContent_shouldReturnContent_whenJSONIsValid(t *testing.T) {
+	t.Parallel()
+
+	// given
+	raw := mustMarshal(t, fixtureMultipleChoiceContent())
+
+	// when
+	got, err := question.ParseMultipleChoiceContent(raw)
+
+	// then
+	require.NoError(t, err)
+	require.Equal(t, "Pick the oceans", got.QuestionText)
+	require.Len(t, got.Choices, 4)
+}
+
+func Test_ParseMultipleChoiceContent_shouldReturnError_whenJSONIsInvalid(t *testing.T) {
+	t.Parallel()
+
+	// when
+	_, err := question.ParseMultipleChoiceContent("not json")
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnTrue_whenAllAndOnlyCorrectIDsAreSelected(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{"c1", "c2"})
+
+	// then
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldIgnoreOrder(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{"c2", "c1"})
+
+	// then
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnFalse_whenSubsetOfCorrectIsSelected(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{"c1"})
+
+	// then
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnFalse_whenSupersetIncludesIncorrect(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{"c1", "c2", "c3"})
+
+	// then
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnFalse_whenEmptySelection(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{})
+
+	// then
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnFalse_whenOnlyIncorrectsSelected(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	ok, err := c.EvaluateAnswer([]string{"c3", "c4"})
+
+	// then
+	require.NoError(t, err)
+	require.False(t, ok)
+}
+
+func Test_MultipleChoiceContent_EvaluateAnswer_shouldReturnError_whenUnknownChoiceID(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := fixtureMultipleChoiceContent()
+
+	// when
+	_, err := c.EvaluateAnswer([]string{"c1", "bogus"})
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}

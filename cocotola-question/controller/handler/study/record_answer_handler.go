@@ -34,9 +34,12 @@ func NewRecordAnswerHandler(usecase RecordAnswerUsecase) *RecordAnswerHandler {
 	}
 }
 
-// recordAnswerBody is a handler-level request struct that uses *bool to detect omission.
+// recordAnswerBody is the loose handler-level request struct. Pointer fields
+// detect omission; per-type guards (right field for the question's type) live
+// in the usecase, since the handler does not yet know the question type.
 type recordAnswerBody struct {
-	Correct *bool `json:"correct"`
+	Correct           *bool     `json:"correct"`
+	SelectedChoiceIDs *[]string `json:"selectedChoiceIds"`
 }
 
 // RecordAnswer handles POST /workbook/:workbookId/study/:questionId/answer.
@@ -78,17 +81,32 @@ func (h *RecordAnswerHandler) RecordAnswer(c *gin.Context) {
 		return
 	}
 
-	if body.Correct == nil {
-		h.logger.WarnContext(ctx, "missing correct field")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct field is required"))
+	var input *studyservice.RecordAnswerInput
+	switch {
+	case body.Correct == nil && body.SelectedChoiceIDs == nil:
+		h.logger.WarnContext(ctx, "missing answer field")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "either correct or selectedChoiceIds must be provided"))
 		return
-	}
-
-	input, err := studyservice.NewRecordAnswerInput(userID, organizationID, workbookID, questionID, *body.Correct)
-	if err != nil {
-		h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))
+	case body.Correct != nil && body.SelectedChoiceIDs != nil:
+		h.logger.WarnContext(ctx, "ambiguous answer field")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct and selectedChoiceIds are mutually exclusive"))
 		return
+	case body.Correct != nil:
+		in, err := studyservice.NewRecordAnswerInputForWordFill(userID, organizationID, workbookID, questionID, *body.Correct)
+		if err != nil {
+			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			return
+		}
+		input = in
+	default:
+		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(userID, organizationID, workbookID, questionID, *body.SelectedChoiceIDs)
+		if err != nil {
+			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			return
+		}
+		input = in
 	}
 
 	output, err := h.usecase.RecordAnswer(ctx, input)

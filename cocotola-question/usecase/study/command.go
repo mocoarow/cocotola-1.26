@@ -35,18 +35,25 @@ type Command struct {
 	*RecordAnswerCommand
 }
 
+// questionRepository is the union of question lookup capabilities required by
+// study use cases. The concrete *gateway.QuestionRepository satisfies it.
+type questionRepository interface {
+	questionBatchFinder
+	questionFinder
+}
+
 // NewCommand returns a new Command composing all study use cases.
 func NewCommand(
 	studyRecordFinder studyRecordFinder,
 	studyRecordSaver studyRecordSaver,
 	activeListRepo activeQuestionListFinder,
-	questionRepo questionBatchFinder,
+	questionRepo questionRepository,
 	workbookRepo workbookFinder,
 	authChecker authorizationChecker,
 	config UsecaseConfig,
 ) *Command {
 	return &Command{
 		GetStudyQuestionsQuery: NewGetStudyQuestionsQuery(studyRecordFinder, activeListRepo, questionRepo, workbookRepo, authChecker, config),
-		RecordAnswerCommand:    NewRecordAnswerCommand(studyRecordFinder, studyRecordSaver, activeListRepo, workbookRepo, authChecker, config),
+		RecordAnswerCommand:    NewRecordAnswerCommand(studyRecordFinder, studyRecordSaver, activeListRepo, questionRepo, workbookRepo, authChecker, config),
 	}
 }
