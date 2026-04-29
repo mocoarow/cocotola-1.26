@@ -122,7 +122,8 @@
       "correct": "Correct",
       "addChoice": "Add Choice",
       "removeChoice": "Remove Choice",
-      "shuffleChoices": "Shuffle choices"
+      "shuffleChoices": "Shuffle choices",
+      "showCorrectCount": "Show number of correct answers"
     },
     "study": {
       "title": "Study Session",
@@ -130,6 +131,7 @@
       "noQuestions": "No questions due for study right now.",
       "backToWorkbook": "Back to Workbook",
       "blankInput": "Blank {{number}}",
+      "selectCount": "Select {{count}}",
       "check": "Check",
       "next": "Next",
       "correct": "Correct!",

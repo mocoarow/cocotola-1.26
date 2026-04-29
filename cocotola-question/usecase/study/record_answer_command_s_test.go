@@ -51,6 +51,22 @@ func fixtureQuestions() []domainquestion.Question {
 	}
 }
 
+const fixtureMultipleChoiceContent = `{"questionText":"Pick the oceans","explanation":"","choices":[` +
+	`{"id":"c1","text":"Pacific","isCorrect":true},` +
+	`{"id":"c2","text":"Atlantic","isCorrect":true},` +
+	`{"id":"c3","text":"Mt Fuji","isCorrect":false}` +
+	`],"displayCount":3,"showCorrectCount":false,"shuffleChoices":false,"allowPartialCredit":false}`
+
+func fixtureWordFillQuestion() *domainquestion.Question {
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	return domainquestion.ReconstructQuestion(fixtureQuestionID, domainquestion.TypeWordFill(), `{"source":"hello","target":"こんにちは","sourceLang":"en","targetLang":"ja","blanks":["hello"]}`, nil, 0, now, now)
+}
+
+func fixtureMultipleChoiceQuestion() *domainquestion.Question {
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	return domainquestion.ReconstructQuestion(fixtureQuestionID, domainquestion.TypeMultipleChoice(), fixtureMultipleChoiceContent, nil, 0, now, now)
+}
+
 func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.ActiveQuestionList {
 	t.Helper()
 	list, err := domain.NewActiveQuestionList(fixtureWorkbookID, questionIDs)
@@ -58,14 +74,21 @@ func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.Acti
 	return list
 }
 
-func newRecordAnswerInput(t *testing.T, correct bool) *studyservice.RecordAnswerInput {
+func newRecordAnswerInputForWordFill(t *testing.T, correct bool) *studyservice.RecordAnswerInput {
 	t.Helper()
-	input, err := studyservice.NewRecordAnswerInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, correct)
+	input, err := studyservice.NewRecordAnswerInputForWordFill(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, correct)
 	require.NoError(t, err)
 	return input
 }
 
-func Test_RecordAnswerCommand_shouldRecordCorrectAnswer_whenAllowed(t *testing.T) {
+func newRecordAnswerInputForMultipleChoice(t *testing.T, ids []string) *studyservice.RecordAnswerInput {
+	t.Helper()
+	input, err := studyservice.NewRecordAnswerInputForMultipleChoice(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, ids)
+	require.NoError(t, err)
+	return input
+}
+
+func Test_RecordAnswerCommand_shouldRecordCorrectAnswer_whenWordFillAllowed(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -82,14 +105,17 @@ func Test_RecordAnswerCommand_shouldRecordCorrectAnswer_whenAllowed(t *testing.T
 	activeListRepo := newMockactiveQuestionListFinder(t)
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
 
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureWordFillQuestion(), nil)
+
 	finder := newMockstudyRecordFinder(t)
 	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
 
 	saver := newMockstudyRecordSaver(t)
 	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
 
-	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	output, err := cmd.RecordAnswer(ctx, input)
@@ -101,7 +127,7 @@ func Test_RecordAnswerCommand_shouldRecordCorrectAnswer_whenAllowed(t *testing.T
 	assert.Equal(t, 0, output.TotalIncorrect)
 }
 
-func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenAllowed(t *testing.T) {
+func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenWordFillAllowed(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -118,6 +144,9 @@ func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenAllowed(t *testing
 	activeListRepo := newMockactiveQuestionListFinder(t)
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
 
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureWordFillQuestion(), nil)
+
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
 	existingRecord := domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 3, now, now, 3, 0)
 
@@ -127,8 +156,8 @@ func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenAllowed(t *testing
 	saver := newMockstudyRecordSaver(t)
 	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
 
-	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, false)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, false)
 
 	// when
 	output, err := cmd.RecordAnswer(ctx, input)
@@ -138,6 +167,211 @@ func Test_RecordAnswerCommand_shouldRecordIncorrectAnswer_whenAllowed(t *testing
 	assert.Equal(t, 0, output.ConsecutiveCorrect)
 	assert.Equal(t, 3, output.TotalCorrect)
 	assert.Equal(t, 1, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldRecordCorrect_whenMultipleChoiceAllCorrectIDsSelected(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureMultipleChoiceQuestion(), nil)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForMultipleChoice(t, []string{"c1", "c2"})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.ConsecutiveCorrect)
+	assert.Equal(t, 1, output.TotalCorrect)
+	assert.Equal(t, 0, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldRecordIncorrect_whenMultipleChoicePartialSelection(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureMultipleChoiceQuestion(), nil)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForMultipleChoice(t, []string{"c1"})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, output.ConsecutiveCorrect)
+	assert.Equal(t, 0, output.TotalCorrect)
+	assert.Equal(t, 1, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldRecordIncorrect_whenMultipleChoiceEmptySelection(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureMultipleChoiceQuestion(), nil)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForMultipleChoice(t, []string{})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldReturnInvalidArgument_whenMultipleChoiceWithCorrectField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: input shaped for word_fill but the question is multiple_choice
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureMultipleChoiceQuestion(), nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
+
+	// when
+	_, err = cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_RecordAnswerCommand_shouldReturnInvalidArgument_whenWordFillWithSelectedChoiceIDs(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: input shaped for multiple_choice but the question is word_fill
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureWordFillQuestion(), nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForMultipleChoice(t, []string{"c1"})
+
+	// when
+	_, err = cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_RecordAnswerCommand_shouldReturnInvalidArgument_whenMultipleChoiceUnknownChoiceID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureMultipleChoiceQuestion(), nil)
+
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForMultipleChoice(t, []string{"c1", "bogus"})
+
+	// when
+	_, err = cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_RecordAnswerCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) {
@@ -154,8 +388,8 @@ func Test_RecordAnswerCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T)
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(false, nil)
 
-	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, nil, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	_, err = cmd.RecordAnswer(ctx, input)
@@ -172,8 +406,8 @@ func Test_RecordAnswerCommand_shouldReturnError_whenWorkbookNotFound(t *testing.
 	workbookRepo := newMockworkbookFinder(t)
 	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(nil, domain.ErrWorkbookNotFound)
 
-	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, workbookRepo, nil, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, nil, workbookRepo, nil, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	_, err := cmd.RecordAnswer(ctx, input)
@@ -200,8 +434,8 @@ func Test_RecordAnswerCommand_shouldReturnError_whenQuestionNotInWorkbook(t *tes
 	activeListRepo := newMockactiveQuestionListFinder(t)
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, "other-q"), nil)
 
-	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, nil, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	_, err = cmd.RecordAnswer(ctx, input)
@@ -225,8 +459,8 @@ func Test_RecordAnswerCommand_shouldReturnError_whenAuthCheckFails(t *testing.T)
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(false, authErr)
 
-	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(nil, nil, nil, nil, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	_, err = cmd.RecordAnswer(ctx, input)
@@ -249,14 +483,17 @@ func Test_RecordAnswerCommand_shouldRecordAnswer_whenWorkbookIsPublic(t *testing
 	activeListRepo := newMockactiveQuestionListFinder(t)
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
 
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureWordFillQuestion(), nil)
+
 	finder := newMockstudyRecordFinder(t)
 	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(nil, domain.ErrStudyRecordNotFound)
 
 	saver := newMockstudyRecordSaver(t)
 	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
 
-	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, workbookRepo, authChecker, testConfig)
-	input := newRecordAnswerInput(t, true)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, testConfig)
+	input := newRecordAnswerInputForWordFill(t, true)
 
 	// when
 	output, err := cmd.RecordAnswer(ctx, input)

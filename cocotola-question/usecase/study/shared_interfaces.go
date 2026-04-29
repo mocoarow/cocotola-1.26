@@ -26,6 +26,10 @@ type questionBatchFinder interface {
 	FindByIDs(ctx context.Context, workbookID string, questionIDs []string) ([]domainquestion.Question, error)
 }
 
+type questionFinder interface {
+	FindByID(ctx context.Context, workbookID string, questionID string) (*domainquestion.Question, error)
+}
+
 type workbookFinder interface {
 	FindByID(ctx context.Context, id string) (*domainworkbook.Workbook, error)
 }

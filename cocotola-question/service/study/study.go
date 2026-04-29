@@ -47,23 +47,61 @@ type GetStudyQuestionsOutput struct {
 	ReviewCount int
 }
 
+// Limits on the multiple_choice answer payload. These mirror the OpenAPI
+// schema (maxItems / maxLength on selectedChoiceIds) and are enforced here so
+// the contract holds even when callers bypass the spec.
+const (
+	MaxSelectedChoiceIDsCount = 40
+	MaxChoiceIDLength         = 100
+)
+
 // RecordAnswerInput is the validated input for recording an answer.
+// Exactly one of Correct or SelectedChoiceIDs must be set, matched to the
+// question's type. The usecase enforces the per-type rule once the question
+// is loaded (the handler also rejects "neither set" / "both set" earlier).
 type RecordAnswerInput struct {
-	OperatorID     string `validate:"required"`
-	OrganizationID string `validate:"required"`
-	WorkbookID     string `validate:"required"`
-	QuestionID     string `validate:"required"`
-	Correct        bool
+	OperatorID        string `validate:"required"`
+	OrganizationID    string `validate:"required"`
+	WorkbookID        string `validate:"required"`
+	QuestionID        string `validate:"required"`
+	Correct           *bool
+	SelectedChoiceIDs *[]string
 }
 
-// NewRecordAnswerInput creates a validated RecordAnswerInput.
-func NewRecordAnswerInput(operatorID string, organizationID string, workbookID string, questionID string, correct bool) (*RecordAnswerInput, error) {
+// NewRecordAnswerInputForWordFill creates a validated RecordAnswerInput for word_fill questions.
+func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, questionID string, correct bool) (*RecordAnswerInput, error) {
 	m := &RecordAnswerInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		WorkbookID:     workbookID,
-		QuestionID:     questionID,
-		Correct:        correct,
+		OperatorID:        operatorID,
+		OrganizationID:    organizationID,
+		WorkbookID:        workbookID,
+		QuestionID:        questionID,
+		Correct:           &correct,
+		SelectedChoiceIDs: nil,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate record answer input: %w", err)
+	}
+	return m, nil
+}
+
+// NewRecordAnswerInputForMultipleChoice creates a validated RecordAnswerInput for multiple_choice questions.
+func NewRecordAnswerInputForMultipleChoice(operatorID, organizationID, workbookID, questionID string, selectedChoiceIDs []string) (*RecordAnswerInput, error) {
+	if len(selectedChoiceIDs) > MaxSelectedChoiceIDsCount {
+		return nil, fmt.Errorf("selectedChoiceIds count exceeds limit (max %d, got %d): %w", MaxSelectedChoiceIDsCount, len(selectedChoiceIDs), domain.ErrInvalidArgument)
+	}
+	for i, id := range selectedChoiceIDs {
+		if len(id) > MaxChoiceIDLength {
+			return nil, fmt.Errorf("selectedChoiceIds[%d] exceeds length limit (max %d, got %d): %w", i, MaxChoiceIDLength, len(id), domain.ErrInvalidArgument)
+		}
+	}
+	ids := selectedChoiceIDs
+	m := &RecordAnswerInput{
+		OperatorID:        operatorID,
+		OrganizationID:    organizationID,
+		WorkbookID:        workbookID,
+		QuestionID:        questionID,
+		Correct:           nil,
+		SelectedChoiceIDs: &ids,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)

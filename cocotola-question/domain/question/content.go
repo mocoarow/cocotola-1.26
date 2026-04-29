@@ -67,6 +67,48 @@ type ChoiceJSON struct {
 	IsCorrect bool   `json:"isCorrect"`
 }
 
+// ParseMultipleChoiceContent unmarshals MultipleChoiceContent JSON without re-running
+// the structural validation in validateMultipleChoiceContent. Use only on content
+// that has already been validated at write time.
+func ParseMultipleChoiceContent(raw string) (*MultipleChoiceContent, error) {
+	var c MultipleChoiceContent
+	if err := json.Unmarshal([]byte(raw), &c); err != nil {
+		return nil, fmt.Errorf("invalid multiple_choice content JSON: %w", domain.ErrInvalidArgument)
+	}
+	return &c, nil
+}
+
+// EvaluateAnswer reports whether the given choice IDs exactly match the set of
+// IsCorrect choices. Strict equality only — AllowPartialCredit is intentionally
+// not consulted yet (a follow-up will add partial-credit scoring).
+// Returns ErrInvalidArgument wrapped if any selected ID is not a known choice.
+func (c *MultipleChoiceContent) EvaluateAnswer(selectedChoiceIDs []string) (bool, error) {
+	valid := make(map[string]bool, len(c.Choices))
+	correct := make(map[string]bool, len(c.Choices))
+	for _, ch := range c.Choices {
+		valid[ch.ID] = true
+		if ch.IsCorrect {
+			correct[ch.ID] = true
+		}
+	}
+	selected := make(map[string]bool, len(selectedChoiceIDs))
+	for _, id := range selectedChoiceIDs {
+		if !valid[id] {
+			return false, fmt.Errorf("unknown choice id %q: %w", id, domain.ErrInvalidArgument)
+		}
+		selected[id] = true
+	}
+	if len(selected) != len(correct) {
+		return false, nil
+	}
+	for id := range correct {
+		if !selected[id] {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 // ValidateContent validates the content JSON based on question type.
 func ValidateContent(questionType Type, content string) error {
 	switch questionType.Value() {

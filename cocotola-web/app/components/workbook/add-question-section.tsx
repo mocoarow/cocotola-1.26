@@ -96,6 +96,7 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
   const isSubmitting = fetcher.state !== "idle";
   const [choices, setChoices] = useState<Choice[]>(INITIAL_CHOICES);
   const [shuffleChoices, setShuffleChoices] = useState(true);
+  const [showCorrectCount, setShowCorrectCount] = useState(false);
 
   const added = useRef(false);
   if (fetcher.state === "idle" && fetcher.data?.added && !added.current) {
@@ -111,6 +112,7 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
       <input type="hidden" name="intent" value="addMultipleChoice" />
       <input type="hidden" name="choices" value={JSON.stringify(choices)} />
       <input type="hidden" name="shuffleChoices" value={String(shuffleChoices)} />
+      <input type="hidden" name="showCorrectCount" value={String(showCorrectCount)} />
 
       <div className="space-y-1.5">
         <label htmlFor="mc-questionText" className="text-sm font-medium">
@@ -191,6 +193,19 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
         />
         <label htmlFor="mc-shuffle" className="text-sm font-medium">
           {t("workbooks.addQuestion.shuffleChoices")}
+        </label>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          id="mc-show-correct-count"
+          checked={showCorrectCount}
+          onChange={(e) => setShowCorrectCount(e.target.checked)}
+          className="size-4 rounded border-input"
+        />
+        <label htmlFor="mc-show-correct-count" className="text-sm font-medium">
+          {t("workbooks.addQuestion.showCorrectCount")}
         </label>
       </div>
 

@@ -122,7 +122,8 @@
       "correct": "正解",
       "addChoice": "選択肢を追加",
       "removeChoice": "選択肢を削除",
-      "shuffleChoices": "選択肢をシャッフルする"
+      "shuffleChoices": "選択肢をシャッフルする",
+      "showCorrectCount": "正解の数を表示する"
     },
     "study": {
       "title": "学習セッション",
@@ -130,6 +131,7 @@
       "noQuestions": "現在、学習する問題はありません。",
       "backToWorkbook": "ワークブックに戻る",
       "blankInput": "空欄 {{number}}",
+      "selectCount": "{{count}}つ選択",
       "check": "チェック",
       "next": "次へ",
       "correct": "正解！",

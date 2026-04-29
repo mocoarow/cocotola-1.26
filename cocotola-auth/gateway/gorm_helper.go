@@ -6,20 +6,38 @@ import (
 	"fmt"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
-// replaceRecords deletes all records matching the where clause, then inserts new records,
-// all within a single transaction.
-// It first queries existing records via snapshot read (no locks), then deletes only if
-// records exist, using primary-key-based deletion to avoid row-level lock conflicts.
+// replaceRecords deletes existing records matching the where clause and inserts
+// new records, all within a single transaction.
+//
+// Concurrency:
+//   - The SELECT acquires `FOR UPDATE` locks so concurrent transactions modifying
+//     the same key set are serialized; the second transaction blocks until the
+//     first commits, then sees the committed state.
+//   - The INSERT uses `ON CONFLICT DO NOTHING` so that any leftover duplicate
+//     primary keys (e.g. created by a concurrent re-insert that committed
+//     between this transaction's DELETE and INSERT) do not cause a unique-key
+//     violation; the existing row is kept and the next save will reconcile.
+//
+// Without these, the delete-then-insert pattern races under concurrent same-key
+// writes: two transactions can both read the same snapshot, both delete the
+// same rows, and then collide on INSERT once one of them commits before the
+// other reaches its INSERT statement.
 func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string, whereArg any, newRecords []R, label string) error {
 	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		lockClause := clause.Locking{
+			Strength: clause.LockingStrengthUpdate,
+			Table:    clause.Table{Name: "", Alias: "", Raw: false},
+			Options:  "",
+		}
 		var existing []R
-		if err := tx.Where(whereClause, whereArg).Find(&existing).Error; err != nil {
-			return fmt.Errorf("find existing %s: %w", label, err)
+		if err := tx.Clauses(lockClause).Where(whereClause, whereArg).Find(&existing).Error; err != nil {
+			return fmt.Errorf("find existing %s for update: %w", label, err)
 		}
 		if len(existing) > 0 {
 			if err := tx.Delete(&existing).Error; err != nil {
@@ -29,7 +47,17 @@ func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string,
 		if len(newRecords) == 0 {
 			return nil
 		}
-		if err := tx.Create(&newRecords).Error; err != nil {
+		emptyWhere := clause.Where{Exprs: nil}
+		conflictClause := clause.OnConflict{
+			Columns:      nil,
+			Where:        emptyWhere,
+			TargetWhere:  emptyWhere,
+			OnConstraint: "",
+			DoNothing:    true,
+			DoUpdates:    nil,
+			UpdateAll:    false,
+		}
+		if err := tx.Clauses(conflictClause).Create(&newRecords).Error; err != nil {
 			return fmt.Errorf("insert %s: %w", label, err)
 		}
 		return nil

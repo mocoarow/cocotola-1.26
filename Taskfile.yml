@@ -177,6 +177,34 @@ tasks:
     cmds:
       - pnpm run test
 
+  e2e-runn:
+    desc: "Run runn scenario tests against local stack"
+    dir: cocotola-test/runn
+    cmds:
+      - bash user-test-001.sh
+      - bash workbook-test-001.sh
+      - bash owner-test-001.sh
+      - bash guest-test-001.sh
+
+  e2e-playwright-setup:
+    desc: "Install Playwright dependencies"
+    dir: cocotola-test/playwright
+    sources:
+      - package.json
+      - pnpm-lock.yaml
+    generates:
+      - node_modules/.modules.yaml
+    cmds:
+      - pnpm install
+
+  e2e-playwright:
+    desc: "Run Playwright API tests against local stack"
+    dir: cocotola-test/playwright
+    deps:
+      - e2e-playwright-setup
+    cmds:
+      - pnpm test
+
   test-go:
     desc: "Run Go tests with coverage"
     cmds:

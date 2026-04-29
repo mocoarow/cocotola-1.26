@@ -42,11 +42,11 @@ export async function getStudyQuestions(
   return (await response.json()) as GetStudyQuestionsResponse;
 }
 
-export async function recordAnswer(
+async function postRecordAnswer(
   accessToken: string,
   workbookId: string,
   questionId: string,
-  correct: boolean,
+  body: Record<string, unknown>,
 ): Promise<RecordAnswerResponse> {
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study/${encodeURIComponent(questionId)}/answer`;
@@ -57,7 +57,7 @@ export async function recordAnswer(
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ correct }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -65,4 +65,22 @@ export async function recordAnswer(
   }
 
   return (await response.json()) as RecordAnswerResponse;
+}
+
+export function recordAnswerForWordFill(
+  accessToken: string,
+  workbookId: string,
+  questionId: string,
+  correct: boolean,
+): Promise<RecordAnswerResponse> {
+  return postRecordAnswer(accessToken, workbookId, questionId, { correct });
+}
+
+export function recordAnswerForMultipleChoice(
+  accessToken: string,
+  workbookId: string,
+  questionId: string,
+  selectedChoiceIds: string[],
+): Promise<RecordAnswerResponse> {
+  return postRecordAnswer(accessToken, workbookId, questionId, { selectedChoiceIds });
 }

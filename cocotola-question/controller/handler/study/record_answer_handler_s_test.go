@@ -117,7 +117,7 @@ func Test_RecordAnswerHandler_shouldReturn400_whenRequestBodyIsInvalid(t *testin
 	validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
 }
 
-func Test_RecordAnswerHandler_shouldReturn400_whenCorrectFieldMissing(t *testing.T) {
+func Test_RecordAnswerHandler_shouldReturn400_whenBodyHasNeitherField(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -137,7 +137,96 @@ func Test_RecordAnswerHandler_shouldReturn400_whenCorrectFieldMissing(t *testing
 
 	// then
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "correct field is required")
+	validateErrorResponse(t, respBytes, "invalid_request", "either correct or selectedChoiceIds must be provided")
+}
+
+func Test_RecordAnswerHandler_shouldReturn400_whenBothFieldsProvided(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	recordUsecase := NewMockRecordAnswerUsecase(t)
+	r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+	w := httptest.NewRecorder()
+	body := `{"correct":true,"selectedChoiceIds":["c1"]}`
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	validateErrorResponse(t, respBytes, "invalid_request", "correct and selectedChoiceIds are mutually exclusive")
+}
+
+func Test_RecordAnswerHandler_shouldReturn200_whenMultipleChoiceSelectedChoiceIds(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	recordUsecase := NewMockRecordAnswerUsecase(t)
+	output := &studyservice.RecordAnswerOutput{
+		NextDueAt:          time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC),
+		ConsecutiveCorrect: 1,
+		TotalCorrect:       1,
+		TotalIncorrect:     0,
+	}
+	recordUsecase.On("RecordAnswer", mock.Anything, mock.Anything).Return(output, nil).Once()
+
+	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+	w := httptest.NewRecorder()
+	body := `{"selectedChoiceIds":["c1","c2"]}`
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	jsonObj := parseJSON(t, respBytes)
+	totalCorrectExpr := parseExpr(t, "$.totalCorrect")
+	totalCorrect := totalCorrectExpr.Get(jsonObj)
+	require.Len(t, totalCorrect, 1)
+	assert.EqualValues(t, 1, totalCorrect[0])
+}
+
+func Test_RecordAnswerHandler_shouldReturn400_whenUsecaseReturnsInvalidArgument(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	recordUsecase := NewMockRecordAnswerUsecase(t)
+	recordUsecase.On("RecordAnswer", mock.Anything, mock.Anything).Return(nil, fmt.Errorf("evaluate: %w", domain.ErrInvalidArgument)).Once()
+
+	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+	w := httptest.NewRecorder()
+	body := `{"correct":true}`
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	jsonObj := parseJSON(t, respBytes)
+	codeExpr := parseExpr(t, "$.code")
+	code := codeExpr.Get(jsonObj)
+	require.Len(t, code, 1)
+	assert.Equal(t, "invalid_request", code[0])
 }
 
 func Test_RecordAnswerHandler_shouldReturn403_whenForbidden(t *testing.T) {

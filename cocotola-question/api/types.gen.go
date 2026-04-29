@@ -111,9 +111,12 @@ type QuestionResponse struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
-// RecordAnswerRequest defines model for RecordAnswerRequest.
+// RecordAnswerRequest Exactly one of `correct` or `selectedChoiceIds` must be provided, matched to
+// the question's type. `correct` is for `word_fill`; `selectedChoiceIds` is for
+// `multiple_choice` and lets the server decide correctness.
 type RecordAnswerRequest struct {
-	Correct bool `json:"correct"`
+	Correct           bool     `json:"correct,omitempty"`
+	SelectedChoiceIds []string `json:"selectedChoiceIds,omitempty"`
 }
 
 // RecordAnswerResponse defines model for RecordAnswerResponse.

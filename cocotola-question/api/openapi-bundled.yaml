@@ -1542,11 +1542,20 @@ components:
           format: int32
     RecordAnswerRequest:
       type: object
-      required:
-        - correct
+      description: |
+        Exactly one of `correct` or `selectedChoiceIds` must be provided, matched to
+        the question's type. `correct` is for `word_fill`; `selectedChoiceIds` is for
+        `multiple_choice` and lets the server decide correctness.
       properties:
         correct:
           type: boolean
+        selectedChoiceIds:
+          type: array
+          maxItems: 40
+          items:
+            type: string
+            maxLength: 100
+            pattern: ^[A-Za-z0-9_-]+$
     RecordAnswerResponse:
       type: object
       required:
