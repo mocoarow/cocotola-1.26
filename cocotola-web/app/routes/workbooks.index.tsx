@@ -22,6 +22,7 @@ import {
   type Workbook,
 } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
+import { formatDate } from "~/lib/format/date";
 import type { Route } from "./+types/workbooks.index";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -75,16 +76,6 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   return { ok: true };
-}
-
-function formatDate(dateStr: string, locale: string): string {
-  const date = new Date(dateStr);
-  const localeMap: Record<string, string> = { ja: "ja-JP", en: "en-US", ko: "ko-KR" };
-  return date.toLocaleDateString(localeMap[locale] ?? locale, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function WorkbookCard({ workbook }: { workbook: Workbook }) {

@@ -59,6 +59,23 @@
         "descriptionTooLong": "Description must be 1000 characters or less"
       }
     },
+    "public": {
+      "title": "Public Workbooks",
+      "description": "Browse public workbooks shared by other users and add them to your library.",
+      "empty": {
+        "title": "No public workbooks",
+        "description": "There are no public workbooks available in your language yet."
+      },
+      "published": "Published:",
+      "study": "Study",
+      "add": "Add",
+      "added": "Added",
+      "remove": "Remove from library",
+      "addAriaLabel": "Add \"{{title}}\" to my library",
+      "removeAriaLabel": "Remove \"{{title}}\" from my library",
+      "removeConfirmTitle": "Remove from library",
+      "removeConfirm": "Remove \"{{title}}\" from your library?"
+    },
     "detail": {
       "backToWorkbooks": "Back to Workbooks",
       "titleLabel": "Title",

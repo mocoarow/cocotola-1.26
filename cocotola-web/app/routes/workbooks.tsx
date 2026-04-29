@@ -73,7 +73,7 @@ const navItems = [
     titleKey: "workbooks.nav.public",
     href: "/workbooks/public",
     icon: GlobeIcon,
-    disabled: true,
+    disabled: false,
   },
 ];
 

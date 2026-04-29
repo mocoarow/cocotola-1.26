@@ -59,6 +59,23 @@
         "descriptionTooLong": "説明は1000文字以下にしてください"
       }
     },
+    "public": {
+      "title": "公開ワークブック",
+      "description": "他のユーザーが公開したワークブックを閲覧し、自分のライブラリに追加できます。",
+      "empty": {
+        "title": "公開ワークブックはありません",
+        "description": "現在、あなたの言語で公開されているワークブックはありません。"
+      },
+      "published": "公開日:",
+      "study": "学習",
+      "add": "追加",
+      "added": "追加済み",
+      "remove": "ライブラリから削除",
+      "addAriaLabel": "「{{title}}」をライブラリに追加",
+      "removeAriaLabel": "「{{title}}」をライブラリから削除",
+      "removeConfirmTitle": "ライブラリから削除",
+      "removeConfirm": "「{{title}}」をライブラリから削除しますか？"
+    },
     "detail": {
       "backToWorkbooks": "ワークブック一覧に戻る",
       "titleLabel": "タイトル",
