@@ -8,6 +8,7 @@ export default [
   route("logout", "routes/logout.tsx"),
   layout("routes/workbooks.tsx", [
     route("workbooks", "routes/workbooks.index.tsx"),
+    route("workbooks/public", "routes/workbooks.public.tsx"),
     route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
     route("workbooks/:workbookId/study", "routes/workbooks.$workbookId.study.tsx"),
   ]),

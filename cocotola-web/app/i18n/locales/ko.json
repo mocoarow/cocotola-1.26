@@ -59,6 +59,23 @@
         "descriptionTooLong": "설명은 1000자 이하로 입력해 주세요"
       }
     },
+    "public": {
+      "title": "공개 워크북",
+      "description": "다른 사용자가 공개한 워크북을 둘러보고 내 라이브러리에 추가할 수 있습니다.",
+      "empty": {
+        "title": "공개 워크북이 없습니다",
+        "description": "현재 사용 중인 언어로 공개된 워크북이 없습니다."
+      },
+      "published": "공개일:",
+      "study": "학습",
+      "add": "추가",
+      "added": "추가됨",
+      "remove": "라이브러리에서 제거",
+      "addAriaLabel": "\"{{title}}\"을(를) 라이브러리에 추가",
+      "removeAriaLabel": "\"{{title}}\"을(를) 라이브러리에서 제거",
+      "removeConfirmTitle": "라이브러리에서 제거",
+      "removeConfirm": "\"{{title}}\"을(를) 라이브러리에서 제거하시겠습니까?"
+    },
     "detail": {
       "backToWorkbooks": "워크북 목록으로 돌아가기",
       "titleLabel": "제목",
