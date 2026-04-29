@@ -130,6 +130,7 @@
       "description": "{{count}} questions to study",
       "noQuestions": "No questions due for study right now.",
       "backToWorkbook": "Back to Workbook",
+      "backToPublic": "Back to Public Workbooks",
       "blankInput": "Blank {{number}}",
       "selectCount": "Select {{count}}",
       "check": "Check",

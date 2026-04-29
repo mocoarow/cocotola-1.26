@@ -5,6 +5,7 @@ import {
   type ShouldRevalidateFunctionArgs,
   useFetcher,
   useLoaderData,
+  useRouteLoaderData,
 } from "react-router";
 import { MultipleChoiceCard } from "~/components/study/multiple-choice-card";
 import { ProgressBar } from "~/components/study/progress-bar";
@@ -17,14 +18,19 @@ import {
   recordAnswerForWordFill,
   type StudyQuestion,
 } from "~/lib/api/study.server";
+import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId.study";
+import type { loader as workbooksLayoutLoader } from "./workbooks";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { accessToken } = await requireAuth(request);
   const { workbookId } = params;
-  const data = await getStudyQuestions(accessToken, workbookId, 20);
-  return { workbookId, questions: data.questions };
+  const [workbook, data] = await Promise.all([
+    getWorkbook(accessToken, workbookId),
+    getStudyQuestions(accessToken, workbookId, 20),
+  ]);
+  return { workbookId, workbookOwnerId: workbook.ownerId, questions: data.questions };
 }
 
 // Skip revalidation only for the "answer" action submit. Otherwise the loader
@@ -76,51 +82,63 @@ type Phase = "studying" | "done";
 
 function StudySession({
   questions,
-  workbookId,
+  backUrl,
+  backLabel,
 }: {
   questions: StudyQuestion[];
-  workbookId: string;
+  backUrl: string;
+  backLabel: string;
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher();
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [queue, setQueue] = useState<StudyQuestion[]>(() => questions);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
-  const [phase, setPhase] = useState<Phase>("studying");
+  const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
 
+  // Structural empty-state guard: derived from the loader prop, not the local
+  // queue. The queue can also reach length 0 (after the last correct answer)
+  // but that case must render the result screen, not this empty state.
   if (questions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <p className="mb-4 text-lg text-muted-foreground">{t("workbooks.study.noQuestions")}</p>
-        <Button nativeButton={false} render={<Link to={`/workbooks/${workbookId}`} />}>
-          {t("workbooks.study.backToWorkbook")}
+        <Button nativeButton={false} render={<Link to={backUrl} />}>
+          {backLabel}
         </Button>
       </div>
     );
   }
+
+  const phase: Phase = queue.length === 0 ? "done" : "studying";
 
   if (phase === "done") {
     return (
       <StudyResult
         correctCount={correctCount}
         incorrectCount={incorrectCount}
-        workbookId={workbookId}
+        backUrl={backUrl}
+        backLabel={backLabel}
       />
     );
   }
 
-  const question = questions[currentIndex];
+  const question = queue[0];
 
   function advance(correct: boolean) {
+    setAttemptCounts((prev) => ({
+      ...prev,
+      [question.questionId]: (prev[question.questionId] ?? 0) + 1,
+    }));
     if (correct) {
       setCorrectCount((c) => c + 1);
+      setQueue((q) => q.slice(1));
     } else {
       setIncorrectCount((c) => c + 1);
-    }
-    if (currentIndex + 1 < questions.length) {
-      setCurrentIndex((i) => i + 1);
-    } else {
-      setPhase("done");
+      setQueue((q) => {
+        const [head, ...rest] = q;
+        return [...rest, head];
+      });
     }
   }
 
@@ -150,23 +168,21 @@ function StudySession({
     advance(correct);
   }
 
+  const cardKey = `${question.questionId}-${attemptCounts[question.questionId] ?? 0}`;
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <ProgressBar current={currentIndex} total={questions.length} />
+      <ProgressBar current={correctCount} total={questions.length} />
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         {question.questionType === "multiple_choice" ? (
           <MultipleChoiceCard
-            key={question.questionId}
+            key={cardKey}
             content={question.content}
             onAnswer={handleMultipleChoiceAnswer}
           />
         ) : (
-          <WordFillCard
-            key={question.questionId}
-            content={question.content}
-            onAnswer={handleWordFillAnswer}
-          />
+          <WordFillCard key={cardKey} content={question.content} onAnswer={handleWordFillAnswer} />
         )}
       </div>
     </div>
@@ -174,8 +190,15 @@ function StudySession({
 }
 
 export default function StudyPage() {
-  const { workbookId, questions } = useLoaderData<typeof loader>();
+  const { workbookId, workbookOwnerId, questions } = useLoaderData<typeof loader>();
+  const layoutData = useRouteLoaderData<typeof workbooksLayoutLoader>("routes/workbooks");
   const { t } = useTranslation();
+
+  const isOwner = layoutData?.user?.userId === workbookOwnerId;
+  const backUrl = isOwner ? `/workbooks/${workbookId}` : "/workbooks/public";
+  const backLabel = isOwner
+    ? t("workbooks.study.backToWorkbook")
+    : t("workbooks.study.backToPublic");
 
   return (
     <div>
@@ -185,7 +208,7 @@ export default function StudyPage() {
           {t("workbooks.study.description", { count: questions.length })}
         </p>
       </div>
-      <StudySession questions={questions} workbookId={workbookId} />
+      <StudySession questions={questions} backUrl={backUrl} backLabel={backLabel} />
     </div>
   );
 }

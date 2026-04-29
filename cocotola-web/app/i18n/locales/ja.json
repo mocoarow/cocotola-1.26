@@ -130,6 +130,7 @@
       "description": "{{count}}問の問題があります",
       "noQuestions": "現在、学習する問題はありません。",
       "backToWorkbook": "ワークブックに戻る",
+      "backToPublic": "公開ワークブックに戻る",
       "blankInput": "空欄 {{number}}",
       "selectCount": "{{count}}つ選択",
       "check": "チェック",

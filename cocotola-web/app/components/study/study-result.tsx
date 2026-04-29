@@ -6,10 +6,16 @@ import { Button } from "~/components/ui/button";
 type StudyResultProps = {
   correctCount: number;
   incorrectCount: number;
-  workbookId: string;
+  backUrl: string;
+  backLabel: string;
 };
 
-export function StudyResult({ correctCount, incorrectCount, workbookId }: StudyResultProps) {
+export function StudyResult({
+  correctCount,
+  incorrectCount,
+  backUrl,
+  backLabel,
+}: StudyResultProps) {
   const { t } = useTranslation();
   const total = correctCount + incorrectCount;
   const percent = total > 0 ? Math.round((correctCount / total) * 100) : 0;
@@ -43,8 +49,8 @@ export function StudyResult({ correctCount, incorrectCount, workbookId }: StudyR
         </div>
       </div>
 
-      <Button nativeButton={false} render={<Link to={`/workbooks/${workbookId}`} />}>
-        {t("workbooks.study.backToWorkbook")}
+      <Button nativeButton={false} render={<Link to={backUrl} />}>
+        {backLabel}
       </Button>
     </div>
   );
