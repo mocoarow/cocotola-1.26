@@ -42,6 +42,9 @@ docs/
 /bazel-*
 kics-results/
 
+# go-task local cache (sources/generates checksums, timestamps)
+.task/
+
 # Supabase
 supabase/.env
 supabase/.temp/

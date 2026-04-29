@@ -17,51 +17,87 @@ function shuffle<T>(arr: T[]): T[] {
   return result;
 }
 
+function setsEqual(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) {
+    if (!b.has(v)) return false;
+  }
+  return true;
+}
+
 export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProps) {
   const { t } = useTranslation();
   const parsed = parseMultipleChoiceContent(content);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [checked, setChecked] = useState(false);
 
   const choices = useMemo(() => {
     if (!parsed?.choices) return [];
     return parsed.shuffleChoices ? shuffle(parsed.choices) : parsed.choices;
   }, [parsed?.choices, parsed?.shuffleChoices]);
 
+  const correctIds = useMemo(
+    () => new Set(choices.filter((c) => c.isCorrect).map((c) => c.id)),
+    [choices],
+  );
+
   if (!parsed) {
     return <p className="text-sm text-muted-foreground">{content}</p>;
   }
 
-  const answered = selectedId !== null;
+  const allCorrect = setsEqual(selectedIds, correctIds);
 
-  function handleSelect(choice: Choice) {
-    if (answered) return;
-    setSelectedId(choice.id);
+  function toggle(choice: Choice) {
+    if (checked) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(choice.id)) {
+        next.delete(choice.id);
+      } else {
+        next.add(choice.id);
+      }
+      return next;
+    });
+  }
+
+  function handleCheck() {
+    setChecked(true);
   }
 
   function handleNext() {
-    const selected = choices.find((c) => c.id === selectedId);
-    onAnswer(selected?.isCorrect ?? false);
+    onAnswer(allCorrect);
   }
+
+  const showCorrectCount = parsed.showCorrectCount === true;
+  const correctCount = correctIds.size;
 
   return (
     <div className="space-y-6">
       <div className="rounded-lg bg-muted/50 p-4">
         <p className="text-lg font-medium">{parsed.questionText}</p>
+        {showCorrectCount && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            {t("workbooks.study.selectCount", { count: correctCount })}
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">
         {choices.map((choice) => {
+          const isSelected = selectedIds.has(choice.id);
           let variant: "outline" | "default" | "destructive" = "outline";
           let extraClass = "";
 
-          if (answered) {
+          if (checked) {
             if (choice.isCorrect) {
-              variant = "default";
+              variant = isSelected ? "default" : "outline";
               extraClass =
                 "border-green-500 bg-green-100 text-green-900 hover:bg-green-100 dark:bg-green-950/30 dark:text-green-300";
-            } else if (choice.id === selectedId) {
+            } else if (isSelected) {
               variant = "destructive";
             }
+          } else if (isSelected) {
+            variant = "default";
           }
 
           return (
@@ -69,8 +105,9 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
               key={choice.id}
               variant={variant}
               className={`w-full justify-start text-left ${extraClass}`}
-              onClick={() => handleSelect(choice)}
-              disabled={answered}
+              onClick={() => toggle(choice)}
+              aria-pressed={isSelected}
+              disabled={checked}
             >
               {choice.text}
             </Button>
@@ -78,24 +115,24 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
         })}
       </div>
 
-      {parsed.explanation && answered && (
+      {parsed.explanation && checked && (
         <p className="text-sm text-muted-foreground">{parsed.explanation}</p>
       )}
 
-      {answered &&
-        (() => {
-          const isCorrect = choices.find((c) => c.id === selectedId)?.isCorrect ?? false;
-          return (
-            <div className="flex items-center justify-end gap-3">
-              <span
-                className={`text-sm font-medium ${isCorrect ? "text-green-600" : "text-red-600"}`}
-              >
-                {isCorrect ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
-              </span>
-              <Button onClick={handleNext}>{t("workbooks.study.next")}</Button>
-            </div>
-          );
-        })()}
+      {!checked ? (
+        <div className="flex justify-end">
+          <Button onClick={handleCheck} disabled={selectedIds.size === 0}>
+            {t("workbooks.study.check")}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-end gap-3">
+          <span className={`text-sm font-medium ${allCorrect ? "text-green-600" : "text-red-600"}`}>
+            {allCorrect ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
+          </span>
+          <Button onClick={handleNext}>{t("workbooks.study.next")}</Button>
+        </div>
+      )}
     </div>
   );
 }
