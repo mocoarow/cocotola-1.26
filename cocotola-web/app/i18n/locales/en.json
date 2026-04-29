@@ -31,7 +31,8 @@
       "public": "Public",
       "comingSoon": "soon",
       "logout": "Logout",
-      "sidebarLabel": "Workbooks"
+      "sidebarLabel": "Workbooks",
+      "languageLabel": "Select language"
     },
     "index": {
       "title": "My Workbooks",

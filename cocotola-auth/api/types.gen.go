@@ -37,6 +37,13 @@ const (
 	SpaceItemSpaceTypePublic  SpaceItemSpaceType = "public"
 )
 
+// Defines values for UpdateUserLanguageRequestLanguage.
+const (
+	En UpdateUserLanguageRequestLanguage = "en"
+	Ja UpdateUserLanguageRequestLanguage = "ja"
+	Ko UpdateUserLanguageRequestLanguage = "ko"
+)
+
 // Defines values for PasswordAuthenticationParamsXTokenDelivery.
 const (
 	Cookie PasswordAuthenticationParamsXTokenDelivery = "cookie"
@@ -202,9 +209,12 @@ type SupabaseExchangeRequest struct {
 
 // UpdateUserLanguageRequest defines model for UpdateUserLanguageRequest.
 type UpdateUserLanguageRequest struct {
-	// Language ISO 639-1 lowercase language code (e.g. "ja", "en").
-	Language string `binding:"required,len=2" json:"language"`
+	// Language User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
+	Language UpdateUserLanguageRequestLanguage `binding:"required,oneof=en ja ko" json:"language"`
 }
+
+// UpdateUserLanguageRequestLanguage User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
+type UpdateUserLanguageRequestLanguage string
 
 // CheckAuthorizationParams defines parameters for CheckAuthorization.
 type CheckAuthorizationParams struct {

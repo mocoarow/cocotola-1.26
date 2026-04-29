@@ -1,3 +1,4 @@
+import { redirect } from "react-router";
 import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
 import { updateUserLanguage } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
@@ -12,4 +13,8 @@ export async function action({ request }: Route.ActionArgs) {
   }
   await updateUserLanguage(accessToken, language);
   return { ok: true };
+}
+
+export async function loader(_args: Route.LoaderArgs) {
+  return redirect("/");
 }

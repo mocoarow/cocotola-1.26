@@ -64,7 +64,7 @@ func (h *UpdateLanguageHandler) UpdateLanguage(c *gin.Context) {
 		return
 	}
 
-	if err := setting.ChangeLanguage(req.Language); err != nil {
+	if err := setting.ChangeLanguage(string(req.Language)); err != nil {
 		h.logger.WarnContext(ctx, "change language", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "language is invalid"))
 		return

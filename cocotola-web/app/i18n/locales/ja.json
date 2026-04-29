@@ -31,7 +31,8 @@
       "public": "公開",
       "comingSoon": "準備中",
       "logout": "ログアウト",
-      "sidebarLabel": "ワークブック"
+      "sidebarLabel": "ワークブック",
+      "languageLabel": "言語を選択"
     },
     "index": {
       "title": "マイワークブック",

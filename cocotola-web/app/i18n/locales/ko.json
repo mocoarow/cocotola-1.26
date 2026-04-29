@@ -31,7 +31,8 @@
       "public": "공개",
       "comingSoon": "준비 중",
       "logout": "로그아웃",
-      "sidebarLabel": "워크북"
+      "sidebarLabel": "워크북",
+      "languageLabel": "언어 선택"
     },
     "index": {
       "title": "내 워크북",
