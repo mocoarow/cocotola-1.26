@@ -36,7 +36,7 @@ func NewSpace(id domain.SpaceID, organizationID domain.OrganizationID, ownerID d
 		deleted:        deleted,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new space: %w", err)
 	}
 	return m, nil
 }

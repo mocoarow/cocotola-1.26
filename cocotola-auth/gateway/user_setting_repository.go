@@ -78,7 +78,7 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		Updates(map[string]any{
 			"max_workbooks": record.MaxWorkbooks,
 			"language":      record.Language,
-			"version":       nextVersion,
+			colVersion:      nextVersion,
 			"updated_by":    operatorID,
 		})
 	if result.Error != nil {

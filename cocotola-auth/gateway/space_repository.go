@@ -84,13 +84,13 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 		Model(&record).
 		Where("id = ? AND version = ?", record.ID, space.Version()).
 		Updates(map[string]any{
-			"organization_id": record.OrganizationID,
+			colOrganizationID: record.OrganizationID,
 			"owner_id":        record.OwnerID,
 			"key_name":        record.KeyName,
-			"name":            record.Name,
+			colName:           record.Name,
 			"space_type":      record.SpaceType,
 			"deleted":         record.Deleted,
-			"version":         nextVersion,
+			colVersion:        nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update space: %w", result.Error)

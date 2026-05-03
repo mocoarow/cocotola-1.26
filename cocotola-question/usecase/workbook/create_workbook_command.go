@@ -51,12 +51,12 @@ func NewCreateWorkbookCommand(
 // (or a buggy admin tool) sends in.
 func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workbookservice.CreateWorkbookInput) (*workbookservice.CreateWorkbookOutput, error) {
 	if err := c.authorizeCreateWorkbook(ctx, input); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("authorize create workbook: %w", err)
 	}
 
 	visibility, err := c.resolveVisibility(ctx, input.SpaceID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve visibility: %w", err)
 	}
 
 	// Validate language via the domain value object so anything that slips
@@ -69,7 +69,7 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 
 	ownedList, maxWorkbooks, err := c.loadOwnedListWithLimit(ctx, input.OperatorID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load owned list with limit: %w", err)
 	}
 
 	workbookID, err := c.workbookRepo.Create(ctx, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang.Value())
@@ -78,11 +78,11 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 	}
 
 	if err := c.grantWorkbookPolicies(ctx, input.OrganizationID, input.OperatorID, workbookID); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("grant workbook policies: %w", err)
 	}
 
 	if err := c.saveOwnedList(ctx, ownedList, workbookID, input.OperatorID, maxWorkbooks); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("save owned list: %w", err)
 	}
 
 	now := time.Now()

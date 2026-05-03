@@ -35,7 +35,7 @@ func NewUserSetting(appUserID AppUserID, maxWorkbooks int, language string) (*Us
 		language:     language,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new user setting: %w", err)
 	}
 	return m, nil
 }
@@ -54,7 +54,7 @@ func ReconstructUserSetting(appUserID AppUserID, maxWorkbooks int, language stri
 		language:     language,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reconstruct user setting: %w", err)
 	}
 	return m, nil
 }

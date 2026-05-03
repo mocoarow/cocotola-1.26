@@ -73,10 +73,10 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 		Model(&record).
 		Where("id = ? AND version = ?", record.ID, org.Version()).
 		Updates(map[string]any{
-			"name":              record.Name,
+			colName:             record.Name,
 			"max_active_users":  record.MaxActiveUsers,
 			"max_active_groups": record.MaxActiveGroups,
-			"version":           nextVersion,
+			colVersion:          nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update organization: %w", result.Error)

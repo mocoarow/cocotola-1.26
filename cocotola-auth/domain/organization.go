@@ -23,7 +23,7 @@ func NewOrganization(id OrganizationID, name string, maxActiveUsers int, maxActi
 		maxActiveGroups: maxActiveGroups,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new organization: %w", err)
 	}
 	return m, nil
 }

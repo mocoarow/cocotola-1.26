@@ -32,7 +32,7 @@ func NewSessionToken(id string, userID domain.AppUserID, loginID domain.LoginID,
 		revokedAt:        nil,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new session token: %w", err)
 	}
 	return m, nil
 }

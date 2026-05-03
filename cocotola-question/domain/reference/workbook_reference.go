@@ -25,7 +25,7 @@ func NewWorkbookReference(id string, userID string, workbookID string, addedAt t
 		addedAt:    addedAt,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new workbook reference: %w", err)
 	}
 	return m, nil
 }

@@ -33,7 +33,7 @@ func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, or
 	ids, err := findMemberIDs(ctx, r.db, organizationID,
 		func(rec activeGroupRecord) domain.GroupID { return domain.MustParseGroupID(rec.GroupID) }, "active groups by organization id")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find active group ids: %w", err)
 	}
 
 	list, err := domain.NewActiveGroupList(organizationID, ids)
@@ -83,7 +83,7 @@ func (r *ActiveUserListRepository) FindByOrganizationID(ctx context.Context, org
 	ids, err := findMemberIDs(ctx, r.db, organizationID,
 		func(rec activeUserRecord) domain.AppUserID { return domain.MustParseAppUserID(rec.UserID) }, "active users by organization id")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find active user ids: %w", err)
 	}
 
 	list, err := domain.NewActiveUserList(organizationID, ids)

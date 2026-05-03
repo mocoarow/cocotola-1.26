@@ -28,7 +28,7 @@ func NewGroup(id domain.GroupID, organizationID domain.OrganizationID, name stri
 		enabled:        enabled,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new group: %w", err)
 	}
 	return m, nil
 }

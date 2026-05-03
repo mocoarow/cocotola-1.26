@@ -44,6 +44,19 @@ func setupRouter(t *testing.T, authUsecase middleware.AuthUsecase) *gin.Engine {
 	return r
 }
 
+// newTestCookie returns a request cookie with secure attributes set so static
+// analysis (gosec G124) is satisfied. Inbound requests only use Name and Value,
+// so the other fields have no behavioral effect on the test.
+func newTestCookie(name, value string) *http.Cookie {
+	return &http.Cookie{
+		Name:     name,
+		Value:    value,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+}
+
 func Test_AuthMiddleware_shouldReturn200AndSetUserID_whenValidBearerToken(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -142,7 +155,7 @@ func Test_AuthMiddleware_shouldReturn200_whenValidSessionCookie(t *testing.T) {
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "valid-session-token"})
+	req.AddCookie(newTestCookie("session_token", "valid-session-token"))
 	r.ServeHTTP(w, req)
 
 	// then
@@ -167,7 +180,7 @@ func Test_AuthMiddleware_shouldSetNewCookie_whenSessionTokenExtended(t *testing.
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "session-token-value"})
+	req.AddCookie(newTestCookie("session_token", "session-token-value"))
 	r.ServeHTTP(w, req)
 
 	// then
@@ -206,7 +219,7 @@ func Test_AuthMiddleware_shouldPreferBearerOverCookie(t *testing.T) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
 	req.Header.Set("Authorization", "Bearer bearer-token")
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "cookie-token"})
+	req.AddCookie(newTestCookie("session_token", "cookie-token"))
 	r.ServeHTTP(w, req)
 
 	// then
@@ -232,7 +245,7 @@ func Test_AuthMiddleware_shouldReturn401_whenSessionCookieIsInvalid(t *testing.T
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
-	req.AddCookie(&http.Cookie{Name: "session_token", Value: "invalid-session"})
+	req.AddCookie(newTestCookie("session_token", "invalid-session"))
 	r.ServeHTTP(w, req)
 
 	// then

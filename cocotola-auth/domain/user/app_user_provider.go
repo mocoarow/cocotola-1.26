@@ -30,7 +30,7 @@ func NewAppUserProvider(id domain.AppUserProviderID, appUserID domain.AppUserID,
 		providerID:     providerID,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new app user provider: %w", err)
 	}
 	return m, nil
 }

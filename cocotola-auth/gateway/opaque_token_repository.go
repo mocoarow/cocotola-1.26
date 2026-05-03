@@ -64,7 +64,7 @@ func (r *RefreshTokenRepository) Save(ctx context.Context, token *domaintoken.Re
 func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error) {
 	record, err := findRecordByHash[refreshTokenRecord](ctx, r.db, hash, "refresh token")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find refresh token by hash: %w", err)
 	}
 	return toRefreshTokenDomain(record), nil
 }
@@ -122,7 +122,7 @@ func (r *SessionTokenRepository) Save(ctx context.Context, token *domaintoken.Se
 func (r *SessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error) {
 	record, err := findRecordByHash[sessionTokenRecord](ctx, r.db, hash, "session token")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find session token by hash: %w", err)
 	}
 	return toSessionTokenDomain(record), nil
 }

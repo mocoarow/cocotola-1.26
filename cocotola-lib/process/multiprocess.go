@@ -3,6 +3,7 @@ package process
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -25,7 +26,10 @@ func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 	for _, rf := range runFuncs {
 		eg.Go(func() error {
 			err := rf(ctx)()
-			if err != nil && !errors.Is(err, context.Canceled) {
+			if err == nil {
+				return nil
+			}
+			if !errors.Is(err, context.Canceled) {
 				errMu.Lock()
 				if nonCanceledErr == nil {
 					nonCanceledErr = err
@@ -33,7 +37,7 @@ func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 				errMu.Unlock()
 			}
 
-			return err
+			return fmt.Errorf("run process: %w", err)
 		})
 	}
 

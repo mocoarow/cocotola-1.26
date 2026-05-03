@@ -81,7 +81,7 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 
 	items, err := q.fetchQuestionItems(ctx, input.WorkbookID, selectedIDs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fetch question items: %w", err)
 	}
 
 	return &studyservice.GetStudyQuestionsOutput{

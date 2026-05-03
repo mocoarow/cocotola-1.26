@@ -110,14 +110,14 @@ func (id *OrganizationID) Scan(src any) error {
 	case string:
 		parsed, err := ParseOrganizationID(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan organization id: %w", err)
 		}
 		*id = parsed
 		return nil
 	case []byte:
 		parsed, err := ParseOrganizationID(string(v))
 		if err != nil {
-			return err
+			return fmt.Errorf("scan organization id: %w", err)
 		}
 		*id = parsed
 		return nil
@@ -224,14 +224,14 @@ func (id *AppUserID) Scan(src any) error {
 	case string:
 		parsed, err := ParseAppUserID(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan app user id: %w", err)
 		}
 		*id = parsed
 		return nil
 	case []byte:
 		parsed, err := ParseAppUserID(string(v))
 		if err != nil {
-			return err
+			return fmt.Errorf("scan app user id: %w", err)
 		}
 		*id = parsed
 		return nil
@@ -333,7 +333,7 @@ func (id *GroupID) Scan(src any) error {
 	case string:
 		parsed, err := ParseGroupID(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan group id: %w", err)
 		}
 
 		*id = parsed
@@ -342,7 +342,7 @@ func (id *GroupID) Scan(src any) error {
 	case []byte:
 		parsed, err := ParseGroupID(string(v))
 		if err != nil {
-			return err
+			return fmt.Errorf("scan group id: %w", err)
 		}
 
 		*id = parsed
@@ -446,7 +446,7 @@ func (id *SpaceID) Scan(src any) error {
 	case string:
 		parsed, err := ParseSpaceID(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan space id: %w", err)
 		}
 
 		*id = parsed
@@ -455,7 +455,7 @@ func (id *SpaceID) Scan(src any) error {
 	case []byte:
 		parsed, err := ParseSpaceID(string(v))
 		if err != nil {
-			return err
+			return fmt.Errorf("scan space id: %w", err)
 		}
 
 		*id = parsed
@@ -555,14 +555,14 @@ func (id *AppUserProviderID) Scan(src any) error {
 	case string:
 		parsed, err := ParseAppUserProviderID(v)
 		if err != nil {
-			return err
+			return fmt.Errorf("scan app user provider id: %w", err)
 		}
 		*id = parsed
 		return nil
 	case []byte:
 		parsed, err := ParseAppUserProviderID(string(v))
 		if err != nil {
-			return err
+			return fmt.Errorf("scan app user provider id: %w", err)
 		}
 		*id = parsed
 		return nil
