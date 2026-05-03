@@ -16,50 +16,86 @@ const (
 
 var tagPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$`)
 
-// Question is an entity within the Workbook aggregate.
+// Question is the aggregate root persisted by QuestionRepository.
+// It references the parent Workbook by workbookID.
 type Question struct {
 	id           string
+	workbookID   string
 	questionType Type
 	content      string
 	tags         []string
 	orderIndex   int
+	version      int
 	createdAt    time.Time
 	updatedAt    time.Time
 }
 
-// NewQuestion creates a validated Question.
-func NewQuestion(id string, questionType Type, content string, tags []string, orderIndex int, createdAt time.Time, updatedAt time.Time) (*Question, error) {
-	m := &Question{
+// NewQuestion creates a validated Question with version=0 (a new aggregate not yet saved).
+// Callers (usecase layer) must supply the ID and timestamps.
+func NewQuestion(id string, workbookID string, questionType Type, content string, tags []string, orderIndex int, createdAt time.Time, updatedAt time.Time) (*Question, error) {
+	q := &Question{
 		id:           id,
+		workbookID:   workbookID,
 		questionType: questionType,
 		content:      content,
 		tags:         copyTags(tags),
 		orderIndex:   orderIndex,
+		version:      0,
 		createdAt:    createdAt,
 		updatedAt:    updatedAt,
 	}
-	if err := m.validate(); err != nil {
+	if err := q.validate(); err != nil {
 		return nil, err
 	}
-	return m, nil
+	return q, nil
 }
 
 // ReconstructQuestion reconstitutes a Question from persistence without validation.
-func ReconstructQuestion(id string, questionType Type, content string, tags []string, orderIndex int, createdAt time.Time, updatedAt time.Time) *Question {
+func ReconstructQuestion(id string, workbookID string, questionType Type, content string, tags []string, orderIndex int, version int, createdAt time.Time, updatedAt time.Time) *Question {
 	return &Question{
 		id:           id,
+		workbookID:   workbookID,
 		questionType: questionType,
 		content:      content,
 		tags:         copyTags(tags),
 		orderIndex:   orderIndex,
+		version:      version,
 		createdAt:    createdAt,
 		updatedAt:    updatedAt,
 	}
+}
+
+// Edit updates content, tags, and orderIndex with validation.
+// Callers (usecase layer) must supply the new updatedAt timestamp.
+func (q *Question) Edit(content string, tags []string, orderIndex int, updatedAt time.Time) error {
+	cp := copyTags(tags)
+	candidate := &Question{
+		id:           q.id,
+		workbookID:   q.workbookID,
+		questionType: q.questionType,
+		content:      content,
+		tags:         cp,
+		orderIndex:   orderIndex,
+		version:      q.version,
+		createdAt:    q.createdAt,
+		updatedAt:    updatedAt,
+	}
+	if err := candidate.validate(); err != nil {
+		return err
+	}
+	q.content = content
+	q.tags = cp
+	q.orderIndex = orderIndex
+	q.updatedAt = updatedAt
+	return nil
 }
 
 func (q *Question) validate() error {
 	if q.id == "" {
 		return fmt.Errorf("question id is required: %w", domain.ErrInvalidArgument)
+	}
+	if q.workbookID == "" {
+		return fmt.Errorf("question workbook id is required: %w", domain.ErrInvalidArgument)
 	}
 	if q.questionType.Value() == "" {
 		return fmt.Errorf("question type is required: %w", domain.ErrInvalidArgument)
@@ -105,6 +141,9 @@ func validateTags(tags []string) error {
 // ID returns the question ID.
 func (q *Question) ID() string { return q.id }
 
+// WorkbookID returns the parent workbook ID.
+func (q *Question) WorkbookID() string { return q.workbookID }
+
 // QuestionType returns the question type.
 func (q *Question) QuestionType() Type { return q.questionType }
 
@@ -125,6 +164,14 @@ func copyTags(tags []string) []string {
 
 // OrderIndex returns the display order.
 func (q *Question) OrderIndex() int { return q.orderIndex }
+
+// Version returns the persisted version (0 = new, not yet saved).
+func (q *Question) Version() int { return q.version }
+
+// SetVersion sets the persisted version on the aggregate.
+// Intended for repository implementations to update the version after a successful save.
+// Do not call from application or domain code.
+func (q *Question) SetVersion(version int) { q.version = version }
 
 // CreatedAt returns the creation timestamp.
 func (q *Question) CreatedAt() time.Time { return q.createdAt }

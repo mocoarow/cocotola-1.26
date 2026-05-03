@@ -47,7 +47,7 @@ func fixturePublicWorkbook() *domainworkbook.Workbook {
 func fixtureQuestions() []domainquestion.Question {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
 	return []domainquestion.Question{
-		*domainquestion.ReconstructQuestion(fixtureQuestionID, domainquestion.TypeWordFill(), `{"source":"hello","target":"こんにちは","sourceLang":"en","targetLang":"ja","blanks":["hello"]}`, nil, 0, now, now),
+		*domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"hello","target":"こんにちは","sourceLang":"en","targetLang":"ja","blanks":["hello"]}`, nil, 0, 1, now, now),
 	}
 }
 
@@ -59,12 +59,12 @@ const fixtureMultipleChoiceContent = `{"questionText":"Pick the oceans","explana
 
 func fixtureWordFillQuestion() *domainquestion.Question {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
-	return domainquestion.ReconstructQuestion(fixtureQuestionID, domainquestion.TypeWordFill(), `{"source":"hello","target":"こんにちは","sourceLang":"en","targetLang":"ja","blanks":["hello"]}`, nil, 0, now, now)
+	return domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"hello","target":"こんにちは","sourceLang":"en","targetLang":"ja","blanks":["hello"]}`, nil, 0, 1, now, now)
 }
 
 func fixtureMultipleChoiceQuestion() *domainquestion.Question {
 	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
-	return domainquestion.ReconstructQuestion(fixtureQuestionID, domainquestion.TypeMultipleChoice(), fixtureMultipleChoiceContent, nil, 0, now, now)
+	return domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, domainquestion.TypeMultipleChoice(), fixtureMultipleChoiceContent, nil, 0, 1, now, now)
 }
 
 func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.ActiveQuestionList {

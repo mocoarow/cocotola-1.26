@@ -10,15 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 )
 
 const (
-	fixtureOperatorID     = "user-1"
-	fixtureOrganizationID = "org-1"
-	fixtureWorkbookID     = "wb-1"
-	fixtureQuestionID     = "q-1"
+	fixtureOperatorID      = "user-1"
+	fixtureOrganizationID  = "org-1"
+	fixtureWorkbookID      = "wb-1"
+	fixtureQuestionID      = "q-1"
+	fixtureWordFillContent = `{"source":{"text":"apple","lang":"en"},"target":{"text":"{{りんご}}","lang":"ja"}}`
 )
 
 func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.ActiveQuestionList {
@@ -30,7 +32,7 @@ func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.Acti
 
 func newAddQuestionInput(t *testing.T) *questionservice.AddQuestionInput {
 	t.Helper()
-	input, err := questionservice.NewAddQuestionInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, "word_fill", "What is Go?", []string{"lang:en"}, 0)
+	input, err := questionservice.NewAddQuestionInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, "word_fill", fixtureWordFillContent, []string{"lang:en"}, 0)
 	require.NoError(t, err)
 	return input
 }
@@ -46,8 +48,16 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(true, nil)
 
-	questionAdder := newMockquestionAdder(t)
-	questionAdder.On("Add", mock.Anything, fixtureWorkbookID, "word_fill", "What is Go?", []string{"lang:en"}, 0).Return(fixtureQuestionID, nil)
+	questionSaver := newMockquestionSaver(t)
+	questionSaver.On("Save", mock.Anything, mock.MatchedBy(func(q *domainquestion.Question) bool {
+		return q != nil &&
+			q.WorkbookID() == fixtureWorkbookID &&
+			q.QuestionType().Value() == "word_fill" &&
+			q.Content() == fixtureWordFillContent &&
+			q.OrderIndex() == 0 &&
+			q.Version() == 0 &&
+			len(q.Tags()) == 1 && q.Tags()[0] == "lang:en"
+	})).Return(nil)
 
 	activeListFinder := newMockactiveQuestionListFinder(t)
 	activeListFinder.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t), nil)
@@ -55,7 +65,7 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(questionAdder, activeListFinder, activeListSaver, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(questionSaver, activeListFinder, activeListSaver, authChecker)
 	input := newAddQuestionInput(t)
 
 	// when
@@ -63,9 +73,11 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, fixtureQuestionID, output.QuestionID)
+	assert.NotEmpty(t, output.QuestionID)
 	assert.Equal(t, "word_fill", output.QuestionType)
-	assert.Equal(t, "What is Go?", output.Content)
+	assert.JSONEq(t, fixtureWordFillContent, output.Content)
+	assert.Equal(t, []string{"lang:en"}, output.Tags)
+	assert.Equal(t, 0, output.OrderIndex)
 }
 
 func Test_AddQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) {

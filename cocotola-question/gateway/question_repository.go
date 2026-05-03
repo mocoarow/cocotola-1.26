@@ -22,16 +22,33 @@ type questionRecord struct {
 	Content      string    `firestore:"content"`
 	Tags         []string  `firestore:"tags,omitempty"`
 	OrderIndex   int       `firestore:"orderIndex"`
+	Version      int       `firestore:"version"`
 	CreatedAt    time.Time `firestore:"createdAt"`
 	UpdatedAt    time.Time `firestore:"updatedAt"`
 }
 
-func toQuestionDomain(id string, r *questionRecord) (*domainquestion.Question, error) {
+func toQuestionDomain(id string, workbookID string, r *questionRecord) (*domainquestion.Question, error) {
 	qt, err := domainquestion.NewType(r.QuestionType)
 	if err != nil {
 		return nil, fmt.Errorf("invalid question type %q: %w", r.QuestionType, err)
 	}
-	return domainquestion.ReconstructQuestion(id, qt, r.Content, r.Tags, r.OrderIndex, r.CreatedAt, r.UpdatedAt), nil
+	return domainquestion.ReconstructQuestion(id, workbookID, qt, r.Content, r.Tags, r.OrderIndex, r.Version, r.CreatedAt, r.UpdatedAt), nil
+}
+
+func toQuestionRecord(q *domainquestion.Question, version int) questionRecord {
+	tags := q.Tags()
+	if tags == nil {
+		tags = []string{}
+	}
+	return questionRecord{
+		QuestionType: q.QuestionType().Value(),
+		Content:      q.Content(),
+		Tags:         tags,
+		OrderIndex:   q.OrderIndex(),
+		Version:      version,
+		CreatedAt:    q.CreatedAt(),
+		UpdatedAt:    q.UpdatedAt(),
+	}
 }
 
 // QuestionRepository manages question persistence as a subcollection of workbooks in Firestore.
@@ -48,22 +65,21 @@ func (r *QuestionRepository) questionsCol(workbookID string) *firestore.Collecti
 	return r.client.Collection(workbooksCollection).Doc(workbookID).Collection(questionsSubCollection)
 }
 
-// Add inserts a new question and returns the auto-generated document ID.
-func (r *QuestionRepository) Add(ctx context.Context, workbookID string, questionType string, content string, tags []string, orderIndex int) (string, error) {
-	now := time.Now()
-	record := questionRecord{
-		QuestionType: questionType,
-		Content:      content,
-		Tags:         tags,
-		OrderIndex:   orderIndex,
-		CreatedAt:    now,
-		UpdatedAt:    now,
-	}
-	docRef, _, err := r.questionsCol(workbookID).Add(ctx, record)
-	if err != nil {
-		return "", fmt.Errorf("add question: %w", err)
-	}
-	return docRef.ID, nil
+// Save persists a question aggregate. New aggregates (version 0) are inserted at
+// the document keyed by q.ID(); loaded aggregates (version > 0) are updated under
+// optimistic concurrency control via the version field. The repository updates
+// the aggregate's version after a successful persist.
+func (r *QuestionRepository) Save(ctx context.Context, q *domainquestion.Question) error {
+	docRef := r.questionsCol(q.WorkbookID()).Doc(q.ID())
+	record := toQuestionRecord(q, q.Version()+1)
+	return saveVersionedEntity(ctx, r.client, q, docRef, record,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
+			var rec questionRecord
+			if err := snap.DataTo(&rec); err != nil {
+				return 0, fmt.Errorf("decode question: %w", err)
+			}
+			return rec.Version, nil
+		}, "question")
 }
 
 // FindByID looks up a question by workbook ID and question ID.
@@ -79,7 +95,7 @@ func (r *QuestionRepository) FindByID(ctx context.Context, workbookID string, qu
 	if err := doc.DataTo(&record); err != nil {
 		return nil, fmt.Errorf("decode question: %w", err)
 	}
-	q, err := toQuestionDomain(doc.Ref.ID, &record)
+	q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
 	if err != nil {
 		return nil, fmt.Errorf("convert question domain: %w", err)
 	}
@@ -105,7 +121,7 @@ func (r *QuestionRepository) FindByWorkbookID(ctx context.Context, workbookID st
 		if err := doc.DataTo(&record); err != nil {
 			return nil, fmt.Errorf("decode question: %w", err)
 		}
-		q, err := toQuestionDomain(doc.Ref.ID, &record)
+		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
 		if err != nil {
 			return nil, fmt.Errorf("convert question domain: %w", err)
 		}
@@ -140,32 +156,13 @@ func (r *QuestionRepository) FindByIDs(ctx context.Context, workbookID string, q
 		if err := doc.DataTo(&record); err != nil {
 			return nil, fmt.Errorf("decode question: %w", err)
 		}
-		q, err := toQuestionDomain(doc.Ref.ID, &record)
+		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
 		if err != nil {
 			return nil, fmt.Errorf("convert question domain: %w", err)
 		}
 		questions = append(questions, *q)
 	}
 	return questions, nil
-}
-
-// Update updates an existing question.
-func (r *QuestionRepository) Update(ctx context.Context, workbookID string, questionID string, content string, tags []string, orderIndex int) error {
-	now := time.Now()
-	storedTags := tags
-	if storedTags == nil {
-		storedTags = []string{}
-	}
-	_, err := r.questionsCol(workbookID).Doc(questionID).Set(ctx, map[string]any{
-		"content":    content,
-		"tags":       storedTags,
-		"orderIndex": orderIndex,
-		"updatedAt":  now,
-	}, firestore.MergeAll)
-	if err != nil {
-		return fmt.Errorf("update question: %w", err)
-	}
-	return nil
 }
 
 // Delete removes a question document.

@@ -159,8 +159,8 @@ func Test_GetStudyQuestionsQuery_shouldRespectLimit(t *testing.T) {
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, activeIDs...), nil)
 
 	questions := []domainquestion.Question{
-		*domainquestion.ReconstructQuestion("q-1", domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, 0, now, now),
-		*domainquestion.ReconstructQuestion("q-2", domainquestion.TypeWordFill(), `{"source":"c","target":"d","sourceLang":"en","targetLang":"ja","blanks":["c"]}`, nil, 1, now, now),
+		*domainquestion.ReconstructQuestion("q-1", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, 0, 1, now, now),
+		*domainquestion.ReconstructQuestion("q-2", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"c","target":"d","sourceLang":"en","targetLang":"ja","blanks":["c"]}`, nil, 1, 1, now, now),
 	}
 	questionRepo := newMockquestionBatchFinder(t)
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
@@ -205,7 +205,7 @@ func Test_GetStudyQuestionsQuery_shouldMix90PercentReviewAnd10PercentNew(t *test
 	for i := range 20 {
 		qID := "q-" + string(rune('a'+i))
 		activeIDs = append(activeIDs, qID)
-		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, now, now))
+		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, 1, now, now))
 		if i < 10 {
 			// First 10 have study records (due)
 			records = append(records, *domainstudy.ReconstructRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
@@ -259,7 +259,7 @@ func Test_GetStudyQuestionsQuery_shouldFillWithNew_whenNotEnoughReview(t *testin
 	for i := range 12 {
 		qID := "q-" + string(rune('a'+i))
 		activeIDs = append(activeIDs, qID)
-		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, now, now))
+		allQuestions = append(allQuestions, *domainquestion.ReconstructQuestion(qID, fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, i, 1, now, now))
 		if i < 2 {
 			records = append(records, *domainstudy.ReconstructRecord(fixtureWorkbookID, qID, 1, pastDue, pastDue, 1, 0))
 		}
@@ -342,7 +342,7 @@ func Test_GetStudyQuestionsQuery_shouldReturnOneQuestion_whenLimitIsOne(t *testi
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, "q-1", "q-2"), nil)
 
 	questions := []domainquestion.Question{
-		*domainquestion.ReconstructQuestion("q-1", domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, 0, now, now),
+		*domainquestion.ReconstructQuestion("q-1", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"a","target":"b","sourceLang":"en","targetLang":"ja","blanks":["a"]}`, nil, 0, 1, now, now),
 	}
 	questionRepo := newMockquestionBatchFinder(t)
 	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
