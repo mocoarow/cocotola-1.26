@@ -17,6 +17,7 @@ ignore:
   - openapi/openapi.yaml
   - cocotola-auth/api/openapi-bundled.yaml
   - cocotola-question/api/openapi-bundled.yaml
+  - cocotola-init/seed/seeds/public_workbooks.yaml
   - node_modules/
   - cocotola-web/node_modules/
   - .serena/

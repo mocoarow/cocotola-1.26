@@ -11,6 +11,7 @@ go_library(
         "auth.go",
         "bcrypt_hasher.go",
         "casbin_authorization_checker.go",
+        "columns.go",
         "doc.go",
         "event_bus.go",
         "gorm_helper.go",

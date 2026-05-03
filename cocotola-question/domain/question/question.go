@@ -45,7 +45,7 @@ func NewQuestion(id string, workbookID string, questionType Type, content string
 		updatedAt:    updatedAt,
 	}
 	if err := q.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new question: %w", err)
 	}
 	return q, nil
 }
@@ -81,7 +81,7 @@ func (q *Question) Edit(content string, tags []string, orderIndex int, updatedAt
 		updatedAt:    updatedAt,
 	}
 	if err := candidate.validate(); err != nil {
-		return err
+		return fmt.Errorf("edit question: %w", err)
 	}
 	q.content = content
 	q.tags = cp
@@ -110,10 +110,10 @@ func (q *Question) validate() error {
 		return fmt.Errorf("question order index must not be negative: %w", domain.ErrInvalidArgument)
 	}
 	if err := validateTags(q.tags); err != nil {
-		return err
+		return fmt.Errorf("validate tags: %w", err)
 	}
 	if err := ValidateContent(q.questionType, q.content); err != nil {
-		return err
+		return fmt.Errorf("validate content: %w", err)
 	}
 	return nil
 }

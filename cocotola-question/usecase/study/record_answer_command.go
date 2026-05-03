@@ -121,7 +121,7 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 	}
 
 	if err := c.checkStudyAuthorization(ctx, input, wb); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("check study authorization: %w", err)
 	}
 
 	activeList, err := c.activeListRepo.FindByWorkbookID(ctx, input.WorkbookID)
@@ -139,12 +139,12 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 
 	correct, err := evaluateAnswer(q, input)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("evaluate answer: %w", err)
 	}
 
 	record, err := c.findOrCreateRecord(ctx, input)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find or create record: %w", err)
 	}
 
 	now := c.config.Now()

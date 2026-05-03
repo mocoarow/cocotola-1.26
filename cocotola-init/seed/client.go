@@ -133,7 +133,7 @@ func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, wor
 func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any) error {
 	req, err := c.newRequest(ctx, method, reqURL, organizationID, body)
 	if err != nil {
-		return err
+		return fmt.Errorf("build request: %w", err)
 	}
 
 	resp, err := c.httpClient.Do(req)

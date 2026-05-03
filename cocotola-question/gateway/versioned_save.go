@@ -39,7 +39,7 @@ func saveVersionedEntity(
 		} else {
 			currentVersion, err = decode(snap)
 			if err != nil {
-				return err
+				return fmt.Errorf("decode %s: %w", entityName, err)
 			}
 		}
 

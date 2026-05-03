@@ -41,7 +41,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 		updatedAt:      updatedAt,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new workbook: %w", err)
 	}
 	return m, nil
 }

@@ -74,10 +74,10 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 		Model(&record).
 		Where("id = ? AND version = ?", record.ID, group.Version()).
 		Updates(map[string]any{
-			"organization_id": record.OrganizationID,
-			"name":            record.Name,
+			colOrganizationID: record.OrganizationID,
+			colName:           record.Name,
 			"enabled":         record.Enabled,
-			"version":         nextVersion,
+			colVersion:        nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update group: %w", result.Error)

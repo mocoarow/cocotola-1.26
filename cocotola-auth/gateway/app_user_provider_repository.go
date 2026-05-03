@@ -81,10 +81,10 @@ func (r *AppUserProviderRepository) Save(ctx context.Context, p *domainuser.AppU
 		Where("id = ? AND version = ?", record.ID, p.Version()).
 		Updates(map[string]any{
 			"app_user_id":     record.AppUserID,
-			"organization_id": record.OrganizationID,
+			colOrganizationID: record.OrganizationID,
 			"provider":        record.Provider,
 			"provider_id":     record.ProviderID,
-			"version":         nextVersion,
+			colVersion:        nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update app user provider: %w", result.Error)

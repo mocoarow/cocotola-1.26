@@ -128,10 +128,10 @@ func validateWordFillContent(content string) error {
 	}
 
 	if err := validateTextWithLang(c.Source, "source"); err != nil {
-		return err
+		return fmt.Errorf("validate word_fill source: %w", err)
 	}
 	if err := validateTextWithLang(c.Target, "target"); err != nil {
-		return err
+		return fmt.Errorf("validate word_fill target: %w", err)
 	}
 
 	if c.Source.Lang == c.Target.Lang {
@@ -149,7 +149,7 @@ func validateWordFillContent(content string) error {
 	}
 
 	if err := validateExplanation(c.Explanation); err != nil {
-		return err
+		return fmt.Errorf("validate word_fill explanation: %w", err)
 	}
 
 	return nil
@@ -191,16 +191,16 @@ func validateMultipleChoiceContent(content string) error {
 	}
 
 	if err := validateQuestionText(c.QuestionText); err != nil {
-		return err
+		return fmt.Errorf("validate multiple_choice question text: %w", err)
 	}
 	if err := validateExplanation(c.Explanation); err != nil {
-		return err
+		return fmt.Errorf("validate multiple_choice explanation: %w", err)
 	}
 	if err := validateChoices(c.Choices); err != nil {
-		return err
+		return fmt.Errorf("validate multiple_choice choices: %w", err)
 	}
 	if err := validateDisplayCount(c.DisplayCount, c.Choices); err != nil {
-		return err
+		return fmt.Errorf("validate multiple_choice display count: %w", err)
 	}
 
 	return nil

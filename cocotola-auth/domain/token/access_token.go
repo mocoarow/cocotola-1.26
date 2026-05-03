@@ -34,7 +34,7 @@ func NewAccessToken(id string, refreshTokenID string, userID domain.AppUserID, l
 		revokedAt:        nil,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new access token: %w", err)
 	}
 	return m, nil
 }

@@ -101,11 +101,11 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 		Model(&record).
 		Where("id = ? AND version = ?", record.ID, user.Version()).
 		Updates(map[string]any{
-			"organization_id": record.OrganizationID,
+			colOrganizationID: record.OrganizationID,
 			"login_id":        record.LoginID,
 			"hashed_password": record.HashedPassword,
 			"enabled":         record.Enabled,
-			"version":         nextVersion,
+			colVersion:        nextVersion,
 		})
 	if result.Error != nil {
 		return fmt.Errorf("update app user: %w", result.Error)

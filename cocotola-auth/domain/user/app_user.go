@@ -28,7 +28,7 @@ func NewAppUser(id domain.AppUserID, organizationID domain.OrganizationID, login
 		enabled:        enabled,
 	}
 	if err := m.validate(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new app user: %w", err)
 	}
 	return m, nil
 }
@@ -94,7 +94,7 @@ func (u *AppUser) Disable() { u.enabled = false }
 func (u *AppUser) ChangePassword(rawPassword string, hasher PasswordHasher) error {
 	hashed, err := HashPassword(rawPassword, hasher)
 	if err != nil {
-		return err
+		return fmt.Errorf("change password: %w", err)
 	}
 	u.hashedPassword = hashed
 	return nil
