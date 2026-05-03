@@ -19,6 +19,7 @@ go_library(
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/workbook",
         "//cocotola-question/service/question",
+        "@com_github_google_uuid//:uuid",
     ],
 )
 

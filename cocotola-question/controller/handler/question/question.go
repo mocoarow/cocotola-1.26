@@ -55,6 +55,11 @@ func InitInternalQuestionRouter(
 }
 
 func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
+	if errors.Is(err, domain.ErrInvalidArgument) {
+		logger.WarnContext(ctx, "invalid argument", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+		return
+	}
 	if errors.Is(err, domain.ErrForbidden) {
 		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))
 		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))
@@ -68,6 +73,11 @@ func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Contex
 	if errors.Is(err, domain.ErrQuestionNotFound) {
 		logger.WarnContext(ctx, "question not found", slog.Any("error", err))
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("question_not_found", "question not found"))
+		return
+	}
+	if errors.Is(err, domain.ErrConcurrentModification) {
+		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "resource was modified concurrently"))
 		return
 	}
 	logger.ErrorContext(ctx, action, slog.Any("error", err))

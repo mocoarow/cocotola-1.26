@@ -3,6 +3,7 @@ package question
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -10,17 +11,17 @@ import (
 
 // UpdateQuestionCommand handles question updates.
 type UpdateQuestionCommand struct {
-	questionFinder  questionFinder
-	questionUpdater questionUpdater
-	authChecker     authorizationChecker
+	questionFinder questionFinder
+	questionSaver  questionSaver
+	authChecker    authorizationChecker
 }
 
 // NewUpdateQuestionCommand returns a new UpdateQuestionCommand.
-func NewUpdateQuestionCommand(questionFinder questionFinder, questionUpdater questionUpdater, authChecker authorizationChecker) *UpdateQuestionCommand {
+func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver questionSaver, authChecker authorizationChecker) *UpdateQuestionCommand {
 	return &UpdateQuestionCommand{
-		questionFinder:  questionFinder,
-		questionUpdater: questionUpdater,
-		authChecker:     authChecker,
+		questionFinder: questionFinder,
+		questionSaver:  questionSaver,
+		authChecker:    authChecker,
 	}
 }
 
@@ -43,17 +44,21 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 		return nil, fmt.Errorf("find question: %w", err)
 	}
 
-	if err := c.questionUpdater.Update(ctx, input.WorkbookID, input.QuestionID, input.Content, input.Tags, input.OrderIndex); err != nil {
-		return nil, fmt.Errorf("update question: %w", err)
+	if err := q.Edit(input.Content, input.Tags, input.OrderIndex, time.Now()); err != nil {
+		return nil, fmt.Errorf("edit question: %w", err)
+	}
+
+	if err := c.questionSaver.Save(ctx, q); err != nil {
+		return nil, fmt.Errorf("save question: %w", err)
 	}
 
 	return &questionservice.UpdateQuestionOutput{
 		Item: questionservice.Item{
 			QuestionID:   q.ID(),
 			QuestionType: q.QuestionType().Value(),
-			Content:      input.Content,
-			Tags:         input.Tags,
-			OrderIndex:   input.OrderIndex,
+			Content:      q.Content(),
+			Tags:         q.Tags(),
+			OrderIndex:   q.OrderIndex(),
 			CreatedAt:    q.CreatedAt(),
 			UpdatedAt:    q.UpdatedAt(),
 		},

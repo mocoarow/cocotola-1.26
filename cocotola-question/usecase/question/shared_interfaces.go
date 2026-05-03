@@ -8,17 +8,13 @@ import (
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
-type questionAdder interface {
-	Add(ctx context.Context, workbookID string, questionType string, content string, tags []string, orderIndex int) (string, error)
-}
-
 type questionFinder interface {
 	FindByID(ctx context.Context, workbookID string, questionID string) (*domainquestion.Question, error)
 	FindByWorkbookID(ctx context.Context, workbookID string) ([]domainquestion.Question, error)
 }
 
-type questionUpdater interface {
-	Update(ctx context.Context, workbookID string, questionID string, content string, tags []string, orderIndex int) error
+type questionSaver interface {
+	Save(ctx context.Context, q *domainquestion.Question) error
 }
 
 type questionDeleter interface {

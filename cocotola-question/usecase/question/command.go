@@ -12,9 +12,8 @@ type Command struct {
 
 // NewCommand returns a new Command composing all question use cases.
 func NewCommand(
-	questionAdderRepo questionAdder,
+	questionSaverRepo questionSaver,
 	questionFinderRepo questionFinder,
-	questionUpdaterRepo questionUpdater,
 	questionDeleterRepo questionDeleter,
 	workbookFinderRepo workbookFinder,
 	authChecker authorizationChecker,
@@ -22,10 +21,10 @@ func NewCommand(
 	activeListSaver activeQuestionListSaver,
 ) *Command {
 	return &Command{
-		AddQuestionCommand:    NewAddQuestionCommand(questionAdderRepo, activeListFinder, activeListSaver, authChecker),
+		AddQuestionCommand:    NewAddQuestionCommand(questionSaverRepo, activeListFinder, activeListSaver, authChecker),
 		GetQuestionQuery:      NewGetQuestionQuery(questionFinderRepo, workbookFinderRepo, authChecker),
 		ListQuestionsQuery:    NewListQuestionsQuery(questionFinderRepo, workbookFinderRepo, authChecker),
-		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionUpdaterRepo, authChecker),
+		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionSaverRepo, authChecker),
 		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, activeListFinder, activeListSaver, authChecker),
 	}
 }

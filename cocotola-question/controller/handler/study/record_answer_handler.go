@@ -46,67 +46,19 @@ type recordAnswerBody struct {
 func (h *RecordAnswerHandler) RecordAnswer(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	userID := c.GetString(controller.ContextFieldUserID{})
-	if userID == "" {
-		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
-		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
+	ids, ok := h.parseAnswerIDs(ctx, c)
+	if !ok {
 		return
 	}
 
-	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
-	if organizationID == "" {
-		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
-		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
+	body, ok := h.parseAnswerBody(ctx, c)
+	if !ok {
 		return
 	}
 
-	workbookID := c.Param("workbookId")
-	if workbookID == "" {
-		h.logger.WarnContext(ctx, "missing workbook ID")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "workbook ID is required"))
+	input, ok := h.buildAnswerInput(ctx, c, ids, body)
+	if !ok {
 		return
-	}
-
-	questionID := c.Param("questionId")
-	if questionID == "" {
-		h.logger.WarnContext(ctx, "missing question ID")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "question ID is required"))
-		return
-	}
-
-	var body recordAnswerBody
-	if err := json.NewDecoder(c.Request.Body).Decode(&body); err != nil {
-		h.logger.WarnContext(ctx, "invalid record answer request", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "request body is invalid"))
-		return
-	}
-
-	var input *studyservice.RecordAnswerInput
-	switch {
-	case body.Correct == nil && body.SelectedChoiceIDs == nil:
-		h.logger.WarnContext(ctx, "missing answer field")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "either correct or selectedChoiceIds must be provided"))
-		return
-	case body.Correct != nil && body.SelectedChoiceIDs != nil:
-		h.logger.WarnContext(ctx, "ambiguous answer field")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct and selectedChoiceIds are mutually exclusive"))
-		return
-	case body.Correct != nil:
-		in, err := studyservice.NewRecordAnswerInputForWordFill(userID, organizationID, workbookID, questionID, *body.Correct)
-		if err != nil {
-			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
-			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
-			return
-		}
-		input = in
-	default:
-		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(userID, organizationID, workbookID, questionID, *body.SelectedChoiceIDs)
-		if err != nil {
-			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
-			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
-			return
-		}
-		input = in
 	}
 
 	output, err := h.usecase.RecordAnswer(ctx, input)
@@ -121,4 +73,83 @@ func (h *RecordAnswerHandler) RecordAnswer(c *gin.Context) {
 		TotalCorrect:       int32(output.TotalCorrect),
 		TotalIncorrect:     int32(output.TotalIncorrect),
 	})
+}
+
+// answerIDs holds the user/organization/workbook/question identifiers parsed from the request.
+type answerIDs struct {
+	userID         string
+	organizationID string
+	workbookID     string
+	questionID     string
+}
+
+func (h *RecordAnswerHandler) parseAnswerIDs(ctx context.Context, c *gin.Context) (*answerIDs, bool) {
+	userID := c.GetString(controller.ContextFieldUserID{})
+	if userID == "" {
+		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
+		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
+		return nil, false
+	}
+
+	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
+	if organizationID == "" {
+		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
+		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
+		return nil, false
+	}
+
+	workbookID := c.Param("workbookId")
+	if workbookID == "" {
+		h.logger.WarnContext(ctx, "missing workbook ID")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "workbook ID is required"))
+		return nil, false
+	}
+
+	questionID := c.Param("questionId")
+	if questionID == "" {
+		h.logger.WarnContext(ctx, "missing question ID")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "question ID is required"))
+		return nil, false
+	}
+
+	return &answerIDs{userID: userID, organizationID: organizationID, workbookID: workbookID, questionID: questionID}, true
+}
+
+func (h *RecordAnswerHandler) parseAnswerBody(ctx context.Context, c *gin.Context) (*recordAnswerBody, bool) {
+	var body recordAnswerBody
+	if err := json.NewDecoder(c.Request.Body).Decode(&body); err != nil {
+		h.logger.WarnContext(ctx, "invalid record answer request", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "request body is invalid"))
+		return nil, false
+	}
+	return &body, true
+}
+
+func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Context, ids *answerIDs, body *recordAnswerBody) (*studyservice.RecordAnswerInput, bool) {
+	switch {
+	case body.Correct == nil && body.SelectedChoiceIDs == nil:
+		h.logger.WarnContext(ctx, "missing answer field")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "either correct or selectedChoiceIds must be provided"))
+		return nil, false
+	case body.Correct != nil && body.SelectedChoiceIDs != nil:
+		h.logger.WarnContext(ctx, "ambiguous answer field")
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct and selectedChoiceIds are mutually exclusive"))
+		return nil, false
+	case body.Correct != nil:
+		in, err := studyservice.NewRecordAnswerInputForWordFill(ids.userID, ids.organizationID, ids.workbookID, ids.questionID, *body.Correct)
+		if err != nil {
+			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			return nil, false
+		}
+		return in, true
+	default:
+		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(ids.userID, ids.organizationID, ids.workbookID, ids.questionID, *body.SelectedChoiceIDs)
+		if err != nil {
+			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			return nil, false
+		}
+		return in, true
+	}
 }

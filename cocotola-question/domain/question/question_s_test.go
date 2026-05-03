@@ -12,39 +12,78 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
-func validQuestionArgs() (string, question.Type, string, []string, int, time.Time, time.Time) {
+const (
+	fixtureQuestionID = "q-1"
+	fixtureWorkbookID = "wb-1"
+)
+
+type questionArgs struct {
+	id         string
+	workbookID string
+	qt         question.Type
+	content    string
+	tags       []string
+	orderIndex int
+	createdAt  time.Time
+	updatedAt  time.Time
+}
+
+func validQuestionArgs() questionArgs {
 	now := time.Now()
-	content := `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"{{apple}}","lang":"en"}}`
-	return "q-1", question.TypeWordFill(), content, nil, 0, now, now
+	return questionArgs{
+		id:         fixtureQuestionID,
+		workbookID: fixtureWorkbookID,
+		qt:         question.TypeWordFill(),
+		content:    `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"{{apple}}","lang":"en"}}`,
+		tags:       nil,
+		orderIndex: 0,
+		createdAt:  now,
+		updatedAt:  now,
+	}
 }
 
 func Test_NewQuestion_shouldReturnQuestion_whenAllFieldsAreValid(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 
 	// when
-	q, err := question.NewQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, id, q.ID())
+	assert.Equal(t, a.id, q.ID())
+	assert.Equal(t, a.workbookID, q.WorkbookID())
 	assert.Equal(t, "word_fill", q.QuestionType().Value())
-	assert.Equal(t, content, q.Content())
-	assert.Equal(t, orderIndex, q.OrderIndex())
-	assert.Equal(t, createdAt, q.CreatedAt())
-	assert.Equal(t, updatedAt, q.UpdatedAt())
+	assert.Equal(t, a.content, q.Content())
+	assert.Equal(t, a.orderIndex, q.OrderIndex())
+	assert.Equal(t, 0, q.Version())
+	assert.Equal(t, a.createdAt, q.CreatedAt())
+	assert.Equal(t, a.updatedAt, q.UpdatedAt())
 }
 
 func Test_NewQuestion_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
-	_, qt, content, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion("", qt, content, tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion("", a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_NewQuestion_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+
+	// when
+	_, err := question.NewQuestion(a.id, "", a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -54,10 +93,10 @@ func Test_NewQuestion_shouldReturnError_whenQuestionTypeIsZeroValue(t *testing.T
 	t.Parallel()
 
 	// given
-	id, _, content, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(id, question.Type{}, content, tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, question.Type{}, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -67,10 +106,10 @@ func Test_NewQuestion_shouldReturnError_whenContentIsEmpty(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, _, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(id, qt, "", tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, "", a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -80,11 +119,11 @@ func Test_NewQuestion_shouldReturnError_whenContentExceedsMaxLength(t *testing.T
 	t.Parallel()
 
 	// given
-	id, qt, _, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	longContent := strings.Repeat("a", 10001)
 
 	// when
-	_, err := question.NewQuestion(id, qt, longContent, tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, longContent, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -94,10 +133,10 @@ func Test_NewQuestion_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, tags, _, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(id, qt, content, tags, -1, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, -1, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -107,11 +146,11 @@ func Test_NewQuestion_shouldReturnQuestion_whenTagsAreValid(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	tags := []string{"level:beginner", "topic:grammar"}
 
 	// when
-	q, err := question.NewQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.NoError(t, err)
@@ -122,14 +161,14 @@ func Test_NewQuestion_shouldReturnError_whenTagsExceedMax(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	tags := make([]string, 21)
 	for i := range tags {
 		tags[i] = "key:value"
 	}
 
 	// when
-	_, err := question.NewQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -155,10 +194,10 @@ func Test_NewQuestion_shouldReturnError_whenTagFormatIsInvalid(t *testing.T) {
 			t.Parallel()
 
 			// given
-			id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+			a := validQuestionArgs()
 
 			// when
-			_, err := question.NewQuestion(id, qt, content, []string{tt.tag}, orderIndex, createdAt, updatedAt)
+			_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{tt.tag}, a.orderIndex, a.createdAt, a.updatedAt)
 
 			// then
 			require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -170,11 +209,11 @@ func Test_NewQuestion_shouldReturnError_whenTagIsDuplicated(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	tags := []string{"level:beginner", "level:beginner"}
 
 	// when
-	_, err := question.NewQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -184,11 +223,11 @@ func Test_NewQuestion_shouldReturnError_whenTagExceedsMaxLength(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	longTag := strings.Repeat("a", 50) + ":" + strings.Repeat("b", 50)
 
 	// when
-	_, err := question.NewQuestion(id, qt, content, []string{longTag}, orderIndex, createdAt, updatedAt)
+	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{longTag}, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -198,9 +237,9 @@ func Test_Tags_shouldReturnDefensiveCopy(t *testing.T) {
 	t.Parallel()
 
 	// given
-	id, qt, content, _, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	a := validQuestionArgs()
 	tags := []string{"level:beginner"}
-	q, err := question.NewQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
@@ -215,12 +254,99 @@ func Test_ReconstructQuestion_shouldReturnQuestion_withoutValidation(t *testing.
 	t.Parallel()
 
 	// given
-	id, qt, content, tags, orderIndex, createdAt, updatedAt := validQuestionArgs()
+	now := time.Now()
+	id := "q-1"
+	workbookID := "wb-1"
+	qt := question.TypeWordFill()
+	content := `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"{{apple}}","lang":"en"}}`
+	tags := []string{"level:beginner"}
+	orderIndex := 3
+	version := 7
 
 	// when
-	q := question.ReconstructQuestion(id, qt, content, tags, orderIndex, createdAt, updatedAt)
+	q := question.ReconstructQuestion(id, workbookID, qt, content, tags, orderIndex, version, now, now)
 
 	// then
 	assert.Equal(t, id, q.ID())
+	assert.Equal(t, workbookID, q.WorkbookID())
 	assert.Equal(t, content, q.Content())
+	assert.Equal(t, tags, q.Tags())
+	assert.Equal(t, orderIndex, q.OrderIndex())
+	assert.Equal(t, version, q.Version())
+}
+
+func Test_SetVersion_shouldUpdateVersion(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	q.SetVersion(5)
+
+	// then
+	assert.Equal(t, 5, q.Version())
+}
+
+func Test_Edit_shouldUpdateFields_whenInputIsValid(t *testing.T) {
+	t.Parallel()
+
+	// given
+	originalContent := `{"source":{"text":"original","lang":"ja"},"target":{"text":"{{a}}","lang":"en"}}`
+	originalUpdatedAt := time.Now().Add(-time.Hour)
+	q := question.ReconstructQuestion("q-1", fixtureWorkbookID, question.TypeWordFill(), originalContent, nil, 0, 0, originalUpdatedAt, originalUpdatedAt)
+
+	newContent := `{"source":{"text":"updated","lang":"ja"},"target":{"text":"{{b}}","lang":"en"}}`
+	newTags := []string{"level:advanced"}
+	newUpdatedAt := originalUpdatedAt.Add(time.Hour)
+
+	// when
+	err := q.Edit(newContent, newTags, 5, newUpdatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, newContent, q.Content())
+	assert.Equal(t, newTags, q.Tags())
+	assert.Equal(t, 5, q.OrderIndex())
+	assert.Equal(t, newUpdatedAt, q.UpdatedAt())
+}
+
+func Test_Edit_shouldNotMutateState_whenContentIsInvalid(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{"level:beginner"}, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	originalContent := q.Content()
+	originalTags := q.Tags()
+	originalOrderIndex := q.OrderIndex()
+	originalUpdatedAt := q.UpdatedAt()
+
+	// when
+	err = q.Edit("", []string{"level:advanced"}, 5, originalUpdatedAt.Add(time.Hour))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+	assert.Equal(t, originalContent, q.Content())
+	assert.Equal(t, originalTags, q.Tags())
+	assert.Equal(t, originalOrderIndex, q.OrderIndex())
+	assert.Equal(t, originalUpdatedAt, q.UpdatedAt())
+}
+
+func Test_Edit_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, nil, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	err = q.Edit(a.content, nil, -1, a.updatedAt.Add(time.Hour))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }

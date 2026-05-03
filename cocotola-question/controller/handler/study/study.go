@@ -55,6 +55,11 @@ func handleStudyError(ctx context.Context, logger *slog.Logger, c *gin.Context, 
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("study_record_not_found", "study record not found"))
 		return
 	}
+	if errors.Is(err, domain.ErrConcurrentModification) {
+		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "resource was modified concurrently"))
+		return
+	}
 	logger.ErrorContext(ctx, action, slog.Any("error", err))
 	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }

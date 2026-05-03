@@ -16,9 +16,11 @@ import (
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 )
 
+const fixtureUpdatedWordFillContent = `{"source":{"text":"hello","lang":"en"},"target":{"text":"{{ハロー}}","lang":"ja"}}`
+
 func newUpdateQuestionInput(t *testing.T) *questionservice.UpdateQuestionInput {
 	t.Helper()
-	input, err := questionservice.NewUpdateQuestionInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, "Updated content", []string{"lang:ja"}, 1)
+	input, err := questionservice.NewUpdateQuestionInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, fixtureUpdatedWordFillContent, []string{"lang:ja"}, 1)
 	require.NoError(t, err)
 	return input
 }
@@ -36,15 +38,22 @@ func Test_UpdateQuestionCommand_shouldUpdateQuestion_whenAllowed(t *testing.T) {
 
 	now := time.Now()
 	qType, _ := domainquestion.NewType("word_fill")
-	q := domainquestion.ReconstructQuestion(fixtureQuestionID, qType, "Original content", []string{"lang:en"}, 0, now, now)
+	q := domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, qType, "Original content", []string{"lang:en"}, 0, 1, now, now)
 
 	questionFinder := newMockquestionFinder(t)
 	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(q, nil)
 
-	questionUpdater := newMockquestionUpdater(t)
-	questionUpdater.On("Update", mock.Anything, fixtureWorkbookID, fixtureQuestionID, "Updated content", []string{"lang:ja"}, 1).Return(nil)
+	questionSaver := newMockquestionSaver(t)
+	questionSaver.On("Save", mock.Anything, mock.MatchedBy(func(saved *domainquestion.Question) bool {
+		return saved != nil &&
+			saved.ID() == fixtureQuestionID &&
+			saved.WorkbookID() == fixtureWorkbookID &&
+			saved.Content() == fixtureUpdatedWordFillContent &&
+			saved.OrderIndex() == 1 &&
+			len(saved.Tags()) == 1 && saved.Tags()[0] == "lang:ja"
+	})).Return(nil)
 
-	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, questionUpdater, authChecker)
+	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, questionSaver, authChecker)
 	input := newUpdateQuestionInput(t)
 
 	// when
@@ -53,7 +62,7 @@ func Test_UpdateQuestionCommand_shouldUpdateQuestion_whenAllowed(t *testing.T) {
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, fixtureQuestionID, output.QuestionID)
-	assert.Equal(t, "Updated content", output.Content)
+	assert.JSONEq(t, fixtureUpdatedWordFillContent, output.Content)
 	assert.Equal(t, []string{"lang:ja"}, output.Tags)
 	assert.Equal(t, 1, output.OrderIndex)
 }
