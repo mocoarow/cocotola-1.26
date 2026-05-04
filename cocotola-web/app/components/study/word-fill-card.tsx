@@ -41,11 +41,18 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
   const [inputs, setInputs] = useState<string[]>([]);
   const [phase, setPhase] = useState<Phase>("input");
   const inputRefs = useRef<HTMLInputElement[]>([]);
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // Focus the first blank when this question card mounts.
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
+
+  // Move focus to the Next button when transitioning to the result phase so the
+  // user can advance with Enter/Space without reaching for the mouse.
+  useEffect(() => {
+    if (phase === "result") nextButtonRef.current?.focus();
+  }, [phase]);
 
   if (!parsed?.target?.text) {
     return <p className="text-sm text-muted-foreground">{content}</p>;
@@ -127,7 +134,7 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
                       ? "border-red-500 bg-red-50 dark:bg-red-950/30"
                       : ""
                 }`}
-                value={inputs[inputIndex] ?? ""}
+                value={isLocked ? answers[inputIndex] : (inputs[inputIndex] ?? "")}
                 onChange={(e) => handleInputChange(inputIndex, e.target.value)}
                 disabled={isResult || isLocked}
                 readOnly={isLocked}
@@ -153,7 +160,9 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
           <span className={`text-sm font-medium ${allCorrect ? "text-green-600" : "text-red-600"}`}>
             {allCorrect ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
           </span>
-          <Button onClick={handleNext}>{t("workbooks.study.next")}</Button>
+          <Button ref={nextButtonRef} onClick={handleNext}>
+            {t("workbooks.study.next")}
+          </Button>
         </div>
       )}
     </div>

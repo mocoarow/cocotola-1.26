@@ -82,6 +82,21 @@ describe("WordFillCard", () => {
     expect(firstBlank).toBeDisabled();
   });
 
+  it("should display the answer with its original case when the user typed a different case", async () => {
+    // given
+    const content = makeContent("{{Apple}} {{Banana}}");
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    await user.type(screen.getByLabelText("Blank 1"), "apple");
+
+    // then: locked input shows the correct-case answer, not the user's input
+    const firstBlank = screen.getByLabelText("Blank 1") as HTMLInputElement;
+    expect(firstBlank.value).toBe("Apple");
+  });
+
   it("should skip locked blanks when wrapping focus", async () => {
     // given: three blanks; the first one is already locked by typing the
     // correct answer, then the user fills the third blank correctly
@@ -147,6 +162,36 @@ describe("WordFillCard", () => {
     expect(screen.getByText("Correct!")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
     expect(onAnswer).not.toHaveBeenCalled();
+  });
+
+  it("should focus the Next button when transitioning to the result phase", async () => {
+    // given
+    const content = makeContent("{{hello}} {{world}}");
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    await user.type(screen.getByLabelText("Blank 1"), "hello");
+    await user.type(screen.getByLabelText("Blank 2"), "world");
+
+    // then: the Next button receives focus so Enter/Space advances the question
+    expect(screen.getByRole("button", { name: "Next" })).toHaveFocus();
+  });
+
+  it("should advance to the next question when Enter is pressed on the focused Next button", async () => {
+    // given
+    const content = makeContent("{{hello}}");
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    await user.type(screen.getByLabelText("Blank 1"), "hello");
+    await user.keyboard("{Enter}");
+
+    // then
+    expect(onAnswer).toHaveBeenCalledWith(true);
   });
 
   it("should call onAnswer with true only after the user clicks Next on the correct result screen", async () => {
