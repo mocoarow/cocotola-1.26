@@ -127,6 +127,9 @@
     },
     "study": {
       "title": "学習セッション",
+      "practiceTitle": "練習セッション",
+      "practiceBanner": "練習モード — 成績は記録されません。",
+      "practiceCta": "練習を続ける（成績は記録されません）",
       "description": "{{count}}問の問題があります",
       "noQuestions": "現在、学習する問題はありません。",
       "backToWorkbook": "ワークブックに戻る",
@@ -134,6 +137,7 @@
       "blankInput": "空欄 {{number}}",
       "selectCount": "{{count}}つ選択",
       "check": "チェック",
+      "showAnswer": "正解を見る",
       "next": "次へ",
       "correct": "正解！",
       "incorrect": "不正解",

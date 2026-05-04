@@ -26,11 +26,18 @@ import type { loader as workbooksLayoutLoader } from "./workbooks";
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { accessToken } = await requireAuth(request);
   const { workbookId } = params;
+  const url = new URL(request.url);
+  const practice = url.searchParams.get("practice") === "true";
   const [workbook, data] = await Promise.all([
     getWorkbook(accessToken, workbookId),
-    getStudyQuestions(accessToken, workbookId, 20),
+    getStudyQuestions(accessToken, workbookId, 20, practice),
   ]);
-  return { workbookId, workbookOwnerId: workbook.ownerId, questions: data.questions };
+  return {
+    workbookId,
+    workbookOwnerId: workbook.ownerId,
+    questions: data.questions,
+    practice,
+  };
 }
 
 // Skip revalidation only for the "answer" action submit. Otherwise the loader
@@ -54,6 +61,16 @@ export async function action({ request, params }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent !== "answer") return { ok: false };
+
+  // Practice mode: don't persist answers — the user is past the day's
+  // SRS-due queue and just wants to keep solving without affecting their
+  // spaced-repetition counters. Trust the request URL (set by the loader
+  // when the page was opened) over a client-supplied form field so a
+  // tampered submit body cannot bypass persistence in normal mode.
+  const practice = new URL(request.url).searchParams.get("practice") === "true";
+  if (practice) {
+    return { ok: true, practice: true };
+  }
 
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "");
@@ -81,11 +98,15 @@ export async function action({ request, params }: Route.ActionArgs) {
 type Phase = "studying" | "done";
 
 function StudySession({
+  workbookId,
   questions,
+  practice,
   backUrl,
   backLabel,
 }: {
+  workbookId: string;
   questions: StudyQuestion[];
+  practice: boolean;
   backUrl: string;
   backLabel: string;
 }) {
@@ -103,9 +124,20 @@ function StudySession({
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <p className="mb-4 text-lg text-muted-foreground">{t("workbooks.study.noQuestions")}</p>
-        <Button nativeButton={false} render={<Link to={backUrl} />}>
-          {backLabel}
-        </Button>
+        <div className="flex flex-col items-center gap-3 sm:flex-row">
+          {!practice && (
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link to={`/workbooks/${workbookId}/study?practice=true`} />}
+            >
+              {t("workbooks.study.practiceCta")}
+            </Button>
+          )}
+          <Button nativeButton={false} render={<Link to={backUrl} />}>
+            {backLabel}
+          </Button>
+        </div>
       </div>
     );
   }
@@ -142,6 +174,12 @@ function StudySession({
     }
   }
 
+  // Preserve the practice flag in the action URL itself so the server can
+  // verify the mode independently of client-supplied form fields.
+  const actionPath = practice
+    ? `/workbooks/${workbookId}/study?practice=true`
+    : `/workbooks/${workbookId}/study`;
+
   function handleMultipleChoiceAnswer(selectedChoiceIds: string[], correct: boolean) {
     fetcher.submit(
       {
@@ -150,7 +188,7 @@ function StudySession({
         questionType: "multiple_choice",
         selectedChoiceIds: JSON.stringify(selectedChoiceIds),
       },
-      { method: "post" },
+      { method: "post", action: actionPath },
     );
     advance(correct);
   }
@@ -163,7 +201,7 @@ function StudySession({
         questionType: "word_fill",
         correct: String(correct),
       },
-      { method: "post" },
+      { method: "post", action: actionPath },
     );
     advance(correct);
   }
@@ -190,7 +228,7 @@ function StudySession({
 }
 
 export default function StudyPage() {
-  const { workbookId, workbookOwnerId, questions } = useLoaderData<typeof loader>();
+  const { workbookId, workbookOwnerId, questions, practice } = useLoaderData<typeof loader>();
   const layoutData = useRouteLoaderData<typeof workbooksLayoutLoader>("routes/workbooks");
   const { t } = useTranslation();
 
@@ -203,12 +241,35 @@ export default function StudyPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{t("workbooks.study.title")}</h1>
+        <h1 className="text-2xl font-bold">
+          {practice ? t("workbooks.study.practiceTitle") : t("workbooks.study.title")}
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t("workbooks.study.description", { count: questions.length })}
         </p>
+        {practice && (
+          <div
+            role="status"
+            className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
+          >
+            {t("workbooks.study.practiceBanner")}
+          </div>
+        )}
       </div>
-      <StudySession questions={questions} backUrl={backUrl} backLabel={backLabel} />
+      <StudySession
+        // Force remount when toggling between normal and practice modes.
+        // StudySession seeds its `queue` from `questions` via useState, which
+        // only runs once per mount — without a key change, navigating from
+        // the empty-state Continue-practicing CTA reuses the old (zero-length)
+        // queue and immediately renders the "Session Complete! 0%" result
+        // screen against the freshly loaded 10 questions.
+        key={practice ? "practice" : "normal"}
+        workbookId={workbookId}
+        questions={questions}
+        practice={practice}
+        backUrl={backUrl}
+        backLabel={backLabel}
+      />
     </div>
   );
 }

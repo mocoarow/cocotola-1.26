@@ -183,9 +183,12 @@ export async function getStudyQuestions(
   userToken: string,
   workbookId: string,
   limit: number,
+  options?: { practice?: boolean },
 ): Promise<GetStudyQuestionsResponse> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (options?.practice) params.set("practice", "true");
   const response = await request.get(
-    `/api/v1/workbook/${encodeURIComponent(workbookId)}/study?limit=${limit}`,
+    `/api/v1/workbook/${encodeURIComponent(workbookId)}/study?${params.toString()}`,
     { headers: bearer(userToken) },
   );
   expect(response.status()).toBe(200);

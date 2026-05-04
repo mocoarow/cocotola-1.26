@@ -193,6 +193,9 @@ type InternalListWorkbooksParams struct {
 // GetStudyQuestionsParams defines parameters for GetStudyQuestions.
 type GetStudyQuestionsParams struct {
 	Limit int32 `form:"limit" json:"limit"`
+
+	// Practice When `true`, ignores the per-question NextDueAt schedule and returns every active question. Callers using this mode must skip the record answer endpoint so SRS state stays untouched.
+	Practice bool `form:"practice,omitempty" json:"practice,omitempty"`
 }
 
 // InternalCreateWorkbookJSONRequestBody defines body for InternalCreateWorkbook for application/json ContentType.

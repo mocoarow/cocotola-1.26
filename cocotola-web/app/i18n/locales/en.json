@@ -127,6 +127,9 @@
     },
     "study": {
       "title": "Study Session",
+      "practiceTitle": "Practice Session",
+      "practiceBanner": "Practice mode — your progress is not saved.",
+      "practiceCta": "Continue practicing (no progress saved)",
       "description": "{{count}} questions to study",
       "noQuestions": "No questions due for study right now.",
       "backToWorkbook": "Back to Workbook",
@@ -134,6 +137,7 @@
       "blankInput": "Blank {{number}}",
       "selectCount": "Select {{count}}",
       "check": "Check",
+      "showAnswer": "Show answer",
       "next": "Next",
       "correct": "Correct!",
       "incorrect": "Incorrect",

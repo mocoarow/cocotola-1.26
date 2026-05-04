@@ -73,7 +73,18 @@ func (h *GetStudyQuestionsHandler) GetStudyQuestions(c *gin.Context) {
 		return
 	}
 
-	input, err := studyservice.NewGetStudyQuestionsInput(userID, organizationID, workbookID, limit)
+	practice := false
+	if practiceStr := c.Query("practice"); practiceStr != "" {
+		v, err := strconv.ParseBool(practiceStr)
+		if err != nil {
+			h.logger.WarnContext(ctx, "invalid practice parameter", slog.Any("error", err))
+			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "practice must be a boolean"))
+			return
+		}
+		practice = v
+	}
+
+	input, err := studyservice.NewGetStudyQuestionsInput(userID, organizationID, workbookID, limit, practice)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid get study questions input", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))
