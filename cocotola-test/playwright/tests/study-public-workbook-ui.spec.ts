@@ -89,7 +89,9 @@ async function answerCurrentQuestion(page: Page, keys: AnswerKey[]): Promise<voi
     for (const [i, answer] of wf.answers.entries()) {
       await page.getByLabel(`Blank ${i + 1}`).fill(answer);
     }
-    await page.getByRole("button", { name: "Check" }).click();
+    // Filling every blank correctly transitions the card to its result screen
+    // (Correct! + Next) — no Check button is rendered for word_fill anymore.
+    // The user explicitly clicks Next to advance.
     await page.getByRole("button", { name: "Next" }).click();
     return;
   }

@@ -9,20 +9,27 @@ import (
 )
 
 // GetStudyQuestionsInput is the validated input for getting study questions.
+//
+// Practice is an off-the-record mode: when true, the usecase ignores the
+// per-question NextDueAt schedule and returns every active question. Callers
+// using this mode are expected to skip the "record answer" endpoint so the
+// user's spaced-repetition records and counters stay untouched.
 type GetStudyQuestionsInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	Limit          int    `validate:"gte=1,lte=100"`
+	Practice       bool
 }
 
 // NewGetStudyQuestionsInput creates a validated GetStudyQuestionsInput.
-func NewGetStudyQuestionsInput(operatorID string, organizationID string, workbookID string, limit int) (*GetStudyQuestionsInput, error) {
+func NewGetStudyQuestionsInput(operatorID string, organizationID string, workbookID string, limit int, practice bool) (*GetStudyQuestionsInput, error) {
 	m := &GetStudyQuestionsInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 		Limit:          limit,
+		Practice:       practice,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate get study questions input: %w", err)

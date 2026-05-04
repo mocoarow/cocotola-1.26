@@ -127,6 +127,9 @@
     },
     "study": {
       "title": "학습 세션",
+      "practiceTitle": "연습 세션",
+      "practiceBanner": "연습 모드 — 성적은 저장되지 않습니다.",
+      "practiceCta": "연습 계속하기 (성적이 저장되지 않습니다)",
       "description": "{{count}}개의 문제가 있습니다",
       "noQuestions": "현재 학습할 문제가 없습니다.",
       "backToWorkbook": "워크북으로 돌아가기",
@@ -134,6 +137,7 @@
       "blankInput": "빈칸 {{number}}",
       "selectCount": "{{count}}개 선택",
       "check": "확인",
+      "showAnswer": "정답 보기",
       "next": "다음",
       "correct": "정답!",
       "incorrect": "오답",

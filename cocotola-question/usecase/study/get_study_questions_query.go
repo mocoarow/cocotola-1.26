@@ -70,7 +70,7 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 		return nil, fmt.Errorf("find study records: %w", err)
 	}
 
-	dueIDs, newIDs, reviewCount, newCount := q.classifyQuestionIDs(activeList.Entries(), studyRecords)
+	dueIDs, newIDs, reviewCount, newCount := q.classifyQuestionIDs(activeList.Entries(), studyRecords, input.Practice)
 
 	q.config.Shuffle(len(newIDs), func(i, j int) {
 		newIDs[i], newIDs[j] = newIDs[j], newIDs[i]
@@ -92,7 +92,13 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 	}, nil
 }
 
-func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record) (dueIDs, newIDs []string, reviewCount, newCount int) {
+// classifyQuestionIDs splits the active question pool into "new" (no record)
+// and "due" (record exists and is past its NextDueAt) buckets. In practice
+// mode the schedule is ignored: every active question with a record is treated
+// as due so the user can keep solving even after the day's queue is exhausted,
+// regardless of whether the question was previously answered correctly or
+// incorrectly.
+func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record, practice bool) (dueIDs, newIDs []string, reviewCount, newCount int) {
 	recordMap := make(map[string]int, len(studyRecords))
 	for i, r := range studyRecords {
 		recordMap[r.QuestionID()] = i
@@ -101,10 +107,11 @@ func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRe
 	now := q.config.Now()
 	for _, qID := range activeIDs {
 		idx, hasRecord := recordMap[qID]
-		if !hasRecord {
+		switch {
+		case !hasRecord:
 			newCount++
 			newIDs = append(newIDs, qID)
-		} else if !studyRecords[idx].NextDueAt().After(now) {
+		case practice || !studyRecords[idx].NextDueAt().After(now):
 			reviewCount++
 			dueIDs = append(dueIDs, qID)
 		}

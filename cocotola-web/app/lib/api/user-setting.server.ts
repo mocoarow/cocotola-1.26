@@ -8,6 +8,28 @@ function getAuthUrl(): string {
   return url;
 }
 
+/**
+ * Returns the authenticated user's currently persisted preferred language as
+ * an ISO 639-1 code. Falls back to the backend default when no user-setting
+ * row exists yet.
+ */
+export async function getUserLanguage(accessToken: string): Promise<string> {
+  const authUrl = getAuthUrl();
+  const url = `${authUrl}/api/v1/auth/me`;
+
+  const response = await fetchWithIdToken(authUrl, url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    console.error(`[user-setting] getUserLanguage failed: status=${response.status}, url=${url}`);
+    throw new Response("Failed to get user language", { status: response.status });
+  }
+
+  const data = (await response.json()) as { language: string };
+  return data.language;
+}
+
 /** Updates the authenticated user's preferred language. */
 export async function updateUserLanguage(accessToken: string, language: string): Promise<void> {
   console.info(`[user-setting] updateUserLanguage called: language=${language}`);

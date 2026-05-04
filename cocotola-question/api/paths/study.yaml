@@ -22,6 +22,16 @@ study:
           format: int32
           minimum: 1
           maximum: 100
+      - name: practice
+        in: query
+        required: false
+        description: >
+          When `true`, ignores the per-question NextDueAt schedule and returns
+          every active question. Callers using this mode must skip the record
+          answer endpoint so SRS state stays untouched.
+        schema:
+          type: boolean
+          default: false
     responses:
       '200':
         description: Successfully retrieved study questions

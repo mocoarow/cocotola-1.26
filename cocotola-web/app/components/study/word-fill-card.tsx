@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -9,6 +9,8 @@ type WordFillCardProps = {
   onAnswer: (correct: boolean) => void;
 };
 
+type Phase = "input" | "result";
+
 function extractBlanks(text: string): { segments: string[]; answers: string[] } {
   const segments = text.split(/\{\{([^}]+)\}\}/g);
   const answers: string[] = [];
@@ -18,11 +20,32 @@ function extractBlanks(text: string): { segments: string[]; answers: string[] } 
   return { segments, answers };
 }
 
+function isCorrectAnswer(value: string, answer: string): boolean {
+  return value.trim().toLowerCase() === answer.trim().toLowerCase();
+}
+
+// findNextUnlocked walks forward from `from` (exclusive) and returns the first
+// blank whose `correct` flag is false, wrapping around. Returns -1 when every
+// blank is already correct.
+function findNextUnlocked(from: number, correct: boolean[]): number {
+  for (let step = 1; step <= correct.length; step++) {
+    const candidate = (from + step) % correct.length;
+    if (!correct[candidate]) return candidate;
+  }
+  return -1;
+}
+
 export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
   const { t } = useTranslation();
   const parsed = parseWordFillContent(content);
   const [inputs, setInputs] = useState<string[]>([]);
-  const [checked, setChecked] = useState(false);
+  const [phase, setPhase] = useState<Phase>("input");
+  const inputRefs = useRef<HTMLInputElement[]>([]);
+
+  // Focus the first blank when this question card mounts.
+  useEffect(() => {
+    inputRefs.current[0]?.focus();
+  }, []);
 
   if (!parsed?.target?.text) {
     return <p className="text-sm text-muted-foreground">{content}</p>;
@@ -34,13 +57,41 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
     setInputs(new Array(answers.length).fill(""));
   }
 
-  const results = answers.map(
-    (answer, i) => (inputs[i] ?? "").trim().toLowerCase() === answer.trim().toLowerCase(),
-  );
-  const allCorrect = results.every(Boolean);
+  // A blank is "locked" once it holds the correct answer. Locked blanks become
+  // read-only and are skipped by focus traversal — the user cannot accidentally
+  // overwrite a value they have already gotten right.
+  const correct = answers.map((answer, i) => isCorrectAnswer(inputs[i] ?? "", answer));
+  const allCorrect = correct.length > 0 && correct.every(Boolean);
+  const isResult = phase === "result";
 
-  function handleCheck() {
-    setChecked(true);
+  function handleInputChange(index: number, value: string) {
+    if (correct[index]) return;
+
+    const next = [...inputs];
+    next[index] = value;
+    setInputs(next);
+
+    if (isResult) return;
+    if (!isCorrectAnswer(value, answers[index])) return;
+
+    const nextCorrect = answers.map((answer, i) => isCorrectAnswer(next[i] ?? "", answer));
+    if (nextCorrect.every(Boolean)) {
+      // Surface the result screen instead of advancing — the user reviews
+      // their answer and explicitly continues via the Next button.
+      setPhase("result");
+      return;
+    }
+
+    // Move to the next blank that is still empty/wrong, wrapping around.
+    const focusIndex = findNextUnlocked(index, nextCorrect);
+    if (focusIndex >= 0) {
+      inputRefs.current[focusIndex]?.focus();
+      inputRefs.current[focusIndex]?.select();
+    }
+  }
+
+  function handleReveal() {
+    setPhase("result");
   }
 
   function handleNext() {
@@ -61,26 +112,27 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
             return <span key={`text-${segment}`}>{segment}</span>;
           }
           const inputIndex = Math.floor(i / 2);
+          const isLocked = correct[inputIndex];
           return (
             <span key={`blank-${inputIndex}`} className="inline-flex flex-col items-center">
               <Input
+                ref={(el: HTMLInputElement | null) => {
+                  if (el) inputRefs.current[inputIndex] = el;
+                }}
                 aria-label={t("workbooks.study.blankInput", { number: inputIndex + 1 })}
                 className={`mx-1 inline-block w-32 text-center ${
-                  checked
-                    ? results[inputIndex]
-                      ? "border-green-500 bg-green-50 dark:bg-green-950/30"
-                      : "border-red-500 bg-red-50 dark:bg-red-950/30"
-                    : ""
+                  isLocked
+                    ? "border-green-500 bg-green-50 dark:bg-green-950/30"
+                    : isResult
+                      ? "border-red-500 bg-red-50 dark:bg-red-950/30"
+                      : ""
                 }`}
                 value={inputs[inputIndex] ?? ""}
-                onChange={(e) => {
-                  const next = [...inputs];
-                  next[inputIndex] = e.target.value;
-                  setInputs(next);
-                }}
-                disabled={checked}
+                onChange={(e) => handleInputChange(inputIndex, e.target.value)}
+                disabled={isResult || isLocked}
+                readOnly={isLocked}
               />
-              {checked && !results[inputIndex] && (
+              {isResult && !isLocked && (
                 <span className="text-xs text-green-600">{answers[inputIndex]}</span>
               )}
             </span>
@@ -88,15 +140,13 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
         })}
       </div>
 
-      {parsed.explanation && checked && (
+      {parsed.explanation && isResult && (
         <p className="text-sm text-muted-foreground">{parsed.explanation}</p>
       )}
 
-      {!checked ? (
+      {!isResult ? (
         <div className="flex justify-end">
-          <Button onClick={handleCheck} disabled={inputs.some((v) => !v.trim())}>
-            {t("workbooks.study.check")}
-          </Button>
+          <Button onClick={handleReveal}>{t("workbooks.study.showAnswer")}</Button>
         </div>
       ) : (
         <div className="flex items-center justify-end gap-3">

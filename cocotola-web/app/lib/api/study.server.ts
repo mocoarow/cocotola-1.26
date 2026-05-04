@@ -26,10 +26,13 @@ export async function getStudyQuestions(
   accessToken: string,
   workbookId: string,
   limit: number,
+  practice = false,
 ): Promise<GetStudyQuestionsResponse> {
   const clampedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
   const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study?limit=${clampedLimit}`;
+  const params = new URLSearchParams({ limit: String(clampedLimit) });
+  if (practice) params.set("practice", "true");
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study?${params.toString()}`;
 
   const response = await fetchWithIdToken(baseUrl, url, {
     headers: { Authorization: `Bearer ${accessToken}` },

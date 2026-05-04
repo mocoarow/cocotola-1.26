@@ -19,7 +19,14 @@ import (
 
 func newGetStudyQuestionsInput(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit)
+	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false)
+	require.NoError(t, err)
+	return input
+}
+
+func newGetStudyQuestionsInputForPractice(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
+	t.Helper()
+	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, true)
 	require.NoError(t, err)
 	return input
 }
@@ -136,6 +143,48 @@ func Test_GetStudyQuestionsQuery_shouldReturnEmpty_whenNotDue(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, output.Questions)
 	assert.Equal(t, 0, output.TotalDue)
+}
+
+func Test_GetStudyQuestionsQuery_shouldReturnNotYetDueQuestions_whenPracticeMode(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a question whose record is scheduled for the future (not yet due
+	// in normal mode), present in the workbook's active question list
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	futureDue := fixtureClock.Add(24 * time.Hour)
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 1, fixtureClock, futureDue, 1, 0),
+	}
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
+
+	questionRepo := newMockquestionBatchFinder(t)
+	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(fixtureQuestions(), nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInputForPractice(t, 10)
+
+	// when: requesting study questions in practice mode
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then: the question is returned even though its NextDueAt is in the future
+	require.NoError(t, err)
+	assert.Len(t, output.Questions, 1)
+	assert.Equal(t, fixtureQuestionID, output.Questions[0].QuestionID)
+	assert.Equal(t, 1, output.TotalDue)
+	assert.Equal(t, 1, output.ReviewCount)
 }
 
 func Test_GetStudyQuestionsQuery_shouldRespectLimit(t *testing.T) {

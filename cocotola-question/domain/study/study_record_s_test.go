@@ -100,7 +100,7 @@ func Test_Record_RecordIncorrect_shouldResetConsecutiveCorrect(t *testing.T) {
 	assert.Equal(t, 0, record.ConsecutiveCorrect())
 	assert.Equal(t, 2, record.TotalCorrect())
 	assert.Equal(t, 1, record.TotalIncorrect())
-	assert.Equal(t, now.AddDate(0, 0, 1), record.NextDueAt())
+	assert.Equal(t, now.Add(study.IncorrectRetryDelay), record.NextDueAt())
 }
 
 func Test_Record_RecordCorrectAfterIncorrect_shouldRestartInterval(t *testing.T) {
