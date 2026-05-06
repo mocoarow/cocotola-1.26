@@ -717,6 +717,76 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/workbook/{workbookId}/study/summary:
+    get:
+      summary: Get study summary
+      deprecated: false
+      description: |
+        Returns the count of questions currently due for review and unseen ("new") for the given workbook, without downloading the questions themselves. Used by clients to render a study-size picker dialog.
+      operationId: getStudySummary
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+        - name: practice
+          in: query
+          required: false
+          description: |
+            When `true`, ignores the per-question NextDueAt schedule so the summary reflects every active question for unrestricted practice mode (mirrors the GET /study endpoint).
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Successfully retrieved study summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudySummaryResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
   /api/v1/workbook/{workbookId}/study:
     get:
       summary: Get study questions
@@ -1546,6 +1616,37 @@ components:
           type: integer
           format: int32
         reviewCount:
+          type: integer
+          format: int32
+    StudySummaryResponse:
+      type: object
+      description: |
+        Counts of questions currently available for study in the given workbook.
+        `reviewCount` is the number of questions whose study record's NextDueAt has
+        elapsed (or every recorded question, in practice mode). `newCount` is the
+        number of active questions without a study record. `reviewRatioNumerator`
+        and `reviewRatioDenominator` express the server's review/new mix used when
+        selecting study questions.
+      required:
+        - newCount
+        - reviewCount
+        - totalDue
+        - reviewRatioNumerator
+        - reviewRatioDenominator
+      properties:
+        newCount:
+          type: integer
+          format: int32
+        reviewCount:
+          type: integer
+          format: int32
+        totalDue:
+          type: integer
+          format: int32
+        reviewRatioNumerator:
+          type: integer
+          format: int32
+        reviewRatioDenominator:
           type: integer
           format: int32
     RecordAnswerRequest:

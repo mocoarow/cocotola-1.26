@@ -310,8 +310,9 @@ func Test_RecordAnswerHandler_shouldReturn401_whenUserIDMissing(t *testing.T) {
 
 	// given
 	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	summaryUsecase := NewMockGetStudySummaryUsecase(t)
 	recordUsecase := NewMockRecordAnswerUsecase(t)
-	r := initStudyRouterWithMiddleware(ctx, t, getUsecase, recordUsecase, noopMiddleware(), fakeOrgResolverMiddleware(fixtureOrganizationID))
+	r := initStudyRouterWithMiddleware(ctx, t, getUsecase, summaryUsecase, recordUsecase, noopMiddleware(), fakeOrgResolverMiddleware(fixtureOrganizationID))
 	w := httptest.NewRecorder()
 	body := `{"correct":true}`
 

@@ -28,6 +28,7 @@ vi.mock("react-router", async (importOriginal) => {
   return {
     ...actual,
     useLoaderData: vi.fn(),
+    useNavigate: vi.fn(() => vi.fn()),
     useFetcher: vi.fn(() => ({ state: "idle", Form: "form", submit: submitMock })),
     Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
       <a href={to} {...props}>
@@ -122,8 +123,10 @@ describe("WorkbooksIndex", () => {
     expect(screen.getByText("Learn basic words")).toBeInTheDocument();
   });
 
-  it("should render Study button as link and Edit button as link", () => {
-    // given
+  it("should render Study as a button (opens picker dialog) and Edit as link", () => {
+    // given: the Study trigger now opens a question-count picker dialog,
+    // so it must be a <button> rather than an <a>. The actual loader
+    // navigation happens after the user confirms in the dialog.
     const workbooks = [createWorkbook({ workbookId: "wb-1" })];
     mockedUseLoaderData.mockReturnValue({ workbooks, spaceId: "sp-1" });
 
@@ -135,9 +138,9 @@ describe("WorkbooksIndex", () => {
     );
 
     // then
-    const studyLink = screen.getByText("Study").closest("a");
-    expect(studyLink).toBeInTheDocument();
-    expect(studyLink).toHaveAttribute("href", "/workbooks/wb-1/study");
+    const studyTrigger = screen.getByRole("button", { name: /Study/i });
+    expect(studyTrigger).toBeInTheDocument();
+    expect(studyTrigger.tagName).toBe("BUTTON");
     const editLink = screen.getByText("Edit").closest("a");
     expect(editLink).toBeInTheDocument();
     expect(editLink).toHaveAttribute("href", "/workbooks/wb-1");

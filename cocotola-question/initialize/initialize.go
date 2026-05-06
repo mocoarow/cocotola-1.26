@@ -118,8 +118,9 @@ func Initialize(
 	sharinghandler.InitSharingRouter(shareWorkbookHandler, listSharedHandler, unshareHandler, listPublicHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand)
+	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(studyCommand)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
-	studyhandler.InitStudyRouter(getStudyQuestionsHandler, recordAnswerHandler, parent, authMiddleware, orgResolverMiddleware)
+	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)

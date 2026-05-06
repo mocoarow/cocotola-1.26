@@ -5,6 +5,7 @@ go_library(
     name = "study",
     srcs = [
         "get_study_questions_handler.go",
+        "get_study_summary_handler.go",
         "record_answer_handler.go",
         "study.go",
     ],
@@ -25,6 +26,7 @@ smart_go_test(
     name = "study_test",
     srcs = [
         "get_study_questions_handler_s_test.go",
+        "get_study_summary_handler_s_test.go",
         "helper_test.go",
         "mocks_test.go",
         "record_answer_handler_s_test.go",

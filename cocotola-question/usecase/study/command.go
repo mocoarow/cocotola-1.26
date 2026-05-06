@@ -32,6 +32,7 @@ func (c UsecaseConfig) Shuffle(n int, swap func(i, j int)) {
 // Command composes all study use cases.
 type Command struct {
 	*GetStudyQuestionsQuery
+	*GetStudySummaryQuery
 	*RecordAnswerCommand
 }
 
@@ -54,6 +55,7 @@ func NewCommand(
 ) *Command {
 	return &Command{
 		GetStudyQuestionsQuery: NewGetStudyQuestionsQuery(studyRecordFinder, activeListRepo, questionRepo, workbookRepo, authChecker, config),
+		GetStudySummaryQuery:   NewGetStudySummaryQuery(studyRecordFinder, activeListRepo, workbookRepo, authChecker, config),
 		RecordAnswerCommand:    NewRecordAnswerCommand(studyRecordFinder, studyRecordSaver, activeListRepo, questionRepo, workbookRepo, authChecker, config),
 	}
 }

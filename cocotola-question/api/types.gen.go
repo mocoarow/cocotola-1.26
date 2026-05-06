@@ -150,6 +150,20 @@ type StudyQuestionResponse struct {
 	Tags         []string `json:"tags,omitempty"`
 }
 
+// StudySummaryResponse Counts of questions currently available for study in the given workbook.
+// `reviewCount` is the number of questions whose study record's NextDueAt has
+// elapsed (or every recorded question, in practice mode). `newCount` is the
+// number of active questions without a study record. `reviewRatioNumerator`
+// and `reviewRatioDenominator` express the server's review/new mix used when
+// selecting study questions.
+type StudySummaryResponse struct {
+	NewCount               int32 `json:"newCount"`
+	ReviewCount            int32 `json:"reviewCount"`
+	ReviewRatioDenominator int32 `json:"reviewRatioDenominator"`
+	ReviewRatioNumerator   int32 `json:"reviewRatioNumerator"`
+	TotalDue               int32 `json:"totalDue"`
+}
+
 // UpdateQuestionRequest defines model for UpdateQuestionRequest.
 type UpdateQuestionRequest struct {
 	Content    string   `binding:"required,max=10000" json:"content"`
@@ -195,6 +209,12 @@ type GetStudyQuestionsParams struct {
 	Limit int32 `form:"limit" json:"limit"`
 
 	// Practice When `true`, ignores the per-question NextDueAt schedule and returns every active question. Callers using this mode must skip the record answer endpoint so SRS state stays untouched.
+	Practice bool `form:"practice,omitempty" json:"practice,omitempty"`
+}
+
+// GetStudySummaryParams defines parameters for GetStudySummary.
+type GetStudySummaryParams struct {
+	// Practice When `true`, ignores the per-question NextDueAt schedule so the summary reflects every active question for unrestricted practice mode (mirrors the GET /study endpoint).
 	Practice bool `form:"practice,omitempty" json:"practice,omitempty"`
 }
 

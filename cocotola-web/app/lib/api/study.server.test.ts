@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getStudyQuestions,
+  getStudySummary,
   recordAnswerForMultipleChoice,
   recordAnswerForWordFill,
 } from "./study.server";
@@ -99,6 +100,98 @@ describe("getStudyQuestions", () => {
 
     // when / then
     await expect(getStudyQuestions("token", "wb-1", 20)).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("getStudySummary", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should return summary on success", async () => {
+    // given
+    const response = {
+      newCount: 5,
+      reviewCount: 12,
+      totalDue: 17,
+      reviewRatioNumerator: 9,
+      reviewRatioDenominator: 10,
+    };
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(response),
+    });
+
+    // when
+    const result = await getStudySummary("test-token", "wb-1");
+
+    // then
+    expect(result).toEqual(response);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study/summary",
+      { headers: { Authorization: "Bearer test-token" } },
+    );
+  });
+
+  it("should pass practice=true query when requested", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          newCount: 0,
+          reviewCount: 0,
+          totalDue: 0,
+          reviewRatioNumerator: 9,
+          reviewRatioDenominator: 10,
+        }),
+    });
+
+    // when
+    await getStudySummary("token", "wb-1", true);
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study/summary?practice=true",
+      expect.any(Object),
+    );
+  });
+
+  it("should encode workbookId in URL", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          newCount: 0,
+          reviewCount: 0,
+          totalDue: 0,
+          reviewRatioNumerator: 9,
+          reviewRatioDenominator: 10,
+        }),
+    });
+
+    // when
+    await getStudySummary("token", "wb/1");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb%2F1/study/summary",
+      expect.any(Object),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+
+    // when / then
+    await expect(getStudySummary("token", "wb-1")).rejects.toBeInstanceOf(Response);
   });
 });
 

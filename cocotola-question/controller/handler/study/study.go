@@ -17,6 +17,7 @@ import (
 // InitStudyRouter sets up the routes for study operations under the given parent router group.
 func InitStudyRouter(
 	getStudyQuestionsHandler *GetStudyQuestionsHandler,
+	getStudySummaryHandler *GetStudySummaryHandler,
 	recordAnswerHandler *RecordAnswerHandler,
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,
@@ -27,6 +28,7 @@ func InitStudyRouter(
 	studyGroup.Use(middleware...)
 
 	studyGroup.GET("", getStudyQuestionsHandler.GetStudyQuestions)
+	studyGroup.GET("/summary", getStudySummaryHandler.GetStudySummary)
 	studyGroup.POST("/:questionId/answer", recordAnswerHandler.RecordAnswer)
 }
 

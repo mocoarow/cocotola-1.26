@@ -1,4 +1,79 @@
 ---
+study-summary:
+  get:
+    summary: Get study summary
+    deprecated: false
+    description: >
+      Returns the count of questions currently due for review and unseen
+      ("new") for the given workbook, without downloading the questions
+      themselves. Used by clients to render a study-size picker dialog.
+    operationId: getStudySummary
+    tags:
+      - study
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+      - name: practice
+        in: query
+        required: false
+        description: >
+          When `true`, ignores the per-question NextDueAt schedule so the
+          summary reflects every active question for unrestricted practice
+          mode (mirrors the GET /study endpoint).
+        schema:
+          type: boolean
+          default: false
+    responses:
+      '200':
+        description: Successfully retrieved study summary
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/study.yaml#/StudySummaryResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
 study:
   get:
     summary: Get study questions

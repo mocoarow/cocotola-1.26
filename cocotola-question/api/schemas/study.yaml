@@ -50,6 +50,38 @@ GetStudyQuestionsResponse:
       type: integer
       format: int32
 
+StudySummaryResponse:
+  type: object
+  description: |
+    Counts of questions currently available for study in the given workbook.
+    `reviewCount` is the number of questions whose study record's NextDueAt has
+    elapsed (or every recorded question, in practice mode). `newCount` is the
+    number of active questions without a study record. `reviewRatioNumerator`
+    and `reviewRatioDenominator` express the server's review/new mix used when
+    selecting study questions.
+  required:
+    - newCount
+    - reviewCount
+    - totalDue
+    - reviewRatioNumerator
+    - reviewRatioDenominator
+  properties:
+    newCount:
+      type: integer
+      format: int32
+    reviewCount:
+      type: integer
+      format: int32
+    totalDue:
+      type: integer
+      format: int32
+    reviewRatioNumerator:
+      type: integer
+      format: int32
+    reviewRatioDenominator:
+      type: integer
+      format: int32
+
 RecordAnswerRequest:
   type: object
   description: |

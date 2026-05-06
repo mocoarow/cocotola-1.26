@@ -125,6 +125,20 @@
       "shuffleChoices": "選択肢をシャッフルする",
       "showCorrectCount": "正解の数を表示する"
     },
+    "studyDialog": {
+      "title": "学習を開始",
+      "description": "学習する問題数を選択してください。実際の問題はサーバーが復習/新規の割合に従って選びます。",
+      "loading": "利用可能な問題を読み込み中...",
+      "loadError": "学習サマリーを取得できませんでした。再度お試しください。",
+      "reviewLabel": "復習",
+      "newLabel": "新規",
+      "ratioHint": "割合: {{numerator}}/{{denominator}} が復習、残りが新規",
+      "sizeLabel": "問題数",
+      "selected": "{{count}} 問学習します",
+      "noneAvailable": "今は学習できる問題がありません。",
+      "allButton": "すべて ({{count}})",
+      "start": "開始"
+    },
     "study": {
       "title": "学習セッション",
       "practiceTitle": "練習セッション",
