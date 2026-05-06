@@ -1,0 +1,28 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "gormsave",
+    srcs = [
+        "doc.go",
+        "save.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/domain/versioned",
+        "@io_gorm_gorm//:gorm",
+    ],
+)
+
+smart_go_test(
+    name = "gormsave_test",
+    srcs = [
+        "save_s_test.go",
+    ],
+    deps = [
+        ":gormsave",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

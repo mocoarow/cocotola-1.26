@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
 )
@@ -26,6 +28,10 @@ type studyRecordRecord struct {
 	TotalCorrect       int       `firestore:"totalCorrect"`
 	TotalIncorrect     int       `firestore:"totalIncorrect"`
 	Version            int       `firestore:"version"`
+}
+
+func (r *studyRecordRecord) GetVersion() int {
+	return r.Version
 }
 
 func studyRecordDocID(workbookID string, questionID string) string {
@@ -60,14 +66,27 @@ func (r *StudyRecordRepository) Save(ctx context.Context, userID string, record 
 		TotalIncorrect:     record.TotalIncorrect(),
 		Version:            record.Version() + 1,
 	}
-	return saveVersionedEntity(ctx, r.client, record, r.recordsCol(userID).Doc(docID), rec,
-		func(snap *firestore.DocumentSnapshot) (int, error) {
+	err := firestoresave.SaveVersioned(ctx, firestoresave.SaveArgs[*studyRecordRecord]{
+		Client:    r.client,
+		Entity:    record,
+		DocRef:    r.recordsCol(userID).Doc(docID),
+		NewRecord: &rec,
+		Decode: func(snap *firestore.DocumentSnapshot) (int, error) {
 			var r studyRecordRecord
 			if err := snap.DataTo(&r); err != nil {
 				return 0, fmt.Errorf("decode study record: %w", err)
 			}
 			return r.Version, nil
-		}, "study record")
+		},
+		EntityName: "study record",
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrStudyRecordNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("save study record: %w", err)
+	}
+	return nil
 }
 
 // FindByID looks up a study record by user, workbook, and question IDs.

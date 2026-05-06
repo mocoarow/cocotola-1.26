@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -75,7 +76,12 @@ func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Contex
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("question_not_found", "question not found"))
 		return
 	}
-	if errors.Is(err, domain.ErrConcurrentModification) {
+	if errors.Is(err, domain.ErrActiveQuestionListNotFound) {
+		logger.WarnContext(ctx, "active question list not found", slog.Any("error", err))
+		c.JSON(http.StatusNotFound, controller.NewErrorResponse("active_question_list_not_found", "active question list not found"))
+		return
+	}
+	if errors.Is(err, libversioned.ErrConcurrentModification) {
 		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
 		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "resource was modified concurrently"))
 		return

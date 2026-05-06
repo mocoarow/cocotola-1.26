@@ -10,6 +10,8 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type appUserRecord struct {
@@ -34,6 +36,10 @@ func (appUserRecord) TableName() string {
 	return "app_user"
 }
 
+func (r *appUserRecord) GetVersion() int {
+	return r.Version
+}
+
 func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	var hashedPw string
 	if r.HashedPassword != nil {
@@ -44,7 +50,7 @@ func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
 	return u
 }
 
-func toAppUserRecord(user *domainuser.AppUser) appUserRecord {
+func toAppUserRecord(user *domainuser.AppUser, version int) appUserRecord {
 	var hashedPw *string
 	if hp := user.HashedPassword(); hp != "" {
 		hashedPw = &hp
@@ -52,7 +58,7 @@ func toAppUserRecord(user *domainuser.AppUser) appUserRecord {
 	systemUserID := domain.SystemAppUserID().String()
 	return appUserRecord{
 		ID:                            user.ID().String(),
-		Version:                       user.Version(),
+		Version:                       version,
 		CreatedAt:                     time.Time{},
 		UpdatedAt:                     time.Time{},
 		CreatedBy:                     systemUserID,
@@ -84,36 +90,27 @@ func NewAppUserRepository(db *gorm.DB) *AppUserRepository {
 // The repository updates the aggregate's version after a successful persist so
 // the caller does not need to manage versioning.
 func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) error {
-	record := toAppUserRecord(user)
-	nextVersion := user.Version() + 1
-	if user.Version() == 0 {
-		record.Version = nextVersion
-		if err := r.db.WithContext(ctx).
-			Omit("username", "encrypted_provider_access_token", "encrypted_provider_refresh_token").
-			Create(&record).Error; err != nil {
-			return fmt.Errorf("insert app user: %w", err)
-		}
-		user.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("id = ? AND version = ?", record.ID, user.Version()).
-		Updates(map[string]any{
+	record := toAppUserRecord(user, user.Version()+1)
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*appUserRecord]{
+		DB:     r.db,
+		Entity: user,
+		Record: &record,
+		PK:     map[string]any{"id": record.ID},
+		Updates: map[string]any{
 			colOrganizationID: record.OrganizationID,
 			"login_id":        record.LoginID,
 			"hashed_password": record.HashedPassword,
 			"enabled":         record.Enabled,
-			colVersion:        nextVersion,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update app user: %w", result.Error)
+		},
+		EntityName:   "app user",
+		OmitOnInsert: []string{"username", "encrypted_provider_access_token", "encrypted_provider_refresh_token"},
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrAppUserNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrAppUserConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save app user: %w", err)
 	}
-	user.SetVersion(nextVersion)
 	return nil
 }
 

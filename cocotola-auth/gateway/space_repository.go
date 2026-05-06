@@ -10,6 +10,8 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type spaceRecord struct {
@@ -29,6 +31,10 @@ type spaceRecord struct {
 
 func (spaceRecord) TableName() string {
 	return "space"
+}
+
+func (r *spaceRecord) GetVersion() int {
+	return r.Version
 }
 
 func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
@@ -56,11 +62,10 @@ func NewSpaceRepository(db *gorm.DB) *SpaceRepository {
 // The repository updates the aggregate's version after a successful persist so
 // the caller does not need to manage versioning.
 func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) error {
-	nextVersion := space.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := spaceRecord{
 		ID:             space.ID().String(),
-		Version:        nextVersion,
+		Version:        space.Version() + 1,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
 		CreatedBy:      systemUserID,
@@ -72,33 +77,28 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 		SpaceType:      space.SpaceType().Value(),
 		Deleted:        space.Deleted(),
 	}
-	if space.Version() == 0 {
-		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-			return fmt.Errorf("insert space: %w", err)
-		}
-		space.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("id = ? AND version = ?", record.ID, space.Version()).
-		Updates(map[string]any{
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*spaceRecord]{
+		DB:     r.db,
+		Entity: space,
+		Record: &record,
+		PK:     map[string]any{"id": record.ID},
+		Updates: map[string]any{
 			colOrganizationID: record.OrganizationID,
 			"owner_id":        record.OwnerID,
 			"key_name":        record.KeyName,
 			colName:           record.Name,
 			"space_type":      record.SpaceType,
 			"deleted":         record.Deleted,
-			colVersion:        nextVersion,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update space: %w", result.Error)
+		},
+		EntityName:   "space",
+		OmitOnInsert: nil,
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrSpaceNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrSpaceConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save space: %w", err)
 	}
-	space.SetVersion(nextVersion)
 	return nil
 }
 

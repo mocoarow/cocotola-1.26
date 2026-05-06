@@ -13,12 +13,13 @@ go_library(
         "question_repository.go",
         "reference_repository.go",
         "study_record_repository.go",
-        "versioned_save.go",
         "workbook_repository.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway",
     visibility = ["//visibility:public"],
     deps = [
+        "//cocotola-lib/domain/versioned",
+        "//cocotola-lib/gateway/firestoresave",
         "//cocotola-lib/logging",
         "//cocotola-question/controller",
         "//cocotola-question/domain",
@@ -38,6 +39,7 @@ go_library(
 smart_go_test(
     name = "gateway_test",
     srcs = [
+        "active_question_list_repository_m_test.go",
         "auth_client_s_test.go",
         "owned_workbook_list_repository_m_test.go",
         "question_repository_m_test.go",
@@ -45,6 +47,7 @@ smart_go_test(
     ],
     deps = [
         ":gateway",
+        "//cocotola-lib/domain/versioned",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/study",

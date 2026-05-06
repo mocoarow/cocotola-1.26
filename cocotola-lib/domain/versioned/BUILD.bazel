@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "versioned",
+    srcs = [
+        "doc.go",
+        "entity.go",
+        "errors.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "versioned_test",
+    srcs = [
+        "errors_s_test.go",
+    ],
+    deps = [
+        ":versioned",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

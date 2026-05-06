@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 	workbookusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook"
@@ -254,7 +255,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
 
 	listSaver := newMockownedWorkbookListSaver(t)
-	listSaver.On("Save", mock.Anything, mock.Anything).Return(domain.ErrConcurrentModification)
+	listSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 
 	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
@@ -282,5 +283,5 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	_, err = cmd.CreateWorkbook(ctx, input)
 
 	// then
-	require.ErrorIs(t, err, domain.ErrConcurrentModification)
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
 }

@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
@@ -25,6 +27,10 @@ type questionRecord struct {
 	Version      int       `firestore:"version"`
 	CreatedAt    time.Time `firestore:"createdAt"`
 	UpdatedAt    time.Time `firestore:"updatedAt"`
+}
+
+func (r *questionRecord) GetVersion() int {
+	return r.Version
 }
 
 func toQuestionDomain(id string, workbookID string, r *questionRecord) (*domainquestion.Question, error) {
@@ -72,14 +78,27 @@ func (r *QuestionRepository) questionsCol(workbookID string) *firestore.Collecti
 func (r *QuestionRepository) Save(ctx context.Context, q *domainquestion.Question) error {
 	docRef := r.questionsCol(q.WorkbookID()).Doc(q.ID())
 	record := toQuestionRecord(q, q.Version()+1)
-	return saveVersionedEntity(ctx, r.client, q, docRef, record,
-		func(snap *firestore.DocumentSnapshot) (int, error) {
+	err := firestoresave.SaveVersioned(ctx, firestoresave.SaveArgs[*questionRecord]{
+		Client:    r.client,
+		Entity:    q,
+		DocRef:    docRef,
+		NewRecord: &record,
+		Decode: func(snap *firestore.DocumentSnapshot) (int, error) {
 			var rec questionRecord
 			if err := snap.DataTo(&rec); err != nil {
 				return 0, fmt.Errorf("decode question: %w", err)
 			}
 			return rec.Version, nil
-		}, "question")
+		},
+		EntityName: "question",
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrQuestionNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("save question: %w", err)
+	}
+	return nil
 }
 
 // FindByID looks up a question by workbook ID and question ID.

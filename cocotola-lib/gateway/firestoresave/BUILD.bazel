@@ -1,0 +1,34 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "firestoresave",
+    srcs = [
+        "doc.go",
+        "save.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-lib/domain/versioned",
+        "@com_google_cloud_go_firestore//:firestore",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+    ],
+)
+
+smart_go_test(
+    name = "firestoresave_test",
+    srcs = [
+        "fixtures_test.go",
+        "save_m_test.go",
+        "save_s_test.go",
+    ],
+    deps = [
+        ":firestoresave",
+        "//cocotola-lib/domain/versioned",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_firestore//:firestore",
+    ],
+)

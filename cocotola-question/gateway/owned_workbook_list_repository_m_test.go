@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 )
@@ -101,5 +102,35 @@ func Test_OwnedWorkbookListRepository_Save_shouldReturnConcurrentModification_wh
 	err := repo.Save(ctx, staleList)
 
 	// then
-	require.ErrorIs(t, err, domain.ErrConcurrentModification)
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
+}
+
+func Test_OwnedWorkbookListRepository_Save_shouldReturnErrOwnedWorkbookListNotFound_whenDocWasDeletedAfterLoad(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a saved owned workbook list is deleted out-of-band before a stale aggregate tries to save
+	client := setupFirestoreClient(t)
+	repo := gateway.NewOwnedWorkbookListRepository(client)
+	ownerID := "test-owner-deleted-then-save-" + t.Name()
+
+	initial, err := domain.NewOwnedWorkbookList(ownerID, []string{"wb-1"})
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, initial))
+
+	loaded, err := repo.FindByOwnerID(ctx, ownerID)
+	require.NoError(t, err)
+
+	// delete the underlying document directly via the firestore client
+	_, err = client.Collection("users").Doc(ownerID).Delete(ctx)
+	require.NoError(t, err)
+
+	// when: the stale loaded aggregate tries to save
+	require.NoError(t, loaded.Add("wb-2", 10))
+	err = repo.Save(ctx, loaded)
+
+	// then: callers see a domain not-found, not a generic error
+	require.ErrorIs(t, err, domain.ErrOwnedWorkbookListNotFound)
+	assert.NotErrorIs(t, err, libversioned.ErrConcurrentModification,
+		"deleted document must surface as not-found, not as concurrent modification")
 }
