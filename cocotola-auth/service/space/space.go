@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
 // --- CreateSpace ---
@@ -29,7 +31,7 @@ func NewCreateSpaceInput(operatorID domain.AppUserID, organizationName string, n
 		Name:             name,
 		SpaceType:        spaceType,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create space input: %w", err)
 	}
 	return m, nil
@@ -66,7 +68,7 @@ func NewCreateSpaceOutput(spaceID domain.SpaceID, organizationID domain.Organiza
 		SpaceType:      spaceType,
 		Deleted:        deleted,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create space output: %w", err)
 	}
 	return m, nil
@@ -89,7 +91,7 @@ func NewListSpacesInput(operatorID domain.AppUserID, organizationName string) (*
 		OperatorID:       operatorID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate list spaces input: %w", err)
 	}
 	return m, nil

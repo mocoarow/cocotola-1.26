@@ -11,8 +11,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/controller",
-        "//cocotola-auth/domain",
         "//cocotola-lib/controller",
+        "//cocotola-lib/domain",
         "//cocotola-lib/gateway",
         "@in_yaml_go_yaml_v4//:yaml",
     ],
