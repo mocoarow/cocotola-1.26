@@ -49,10 +49,15 @@ func noopMiddleware() gin.HandlerFunc {
 
 func initStudyRouter(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, recordUsecase *MockRecordAnswerUsecase) *gin.Engine {
 	t.Helper()
-	return initStudyRouterWithMiddleware(ctx, t, getUsecase, recordUsecase, fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
+	return initStudyRouterWithMiddleware(ctx, t, getUsecase, NewMockGetStudySummaryUsecase(t), recordUsecase, fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
 }
 
-func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, recordUsecase *MockRecordAnswerUsecase, authMiddleware gin.HandlerFunc, orgMiddleware gin.HandlerFunc) *gin.Engine {
+func initStudyRouterWithSummary(ctx context.Context, t *testing.T, summaryUsecase *MockGetStudySummaryUsecase) *gin.Engine {
+	t.Helper()
+	return initStudyRouterWithMiddleware(ctx, t, NewMockGetStudyQuestionsUsecase(t), summaryUsecase, NewMockRecordAnswerUsecase(t), fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
+}
+
+func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, summaryUsecase *MockGetStudySummaryUsecase, recordUsecase *MockRecordAnswerUsecase, authMiddleware gin.HandlerFunc, orgMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
@@ -61,8 +66,9 @@ func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase
 	v1 := api.Group("v1")
 
 	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase)
+	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(summaryUsecase)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(recordUsecase)
-	studyhandler.InitStudyRouter(getStudyQuestionsHandler, recordAnswerHandler, v1, authMiddleware, orgMiddleware)
+	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, v1, authMiddleware, orgMiddleware)
 
 	return router
 }

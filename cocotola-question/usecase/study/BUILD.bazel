@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "command.go",
         "get_study_questions_query.go",
+        "get_study_summary_query.go",
         "record_answer_command.go",
         "shared_interfaces.go",
     ],
@@ -24,6 +25,7 @@ smart_go_test(
     name = "study_test",
     srcs = [
         "get_study_questions_query_s_test.go",
+        "get_study_summary_query_s_test.go",
         "mocks_test.go",
         "record_answer_command_s_test.go",
     ],

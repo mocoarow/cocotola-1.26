@@ -37,6 +37,43 @@ func NewGetStudyQuestionsInput(operatorID string, organizationID string, workboo
 	return m, nil
 }
 
+// GetStudySummaryInput is the validated input for getting study summary counts.
+//
+// Practice mirrors GetStudyQuestionsInput.Practice: when true the summary is
+// computed without applying the per-question NextDueAt schedule, so callers
+// rendering a "practice mode" picker see the unrestricted available pool.
+type GetStudySummaryInput struct {
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
+	WorkbookID     string `validate:"required"`
+	Practice       bool
+}
+
+// NewGetStudySummaryInput creates a validated GetStudySummaryInput.
+func NewGetStudySummaryInput(operatorID, organizationID, workbookID string, practice bool) (*GetStudySummaryInput, error) {
+	m := &GetStudySummaryInput{
+		OperatorID:     operatorID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+		Practice:       practice,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate get study summary input: %w", err)
+	}
+	return m, nil
+}
+
+// GetStudySummaryOutput is the output for getting study summary counts. The
+// ratio fields advertise the server-side review/new mix so clients can render
+// it in the picker without hard-coding the same constants.
+type GetStudySummaryOutput struct {
+	NewCount               int
+	ReviewCount            int
+	TotalDue               int
+	ReviewRatioNumerator   int
+	ReviewRatioDenominator int
+}
+
 // QuestionItem represents a question returned for study.
 type QuestionItem struct {
 	QuestionID   string

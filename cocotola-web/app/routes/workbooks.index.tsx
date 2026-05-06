@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useFetcher, useLoaderData } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
+import { StartStudyDialog } from "~/components/study/start-study-dialog";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -112,15 +113,11 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
       </p>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          className="flex-1"
-          nativeButton={false}
-          render={<Link to={`/workbooks/${workbook.workbookId}/study`} />}
-        >
-          <BookOpenIcon data-icon="inline-start" className="size-3.5" />
-          <span>{t("workbooks.index.study")}</span>
-        </Button>
+        <StartStudyDialog
+          workbookId={workbook.workbookId}
+          triggerLabel={t("workbooks.index.study")}
+          triggerClassName="flex-1"
+        />
         <Button
           variant="outline"
           size="sm"

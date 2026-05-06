@@ -38,6 +38,8 @@ paths:
     $ref: 'paths/sharing.yaml#/unshare'
   /api/v1/workbook/public:
     $ref: 'paths/sharing.yaml#/public'
+  /api/v1/workbook/{workbookId}/study/summary:
+    $ref: 'paths/study.yaml#/study-summary'
   /api/v1/workbook/{workbookId}/study:
     $ref: 'paths/study.yaml#/study'
   /api/v1/workbook/{workbookId}/study/{questionId}/answer:
@@ -82,6 +84,8 @@ components:
       $ref: 'schemas/study.yaml#/StudyQuestionResponse'
     GetStudyQuestionsResponse:
       $ref: 'schemas/study.yaml#/GetStudyQuestionsResponse'
+    StudySummaryResponse:
+      $ref: 'schemas/study.yaml#/StudySummaryResponse'
     RecordAnswerRequest:
       $ref: 'schemas/study.yaml#/RecordAnswerRequest'
     RecordAnswerResponse:

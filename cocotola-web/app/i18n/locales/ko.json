@@ -125,6 +125,20 @@
       "shuffleChoices": "선택지 섞기",
       "showCorrectCount": "정답 개수 표시"
     },
+    "studyDialog": {
+      "title": "학습 시작",
+      "description": "학습할 문제 수를 선택하세요. 실제 문제는 서버가 복습/신규 비율에 따라 선택합니다.",
+      "loading": "사용 가능한 문제를 불러오는 중...",
+      "loadError": "학습 요약을 불러오지 못했습니다. 다시 시도하세요.",
+      "reviewLabel": "복습",
+      "newLabel": "신규",
+      "ratioHint": "비율: {{numerator}}/{{denominator}} 복습, 나머지는 신규",
+      "sizeLabel": "문제 수",
+      "selected": "{{count}}개 문제를 학습합니다",
+      "noneAvailable": "지금 학습할 문제가 없습니다.",
+      "allButton": "전체 ({{count}})",
+      "start": "시작"
+    },
     "study": {
       "title": "학습 세션",
       "practiceTitle": "연습 세션",

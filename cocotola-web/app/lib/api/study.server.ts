@@ -15,6 +15,14 @@ export type GetStudyQuestionsResponse = {
   reviewCount: number;
 };
 
+export type StudySummary = {
+  newCount: number;
+  reviewCount: number;
+  totalDue: number;
+  reviewRatioNumerator: number;
+  reviewRatioDenominator: number;
+};
+
 export type RecordAnswerResponse = {
   nextDueAt: string;
   consecutiveCorrect: number;
@@ -43,6 +51,30 @@ export async function getStudyQuestions(
   }
 
   return (await response.json()) as GetStudyQuestionsResponse;
+}
+
+export async function getStudySummary(
+  accessToken: string,
+  workbookId: string,
+  practice = false,
+): Promise<StudySummary> {
+  const baseUrl = getQuestionUrl();
+  const params = new URLSearchParams();
+  if (practice) params.set("practice", "true");
+  const query = params.toString();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study/summary${
+    query ? `?${query}` : ""
+  }`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to fetch study summary", { status: response.status });
+  }
+
+  return (await response.json()) as StudySummary;
 }
 
 async function postRecordAnswer(

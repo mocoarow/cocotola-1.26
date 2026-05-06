@@ -3,6 +3,7 @@ package study
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
@@ -70,7 +71,7 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 		return nil, fmt.Errorf("find study records: %w", err)
 	}
 
-	dueIDs, newIDs, reviewCount, newCount := q.classifyQuestionIDs(activeList.Entries(), studyRecords, input.Practice)
+	dueIDs, newIDs, reviewCount, newCount := classifyQuestionIDs(activeList.Entries(), studyRecords, q.config.Now(), input.Practice)
 
 	q.config.Shuffle(len(newIDs), func(i, j int) {
 		newIDs[i], newIDs[j] = newIDs[j], newIDs[i]
@@ -97,14 +98,13 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 // mode the schedule is ignored: every active question with a record is treated
 // as due so the user can keep solving even after the day's queue is exhausted,
 // regardless of whether the question was previously answered correctly or
-// incorrectly.
-func (q *GetStudyQuestionsQuery) classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record, practice bool) (dueIDs, newIDs []string, reviewCount, newCount int) {
+// incorrectly. Shared between GetStudyQuestionsQuery and GetStudySummaryQuery.
+func classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record, now time.Time, practice bool) (dueIDs, newIDs []string, reviewCount, newCount int) {
 	recordMap := make(map[string]int, len(studyRecords))
 	for i, r := range studyRecords {
 		recordMap[r.QuestionID()] = i
 	}
 
-	now := q.config.Now()
 	for _, qID := range activeIDs {
 		idx, hasRecord := recordMap[qID]
 		switch {
@@ -142,13 +142,19 @@ func (q *GetStudyQuestionsQuery) fetchQuestionItems(ctx context.Context, workboo
 	return items, nil
 }
 
-const reviewRatioNumerator = 9
-const reviewRatioDenominator = 10
+// ReviewRatioNumerator and ReviewRatioDenominator define the fixed
+// review/new mix used by mixIDs when filling a study session. Exposed so
+// callers (e.g. the summary endpoint) can advertise the ratio to clients
+// without duplicating the constants.
+const (
+	ReviewRatioNumerator   = 9
+	ReviewRatioDenominator = 10
+)
 
 // mixIDs selects IDs with 90% review and 10% new ratio.
 // If one pool has fewer than its allocated slots, the surplus is filled from the other.
 func mixIDs(review, unseen []string, limit int) []string {
-	reviewSlots := limit * reviewRatioNumerator / reviewRatioDenominator
+	reviewSlots := limit * ReviewRatioNumerator / ReviewRatioDenominator
 	newSlots := limit - reviewSlots
 
 	// Take from each pool, capped by availability

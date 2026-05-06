@@ -125,6 +125,20 @@
       "shuffleChoices": "Shuffle choices",
       "showCorrectCount": "Show number of correct answers"
     },
+    "studyDialog": {
+      "title": "Start Studying",
+      "description": "Pick how many questions to study. The server selects the actual questions based on the review/new ratio.",
+      "loading": "Loading available questions...",
+      "loadError": "Could not load study summary. Try again.",
+      "reviewLabel": "Review",
+      "newLabel": "New",
+      "ratioHint": "Mix: {{numerator}}/{{denominator}} review, the rest new",
+      "sizeLabel": "Number of questions",
+      "selected": "Will study {{count}} questions",
+      "noneAvailable": "Nothing to study right now.",
+      "allButton": "All ({{count}})",
+      "start": "Start"
+    },
     "study": {
       "title": "Study Session",
       "practiceTitle": "Practice Session",

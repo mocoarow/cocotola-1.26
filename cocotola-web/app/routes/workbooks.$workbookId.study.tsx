@@ -23,14 +23,20 @@ import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId.study";
 import type { loader as workbooksLayoutLoader } from "./workbooks";
 
+// Default session size when the user lands without choosing one (e.g. the
+// study URL shared from another tab). The dialog on the workbook list always
+// supplies an explicit `?limit=N` so this only applies to direct navigation.
+const DEFAULT_STUDY_LIMIT = 20;
+
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { accessToken } = await requireAuth(request);
   const { workbookId } = params;
   const url = new URL(request.url);
   const practice = url.searchParams.get("practice") === "true";
+  const limit = parseLimit(url.searchParams.get("limit"));
   const [workbook, data] = await Promise.all([
     getWorkbook(accessToken, workbookId),
-    getStudyQuestions(accessToken, workbookId, 20, practice),
+    getStudyQuestions(accessToken, workbookId, limit, practice),
   ]);
   return {
     workbookId,
@@ -38,6 +44,13 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     questions: data.questions,
     practice,
   };
+}
+
+function parseLimit(raw: string | null): number {
+  if (raw === null) return DEFAULT_STUDY_LIMIT;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_STUDY_LIMIT;
+  return Math.min(100, parsed);
 }
 
 // Skip revalidation only for the "answer" action submit. Otherwise the loader

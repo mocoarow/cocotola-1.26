@@ -25,6 +25,7 @@ vi.mock("react-router", async (importOriginal) => {
   return {
     ...actual,
     useLoaderData: vi.fn(),
+    useNavigate: vi.fn(() => vi.fn()),
     useFetcher: vi.fn(() => ({
       state: "idle",
       Form: ({
@@ -196,8 +197,8 @@ describe("WorkbooksPublic component", () => {
     expect(screen.queryByText("Added")).not.toBeInTheDocument();
   });
 
-  it("should render Study link even when workbook is not yet shared", () => {
-    // given
+  it("should render Study as a button (opens picker dialog) when workbook is not yet shared", () => {
+    // given: Study is now a dialog trigger, not a direct link.
     const workbooks = [buildWorkbook({ workbookId: "wb-1" })];
     mockedUseLoaderData.mockReturnValue({ workbooks, references: [] });
 
@@ -205,12 +206,12 @@ describe("WorkbooksPublic component", () => {
     renderPublic();
 
     // then
-    const studyLink = screen.getByText("Study").closest("a");
-    expect(studyLink).toBeInTheDocument();
-    expect(studyLink).toHaveAttribute("href", "/workbooks/wb-1/study");
+    const studyTrigger = screen.getByRole("button", { name: /Study/i });
+    expect(studyTrigger).toBeInTheDocument();
+    expect(studyTrigger.tagName).toBe("BUTTON");
   });
 
-  it("should render Added button and Study link when workbook is already shared", () => {
+  it("should render Added button and Study trigger when workbook is already shared", () => {
     // given
     const workbooks = [buildWorkbook({ workbookId: "wb-1" })];
     const references = [buildReference({ workbookId: "wb-1", referenceId: "ref-1" })];
@@ -221,9 +222,9 @@ describe("WorkbooksPublic component", () => {
 
     // then
     expect(screen.getByText("Added")).toBeInTheDocument();
-    const studyLink = screen.getByText("Study").closest("a");
-    expect(studyLink).toBeInTheDocument();
-    expect(studyLink).toHaveAttribute("href", "/workbooks/wb-1/study");
+    const studyTrigger = screen.getByRole("button", { name: /Study/i });
+    expect(studyTrigger).toBeInTheDocument();
+    expect(studyTrigger.tagName).toBe("BUTTON");
   });
 
   it("should submit share intent when Add button is clicked", async () => {

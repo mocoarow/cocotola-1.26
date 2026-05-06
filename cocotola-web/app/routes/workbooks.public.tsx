@@ -1,8 +1,9 @@
-import { BookOpenIcon, CheckIcon, GlobeIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, GlobeIcon, PlusIcon } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { useFetcher, useLoaderData } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
+import { StartStudyDialog } from "~/components/study/start-study-dialog";
 import { Button } from "~/components/ui/button";
 import {
   listPublicWorkbooks,
@@ -122,15 +123,11 @@ function PublicWorkbookCard({
       </p>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          className="flex-1"
-          nativeButton={false}
-          render={<Link to={`/workbooks/${workbook.workbookId}/study`} />}
-        >
-          <BookOpenIcon data-icon="inline-start" className="size-3.5" />
-          <span>{t("workbooks.public.study")}</span>
-        </Button>
+        <StartStudyDialog
+          workbookId={workbook.workbookId}
+          triggerLabel={t("workbooks.public.study")}
+          triggerClassName="flex-1"
+        />
         {isShared ? (
           <fetcher.Form method="post" className="flex-1" onSubmit={handleUnshare}>
             <Button
