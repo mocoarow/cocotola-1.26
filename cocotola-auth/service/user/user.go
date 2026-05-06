@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
 // --- CreateAppUser ---
@@ -29,7 +31,7 @@ func NewCreateAppUserInput(operatorID domain.AppUserID, organizationName string,
 		LoginID:          loginID,
 		Password:         password,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create app user input: %w", err)
 	}
 	return m, nil
@@ -57,7 +59,7 @@ func NewCreateAppUserOutput(appUserID domain.AppUserID, organizationID domain.Or
 		LoginID:        loginID,
 		Enabled:        enabled,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create app user output: %w", err)
 	}
 	return m, nil
@@ -85,7 +87,7 @@ func NewChangePasswordInput(operatorID domain.AppUserID, appUserID domain.AppUse
 		AppUserID:   appUserID,
 		NewPassword: newPassword,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate change password input: %w", err)
 	}
 	return m, nil
@@ -104,7 +106,7 @@ func NewChangePasswordOutput(appUserID domain.AppUserID) (*ChangePasswordOutput,
 	m := &ChangePasswordOutput{
 		AppUserID: appUserID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate change password output: %w", err)
 	}
 	return m, nil

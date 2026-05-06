@@ -7,7 +7,7 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/config",
     visibility = ["//visibility:public"],
     deps = [
-        "//cocotola-auth/domain",
+        "//cocotola-lib/domain",
         "//cocotola-lib/gateway",
         "@in_yaml_go_yaml_v4//:yaml",
     ],

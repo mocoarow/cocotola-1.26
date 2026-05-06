@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
 // --- CreateGroup ---
@@ -27,7 +29,7 @@ func NewCreateGroupInput(operatorID domain.AppUserID, organizationName string, g
 		OrganizationName: organizationName,
 		GroupName:        groupName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create group input: %w", err)
 	}
 	return m, nil
@@ -55,7 +57,7 @@ func NewCreateGroupOutput(groupID domain.GroupID, organizationID domain.Organiza
 		Name:           name,
 		Enabled:        enabled,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create group output: %w", err)
 	}
 	return m, nil

@@ -9,8 +9,7 @@ import (
 
 	"go.yaml.in/yaml/v4"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
 
@@ -76,7 +75,7 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("yaml.Unmarshal. filename: %s, err: %w", filename, err)
 	}
 
-	if err := domain.ValidateStruct(&conf); err != nil {
+	if err := libdomain.ValidateStruct(&conf); err != nil {
 		return nil, fmt.Errorf("validate struct. filename: %s, err: %w", filename, err)
 	}
 

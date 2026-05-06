@@ -5,5 +5,8 @@ go_library(
     srcs = ["auth.go"],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth",
     visibility = ["//visibility:public"],
-    deps = ["//cocotola-auth/domain"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-lib/domain",
+    ],
 )

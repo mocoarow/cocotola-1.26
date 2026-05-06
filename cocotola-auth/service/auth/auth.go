@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+
+	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
 // UserInfo represents an authenticated user's identity.
@@ -29,7 +31,7 @@ func NewUserInfo(userID domain.AppUserID, loginID string, organizationName strin
 		OrganizationName: organizationName,
 		ExpiresAt:        expiresAt,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate user info: %w", err)
 	}
 	return m, nil
@@ -51,7 +53,7 @@ func NewPasswordAuthenticateInput(loginID string, password string, organizationN
 		Password:         password,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate password authenticate input: %w", err)
 	}
 	return m, nil
@@ -74,7 +76,7 @@ func NewPasswordAuthenticateOutput(userID domain.AppUserID, loginID string, orga
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate password authenticate output: %w", err)
 	}
 	return m, nil
@@ -99,7 +101,7 @@ func NewCreateSessionTokenInput(userID domain.AppUserID, loginID string, organiz
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create session token input: %w", err)
 	}
 	return m, nil
@@ -115,7 +117,7 @@ func NewCreateSessionTokenOutput(rawToken string) (*CreateSessionTokenOutput, er
 	m := &CreateSessionTokenOutput{
 		RawToken: rawToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create session token output: %w", err)
 	}
 	return m, nil
@@ -140,7 +142,7 @@ func NewCreateTokenPairInput(userID domain.AppUserID, loginID string, organizati
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create token pair input: %w", err)
 	}
 	return m, nil
@@ -158,7 +160,7 @@ func NewCreateTokenPairOutput(accessToken string, refreshToken string) (*CreateT
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate create token pair output: %w", err)
 	}
 	return m, nil
@@ -176,7 +178,7 @@ func NewValidateSessionTokenInput(rawToken string) (*ValidateSessionTokenInput, 
 	m := &ValidateSessionTokenInput{
 		RawToken: rawToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("new validate session token input: %w", err)
 	}
 	return m, nil
@@ -199,7 +201,7 @@ func NewValidateSessionTokenOutput(userID domain.AppUserID, loginID string, orga
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("new validate session token output: %w", err)
 	}
 	return m, nil
@@ -217,7 +219,7 @@ func NewValidateAccessTokenInput(jwtString string) (*ValidateAccessTokenInput, e
 	m := &ValidateAccessTokenInput{
 		JWTString: jwtString,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("new validate access token input: %w", err)
 	}
 	return m, nil
@@ -240,7 +242,7 @@ func NewValidateAccessTokenOutput(userID domain.AppUserID, loginID string, organ
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("new validate access token output: %w", err)
 	}
 	return m, nil
@@ -258,7 +260,7 @@ func NewExtendSessionTokenInput(rawToken string) (*ExtendSessionTokenInput, erro
 	m := &ExtendSessionTokenInput{
 		RawToken: rawToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate extend session token input: %w", err)
 	}
 	return m, nil
@@ -276,7 +278,7 @@ func NewRevokeSessionTokenInput(rawToken string) (*RevokeSessionTokenInput, erro
 	m := &RevokeSessionTokenInput{
 		RawToken: rawToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate revoke session token input: %w", err)
 	}
 	return m, nil
@@ -294,7 +296,7 @@ func NewRefreshAccessTokenInput(rawRefreshToken string) (*RefreshAccessTokenInpu
 	m := &RefreshAccessTokenInput{
 		RawRefreshToken: rawRefreshToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate refresh access token input: %w", err)
 	}
 	return m, nil
@@ -310,7 +312,7 @@ func NewRefreshAccessTokenOutput(accessToken string) (*RefreshAccessTokenOutput,
 	m := &RefreshAccessTokenOutput{
 		AccessToken: accessToken,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate refresh access token output: %w", err)
 	}
 	return m, nil
@@ -328,7 +330,7 @@ func NewGuestAuthenticateInput(organizationName string) (*GuestAuthenticateInput
 	m := &GuestAuthenticateInput{
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate guest authenticate input: %w", err)
 	}
 	return m, nil
@@ -351,7 +353,7 @@ func NewGuestAuthenticateOutput(userID domain.AppUserID, loginID string, organiz
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate guest authenticate output: %w", err)
 	}
 	return m, nil
@@ -371,7 +373,7 @@ func NewSupabaseExchangeInput(supabaseJWT string, organizationName string) (*Sup
 		SupabaseJWT:      supabaseJWT,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate supabase exchange input: %w", err)
 	}
 	return m, nil
@@ -394,7 +396,7 @@ func NewSupabaseExchangeOutput(userID domain.AppUserID, loginID string, organiza
 		LoginID:          loginID,
 		OrganizationName: organizationName,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate supabase exchange output: %w", err)
 	}
 	return m, nil
@@ -412,7 +414,7 @@ func NewRevokeTokenInput(token string) (*RevokeTokenInput, error) {
 	m := &RevokeTokenInput{
 		Token: token,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := libdomain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate revoke token input: %w", err)
 	}
 	return m, nil
