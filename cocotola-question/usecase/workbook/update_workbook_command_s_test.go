@@ -22,8 +22,12 @@ func newUpdateWorkbookInput(t *testing.T, language string) *workbookservice.Upda
 	return input
 }
 
+// fixtureLoadedTime is the timestamp baked into newOwnedFixtureWorkbook so
+// Touch-bumped tests can compare against a known load-time value.
+var fixtureLoadedTime = time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
+
 func newOwnedFixtureWorkbook() *domainworkbook.Workbook {
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Old Title", "old desc", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), time.Now(), time.Now())
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Old Title", "old desc", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), 1, fixtureLoadedTime, fixtureLoadedTime)
 }
 
 func Test_UpdateWorkbookCommand_shouldUpdateLanguage_whenOwnerSendsValidLanguage(t *testing.T) {
@@ -40,12 +44,12 @@ func Test_UpdateWorkbookCommand_shouldUpdateLanguage_whenOwnerSendsValidLanguage
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newOwnedFixtureWorkbook(), nil)
 
-	wbUpdater := newMockworkbookUpdater(t)
-	wbUpdater.On("Update", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
 		return wb.Language().Value() == "en"
 	})).Return(nil)
 
-	cmd := workbookusecase.NewUpdateWorkbookCommand(wbFinder, wbUpdater, authChecker)
+	cmd := workbookusecase.NewUpdateWorkbookCommand(wbFinder, wbSaver, authChecker)
 
 	// when
 	output, err := cmd.UpdateWorkbook(ctx, newUpdateWorkbookInput(t, "en"))
@@ -53,6 +57,36 @@ func Test_UpdateWorkbookCommand_shouldUpdateLanguage_whenOwnerSendsValidLanguage
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, "en", output.Language)
+}
+
+func Test_UpdateWorkbookCommand_shouldBumpUpdatedAt_whenSavingChanges(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource).Return(true, nil)
+
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newOwnedFixtureWorkbook(), nil)
+
+	beforeUpdate := time.Now()
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
+		return wb.UpdatedAt().After(fixtureLoadedTime) && !wb.UpdatedAt().Before(beforeUpdate)
+	})).Return(nil)
+
+	cmd := workbookusecase.NewUpdateWorkbookCommand(wbFinder, wbSaver, authChecker)
+
+	// when
+	output, err := cmd.UpdateWorkbook(ctx, newUpdateWorkbookInput(t, "en"))
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, output.UpdatedAt.After(fixtureLoadedTime))
 }
 
 func Test_UpdateWorkbookCommand_shouldReturnError_whenLanguageFailsDomainValidation(t *testing.T) {
@@ -98,7 +132,7 @@ func Test_UpdateWorkbookCommand_shouldReturnForbidden_whenOperatorIsNotOwner(t *
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource).Return(true, nil)
 
-	otherOwner := domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, "other-user", fixtureOrganizationID, "T", "D", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), time.Now(), time.Now())
+	otherOwner := domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, "other-user", fixtureOrganizationID, "T", "D", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), 1, time.Now(), time.Now())
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(otherOwner, nil)
 

@@ -85,7 +85,7 @@ func Initialize(
 	orgResolverMiddleware := newOrganizationResolverMiddleware(orgResolver, logger)
 
 	// usecase layer
-	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
+	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
 	studyCommand := studyusecase.NewCommand(studyRecordRepo, studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{

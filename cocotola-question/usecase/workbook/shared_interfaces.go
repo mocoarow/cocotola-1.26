@@ -7,17 +7,13 @@ import (
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
-type workbookCreator interface {
-	Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error)
+type workbookSaver interface {
+	Save(ctx context.Context, wb *domainworkbook.Workbook) error
 }
 
 type workbookFinder interface {
 	FindByID(ctx context.Context, id string) (*domainworkbook.Workbook, error)
 	FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error)
-}
-
-type workbookUpdater interface {
-	Update(ctx context.Context, wb *domainworkbook.Workbook) error
 }
 
 type workbookDeleter interface {
