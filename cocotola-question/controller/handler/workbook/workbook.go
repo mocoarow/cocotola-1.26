@@ -67,6 +67,11 @@ func handleWorkbookError(ctx context.Context, logger *slog.Logger, c *gin.Contex
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("workbook_not_found", "workbook not found"))
 		return
 	}
+	if errors.Is(err, domain.ErrOwnedWorkbookListNotFound) {
+		logger.WarnContext(ctx, "owned workbook list not found", slog.Any("error", err))
+		c.JSON(http.StatusNotFound, controller.NewErrorResponse("owned_workbook_list_not_found", "owned workbook list not found"))
+		return
+	}
 	logger.ErrorContext(ctx, action, slog.Any("error", err))
 	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }

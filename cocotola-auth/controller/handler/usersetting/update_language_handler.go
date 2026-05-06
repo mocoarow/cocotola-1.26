@@ -14,6 +14,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
@@ -71,9 +72,14 @@ func (h *UpdateLanguageHandler) UpdateLanguage(c *gin.Context) {
 	}
 
 	if err := h.settingSaver.Save(ctx, setting); err != nil {
-		if errors.Is(err, domain.ErrUserSettingConcurrentModification) {
+		if errors.Is(err, libversioned.ErrConcurrentModification) {
 			h.logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
 			c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "user setting was modified concurrently"))
+			return
+		}
+		if errors.Is(err, domain.ErrUserSettingNotFound) {
+			h.logger.WarnContext(ctx, "user setting not found", slog.Any("error", err))
+			c.JSON(http.StatusNotFound, controller.NewErrorResponse("user_setting_not_found", "user setting not found"))
 			return
 		}
 		h.logger.ErrorContext(ctx, "save user setting", slog.Any("error", err))

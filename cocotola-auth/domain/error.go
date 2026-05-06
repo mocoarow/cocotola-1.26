@@ -24,11 +24,6 @@ var ErrAppUserNotFound = errors.New("app user not found")
 // that is already linked to a provider.
 var ErrAppUserAlreadyLinked = errors.New("app user already linked to a provider")
 
-// ErrAppUserConcurrentModification is returned when an optimistic-lock compare-and-swap
-// on the AppUser row version fails, meaning another transaction modified the aggregate
-// after it was loaded. Callers should reload the aggregate and retry.
-var ErrAppUserConcurrentModification = errors.New("app user was modified concurrently")
-
 // ErrAppUserAutoLinkRejected is returned when the supabase exchange flow refuses
 // to automatically link a Supabase identity to an existing local account because
 // the existing account has a password set (and therefore belongs to a human who
@@ -40,20 +35,8 @@ var ErrAppUserAutoLinkRejected = errors.New("auto-link rejected: existing accoun
 // any local account to prevent email-spoofing account takeover.
 var ErrSupabaseEmailNotVerified = errors.New("supabase email not verified")
 
-// ErrOrganizationConcurrentModification is returned when an optimistic-lock CAS
-// on the Organization row version fails.
-var ErrOrganizationConcurrentModification = errors.New("organization was modified concurrently")
-
 // ErrGroupNotFound is returned when a group cannot be found.
 var ErrGroupNotFound = errors.New("group not found")
-
-// ErrGroupConcurrentModification is returned when an optimistic-lock CAS
-// on the Group row version fails.
-var ErrGroupConcurrentModification = errors.New("group was modified concurrently")
-
-// ErrSpaceConcurrentModification is returned when an optimistic-lock CAS
-// on the Space row version fails.
-var ErrSpaceConcurrentModification = errors.New("space was modified concurrently")
 
 // ErrActiveUserLimitReached is returned when the organization has reached its active user limit.
 var ErrActiveUserLimitReached = errors.New("active user limit reached")
@@ -70,19 +53,11 @@ var ErrDuplicateEntry = errors.New("duplicate entry")
 // ErrAppUserProviderNotFound is returned when an app user provider link cannot be found.
 var ErrAppUserProviderNotFound = errors.New("app user provider not found")
 
-// ErrAppUserProviderConcurrentModification is returned when an optimistic-lock CAS
-// on the AppUserProvider row version fails.
-var ErrAppUserProviderConcurrentModification = errors.New("app user provider was modified concurrently")
-
 // ErrSpaceNotFound is returned when a space cannot be found.
 var ErrSpaceNotFound = errors.New("space not found")
 
 // ErrUserSettingNotFound is returned when a user setting cannot be found.
 var ErrUserSettingNotFound = errors.New("user setting not found")
-
-// ErrUserSettingConcurrentModification is returned when an optimistic-lock CAS
-// on the UserSetting row version fails.
-var ErrUserSettingConcurrentModification = errors.New("user setting was modified concurrently")
 
 // ErrForbidden is returned when the operator does not have permission to perform the action.
 var ErrForbidden = errors.New("forbidden")

@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -55,7 +56,7 @@ func handleStudyError(ctx context.Context, logger *slog.Logger, c *gin.Context, 
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("study_record_not_found", "study record not found"))
 		return
 	}
-	if errors.Is(err, domain.ErrConcurrentModification) {
+	if errors.Is(err, libversioned.ErrConcurrentModification) {
 		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
 		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "resource was modified concurrently"))
 		return

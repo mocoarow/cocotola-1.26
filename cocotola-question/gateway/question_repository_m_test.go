@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
@@ -121,7 +122,7 @@ func Test_QuestionRepository_Save_shouldReturnConcurrentModification_whenVersion
 	err = repo.Save(ctx, stale)
 
 	// then
-	require.ErrorIs(t, err, domain.ErrConcurrentModification)
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
 }
 
 func Test_QuestionRepository_FindByWorkbookID_shouldReturnQuestionsInOrderIndexOrder(t *testing.T) {
@@ -160,6 +161,30 @@ func Test_QuestionRepository_FindByID_shouldReturnErrQuestionNotFound_whenMissin
 
 	// then
 	require.ErrorIs(t, err, domain.ErrQuestionNotFound)
+}
+
+func Test_QuestionRepository_Save_shouldReturnErrQuestionNotFound_whenDocWasDeletedAfterLoad(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a saved question is deleted while a loaded copy is still held in memory
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	workbookID := "test-wb-deleted-then-save-" + t.Name()
+	q := newQuestion(t, workbookID, 0)
+	require.NoError(t, repo.Save(ctx, q))
+	loaded, err := repo.FindByID(ctx, workbookID, q.ID())
+	require.NoError(t, err)
+	require.NoError(t, repo.Delete(ctx, workbookID, q.ID()))
+
+	// when: the stale loaded aggregate tries to save
+	require.NoError(t, loaded.Edit(fixtureWordFillContentForGateway, nil, 7, time.Now()))
+	err = repo.Save(ctx, loaded)
+
+	// then: callers see a domain not-found, not a generic error
+	require.ErrorIs(t, err, domain.ErrQuestionNotFound)
+	assert.NotErrorIs(t, err, libversioned.ErrConcurrentModification,
+		"deleted document must surface as not-found, not as concurrent modification")
 }
 
 func Test_QuestionRepository_Delete_shouldRemoveDocument(t *testing.T) {

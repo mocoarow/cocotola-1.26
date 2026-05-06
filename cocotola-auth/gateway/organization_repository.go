@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type organizationRecord struct {
@@ -25,6 +27,10 @@ type organizationRecord struct {
 
 func (organizationRecord) TableName() string {
 	return "organization"
+}
+
+func (r *organizationRecord) GetVersion() int {
+	return r.Version
 }
 
 func toOrganizationDomain(r *organizationRecord) *domain.Organization {
@@ -48,11 +54,10 @@ func NewOrganizationRepository(db *gorm.DB) *OrganizationRepository {
 // column. The repository updates the aggregate's version after a successful
 // persist so the caller does not need to manage versioning.
 func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organization) error {
-	nextVersion := org.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := organizationRecord{
 		ID:              org.ID().String(),
-		Version:         nextVersion,
+		Version:         org.Version() + 1,
 		CreatedAt:       time.Time{},
 		UpdatedAt:       time.Time{},
 		CreatedBy:       systemUserID,
@@ -61,30 +66,25 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 		MaxActiveUsers:  org.MaxActiveUsers(),
 		MaxActiveGroups: org.MaxActiveGroups(),
 	}
-	if org.Version() == 0 {
-		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-			return fmt.Errorf("insert organization: %w", err)
-		}
-		org.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("id = ? AND version = ?", record.ID, org.Version()).
-		Updates(map[string]any{
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*organizationRecord]{
+		DB:     r.db,
+		Entity: org,
+		Record: &record,
+		PK:     map[string]any{"id": record.ID},
+		Updates: map[string]any{
 			colName:             record.Name,
 			"max_active_users":  record.MaxActiveUsers,
 			"max_active_groups": record.MaxActiveGroups,
-			colVersion:          nextVersion,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update organization: %w", result.Error)
+		},
+		EntityName:   "organization",
+		OmitOnInsert: nil,
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrOrganizationNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrOrganizationConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save organization: %w", err)
 	}
-	org.SetVersion(nextVersion)
 	return nil
 }
 

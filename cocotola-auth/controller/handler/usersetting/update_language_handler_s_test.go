@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
 const updateLanguageURL = "/api/v1/auth/user-setting/language"
@@ -177,7 +178,7 @@ func Test_UpdateLanguageHandler_shouldReturn409_whenConcurrentModification(t *te
 	require.NoError(t, err)
 	saver := newMockuserSettingSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.Anything).Return(domain.ErrUserSettingConcurrentModification)
+	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
@@ -189,6 +190,30 @@ func Test_UpdateLanguageHandler_shouldReturn409_whenConcurrentModification(t *te
 	// then
 	assert.Equal(t, http.StatusConflict, w.Code)
 	validateErrorResponse(t, respBytes, "conflict", "user setting was modified concurrently")
+}
+
+func Test_UpdateLanguageHandler_shouldReturn404_whenSettingDeletedConcurrently(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: caller loaded a setting at version 7, but the row was deleted before save
+	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en")
+	require.NoError(t, err)
+	existing.SetVersion(7)
+	saver := newMockuserSettingSaver(t)
+	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
+	saver.On("Save", mock.Anything, mock.Anything).Return(domain.ErrUserSettingNotFound)
+	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	w := httptest.NewRecorder()
+
+	// when
+	req := newAuthedRequest(ctx, t, `{"language":"ja"}`)
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	validateErrorResponse(t, respBytes, "user_setting_not_found", "user setting not found")
 }
 
 func Test_UpdateLanguageHandler_shouldReturn500_whenFindFailsUnexpectedly(t *testing.T) {

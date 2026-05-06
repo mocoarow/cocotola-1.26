@@ -9,6 +9,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type userSettingRecord struct {
@@ -24,6 +26,10 @@ type userSettingRecord struct {
 
 func (userSettingRecord) TableName() string {
 	return "user_setting"
+}
+
+func (r *userSettingRecord) GetVersion() int {
+	return r.Version
 }
 
 func toUserSettingDomain(r *userSettingRecord) (*domain.UserSetting, error) {
@@ -52,11 +58,10 @@ func NewUserSettingRepository(db *gorm.DB) *UserSettingRepository {
 // Save persists a user setting. New settings (version 0) are inserted;
 // loaded settings (version > 0) are updated via CAS on the version column.
 func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSetting) error {
-	nextVersion := setting.Version() + 1
 	operatorID := setting.AppUserID().String()
 	record := userSettingRecord{
 		AppUserID:    setting.AppUserID().String(),
-		Version:      nextVersion,
+		Version:      setting.Version() + 1,
 		CreatedAt:    time.Time{},
 		UpdatedAt:    time.Time{},
 		CreatedBy:    operatorID,
@@ -64,30 +69,25 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		MaxWorkbooks: setting.MaxWorkbooks(),
 		Language:     setting.Language(),
 	}
-	if setting.Version() == 0 {
-		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-			return fmt.Errorf("insert user setting: %w", err)
-		}
-		setting.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("app_user_id = ? AND version = ?", record.AppUserID, setting.Version()).
-		Updates(map[string]any{
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*userSettingRecord]{
+		DB:     r.db,
+		Entity: setting,
+		Record: &record,
+		PK:     map[string]any{"app_user_id": record.AppUserID},
+		Updates: map[string]any{
 			"max_workbooks": record.MaxWorkbooks,
 			"language":      record.Language,
-			colVersion:      nextVersion,
 			"updated_by":    operatorID,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update user setting: %w", result.Error)
+		},
+		EntityName:   "user setting",
+		OmitOnInsert: nil,
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrUserSettingNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrUserSettingConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save user setting: %w", err)
 	}
-	setting.SetVersion(nextVersion)
 	return nil
 }
 

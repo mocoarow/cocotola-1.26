@@ -26,11 +26,14 @@ var ErrOwnedWorkbookLimitReached = errors.New("owned workbook limit reached")
 // ErrDuplicateOwnedWorkbook is returned when attempting to add a workbook that is already owned.
 var ErrDuplicateOwnedWorkbook = errors.New("duplicate owned workbook")
 
-// ErrConcurrentModification is returned when an optimistic lock fails due to concurrent updates.
-var ErrConcurrentModification = errors.New("concurrent modification")
-
 // ErrStudyRecordNotFound is returned when a study record cannot be found.
 var ErrStudyRecordNotFound = errors.New("study record not found")
+
+// ErrActiveQuestionListNotFound is returned when an active question list cannot be found.
+var ErrActiveQuestionListNotFound = errors.New("active question list not found")
+
+// ErrOwnedWorkbookListNotFound is returned when an owned workbook list cannot be found.
+var ErrOwnedWorkbookListNotFound = errors.New("owned workbook list not found")
 
 // ErrSpaceNotFound is returned when a space lookup against cocotola-auth returns 404.
 var ErrSpaceNotFound = errors.New("space not found")

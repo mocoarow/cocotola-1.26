@@ -10,6 +10,8 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type appUserProviderRecord struct {
@@ -27,6 +29,10 @@ type appUserProviderRecord struct {
 
 func (appUserProviderRecord) TableName() string {
 	return "app_user_provider"
+}
+
+func (r *appUserProviderRecord) GetVersion() int {
+	return r.Version
 }
 
 func toAppUserProviderDomain(r *appUserProviderRecord) *domainuser.AppUserProvider {
@@ -54,11 +60,10 @@ func NewAppUserProviderRepository(db *gorm.DB) *AppUserProviderRepository {
 // Save persists an app user provider entity. New entities (version 0) are inserted;
 // loaded entities (version > 0) are updated via CAS on the version column.
 func (r *AppUserProviderRepository) Save(ctx context.Context, p *domainuser.AppUserProvider) error {
-	nextVersion := p.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := appUserProviderRecord{
 		ID:             p.ID().String(),
-		Version:        nextVersion,
+		Version:        p.Version() + 1,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
 		CreatedBy:      systemUserID,
@@ -68,31 +73,26 @@ func (r *AppUserProviderRepository) Save(ctx context.Context, p *domainuser.AppU
 		Provider:       p.Provider(),
 		ProviderID:     p.ProviderID(),
 	}
-	if p.Version() == 0 {
-		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-			return fmt.Errorf("insert app user provider: %w", err)
-		}
-		p.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("id = ? AND version = ?", record.ID, p.Version()).
-		Updates(map[string]any{
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*appUserProviderRecord]{
+		DB:     r.db,
+		Entity: p,
+		Record: &record,
+		PK:     map[string]any{"id": record.ID},
+		Updates: map[string]any{
 			"app_user_id":     record.AppUserID,
 			colOrganizationID: record.OrganizationID,
 			"provider":        record.Provider,
 			"provider_id":     record.ProviderID,
-			colVersion:        nextVersion,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update app user provider: %w", result.Error)
+		},
+		EntityName:   "app user provider",
+		OmitOnInsert: nil,
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrAppUserProviderNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrAppUserProviderConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save app user provider: %w", err)
 	}
-	p.SetVersion(nextVersion)
 	return nil
 }
 

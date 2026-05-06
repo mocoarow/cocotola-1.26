@@ -31,6 +31,7 @@ smart_go_test(
     ],
     deps = [
         ":workbook",
+        "//cocotola-lib/domain/versioned",
         "//cocotola-question/domain",
         "//cocotola-question/domain/workbook",
         "//cocotola-question/service/workbook",

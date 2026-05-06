@@ -10,6 +10,8 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaingroup "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type groupRecord struct {
@@ -26,6 +28,10 @@ type groupRecord struct {
 
 func (groupRecord) TableName() string {
 	return "group"
+}
+
+func (r *groupRecord) GetVersion() int {
+	return r.Version
 }
 
 func toGroupDomain(r *groupRecord) *domaingroup.Group {
@@ -49,11 +55,10 @@ func NewGroupRepository(db *gorm.DB) *GroupRepository {
 // The repository updates the aggregate's version after a successful persist so
 // the caller does not need to manage versioning.
 func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) error {
-	nextVersion := group.Version() + 1
 	systemUserID := domain.SystemAppUserID().String()
 	record := groupRecord{
 		ID:             group.ID().String(),
-		Version:        nextVersion,
+		Version:        group.Version() + 1,
 		CreatedAt:      time.Time{},
 		UpdatedAt:      time.Time{},
 		CreatedBy:      systemUserID,
@@ -62,30 +67,25 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 		Name:           group.Name(),
 		Enabled:        group.Enabled(),
 	}
-	if group.Version() == 0 {
-		if err := r.db.WithContext(ctx).Create(&record).Error; err != nil {
-			return fmt.Errorf("insert group: %w", err)
-		}
-		group.SetVersion(nextVersion)
-		return nil
-	}
-
-	result := r.db.WithContext(ctx).
-		Model(&record).
-		Where("id = ? AND version = ?", record.ID, group.Version()).
-		Updates(map[string]any{
+	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*groupRecord]{
+		DB:     r.db,
+		Entity: group,
+		Record: &record,
+		PK:     map[string]any{"id": record.ID},
+		Updates: map[string]any{
 			colOrganizationID: record.OrganizationID,
 			colName:           record.Name,
 			"enabled":         record.Enabled,
-			colVersion:        nextVersion,
-		})
-	if result.Error != nil {
-		return fmt.Errorf("update group: %w", result.Error)
+		},
+		EntityName:   "group",
+		OmitOnInsert: nil,
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrGroupNotFound
 	}
-	if result.RowsAffected == 0 {
-		return domain.ErrGroupConcurrentModification
+	if err != nil {
+		return fmt.Errorf("save group: %w", err)
 	}
-	group.SetVersion(nextVersion)
 	return nil
 }
 

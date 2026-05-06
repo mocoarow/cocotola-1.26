@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
@@ -114,7 +115,39 @@ func Test_StudyRecordRepository_Save_shouldReturnError_whenVersionConflict(t *te
 	err := repo.Save(ctx, userID, staleRecord)
 
 	// then
-	require.ErrorIs(t, err, domain.ErrConcurrentModification)
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
+}
+
+func Test_StudyRecordRepository_Save_shouldReturnErrStudyRecordNotFound_whenDocWasDeletedAfterLoad(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a saved record is deleted out-of-band before a stale aggregate tries to save
+	client := setupFirestoreClient(t)
+	repo := gateway.NewStudyRecordRepository(client)
+	userID := "test-user-deleted-then-save-" + t.Name()
+	workbookID := "wb-1"
+	questionID := "q-1"
+	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
+
+	record := study.ReconstructRecord(workbookID, questionID, 1, now, now.Add(24*time.Hour), 1, 0)
+	require.NoError(t, repo.Save(ctx, userID, record))
+
+	loaded, err := repo.FindByID(ctx, userID, workbookID, questionID)
+	require.NoError(t, err)
+
+	// delete the underlying document directly via the firestore client
+	_, err = client.Collection("users").Doc(userID).
+		Collection("study_records").Doc(workbookID + "__" + questionID).Delete(ctx)
+	require.NoError(t, err)
+
+	// when: the stale loaded aggregate tries to save
+	err = repo.Save(ctx, userID, loaded)
+
+	// then: callers see a domain not-found, not a generic error
+	require.ErrorIs(t, err, domain.ErrStudyRecordNotFound)
+	assert.NotErrorIs(t, err, libversioned.ErrConcurrentModification,
+		"deleted document must surface as not-found, not as concurrent modification")
 }
 
 func Test_StudyRecordRepository_FindByWorkbookID_shouldReturnEmpty_whenNoRecords(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
 func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T) {
@@ -147,6 +148,39 @@ func Test_AppUserRepository_Save_shouldPersistHashedPassword_whenDomainHasPasswo
 	assert.Equal(t, newHashedPw, *afterUpdate.HashedPassword)
 }
 
+func Test_AppUserRepository_Save_shouldReturnErrAppUserNotFound_whenRowWasDeletedAfterLoad(t *testing.T) {
+	t.Parallel()
+	// given: a saved app user is deleted from storage while a stale aggregate is held in memory
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "appuser-deleted-org")
+	repo := gateway.NewAppUserRepository(tx)
+
+	initial := domainuser.ReconstructAppUser(domain.AppUserID{}, orgID, "deleted@example.com", "", true)
+	require.NoError(t, repo.Save(ctx, initial))
+
+	var inserted gateway.AppUserRecordForTest
+	require.NoError(t, tx.Where("login_id = ?", "deleted@example.com").First(&inserted).Error)
+	insertedID, err := domain.ParseAppUserID(inserted.ID)
+	require.NoError(t, err)
+
+	loaded, err := repo.FindByID(ctx, insertedID)
+	require.NoError(t, err)
+
+	// delete the underlying row out-of-band (raw SQL to bypass the repository)
+	require.NoError(t, tx.Exec("DELETE FROM app_user WHERE id = ?", inserted.ID).Error)
+
+	// when: the stale loaded aggregate tries to save
+	loaded.Disable()
+	err = repo.Save(ctx, loaded)
+
+	// then: callers see a domain not-found, not a generic error
+	require.ErrorIs(t, err, domain.ErrAppUserNotFound)
+	assert.NotErrorIs(t, err, libversioned.ErrConcurrentModification,
+		"deleted row must surface as not-found, not as concurrent modification")
+}
+
 func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionMismatches(t *testing.T) {
 	t.Parallel()
 	// given: persist a user and load two independent in-memory copies of the same
@@ -179,7 +213,7 @@ func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionM
 	err = repo.Save(ctx, secondCopy)
 
 	// then: the CAS must fail and the caller must be told to reload.
-	require.ErrorIs(t, err, domain.ErrAppUserConcurrentModification)
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
 
 	// And the row must reflect the first commit, not the stale second save.
 	var afterUpdate gateway.AppUserRecordForTest
