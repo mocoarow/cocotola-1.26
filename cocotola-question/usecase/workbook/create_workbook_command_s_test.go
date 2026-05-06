@@ -3,6 +3,7 @@ package workbook_test
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,9 +12,38 @@ import (
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 	workbookusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook"
 )
+
+// workbookResourceMatcher asserts the policy target is a workbook resource
+// whose ID is non-empty. The ID itself is generated dynamically by the command
+// (UUID v7), so tests can only verify the resource shape rather than the
+// exact value.
+var workbookResourceMatcher = mock.MatchedBy(func(r domain.Resource) bool {
+	const prefix = "workbook:"
+	return strings.HasPrefix(r.Value(), prefix) && len(r.Value()) > len(prefix)
+})
+
+// expectAllWorkbookPolicies registers a separate mock expectation for each of
+// the six (action, workbook-resource) policy grants performed by
+// CreateWorkbook. Restoring the per-action expectations keeps the test
+// regression-sensitive to silently dropping or replacing one of the granted
+// actions.
+func expectAllWorkbookPolicies(policyAdder *mockpolicyAdder) {
+	actions := []domain.Action{
+		domain.ActionViewWorkbook(),
+		domain.ActionUpdateWorkbook(),
+		domain.ActionDeleteWorkbook(),
+		domain.ActionCreateQuestion(),
+		domain.ActionUpdateQuestion(),
+		domain.ActionDeleteQuestion(),
+	}
+	for _, action := range actions {
+		policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, action, workbookResourceMatcher, domain.EffectAllow()).Return(nil).Once()
+	}
+}
 
 const (
 	fixtureOperatorID     = "user-1"
@@ -53,20 +83,24 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
 
-	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
+		return wb != nil &&
+			wb.SpaceID() == fixtureSpaceID &&
+			wb.OwnerID() == fixtureOperatorID &&
+			wb.OrganizationID() == fixtureOrganizationID &&
+			wb.Title() == "Test Workbook" &&
+			wb.Description() == "description" &&
+			wb.Visibility().Value() == "private" &&
+			wb.Language().Value() == "ja" &&
+			wb.Version() == 0 &&
+			wb.ID() != ""
+	})).Return(nil)
 
 	policyAdder := newMockpolicyAdder(t)
-	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
-	require.NoError(t, err)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow()).Return(nil)
+	expectAllWorkbookPolicies(policyAdder)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
 
 	// when
@@ -74,7 +108,10 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, fixtureWorkbookID, output.WorkbookID)
+	assert.NotEmpty(t, output.WorkbookID)
+	assert.Equal(t, "Test Workbook", output.Title)
+	assert.Equal(t, "private", output.Visibility)
+	assert.Equal(t, "ja", output.Language)
 }
 
 func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(t *testing.T) {
@@ -101,27 +138,28 @@ func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("public", nil)
 
-	wbCreator := newMockworkbookCreator(t)
-	// Visibility passed to Create must be "public" even though caller sent "private".
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "public", "ja").Return(fixtureWorkbookID, nil)
+	wbSaver := newMockworkbookSaver(t)
+	// Visibility on the saved aggregate must be "public" even though caller sent "private".
+	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
+		return wb != nil && wb.Visibility().Value() == "public"
+	})).Return(nil)
 
 	policyAdder := newMockpolicyAdder(t)
-	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
-	require.NoError(t, err)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, mock.Anything, wbResource, domain.EffectAllow()).Return(nil)
+	expectAllWorkbookPolicies(policyAdder)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	// Caller sends visibility=private but PublicSpace must override it to public.
 	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja")
 	require.NoError(t, err)
 
 	// when
-	_, err = cmd.CreateWorkbook(ctx, input)
+	output, err := cmd.CreateWorkbook(ctx, input)
 
 	// then
 	require.NoError(t, err)
-	// Visibility passed to workbookRepo.Create was asserted via the mock expectation above
-	// (the second-to-last arg is "public"). The input must NOT be mutated.
+	// Visibility on the aggregate (asserted via mock matcher above) and on the
+	// output is "public". The input must NOT be mutated.
+	assert.Equal(t, "public", output.Visibility)
 	assert.Equal(t, "private", input.Visibility)
 }
 
@@ -217,19 +255,17 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testin
 	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
-	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	policyErr := errors.New("auth service unavailable")
 	policyAdder := newMockpolicyAdder(t)
-	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
-	require.NoError(t, err)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow()).Return(policyErr)
+	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), workbookResourceMatcher, domain.EffectAllow()).Return(policyErr)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, nil, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, nil, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
 
 	// when
@@ -260,23 +296,16 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
-	wbCreator := newMockworkbookCreator(t)
-	wbCreator.On("Create", mock.Anything, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "Test Workbook", "description", "private", "ja").Return(fixtureWorkbookID, nil)
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	policyAdder := newMockpolicyAdder(t)
-	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
-	require.NoError(t, err)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteWorkbook(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource, domain.EffectAllow()).Return(nil)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource, domain.EffectAllow()).Return(nil)
+	expectAllWorkbookPolicies(policyAdder)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
 
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbCreator, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
 
 	// when

@@ -12,9 +12,8 @@ type Command struct {
 
 // NewCommand returns a new Command composing all workbook use cases.
 func NewCommand(
-	workbookCreatorRepo workbookCreator,
+	workbookSaverRepo workbookSaver,
 	workbookFinderRepo workbookFinder,
-	workbookUpdaterRepo workbookUpdater,
 	workbookDeleterRepo workbookDeleter,
 	ownedListFinder ownedWorkbookListFinder,
 	ownedListSaver ownedWorkbookListSaver,
@@ -24,10 +23,10 @@ func NewCommand(
 	policyAdder policyAdder,
 ) *Command {
 	return &Command{
-		CreateWorkbookCommand: NewCreateWorkbookCommand(workbookCreatorRepo, ownedListFinder, ownedListSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder),
+		CreateWorkbookCommand: NewCreateWorkbookCommand(workbookSaverRepo, ownedListFinder, ownedListSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder),
 		GetWorkbookQuery:      NewGetWorkbookQuery(workbookFinderRepo, authChecker),
 		ListWorkbooksQuery:    NewListWorkbooksQuery(workbookFinderRepo, authChecker),
-		UpdateWorkbookCommand: NewUpdateWorkbookCommand(workbookFinderRepo, workbookUpdaterRepo, authChecker),
+		UpdateWorkbookCommand: NewUpdateWorkbookCommand(workbookFinderRepo, workbookSaverRepo, authChecker),
 		DeleteWorkbookCommand: NewDeleteWorkbookCommand(workbookFinderRepo, workbookDeleterRepo, ownedListFinder, ownedListSaver, authChecker),
 	}
 }

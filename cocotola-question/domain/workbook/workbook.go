@@ -22,11 +22,13 @@ type Workbook struct {
 	description    string
 	visibility     Visibility
 	language       Language
+	version        int
 	createdAt      time.Time
 	updatedAt      time.Time
 }
 
-// NewWorkbook creates a validated Workbook.
+// NewWorkbook creates a validated Workbook with version=0 (a new aggregate not yet saved).
+// Callers (usecase layer) must supply the ID and timestamps.
 func NewWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, createdAt time.Time, updatedAt time.Time) (*Workbook, error) {
 	m := &Workbook{
 		id:             id,
@@ -37,6 +39,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 		description:    description,
 		visibility:     visibility,
 		language:       language,
+		version:        0,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
 	}
@@ -47,7 +50,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 }
 
 // ReconstructWorkbook reconstitutes a Workbook from persistence without validation.
-func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, createdAt time.Time, updatedAt time.Time) *Workbook {
+func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, version int, createdAt time.Time, updatedAt time.Time) *Workbook {
 	return &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -57,6 +60,7 @@ func ReconstructWorkbook(id string, spaceID string, ownerID string, organization
 		description:    description,
 		visibility:     visibility,
 		language:       language,
+		version:        version,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
 	}
@@ -117,6 +121,14 @@ func (w *Workbook) Visibility() Visibility { return w.visibility }
 // Language returns the workbook language.
 func (w *Workbook) Language() Language { return w.language }
 
+// Version returns the persisted version (0 = new, not yet saved).
+func (w *Workbook) Version() int { return w.version }
+
+// SetVersion sets the persisted version on the aggregate.
+// Intended for repository implementations to update the version after a successful save.
+// Do not call from application or domain code.
+func (w *Workbook) SetVersion(version int) { w.version = version }
+
 // CreatedAt returns the creation timestamp.
 func (w *Workbook) CreatedAt() time.Time { return w.createdAt }
 
@@ -154,4 +166,11 @@ func (w *Workbook) UpdateDescription(desc string) error {
 	}
 	w.description = desc
 	return nil
+}
+
+// Touch updates the last-modified timestamp. Callers (usecase layer) invoke
+// this before persisting so that the stored updatedAt reflects the time of
+// the edit rather than the time the aggregate was loaded.
+func (w *Workbook) Touch(now time.Time) {
+	w.updatedAt = now
 }

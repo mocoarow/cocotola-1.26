@@ -36,6 +36,7 @@ func Test_NewWorkbook_shouldReturnWorkbook_whenAllFieldsAreValid(t *testing.T) {
 	assert.Equal(t, desc, wb.Description())
 	assert.True(t, wb.Visibility().IsPrivate())
 	assert.Equal(t, "ja", wb.Language().Value())
+	assert.Equal(t, 0, wb.Version())
 	assert.Equal(t, createdAt, wb.CreatedAt())
 	assert.Equal(t, updatedAt, wb.UpdatedAt())
 }
@@ -181,12 +182,13 @@ func Test_ReconstructWorkbook_shouldReturnWorkbook_withoutValidation(t *testing.
 	id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
 
 	// when
-	wb := workbook.ReconstructWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt)
+	wb := workbook.ReconstructWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, 3, createdAt, updatedAt)
 
 	// then
 	assert.Equal(t, id, wb.ID())
 	assert.Equal(t, title, wb.Title())
 	assert.Equal(t, "ja", wb.Language().Value())
+	assert.Equal(t, 3, wb.Version())
 }
 
 func Test_Workbook_ChangeVisibility_shouldUpdateVisibility(t *testing.T) {
@@ -273,4 +275,36 @@ func Test_Workbook_UpdateDescription_shouldReturnError_whenDescriptionExceedsMax
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_Workbook_SetVersion_shouldUpdateVersion(t *testing.T) {
+	t.Parallel()
+
+	// given
+	id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
+	wb, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt)
+	require.NoError(t, err)
+
+	// when
+	wb.SetVersion(5)
+
+	// then
+	assert.Equal(t, 5, wb.Version())
+}
+
+func Test_Workbook_Touch_shouldUpdateUpdatedAt(t *testing.T) {
+	t.Parallel()
+
+	// given
+	id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
+	wb, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt)
+	require.NoError(t, err)
+	newUpdatedAt := updatedAt.Add(time.Hour)
+
+	// when
+	wb.Touch(newUpdatedAt)
+
+	// then
+	assert.Equal(t, newUpdatedAt, wb.UpdatedAt())
+	assert.Equal(t, createdAt, wb.CreatedAt())
 }

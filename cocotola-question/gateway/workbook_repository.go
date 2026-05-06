@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
@@ -25,8 +27,13 @@ type workbookRecord struct {
 	Description    string    `firestore:"description"`
 	Visibility     string    `firestore:"visibility"`
 	Language       string    `firestore:"language"`
+	Version        int       `firestore:"version"`
 	CreatedAt      time.Time `firestore:"createdAt"`
 	UpdatedAt      time.Time `firestore:"updatedAt"`
+}
+
+func (r *workbookRecord) GetVersion() int {
+	return r.Version
 }
 
 func toWorkbookDomain(id string, r *workbookRecord) (*domainworkbook.Workbook, error) {
@@ -38,7 +45,22 @@ func toWorkbookDomain(id string, r *workbookRecord) (*domainworkbook.Workbook, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid language %q: %w", r.Language, err)
 	}
-	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, lang, r.CreatedAt, r.UpdatedAt), nil
+	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, lang, r.Version, r.CreatedAt, r.UpdatedAt), nil
+}
+
+func toWorkbookRecord(wb *domainworkbook.Workbook, version int) workbookRecord {
+	return workbookRecord{
+		SpaceID:        wb.SpaceID(),
+		OwnerID:        wb.OwnerID(),
+		OrganizationID: wb.OrganizationID(),
+		Title:          wb.Title(),
+		Description:    wb.Description(),
+		Visibility:     wb.Visibility().Value(),
+		Language:       wb.Language().Value(),
+		Version:        version,
+		CreatedAt:      wb.CreatedAt(),
+		UpdatedAt:      wb.UpdatedAt(),
+	}
 }
 
 // WorkbookRepository manages workbook persistence in Firestore.
@@ -51,25 +73,34 @@ func NewWorkbookRepository(client *firestore.Client) *WorkbookRepository {
 	return &WorkbookRepository{client: client}
 }
 
-// Create inserts a new workbook and returns the auto-generated document ID.
-func (r *WorkbookRepository) Create(ctx context.Context, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string) (string, error) {
-	now := time.Now()
-	record := workbookRecord{
-		SpaceID:        spaceID,
-		OwnerID:        ownerID,
-		OrganizationID: organizationID,
-		Title:          title,
-		Description:    description,
-		Visibility:     visibility,
-		Language:       language,
-		CreatedAt:      now,
-		UpdatedAt:      now,
+// Save persists a workbook aggregate. New aggregates (version 0) are inserted at
+// the document keyed by wb.ID(); loaded aggregates (version > 0) are updated under
+// optimistic concurrency control via the version field. The repository updates
+// the aggregate's version after a successful persist.
+func (r *WorkbookRepository) Save(ctx context.Context, wb *domainworkbook.Workbook) error {
+	docRef := r.client.Collection(workbooksCollection).Doc(wb.ID())
+	record := toWorkbookRecord(wb, wb.Version()+1)
+	err := firestoresave.SaveVersioned(ctx, firestoresave.SaveArgs[*workbookRecord]{
+		Client:    r.client,
+		Entity:    wb,
+		DocRef:    docRef,
+		NewRecord: &record,
+		Decode: func(snap *firestore.DocumentSnapshot) (int, error) {
+			var rec workbookRecord
+			if err := snap.DataTo(&rec); err != nil {
+				return 0, fmt.Errorf("decode workbook: %w", err)
+			}
+			return rec.Version, nil
+		},
+		EntityName: "workbook",
+	})
+	if errors.Is(err, libversioned.ErrNotFound) {
+		return domain.ErrWorkbookNotFound
 	}
-	docRef, _, err := r.client.Collection(workbooksCollection).Add(ctx, record)
 	if err != nil {
-		return "", fmt.Errorf("create workbook: %w", err)
+		return fmt.Errorf("save workbook: %w", err)
 	}
-	return docRef.ID, nil
+	return nil
 }
 
 // FindByID looks up a workbook by its document ID.
@@ -152,26 +183,6 @@ func (r *WorkbookRepository) FindPublicByOrganizationIDAndLanguage(ctx context.C
 		workbooks = append(workbooks, *wb)
 	}
 	return workbooks, nil
-}
-
-// Update updates an existing workbook.
-func (r *WorkbookRepository) Update(ctx context.Context, wb *domainworkbook.Workbook) error {
-	now := time.Now()
-	_, err := r.client.Collection(workbooksCollection).Doc(wb.ID()).Set(ctx, workbookRecord{
-		SpaceID:        wb.SpaceID(),
-		OwnerID:        wb.OwnerID(),
-		OrganizationID: wb.OrganizationID(),
-		Title:          wb.Title(),
-		Description:    wb.Description(),
-		Visibility:     wb.Visibility().Value(),
-		Language:       wb.Language().Value(),
-		CreatedAt:      wb.CreatedAt(),
-		UpdatedAt:      now,
-	})
-	if err != nil {
-		return fmt.Errorf("update workbook: %w", err)
-	}
-	return nil
 }
 
 // Delete removes a workbook document.

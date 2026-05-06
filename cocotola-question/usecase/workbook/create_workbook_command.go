@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
@@ -13,7 +15,7 @@ import (
 
 // CreateWorkbookCommand handles workbook creation.
 type CreateWorkbookCommand struct {
-	workbookRepo     workbookCreator
+	workbookRepo     workbookSaver
 	ownedListFinder  ownedWorkbookListFinder
 	ownedListSaver   ownedWorkbookListSaver
 	maxWbFetcher     maxWorkbooksFetcher
@@ -24,7 +26,7 @@ type CreateWorkbookCommand struct {
 
 // NewCreateWorkbookCommand returns a new CreateWorkbookCommand.
 func NewCreateWorkbookCommand(
-	workbookRepo workbookCreator,
+	workbookRepo workbookSaver,
 	ownedListFinder ownedWorkbookListFinder,
 	ownedListSaver ownedWorkbookListSaver,
 	maxWbFetcher maxWorkbooksFetcher,
@@ -72,21 +74,34 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("load owned list with limit: %w", err)
 	}
 
-	workbookID, err := c.workbookRepo.Create(ctx, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang.Value())
+	vis, err := domainworkbook.NewVisibility(visibility)
 	if err != nil {
-		return nil, fmt.Errorf("create workbook: %w", err)
+		return nil, fmt.Errorf("new visibility: %w", err)
 	}
 
-	if err := c.grantWorkbookPolicies(ctx, input.OrganizationID, input.OperatorID, workbookID); err != nil {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("generate workbook id: %w", err)
+	}
+	now := time.Now()
+	wb, err := domainworkbook.NewWorkbook(id.String(), input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, vis, lang, now, now)
+	if err != nil {
+		return nil, fmt.Errorf("new workbook: %w", err)
+	}
+
+	if err := c.workbookRepo.Save(ctx, wb); err != nil {
+		return nil, fmt.Errorf("save workbook: %w", err)
+	}
+
+	if err := c.grantWorkbookPolicies(ctx, input.OrganizationID, input.OperatorID, wb.ID()); err != nil {
 		return nil, fmt.Errorf("grant workbook policies: %w", err)
 	}
 
-	if err := c.saveOwnedList(ctx, ownedList, workbookID, input.OperatorID, maxWorkbooks); err != nil {
+	if err := c.saveOwnedList(ctx, ownedList, wb.ID(), input.OperatorID, maxWorkbooks); err != nil {
 		return nil, fmt.Errorf("save owned list: %w", err)
 	}
 
-	now := time.Now()
-	output, err := workbookservice.NewCreateWorkbookOutput(workbookID, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang.Value(), now, now)
+	output, err := workbookservice.NewCreateWorkbookOutput(wb.ID(), wb.SpaceID(), wb.OwnerID(), wb.OrganizationID(), wb.Title(), wb.Description(), wb.Visibility().Value(), wb.Language().Value(), wb.CreatedAt(), wb.UpdatedAt())
 	if err != nil {
 		return nil, fmt.Errorf("create workbook output: %w", err)
 	}

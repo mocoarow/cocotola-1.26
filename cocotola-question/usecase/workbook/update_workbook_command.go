@@ -3,6 +3,7 @@ package workbook
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
@@ -11,17 +12,17 @@ import (
 
 // UpdateWorkbookCommand handles workbook updates.
 type UpdateWorkbookCommand struct {
-	workbookFinder  workbookFinder
-	workbookUpdater workbookUpdater
-	authChecker     authorizationChecker
+	workbookFinder workbookFinder
+	workbookSaver  workbookSaver
+	authChecker    authorizationChecker
 }
 
 // NewUpdateWorkbookCommand returns a new UpdateWorkbookCommand.
-func NewUpdateWorkbookCommand(workbookFinder workbookFinder, workbookUpdater workbookUpdater, authChecker authorizationChecker) *UpdateWorkbookCommand {
+func NewUpdateWorkbookCommand(workbookFinder workbookFinder, workbookSaver workbookSaver, authChecker authorizationChecker) *UpdateWorkbookCommand {
 	return &UpdateWorkbookCommand{
-		workbookFinder:  workbookFinder,
-		workbookUpdater: workbookUpdater,
-		authChecker:     authChecker,
+		workbookFinder: workbookFinder,
+		workbookSaver:  workbookSaver,
+		authChecker:    authChecker,
 	}
 }
 
@@ -67,8 +68,10 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 	}
 	wb.ChangeLanguage(lang)
 
-	if err := c.workbookUpdater.Update(ctx, wb); err != nil {
-		return nil, fmt.Errorf("update workbook: %w", err)
+	wb.Touch(time.Now())
+
+	if err := c.workbookSaver.Save(ctx, wb); err != nil {
+		return nil, fmt.Errorf("save workbook: %w", err)
 	}
 
 	return &workbookservice.UpdateWorkbookOutput{
