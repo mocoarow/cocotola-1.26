@@ -25,8 +25,8 @@ type referenceRecord struct {
 	AddedAt    time.Time `firestore:"addedAt"`
 }
 
-func toReferenceDomain(id string, userID string, r *referenceRecord) *domainreference.WorkbookReference {
-	return domainreference.ReconstructWorkbookReference(id, userID, r.WorkbookID, r.AddedAt)
+func toReferenceDomain(userID string, r *referenceRecord) *domainreference.WorkbookReference {
+	return domainreference.ReconstructWorkbookReference(userID, r.WorkbookID, r.AddedAt)
 }
 
 // ReferenceRepository manages workbook reference persistence in Firestore.
@@ -43,28 +43,30 @@ func (r *ReferenceRepository) refsCol(userID string) *firestore.CollectionRef {
 	return r.client.Collection(usersCollection).Doc(userID).Collection(workbookRefsSubCol)
 }
 
-// Create inserts a new workbook reference and returns the auto-generated document ID.
-func (r *ReferenceRepository) Create(ctx context.Context, userID string, workbookID string) (string, error) {
-	// Check for duplicate
-	iter := r.refsCol(userID).Where("workbookID", "==", workbookID).Limit(1).Documents(ctx)
-	defer iter.Stop()
-	doc, err := iter.Next()
-	if err == nil && doc != nil {
-		return "", domain.ErrDuplicateReference
-	}
-
+// Save persists a workbook reference. The document is keyed by the referenced
+// workbookID under the user's subcollection so the (userID, workbookID)
+// uniqueness invariant is enforced atomically by Firestore: a second Save for
+// the same pair fails with codes.AlreadyExists, which is mapped to
+// domain.ErrDuplicateReference. This avoids the read-then-write race that an
+// out-of-transaction duplicate-check query would have.
+func (r *ReferenceRepository) Save(ctx context.Context, ref *domainreference.WorkbookReference) error {
+	docRef := r.refsCol(ref.UserID()).Doc(ref.WorkbookID())
 	record := referenceRecord{
-		WorkbookID: workbookID,
-		AddedAt:    time.Now(),
+		WorkbookID: ref.WorkbookID(),
+		AddedAt:    ref.AddedAt(),
 	}
-	docRef, _, err := r.refsCol(userID).Add(ctx, record)
-	if err != nil {
-		return "", fmt.Errorf("create reference: %w", err)
+	if _, err := docRef.Create(ctx, record); err != nil {
+		if status.Code(err) == codes.AlreadyExists {
+			return domain.ErrDuplicateReference
+		}
+		return fmt.Errorf("save reference: %w", err)
 	}
-	return docRef.ID, nil
+	return nil
 }
 
-// FindByID looks up a reference by user ID and reference ID.
+// FindByID looks up a reference by user ID and reference ID. Because a
+// reference's ID is its workbookID, this is a direct doc lookup keyed by
+// workbookID under the user's subcollection.
 func (r *ReferenceRepository) FindByID(ctx context.Context, userID string, referenceID string) (*domainreference.WorkbookReference, error) {
 	doc, err := r.refsCol(userID).Doc(referenceID).Get(ctx)
 	if err != nil {
@@ -77,7 +79,7 @@ func (r *ReferenceRepository) FindByID(ctx context.Context, userID string, refer
 	if err := doc.DataTo(&record); err != nil {
 		return nil, fmt.Errorf("decode reference: %w", err)
 	}
-	return toReferenceDomain(doc.Ref.ID, userID, &record), nil
+	return toReferenceDomain(userID, &record), nil
 }
 
 // FindByUserID returns all references for the given user.
@@ -99,7 +101,7 @@ func (r *ReferenceRepository) FindByUserID(ctx context.Context, userID string) (
 		if err := doc.DataTo(&record); err != nil {
 			return nil, fmt.Errorf("decode reference: %w", err)
 		}
-		refs = append(refs, *toReferenceDomain(doc.Ref.ID, userID, &record))
+		refs = append(refs, *toReferenceDomain(userID, &record))
 	}
 	return refs, nil
 }

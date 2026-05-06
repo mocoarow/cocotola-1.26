@@ -11,7 +11,7 @@ type Command struct {
 
 // NewCommand returns a new Command composing all sharing use cases.
 func NewCommand(
-	referenceCreatorRepo referenceCreator,
+	referenceSaverRepo referenceSaver,
 	referenceFinderRepo referenceFinder,
 	referenceDeleterRepo referenceDeleter,
 	workbookFinderRepo workbookFinder,
@@ -19,7 +19,7 @@ func NewCommand(
 	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
-		ShareWorkbookCommand: NewShareWorkbookCommand(referenceCreatorRepo, workbookFinderRepo, authChecker),
+		ShareWorkbookCommand: NewShareWorkbookCommand(referenceSaverRepo, workbookFinderRepo, authChecker),
 		ListSharedQuery:      NewListSharedQuery(referenceFinderRepo),
 		UnshareCommand:       NewUnshareCommand(referenceDeleterRepo),
 		ListPublicQuery:      NewListPublicQuery(publicWorkbookFinderRepo),
