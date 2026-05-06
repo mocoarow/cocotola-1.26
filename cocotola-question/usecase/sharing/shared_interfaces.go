@@ -8,8 +8,8 @@ import (
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 )
 
-type referenceCreator interface {
-	Create(ctx context.Context, userID string, workbookID string) (string, error)
+type referenceSaver interface {
+	Save(ctx context.Context, ref *domainreference.WorkbookReference) error
 }
 
 type referenceFinder interface {

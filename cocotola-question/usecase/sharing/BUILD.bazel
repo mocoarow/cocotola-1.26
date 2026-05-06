@@ -26,6 +26,7 @@ smart_go_test(
     srcs = [
         "list_public_query_s_test.go",
         "mocks_test.go",
+        "share_workbook_command_s_test.go",
     ],
     deps = [
         ":sharing",
