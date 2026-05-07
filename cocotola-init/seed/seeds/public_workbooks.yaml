@@ -30,10 +30,10 @@
 #     - 1..40 choices; at least one isCorrect.
 #     - displayCount must be in [1,20], <= len(choices), >= number of correct.
 workbooks:
-  # ---------- Workbook 1: 穴埋め問題 10問 ----------
+  # ---------- Workbook 1: 穴埋め問題 30問 ----------
   - seedKey: fillblank-en-jp-v1
-    title: "穴埋め問題: 日常英会話 10問"
-    description: "日本語の意味から英文の空欄を埋める穴埋め問題集です。日常生活で使う基本表現を10問収録しています。"
+    title: "穴埋め問題: 日常英会話 30問"
+    description: "日本語の意味から英文の空欄を埋める穴埋め問題集です。日常生活で使う基本表現を30問収録しています。"
     language: ja
     questions:
       - seedKey: q01
@@ -127,11 +127,192 @@ workbooks:
           - format:multi-blank
           - lang:en-ja
         orderIndex: 10
+      - seedKey: q11
+        questionType: word_fill
+        content: '{"source":{"text":"音楽を聴く","lang":"ja"},"target":{"text":"listen to {{music}}","lang":"en"},"explanation":"music は「音楽」を意味する不可算名詞です。listen to ... で「〜を聴く」となります。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:hobby
+          - lang:en-ja
+        orderIndex: 11
+      - seedKey: q12
+        questionType: word_fill
+        content: '{"source":{"text":"映画を見る","lang":"ja"},"target":{"text":"watch a {{movie}}","lang":"en"},"explanation":"movie は「映画」を意味します。watch は「(動いているものを) 見る」という意味です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:hobby
+          - lang:en-ja
+        orderIndex: 12
+      - seedKey: q13
+        questionType: word_fill
+        content: '{"source":{"text":"手紙を書く","lang":"ja"},"target":{"text":"write a {{letter}}","lang":"en"},"explanation":"letter は「手紙」を意味します。write は「書く」の動詞です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 13
+      - seedKey: q14
+        questionType: word_fill
+        content: '{"source":{"text":"赤い花","lang":"ja"},"target":{"text":"a red {{flower}}","lang":"en"},"explanation":"flower は「花」を意味します。形容詞 red は名詞の前に置きます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:nature
+          - lang:en-ja
+        orderIndex: 14
+      - seedKey: q15
+        questionType: word_fill
+        content: '{"source":{"text":"私は朝食を食べる","lang":"ja"},"target":{"text":"I have {{breakfast}}","lang":"en"},"explanation":"breakfast は「朝食」を意味します。食事を「食べる」は have をよく使い、冠詞は付けません。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 15
+      - seedKey: q16
+        questionType: word_fill
+        content: '{"source":{"text":"電車で通勤する","lang":"ja"},"target":{"text":"go to work by {{train}}","lang":"en"},"explanation":"train は「電車」、by train で「電車で」という交通手段を表します。冠詞は付けません。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 16
+      - seedKey: q17
+        questionType: word_fill
+        content: '{"source":{"text":"窓を開ける","lang":"ja"},"target":{"text":"open the {{window}}","lang":"en"},"explanation":"window は「窓」を意味します。特定の窓を指すので定冠詞 the を使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 17
+      - seedKey: q18
+        questionType: word_fill
+        content: '{"source":{"text":"私は医者になりたい","lang":"ja"},"target":{"text":"I want to be a {{doctor}}","lang":"en"},"explanation":"doctor は「医者」を意味します。want to be ... で「〜になりたい」と将来の希望を表します。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:occupation
+          - lang:en-ja
+        orderIndex: 18
+      - seedKey: q19
+        questionType: word_fill
+        content: '{"source":{"text":"美しい海","lang":"ja"},"target":{"text":"a beautiful {{sea}}","lang":"en"},"explanation":"sea は「海」、beautiful は「美しい」を意味します。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:nature
+          - lang:en-ja
+        orderIndex: 19
+      - seedKey: q20
+        questionType: word_fill
+        content: '{"source":{"text":"私は疲れている","lang":"ja"},"target":{"text":"I am {{tired}}","lang":"en"},"explanation":"tired は「疲れている」という状態を表す形容詞です。be 動詞と一緒に使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:emotions
+          - lang:en-ja
+        orderIndex: 20
+      - seedKey: q21
+        questionType: word_fill
+        content: '{"source":{"text":"昼食を作る","lang":"ja"},"target":{"text":"cook {{lunch}}","lang":"en"},"explanation":"lunch は「昼食」を意味します。料理を「作る」には cook を使います。食事名には冠詞を付けません。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 21
+      - seedKey: q22
+        questionType: word_fill
+        content: '{"source":{"text":"早く起きる","lang":"ja"},"target":{"text":"get up {{early}}","lang":"en"},"explanation":"early は「早く」を意味する副詞です。get up で「起きる」というイディオムです。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 22
+      - seedKey: q23
+        questionType: word_fill
+        content: '{"source":{"text":"白い猫","lang":"ja"},"target":{"text":"a white {{cat}}","lang":"en"},"explanation":"cat は「猫」、white は「白い」を意味します。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:animals
+          - lang:en-ja
+        orderIndex: 23
+      - seedKey: q24
+        questionType: word_fill
+        content: '{"source":{"text":"教室で勉強する","lang":"ja"},"target":{"text":"study in the {{classroom}}","lang":"en"},"explanation":"classroom は「教室」を意味します。場所を表すときは前置詞 in を使い、特定の教室なので the を付けます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:school
+          - lang:en-ja
+        orderIndex: 24
+      - seedKey: q25
+        questionType: word_fill
+        content: '{"source":{"text":"母は親切です","lang":"ja"},"target":{"text":"My mother is {{kind}}","lang":"en"},"explanation":"kind は「親切な」を意味する形容詞です。性格を表すときは be 動詞と一緒に使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:family
+          - lang:en-ja
+        orderIndex: 25
+      - seedKey: q26
+        questionType: word_fill
+        content: '{"source":{"text":"駅で待つ","lang":"ja"},"target":{"text":"wait at the {{station}}","lang":"en"},"explanation":"station は「駅」を意味します。地点を表すときは前置詞 at を使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:travel
+          - lang:en-ja
+        orderIndex: 26
+      - seedKey: q27
+        questionType: word_fill
+        content: '{"source":{"text":"私は車を運転する","lang":"ja"},"target":{"text":"I {{drive}} a car","lang":"en"},"explanation":"drive は「運転する」を意味する動詞です。「車を運転する」は drive a car と言います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 27
+      - seedKey: q28
+        questionType: word_fill
+        content: '{"source":{"text":"新しい靴","lang":"ja"},"target":{"text":"new {{shoes}}","lang":"en"},"explanation":"shoes は「靴」を意味します。靴は通常2つで1組なので複数形が基本です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:clothing
+          - lang:en-ja
+        orderIndex: 28
+      - seedKey: q29
+        questionType: word_fill
+        content: '{"source":{"text":"私は英語を話します","lang":"ja"},"target":{"text":"I {{speak}} English","lang":"en"},"explanation":"speak は「(言語を) 話す」を意味する動詞です。言語名は大文字で始めます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:language
+          - lang:en-ja
+        orderIndex: 29
+      - seedKey: q30
+        questionType: word_fill
+        content: '{"source":{"text":"私は明日公園に行きます","lang":"ja"},"target":{"text":"I will {{go}} to the {{park}} tomorrow","lang":"en"},"explanation":"go は「行く」、park は「公園」を意味します。will は未来を表す助動詞です。複数の空欄がある問題です。","allowPartialCredit":true}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:daily-life
+          - format:multi-blank
+          - lang:en-ja
+        orderIndex: 30
 
-  # ---------- Workbook 2: 選択問題 10問 ----------
+  # ---------- Workbook 2: 選択問題 30問 ----------
   - seedKey: multichoice-general-v1
-    title: "選択問題: 一般常識クイズ 10問"
-    description: "選択肢の数や正解の数が様々な一般常識の選択問題です。1択の確認問題から最大40択の問題まで、様々なパターンを収録しています。"
+    title: "選択問題: 一般常識クイズ 30問"
+    description: "選択肢の数や正解の数が様々な一般常識の選択問題です。1択の確認問題から最大40択の問題まで、様々なパターンを30問収録しています。"
     language: ja
     questions:
       # 最小選択肢 (1) / 最小正解 (1)
@@ -247,11 +428,231 @@ workbooks:
           - correct:5
           - format:max-choices
         orderIndex: 10
+      # 4択 / 正解 (1) - 歴史
+      - seedKey: q11
+        questionType: multiple_choice
+        content: '{"questionText":"江戸幕府を開いたのは誰ですか？","explanation":"徳川家康は1603年に江戸幕府を開きました。","choices":[{"id":"c1","text":"徳川家康","isCorrect":true},{"id":"c2","text":"豊臣秀吉","isCorrect":false},{"id":"c3","text":"織田信長","isCorrect":false},{"id":"c4","text":"源頼朝","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:history
+          - choices:4
+          - correct:1
+        orderIndex: 11
+      # 4択 / 正解 (1) - 数学
+      - seedKey: q12
+        questionType: multiple_choice
+        content: '{"questionText":"7 × 8 はいくつですか？","explanation":"7 × 8 = 56 です。","choices":[{"id":"c1","text":"56","isCorrect":true},{"id":"c2","text":"54","isCorrect":false},{"id":"c3","text":"58","isCorrect":false},{"id":"c4","text":"49","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:math
+          - choices:4
+          - correct:1
+        orderIndex: 12
+      # 5択 / 正解 (1) - 科学
+      - seedKey: q13
+        questionType: multiple_choice
+        content: '{"questionText":"水の化学式はどれですか？","explanation":"水は水素原子2つと酸素原子1つから成り、H2O と表記します。","choices":[{"id":"c1","text":"H2O","isCorrect":true},{"id":"c2","text":"CO2","isCorrect":false},{"id":"c3","text":"O2","isCorrect":false},{"id":"c4","text":"NaCl","isCorrect":false},{"id":"c5","text":"CH4","isCorrect":false}],"displayCount":5,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:science
+          - choices:5
+          - correct:1
+        orderIndex: 13
+      # 4択 / 正解 (2) - 文学
+      - seedKey: q14
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち夏目漱石の作品を2つ選びなさい","explanation":"「吾輩は猫である」と「坊っちゃん」は夏目漱石の代表作です。「人間失格」は太宰治、「羅生門」は芥川龍之介の作品です。","choices":[{"id":"c1","text":"吾輩は猫である","isCorrect":true},{"id":"c2","text":"坊っちゃん","isCorrect":true},{"id":"c3","text":"人間失格","isCorrect":false},{"id":"c4","text":"羅生門","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:literature
+          - choices:4
+          - correct:2
+        orderIndex: 14
+      # 6択 / 正解 (1) - スポーツ
+      - seedKey: q15
+        questionType: multiple_choice
+        content: '{"questionText":"オリンピックは何年に1回開催されますか？","explanation":"夏季・冬季それぞれのオリンピックは4年に1回開催されます。","choices":[{"id":"c1","text":"4年","isCorrect":true},{"id":"c2","text":"2年","isCorrect":false},{"id":"c3","text":"3年","isCorrect":false},{"id":"c4","text":"5年","isCorrect":false},{"id":"c5","text":"6年","isCorrect":false},{"id":"c6","text":"10年","isCorrect":false}],"displayCount":6,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:sports
+          - choices:6
+          - correct:1
+        orderIndex: 15
+      # 4択 / 正解 (1) - 地理
+      - seedKey: q16
+        questionType: multiple_choice
+        content: '{"questionText":"世界で最も人口が多い国はどこですか？(2024年時点)","explanation":"2023年以降、インドが中国を抜いて世界最多人口の国となりました。","choices":[{"id":"c1","text":"インド","isCorrect":true},{"id":"c2","text":"中国","isCorrect":false},{"id":"c3","text":"アメリカ","isCorrect":false},{"id":"c4","text":"インドネシア","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:geography
+          - choices:4
+          - correct:1
+        orderIndex: 16
+      # 5択 / 正解 (3) - 言語
+      - seedKey: q17
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち国連の公用語を3つ選びなさい","explanation":"国連の公用語は英語、フランス語、スペイン語、中国語、ロシア語、アラビア語の6言語です。","choices":[{"id":"c1","text":"英語","isCorrect":true},{"id":"c2","text":"フランス語","isCorrect":true},{"id":"c3","text":"スペイン語","isCorrect":true},{"id":"c4","text":"日本語","isCorrect":false},{"id":"c5","text":"ドイツ語","isCorrect":false}],"displayCount":5,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:advanced
+          - topic:language
+          - choices:5
+          - correct:3
+        orderIndex: 17
+      # 3択 / 正解 (1) - 真偽問題風
+      - seedKey: q18
+        questionType: multiple_choice
+        content: '{"questionText":"地球は太陽の周りを回っている","explanation":"地動説が正しく、地球は太陽の周りを公転しています。","choices":[{"id":"c1","text":"正しい","isCorrect":true},{"id":"c2","text":"間違い","isCorrect":false},{"id":"c3","text":"わからない","isCorrect":false}],"displayCount":3,"showCorrectCount":true,"shuffleChoices":false,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:science
+          - choices:3
+          - correct:1
+        orderIndex: 18
+      # 4択 / 正解 (1) - 単位
+      - seedKey: q19
+        questionType: multiple_choice
+        content: '{"questionText":"1キロメートルは何メートルですか？","explanation":"1km = 1000m です。「キロ」は1000を表す接頭辞です。","choices":[{"id":"c1","text":"1000m","isCorrect":true},{"id":"c2","text":"100m","isCorrect":false},{"id":"c3","text":"10000m","isCorrect":false},{"id":"c4","text":"500m","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:math
+          - choices:4
+          - correct:1
+        orderIndex: 19
+      # 6択 / 正解 (3) - 楽器
+      - seedKey: q20
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち弦楽器を3つ選びなさい","explanation":"バイオリン、ギター、チェロは弦をはじいたり弓で擦って音を出す弦楽器です。フルート、トランペットは管楽器、ドラムは打楽器です。","choices":[{"id":"c1","text":"バイオリン","isCorrect":true},{"id":"c2","text":"ギター","isCorrect":true},{"id":"c3","text":"チェロ","isCorrect":true},{"id":"c4","text":"フルート","isCorrect":false},{"id":"c5","text":"トランペット","isCorrect":false},{"id":"c6","text":"ドラム","isCorrect":false}],"displayCount":6,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:music
+          - choices:6
+          - correct:3
+        orderIndex: 20
+      # 4択 / 正解 (1) - 国旗
+      - seedKey: q21
+        questionType: multiple_choice
+        content: '{"questionText":"赤と白の星条旗を持つ国はどこですか？","explanation":"アメリカ合衆国の国旗は赤と白の縞模様に青地に白い星が並ぶ「星条旗」です。","choices":[{"id":"c1","text":"アメリカ","isCorrect":true},{"id":"c2","text":"カナダ","isCorrect":false},{"id":"c3","text":"イギリス","isCorrect":false},{"id":"c4","text":"フランス","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:geography
+          - choices:4
+          - correct:1
+        orderIndex: 21
+      # 4択 / 正解 (1) - 経済
+      - seedKey: q22
+        questionType: multiple_choice
+        content: '{"questionText":"日本の通貨単位はどれですか？","explanation":"日本の通貨単位は「円 (Yen)」です。","choices":[{"id":"c1","text":"円","isCorrect":true},{"id":"c2","text":"ドル","isCorrect":false},{"id":"c3","text":"ユーロ","isCorrect":false},{"id":"c4","text":"ウォン","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:economy
+          - choices:4
+          - correct:1
+        orderIndex: 22
+      # 8択 / 正解 (4) - 元素記号
+      - seedKey: q23
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち金属元素を4つ選びなさい","explanation":"金 (Au)、鉄 (Fe)、銅 (Cu)、銀 (Ag) はすべて金属元素です。それ以外は非金属元素です。","choices":[{"id":"c1","text":"金 (Au)","isCorrect":true},{"id":"c2","text":"鉄 (Fe)","isCorrect":true},{"id":"c3","text":"銅 (Cu)","isCorrect":true},{"id":"c4","text":"銀 (Ag)","isCorrect":true},{"id":"c5","text":"酸素 (O)","isCorrect":false},{"id":"c6","text":"窒素 (N)","isCorrect":false},{"id":"c7","text":"炭素 (C)","isCorrect":false},{"id":"c8","text":"水素 (H)","isCorrect":false}],"displayCount":8,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:advanced
+          - topic:science
+          - choices:8
+          - correct:4
+        orderIndex: 23
+      # 4択 / 正解 (1) - 時事/IT
+      - seedKey: q24
+        questionType: multiple_choice
+        content: '{"questionText":"HTTPの「H」は何の頭文字ですか？","explanation":"HTTP は HyperText Transfer Protocol の略です。","choices":[{"id":"c1","text":"HyperText","isCorrect":true},{"id":"c2","text":"High","isCorrect":false},{"id":"c3","text":"Host","isCorrect":false},{"id":"c4","text":"Home","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:it
+          - choices:4
+          - correct:1
+        orderIndex: 24
+      # 5択 / 正解 (1) - 動物
+      - seedKey: q25
+        questionType: multiple_choice
+        content: '{"questionText":"世界最大の動物はどれですか？","explanation":"シロナガスクジラは現存する世界最大の動物で、体長30m、体重190トンに達します。","choices":[{"id":"c1","text":"シロナガスクジラ","isCorrect":true},{"id":"c2","text":"ゾウ","isCorrect":false},{"id":"c3","text":"キリン","isCorrect":false},{"id":"c4","text":"カバ","isCorrect":false},{"id":"c5","text":"サイ","isCorrect":false}],"displayCount":5,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:animals
+          - choices:5
+          - correct:1
+        orderIndex: 25
+      # 4択 / 正解 (2) - 季節
+      - seedKey: q26
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち日本の夏至と冬至はそれぞれ何月にありますか？(2つ選択)","explanation":"日本の夏至は6月、冬至は12月にあります。","choices":[{"id":"c1","text":"6月 (夏至)","isCorrect":true},{"id":"c2","text":"12月 (冬至)","isCorrect":true},{"id":"c3","text":"3月 (夏至)","isCorrect":false},{"id":"c4","text":"9月 (冬至)","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:calendar
+          - choices:4
+          - correct:2
+        orderIndex: 26
+      # 10択 / 正解 (3) - 色
+      - seedKey: q27
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち光の三原色 (RGB) を3つ選びなさい","explanation":"光の三原色は赤 (Red)、緑 (Green)、青 (Blue) です。これら3色の光を組み合わせるとあらゆる色を表現できます。","choices":[{"id":"c01","text":"赤","isCorrect":true},{"id":"c02","text":"緑","isCorrect":true},{"id":"c03","text":"青","isCorrect":true},{"id":"c04","text":"黄","isCorrect":false},{"id":"c05","text":"紫","isCorrect":false},{"id":"c06","text":"橙","isCorrect":false},{"id":"c07","text":"白","isCorrect":false},{"id":"c08","text":"黒","isCorrect":false},{"id":"c09","text":"桃","isCorrect":false},{"id":"c10","text":"茶","isCorrect":false}],"displayCount":10,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:colors
+          - choices:10
+          - correct:3
+        orderIndex: 27
+      # 4択 / 正解 (1) - 慣用句
+      - seedKey: q28
+        questionType: multiple_choice
+        content: '{"questionText":"「猫の手も借りたい」とはどういう意味ですか？","explanation":"非常に忙しい状況を表す慣用句で、誰の手でも借りたいほど忙しいという意味です。","choices":[{"id":"c1","text":"とても忙しい","isCorrect":true},{"id":"c2","text":"猫が好きだ","isCorrect":false},{"id":"c3","text":"動物を飼いたい","isCorrect":false},{"id":"c4","text":"手伝いを断る","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:idiom
+          - choices:4
+          - correct:1
+        orderIndex: 28
+      # 4択 / 正解 (1) - 食材
+      - seedKey: q29
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち発酵食品はどれですか？","explanation":"納豆は大豆を納豆菌で発酵させた発酵食品です。","choices":[{"id":"c1","text":"納豆","isCorrect":true},{"id":"c2","text":"豆腐","isCorrect":false},{"id":"c3","text":"豆乳","isCorrect":false},{"id":"c4","text":"枝豆","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:intermediate
+          - topic:food
+          - choices:4
+          - correct:1
+        orderIndex: 29
+      # 12択 / 正解 (3) - 大規模
+      - seedKey: q30
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち日本の世界遺産を3つ選びなさい","explanation":"姫路城、富士山、屋久島はいずれもユネスコ世界遺産に登録されています。","choices":[{"id":"c01","text":"姫路城","isCorrect":true},{"id":"c02","text":"富士山","isCorrect":true},{"id":"c03","text":"屋久島","isCorrect":true},{"id":"c04","text":"東京タワー","isCorrect":false},{"id":"c05","text":"名古屋城","isCorrect":false},{"id":"c06","text":"大阪城","isCorrect":false},{"id":"c07","text":"スカイツリー","isCorrect":false},{"id":"c08","text":"レインボーブリッジ","isCorrect":false},{"id":"c09","text":"通天閣","isCorrect":false},{"id":"c10","text":"札幌時計台","isCorrect":false},{"id":"c11","text":"道頓堀","isCorrect":false},{"id":"c12","text":"原宿","isCorrect":false}],"displayCount":12,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:advanced
+          - topic:culture
+          - choices:12
+          - correct:3
+        orderIndex: 30
 
-  # ---------- Workbook 3: 混合問題 10問 ----------
+  # ---------- Workbook 3: 混合問題 30問 ----------
   - seedKey: mixed-en-learning-v1
-    title: "混合問題: 英語学習 10問"
-    description: "穴埋め問題と選択問題を交互に組み合わせた英語学習問題集です。挨拶・色・数字・動物・食べ物などの基礎テーマを扱います。"
+    title: "混合問題: 英語学習 30問"
+    description: "穴埋め問題と選択問題を交互に組み合わせた英語学習問題集です。挨拶・色・数字・動物・食べ物などの基礎テーマを30問収録しています。"
     language: ja
     questions:
       - seedKey: q01
@@ -351,3 +752,194 @@ workbooks:
           - choices:4
           - correct:1
         orderIndex: 10
+      - seedKey: q11
+        questionType: word_fill
+        content: '{"source":{"text":"こんばんは","lang":"ja"},"target":{"text":"Good {{evening}}","lang":"en"},"explanation":"evening は「夕方・晩」を意味します。Good evening は夕方以降の挨拶です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 11
+      - seedKey: q12
+        questionType: multiple_choice
+        content: '{"questionText":"次の数字のうち英語で「five」を表すものはどれですか？","explanation":"five は数字の5を表す英単語です。","choices":[{"id":"c1","text":"5","isCorrect":true},{"id":"c2","text":"3","isCorrect":false},{"id":"c3","text":"4","isCorrect":false},{"id":"c4","text":"6","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:numbers
+          - choices:4
+          - correct:1
+        orderIndex: 12
+      - seedKey: q13
+        questionType: word_fill
+        content: '{"source":{"text":"さようなら","lang":"ja"},"target":{"text":"{{Goodbye}}","lang":"en"},"explanation":"Goodbye は別れの挨拶です。文頭にあるので大文字で始めます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 13
+      - seedKey: q14
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち動物 (animal) を3つ選びなさい","explanation":"horse (馬)、rabbit (うさぎ)、elephant (ゾウ) は動物です。tulip はチューリップ (花) です。","choices":[{"id":"c1","text":"horse","isCorrect":true},{"id":"c2","text":"rabbit","isCorrect":true},{"id":"c3","text":"elephant","isCorrect":true},{"id":"c4","text":"tulip","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:animals
+          - choices:4
+          - correct:3
+        orderIndex: 14
+      - seedKey: q15
+        questionType: word_fill
+        content: '{"source":{"text":"私は日本出身です","lang":"ja"},"target":{"text":"I am from {{Japan}}","lang":"en"},"explanation":"Japan は「日本」、from ... で「〜出身」となります。地名は固有名詞なので大文字で始めます。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:greeting
+          - lang:en-ja
+        orderIndex: 15
+      - seedKey: q16
+        questionType: multiple_choice
+        content: '{"questionText":"英語で「red」は何色ですか？","explanation":"red は赤を意味する英単語です。","choices":[{"id":"c1","text":"赤","isCorrect":true},{"id":"c2","text":"青","isCorrect":false},{"id":"c3","text":"緑","isCorrect":false},{"id":"c4","text":"黄色","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:colors
+          - choices:4
+          - correct:1
+        orderIndex: 16
+      - seedKey: q17
+        questionType: word_fill
+        content: '{"source":{"text":"いくつですか？","lang":"ja"},"target":{"text":"How {{many}}?","lang":"en"},"explanation":"How many ...? は数を尋ねる疑問文です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:question
+          - lang:en-ja
+        orderIndex: 17
+      - seedKey: q18
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち月の名前を3つ選びなさい","explanation":"January (1月)、April (4月)、July (7月) は月の名前です。Sunday は曜日 (日曜日) です。","choices":[{"id":"c1","text":"January","isCorrect":true},{"id":"c2","text":"April","isCorrect":true},{"id":"c3","text":"July","isCorrect":true},{"id":"c4","text":"Sunday","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:calendar
+          - choices:4
+          - correct:3
+        orderIndex: 18
+      - seedKey: q19
+        questionType: word_fill
+        content: '{"source":{"text":"私は寒い","lang":"ja"},"target":{"text":"I am {{cold}}","lang":"en"},"explanation":"cold は「寒い・冷たい」を意味する形容詞です。be 動詞と一緒に使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:emotions
+          - lang:en-ja
+        orderIndex: 19
+      - seedKey: q20
+        questionType: multiple_choice
+        content: '{"questionText":"英語で「dog」を日本語で何と言いますか？","explanation":"dog は「犬」を意味します。","choices":[{"id":"c1","text":"犬","isCorrect":true},{"id":"c2","text":"猫","isCorrect":false},{"id":"c3","text":"鳥","isCorrect":false},{"id":"c4","text":"魚","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:animals
+          - choices:4
+          - correct:1
+        orderIndex: 20
+      - seedKey: q21
+        questionType: word_fill
+        content: '{"source":{"text":"私はリンゴが好きです","lang":"ja"},"target":{"text":"I {{like}} apples","lang":"en"},"explanation":"like は「好き」を意味する動詞です。一般的に「リンゴが好き」と言うときは複数形 apples を使います。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 21
+      - seedKey: q22
+        questionType: multiple_choice
+        content: '{"questionText":"英語で「ten」はいくつですか？","explanation":"ten は数字の10を表す英単語です。","choices":[{"id":"c1","text":"10","isCorrect":true},{"id":"c2","text":"3","isCorrect":false},{"id":"c3","text":"7","isCorrect":false},{"id":"c4","text":"100","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:numbers
+          - choices:4
+          - correct:1
+        orderIndex: 22
+      - seedKey: q23
+        questionType: word_fill
+        content: '{"source":{"text":"今日はいい天気です","lang":"ja"},"target":{"text":"It is a {{nice}} day today","lang":"en"},"explanation":"nice は「素敵な・良い」を意味する形容詞です。It is a nice day. は天気を表す慣用表現です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:weather
+          - lang:en-ja
+        orderIndex: 23
+      - seedKey: q24
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち飲み物 (drink) を2つ選びなさい","explanation":"water (水) と milk (牛乳) は飲み物です。bread (パン) と rice (米) は食べ物です。","choices":[{"id":"c1","text":"water","isCorrect":true},{"id":"c2","text":"milk","isCorrect":true},{"id":"c3","text":"bread","isCorrect":false},{"id":"c4","text":"rice","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:food
+          - choices:4
+          - correct:2
+        orderIndex: 24
+      - seedKey: q25
+        questionType: word_fill
+        content: '{"source":{"text":"これは私のかばんです","lang":"ja"},"target":{"text":"This is my {{bag}}","lang":"en"},"explanation":"bag は「かばん」を意味します。my は「私の」という所有形容詞です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 25
+      - seedKey: q26
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち「青」を意味する英単語はどれですか？","explanation":"blue は青を意味する英単語です。","choices":[{"id":"c1","text":"blue","isCorrect":true},{"id":"c2","text":"green","isCorrect":false},{"id":"c3","text":"black","isCorrect":false},{"id":"c4","text":"white","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:colors
+          - choices:4
+          - correct:1
+        orderIndex: 26
+      - seedKey: q27
+        questionType: word_fill
+        content: '{"source":{"text":"何時ですか？","lang":"ja"},"target":{"text":"What {{time}} is it?","lang":"en"},"explanation":"time は「時間」を意味します。What time is it? は時刻を尋ねる定型表現です。","allowPartialCredit":false}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:question
+          - lang:en-ja
+        orderIndex: 27
+      - seedKey: q28
+        questionType: multiple_choice
+        content: '{"questionText":"次のうち体の部位を表す英単語を3つ選びなさい","explanation":"hand (手)、foot (足)、head (頭) は体の部位です。chair (椅子) は家具です。","choices":[{"id":"c1","text":"hand","isCorrect":true},{"id":"c2","text":"foot","isCorrect":true},{"id":"c3","text":"head","isCorrect":true},{"id":"c4","text":"chair","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":true}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:body
+          - choices:4
+          - correct:3
+        orderIndex: 28
+      - seedKey: q29
+        questionType: word_fill
+        content: '{"source":{"text":"私は今週末公園に行きたい","lang":"ja"},"target":{"text":"I want to {{go}} to the park this {{weekend}}","lang":"en"},"explanation":"go は「行く」、weekend は「週末」を意味します。want to ... で「〜したい」となります。複数の空欄がある問題です。","allowPartialCredit":true}'
+        tags:
+          - type:wordfill
+          - level:intermediate
+          - topic:daily-life
+          - format:multi-blank
+          - lang:en-ja
+        orderIndex: 29
+      - seedKey: q30
+        questionType: multiple_choice
+        content: '{"questionText":"英語のアルファベットは全部で何文字ですか？","explanation":"英語のアルファベットは A から Z までの26文字です。","choices":[{"id":"c1","text":"26文字","isCorrect":true},{"id":"c2","text":"24文字","isCorrect":false},{"id":"c3","text":"28文字","isCorrect":false},{"id":"c4","text":"30文字","isCorrect":false}],"displayCount":4,"showCorrectCount":true,"shuffleChoices":true,"allowPartialCredit":false}'
+        tags:
+          - type:multichoice
+          - level:beginner
+          - topic:language
+          - choices:4
+          - correct:1
+        orderIndex: 30
