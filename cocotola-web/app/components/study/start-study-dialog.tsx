@@ -1,5 +1,5 @@
 import { BookOpenIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useFetcher, useNavigate } from "react-router";
 import {
@@ -12,8 +12,9 @@ import {
 import { Button } from "~/components/ui/button";
 import type { StudySummary } from "~/lib/api/study.server";
 
-const STUDY_SIZE_PRESETS = [10, 20, 50] as const;
+const STUDY_SIZE_STEP = 10;
 const ABSOLUTE_MAX_STUDY_SIZE = 100;
+const DEFAULT_STUDY_SIZE = 20;
 
 type StartStudyDialogProps = {
   workbookId: string;
@@ -36,7 +37,7 @@ export function StartStudyDialog({
   const navigate = useNavigate();
   const fetcher = useFetcher<StudySummary>();
   const [open, setOpen] = useState(false);
-  const [selectedLimit, setSelectedLimit] = useState<number>(STUDY_SIZE_PRESETS[1]);
+  const [selectedLimit, setSelectedLimit] = useState<number>(DEFAULT_STUDY_SIZE);
 
   // Load summary on first open. Re-opening reuses the cached fetcher data
   // (state is preserved across opens) so we only refetch if the user
@@ -50,9 +51,35 @@ export function StartStudyDialog({
   const summary = fetcher.data;
   const isLoading = fetcher.state === "loading" || (open && summary === undefined);
   const totalAvailable = summary?.totalDue ?? 0;
-  const maxAllowed = Math.min(ABSOLUTE_MAX_STUDY_SIZE, Math.max(1, totalAvailable));
-  const effectiveLimit = Math.min(selectedLimit, maxAllowed);
-  const canStart = !isLoading && totalAvailable > 0;
+  const maxAllowed = Math.min(ABSOLUTE_MAX_STUDY_SIZE, totalAvailable);
+
+  const sizeOptions = useMemo(() => {
+    if (maxAllowed <= 0) return [] as { value: number; label: string }[];
+    const options: { value: number; label: string }[] = [];
+    for (let v = STUDY_SIZE_STEP; v <= maxAllowed; v += STUDY_SIZE_STEP) {
+      options.push({ value: v, label: String(v) });
+    }
+    const lastStep = options.at(-1)?.value ?? 0;
+    if (
+      totalAvailable > 0 &&
+      totalAvailable < ABSOLUTE_MAX_STUDY_SIZE &&
+      totalAvailable !== lastStep
+    ) {
+      options.push({
+        value: totalAvailable,
+        label: t("workbooks.studyDialog.allButton", { count: totalAvailable }),
+      });
+    }
+    return options;
+  }, [maxAllowed, totalAvailable, t]);
+
+  const effectiveLimit = useMemo(() => {
+    if (sizeOptions.length === 0) return 0;
+    const match = sizeOptions.find((o) => o.value === selectedLimit);
+    if (match) return match.value;
+    return sizeOptions.at(-1)?.value ?? 0;
+  }, [sizeOptions, selectedLimit]);
+  const canStart = !isLoading && totalAvailable > 0 && effectiveLimit > 0;
 
   function handleStart() {
     if (!canStart) return;
@@ -80,18 +107,14 @@ export function StartStudyDialog({
       >
         <AlertDialogContent>
           <AlertDialogTitle>{t("workbooks.studyDialog.title")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t("workbooks.studyDialog.description")}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{t("workbooks.studyDialog.description")}</AlertDialogDescription>
 
           {isLoading ? (
             <p className="mt-4 text-sm text-muted-foreground">
               {t("workbooks.studyDialog.loading")}
             </p>
           ) : summary === undefined ? (
-            <p className="mt-4 text-sm text-destructive">
-              {t("workbooks.studyDialog.loadError")}
-            </p>
+            <p className="mt-4 text-sm text-destructive">{t("workbooks.studyDialog.loadError")}</p>
           ) : (
             <div className="mt-4 space-y-4">
               <dl className="grid grid-cols-2 gap-3 text-sm">
@@ -121,37 +144,24 @@ export function StartStudyDialog({
                 </p>
               ) : (
                 <div>
-                  <p className="mb-2 text-sm font-medium">
+                  <label htmlFor="study-size-select" className="mb-2 block text-sm font-medium">
                     {t("workbooks.studyDialog.sizeLabel")}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {STUDY_SIZE_PRESETS.map((preset) => {
-                      const disabled = preset > maxAllowed && preset !== STUDY_SIZE_PRESETS[0];
-                      const active = effectiveLimit === Math.min(preset, maxAllowed);
-                      return (
-                        <Button
-                          key={preset}
-                          type="button"
-                          size="sm"
-                          variant={active ? "default" : "outline"}
-                          disabled={disabled}
-                          onClick={() => setSelectedLimit(preset)}
-                        >
-                          {preset}
-                        </Button>
-                      );
-                    })}
-                    {totalAvailable < STUDY_SIZE_PRESETS[STUDY_SIZE_PRESETS.length - 1] && (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={effectiveLimit === totalAvailable ? "default" : "outline"}
-                        onClick={() => setSelectedLimit(totalAvailable)}
-                      >
-                        {t("workbooks.studyDialog.allButton", { count: totalAvailable })}
-                      </Button>
-                    )}
-                  </div>
+                  </label>
+                  <select
+                    id="study-size-select"
+                    value={effectiveLimit}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      if (Number.isFinite(next)) setSelectedLimit(next);
+                    }}
+                    className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  >
+                    {sizeOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {t("workbooks.studyDialog.selected", { count: effectiveLimit })}
                   </p>
