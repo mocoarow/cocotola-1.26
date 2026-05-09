@@ -135,8 +135,8 @@ github.com/mattn/go-isatty v0.0.21 h1:xYae+lCNBP7QuW4PUnNG61ffM4hVIfm+zUzDuSzYLG
 github.com/mattn/go-isatty v0.0.21/go.mod h1:ZXfXG4SQHsB/w3ZeOYbR0PrPwLy+n6xiMrJlRFqopa4=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
-github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260429164944-9cbb15f749dd h1:ouNN7Ro7V178g6mymqW5NxXYV4IsLXK7oRKEiMp+Wik=
-github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260429164944-9cbb15f749dd/go.mod h1:8V5CXzn8FDrW7zppBx50ysQRPWMLEOD95v9mTwliBtY=
+github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26 h1:Lwx69n11uFNW7wk7wCj4IxTaMR5zYEWQ8YKh8cikQlI=
+github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26/go.mod h1:vaLfSFI8oOlfMeq+LPdvWXOFni7edwT2waSOmuD+2GI=
 github.com/mocoarow/slogotel v0.1.0 h1:zR2CyWvvlBvwGGoULLXAZDdvMVktLKdQyJdHTQx4WvQ=
 github.com/mocoarow/slogotel v0.1.0/go.mod h1:pbLR7ldJzrwEfzF0DYawkOUFpfldLm78SMtw5yx4cgI=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=

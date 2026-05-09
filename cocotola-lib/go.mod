@@ -3,7 +3,7 @@ module github.com/mocoarow/cocotola-1.26/cocotola-lib
 go 1.26.1
 
 require (
-	cloud.google.com/go/firestore v1.21.0
+	cloud.google.com/go/firestore v1.22.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
