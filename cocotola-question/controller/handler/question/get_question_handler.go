@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 
@@ -21,15 +20,17 @@ type GetQuestionUsecase interface {
 
 // GetQuestionHandler handles the GET /workbook/:workbookId/question/:questionId endpoint.
 type GetQuestionHandler struct {
-	usecase GetQuestionUsecase
-	logger  *slog.Logger
+	usecase  GetQuestionUsecase
+	response *ResponseBuilder
+	logger   *slog.Logger
 }
 
 // NewGetQuestionHandler returns a new GetQuestionHandler.
-func NewGetQuestionHandler(usecase GetQuestionUsecase) *GetQuestionHandler {
+func NewGetQuestionHandler(usecase GetQuestionUsecase, response *ResponseBuilder) *GetQuestionHandler {
 	return &GetQuestionHandler{
-		usecase: usecase,
-		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, "GetQuestionHandler")),
+		usecase:  usecase,
+		response: response,
+		logger:   slog.Default().With(slog.String(liblogging.LoggerNameKey, "GetQuestionHandler")),
 	}
 }
 
@@ -78,13 +79,5 @@ func (h *GetQuestionHandler) GetQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, api.QuestionResponse{
-		QuestionID:   output.QuestionID,
-		QuestionType: output.QuestionType,
-		Content:      output.Content,
-		Tags:         output.Tags,
-		OrderIndex:   int32(output.OrderIndex),
-		CreatedAt:    output.CreatedAt,
-		UpdatedAt:    output.UpdatedAt,
-	})
+	c.JSON(http.StatusOK, h.response.QuestionResponse(output.Item))
 }

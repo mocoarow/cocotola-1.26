@@ -11,12 +11,14 @@ vars:
     - cocotola-auth
     - cocotola-init
     - cocotola-question
+    - cocotola-audio-generator
     - cocotola-empty
   GO_APPS:
     - cocotola-auth
     - cocotola-empty
     - cocotola-init
     - cocotola-question
+    - cocotola-audio-generator
 
 tasks:
   init:
@@ -316,6 +318,17 @@ tasks:
     desc: "Run cocotola-app with local infrastructure (auth + question)"
     cmds:
       - bazelisk run //cocotola-app:cocotola-app
+
+  run-cocotola-audio-generator:
+    desc: "Run cocotola-audio-generator batch with local infrastructure"
+    cmds:
+      - bazelisk run //cocotola-audio-generator:cocotola-audio-generator
+
+  run-cocotola-audio-generator-production:
+    desc: "Run cocotola-audio-generator batch with production infrastructure"
+    dotenv: ['.env.production']
+    cmds:
+      - bazelisk run //cocotola-audio-generator:cocotola-audio-generator
 
   run-cocotola-empty:
     desc: "Run cocotola-empty with local infrastructure"

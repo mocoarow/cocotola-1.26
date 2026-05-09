@@ -51,16 +51,8 @@ func (q *ListQuestionsQuery) ListQuestions(ctx context.Context, input *questions
 	}
 
 	items := make([]questionservice.Item, len(questions))
-	for i, question := range questions {
-		items[i] = questionservice.Item{
-			QuestionID:   question.ID(),
-			QuestionType: question.QuestionType().Value(),
-			Content:      question.Content(),
-			Tags:         question.Tags(),
-			OrderIndex:   question.OrderIndex(),
-			CreatedAt:    question.CreatedAt(),
-			UpdatedAt:    question.UpdatedAt(),
-		}
+	for i := range questions {
+		items[i] = toServiceItem(&questions[i])
 	}
 
 	return &questionservice.ListQuestionsOutput{Questions: items}, nil

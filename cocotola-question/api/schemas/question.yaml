@@ -84,6 +84,9 @@ QuestionResponse:
     updatedAt:
       type: string
       format: date-time
+    audio:
+      $ref: '#/QuestionAudio'
+      nullable: true
   required:
     - questionId
     - questionType
@@ -91,6 +94,37 @@ QuestionResponse:
     - orderIndex
     - createdAt
     - updatedAt
+
+QuestionAudio:
+  type: object
+  description: |
+    Audio assets for a question. Each ref is always present in the wire
+    payload due to value-type codegen, but an empty `url` ("") signals that
+    the audio file has not been generated yet — clients must treat that the
+    same as a missing key.
+  properties:
+    source:
+      $ref: '#/QuestionAudioRef'
+    target:
+      $ref: '#/QuestionAudioRef'
+
+QuestionAudioRef:
+  type: object
+  description: |
+    A single audio file reference. `url` is empty ("") when the audio batch
+    has not yet produced the file; clients should hide playback UI for that
+    slot.
+  properties:
+    url:
+      type: string
+      pattern: ^.*$
+    durationSec:
+      type: number
+      format: double
+      minimum: 0
+  required:
+    - url
+    - durationSec
 
 ListQuestionsResponse:
   type: object

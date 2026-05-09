@@ -78,6 +78,17 @@ func ParseMultipleChoiceContent(raw string) (*MultipleChoiceContent, error) {
 	return &c, nil
 }
 
+// ParseWordFillContent unmarshals WordFillContent JSON without re-running the
+// structural validation in validateWordFillContent. Use only on content that
+// has already been validated at write time.
+func ParseWordFillContent(raw string) (*WordFillContent, error) {
+	var c WordFillContent
+	if err := json.Unmarshal([]byte(raw), &c); err != nil {
+		return nil, fmt.Errorf("invalid word_fill content JSON: %w", domain.ErrInvalidArgument)
+	}
+	return &c, nil
+}
+
 // EvaluateAnswer reports whether the given choice IDs exactly match the set of
 // IsCorrect choices. Strict equality only — AllowPartialCredit is intentionally
 // not consulted yet (a follow-up will add partial-credit scoring).

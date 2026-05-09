@@ -50,15 +50,5 @@ func (q *GetQuestionQuery) GetQuestion(ctx context.Context, input *questionservi
 		return nil, fmt.Errorf("find question: %w", err)
 	}
 
-	return &questionservice.GetQuestionOutput{
-		Item: questionservice.Item{
-			QuestionID:   question.ID(),
-			QuestionType: question.QuestionType().Value(),
-			Content:      question.Content(),
-			Tags:         question.Tags(),
-			OrderIndex:   question.OrderIndex(),
-			CreatedAt:    question.CreatedAt(),
-			UpdatedAt:    question.UpdatedAt(),
-		},
-	}, nil
+	return &questionservice.GetQuestionOutput{Item: toServiceItem(question)}, nil
 }

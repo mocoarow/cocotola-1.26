@@ -21,15 +21,17 @@ type ListQuestionsUsecase interface {
 
 // ListQuestionsHandler handles the GET /workbook/:workbookId/question endpoint.
 type ListQuestionsHandler struct {
-	usecase ListQuestionsUsecase
-	logger  *slog.Logger
+	usecase  ListQuestionsUsecase
+	response *ResponseBuilder
+	logger   *slog.Logger
 }
 
 // NewListQuestionsHandler returns a new ListQuestionsHandler.
-func NewListQuestionsHandler(usecase ListQuestionsUsecase) *ListQuestionsHandler {
+func NewListQuestionsHandler(usecase ListQuestionsUsecase, response *ResponseBuilder) *ListQuestionsHandler {
 	return &ListQuestionsHandler{
-		usecase: usecase,
-		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, "ListQuestionsHandler")),
+		usecase:  usecase,
+		response: response,
+		logger:   slog.Default().With(slog.String(liblogging.LoggerNameKey, "ListQuestionsHandler")),
 	}
 }
 
@@ -73,15 +75,7 @@ func (h *ListQuestionsHandler) ListQuestions(c *gin.Context) {
 
 	items := make([]api.QuestionResponse, len(output.Questions))
 	for i, q := range output.Questions {
-		items[i] = api.QuestionResponse{
-			QuestionID:   q.QuestionID,
-			QuestionType: q.QuestionType,
-			Content:      q.Content,
-			Tags:         q.Tags,
-			OrderIndex:   int32(q.OrderIndex),
-			CreatedAt:    q.CreatedAt,
-			UpdatedAt:    q.UpdatedAt,
-		}
+		items[i] = h.response.QuestionResponse(q)
 	}
 
 	c.JSON(http.StatusOK, api.ListQuestionsResponse{

@@ -26,6 +26,9 @@ StudyQuestionResponse:
     orderIndex:
       type: integer
       format: int32
+    audio:
+      $ref: 'question.yaml#/QuestionAudio'
+      nullable: true
 
 GetStudyQuestionsResponse:
   type: object

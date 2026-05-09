@@ -57,7 +57,12 @@ jobs:
             --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${SERVICE}/${SERVICE}:${IMAGE_TAG}" \
             --region us-central1
 
-  deploy-init:
+  deploy-job:
+    strategy:
+      matrix:
+        service:
+          - cocotola-init
+          - cocotola-audio-generator
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -84,16 +89,18 @@ jobs:
 
       - name: Push image to Artifact Registry
         env:
+          SERVICE: ${{ matrix.service }}
           IMAGE_TAG: ${{ github.sha }}
-        run: bazelisk run //cocotola-init:push -- --tag "${IMAGE_TAG}" --tag latest
+        run: bazelisk run //"${SERVICE}":push -- --tag "${IMAGE_TAG}" --tag latest
 
       - name: Deploy to Cloud Run Jobs
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          SERVICE: ${{ matrix.service }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          gcloud run jobs update cocotola-init \
-            --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-init/cocotola-init:${IMAGE_TAG}" \
+          gcloud run jobs update "${SERVICE}" \
+            --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${SERVICE}/${SERVICE}:${IMAGE_TAG}" \
             --region us-central1
 
   deploy-web:

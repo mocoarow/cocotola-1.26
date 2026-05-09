@@ -104,12 +104,16 @@ func Initialize(
 	deleteWorkbookHandler := workbookhandler.NewDeleteWorkbookHandler(workbookCommand)
 	workbookhandler.InitWorkbookRouter(createWorkbookHandler, getWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	addQuestionHandler := questionhandler.NewAddQuestionHandler(questionCommand)
-	getQuestionHandler := questionhandler.NewGetQuestionHandler(questionCommand)
-	listQuestionsHandler := questionhandler.NewListQuestionsHandler(questionCommand)
-	updateQuestionHandler := questionhandler.NewUpdateQuestionHandler(questionCommand)
+	questionResponseBuilder := questionhandler.NewResponseBuilder(questionConfig.AudioPublicBaseURL)
+	addQuestionHandler := questionhandler.NewAddQuestionHandler(questionCommand, questionResponseBuilder)
+	getQuestionHandler := questionhandler.NewGetQuestionHandler(questionCommand, questionResponseBuilder)
+	listQuestionsHandler := questionhandler.NewListQuestionsHandler(questionCommand, questionResponseBuilder)
+	updateQuestionHandler := questionhandler.NewUpdateQuestionHandler(questionCommand, questionResponseBuilder)
 	deleteQuestionHandler := questionhandler.NewDeleteQuestionHandler(questionCommand)
 	questionhandler.InitQuestionRouter(addQuestionHandler, getQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, parent, authMiddleware, orgResolverMiddleware)
+
+	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo)
+	audioHandler := questionhandler.NewAudioHandler(audioBatchCommand)
 
 	shareWorkbookHandler := sharinghandler.NewShareWorkbookHandler(sharingCommand)
 	listSharedHandler := sharinghandler.NewListSharedHandler(sharingCommand)
@@ -117,7 +121,8 @@ func Initialize(
 	listPublicHandler := sharinghandler.NewListPublicHandler(sharingCommand)
 	sharinghandler.InitSharingRouter(shareWorkbookHandler, listSharedHandler, unshareHandler, listPublicHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand)
+	studyAudioURLBuilder := studyhandler.NewAudioURLBuilder(questionConfig.AudioPublicBaseURL)
+	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand, studyAudioURLBuilder)
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(studyCommand)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
 	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, parent, authMiddleware, orgResolverMiddleware)
@@ -126,6 +131,7 @@ func Initialize(
 	internalParent := parent.Group("internal", apiKeyMiddleware)
 	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, internalParent)
 	questionhandler.InitInternalQuestionRouter(addQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, internalParent)
+	questionhandler.InitInternalAudioRouter(audioHandler, internalParent)
 
 	cleanup := func() {
 		if err := firestoreClient.Close(); err != nil {

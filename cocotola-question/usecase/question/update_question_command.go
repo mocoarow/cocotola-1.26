@@ -44,23 +44,18 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 		return nil, fmt.Errorf("find question: %w", err)
 	}
 
-	if err := q.Edit(input.Content, input.Tags, input.OrderIndex, time.Now()); err != nil {
+	now := time.Now()
+	if err := q.Edit(input.Content, input.Tags, input.OrderIndex, now); err != nil {
 		return nil, fmt.Errorf("edit question: %w", err)
+	}
+
+	if err := markAudioPendingIfWordFill(q, now); err != nil {
+		return nil, fmt.Errorf("mark audio pending: %w", err)
 	}
 
 	if err := c.questionSaver.Save(ctx, q); err != nil {
 		return nil, fmt.Errorf("save question: %w", err)
 	}
 
-	return &questionservice.UpdateQuestionOutput{
-		Item: questionservice.Item{
-			QuestionID:   q.ID(),
-			QuestionType: q.QuestionType().Value(),
-			Content:      q.Content(),
-			Tags:         q.Tags(),
-			OrderIndex:   q.OrderIndex(),
-			CreatedAt:    q.CreatedAt(),
-			UpdatedAt:    q.UpdatedAt(),
-		},
-	}, nil
+	return &questionservice.UpdateQuestionOutput{Item: toServiceItem(q)}, nil
 }

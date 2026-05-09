@@ -1,13 +1,16 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "question",
     srcs = [
         "add_question_handler.go",
+        "audio_handler.go",
         "delete_question_handler.go",
         "get_question_handler.go",
         "list_questions_handler.go",
         "question.go",
+        "response.go",
         "update_question_handler.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question",
@@ -20,5 +23,27 @@ go_library(
         "//cocotola-question/domain",
         "//cocotola-question/service/question",
         "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "question_test",
+    srcs = [
+        "audio_handler_s_test.go",
+        "helper_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":question",
+        "//cocotola-lib/controller",
+        "//cocotola-lib/controller/handler",
+        "//cocotola-question/domain",
+        "//cocotola-question/service/question",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_ohler55_ojg//jp",
+        "@com_github_ohler55_ojg//oj",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

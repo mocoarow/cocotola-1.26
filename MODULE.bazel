@@ -33,6 +33,8 @@ use_repo(
     "com_github_samber_slog_gin",
     "com_github_stretchr_testify",
     "com_google_cloud_go_firestore",
+    "com_google_cloud_go_storage",
+    "com_google_cloud_go_texttospeech",
     "in_yaml_go_yaml_v4",
     "io_gorm_driver_mysql",
     "io_gorm_driver_postgres",

@@ -2,15 +2,12 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
-	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
@@ -74,25 +71,20 @@ func (r *ActiveQuestionListRepository) Save(ctx context.Context, list *domain.Ac
 		QuestionIDs: list.Entries(),
 		Version:     list.Version() + 1,
 	}
-	err := firestoresave.SaveVersioned(ctx, firestoresave.SaveArgs[*activeQuestionListRecord]{
-		Client:    r.client,
-		Entity:    list,
-		DocRef:    r.listDoc(list.WorkbookID()),
-		NewRecord: &record,
-		Decode: func(snap *firestore.DocumentSnapshot) (int, error) {
+	return saveVersionedList[*domain.ActiveQuestionList, string, *activeQuestionListRecord](
+		ctx,
+		r.client,
+		r.listDoc(list.WorkbookID()),
+		list,
+		&record,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
 			var rec activeQuestionListRecord
 			if err := snap.DataTo(&rec); err != nil {
 				return 0, fmt.Errorf("decode active question list: %w", err)
 			}
 			return rec.Version, nil
 		},
-		EntityName: "active question list",
-	})
-	if errors.Is(err, libversioned.ErrNotFound) {
-		return domain.ErrActiveQuestionListNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("save active question list: %w", err)
-	}
-	return nil
+		"active question list",
+		domain.ErrActiveQuestionListNotFound,
+	)
 }

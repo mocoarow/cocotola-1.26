@@ -100,15 +100,44 @@ type PublicWorkbookResponse struct {
 	WorkbookID  string    `json:"workbookId"`
 }
 
+// QuestionAudio Audio assets for a question. Each ref is always present in the wire
+// payload due to value-type codegen, but an empty `url` ("") signals that
+// the audio file has not been generated yet — clients must treat that the
+// same as a missing key.
+type QuestionAudio struct {
+	// Source A single audio file reference. `url` is empty ("") when the audio batch
+	// has not yet produced the file; clients should hide playback UI for that
+	// slot.
+	Source QuestionAudioRef `json:"source,omitempty"`
+
+	// Target A single audio file reference. `url` is empty ("") when the audio batch
+	// has not yet produced the file; clients should hide playback UI for that
+	// slot.
+	Target QuestionAudioRef `json:"target,omitempty"`
+}
+
+// QuestionAudioRef A single audio file reference. `url` is empty ("") when the audio batch
+// has not yet produced the file; clients should hide playback UI for that
+// slot.
+type QuestionAudioRef struct {
+	DurationSec float64 `json:"durationSec"`
+	Url         string  `json:"url"`
+}
+
 // QuestionResponse defines model for QuestionResponse.
 type QuestionResponse struct {
-	Content      string    `json:"content"`
-	CreatedAt    time.Time `json:"createdAt"`
-	OrderIndex   int32     `json:"orderIndex"`
-	QuestionID   string    `json:"questionId"`
-	QuestionType string    `json:"questionType"`
-	Tags         []string  `json:"tags,omitempty"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	// Audio Audio assets for a question. Each ref is always present in the wire
+	// payload due to value-type codegen, but an empty `url` ("") signals that
+	// the audio file has not been generated yet — clients must treat that the
+	// same as a missing key.
+	Audio        QuestionAudio `json:"audio,omitempty"`
+	Content      string        `json:"content"`
+	CreatedAt    time.Time     `json:"createdAt"`
+	OrderIndex   int32         `json:"orderIndex"`
+	QuestionID   string        `json:"questionId"`
+	QuestionType string        `json:"questionType"`
+	Tags         []string      `json:"tags,omitempty"`
+	UpdatedAt    time.Time     `json:"updatedAt"`
 }
 
 // RecordAnswerRequest Exactly one of `correct` or `selectedChoiceIds` must be provided, matched to
@@ -143,11 +172,16 @@ type SharedItemResponse struct {
 
 // StudyQuestionResponse defines model for StudyQuestionResponse.
 type StudyQuestionResponse struct {
-	Content      string   `json:"content"`
-	OrderIndex   int32    `json:"orderIndex"`
-	QuestionId   string   `json:"questionId"`
-	QuestionType string   `json:"questionType"`
-	Tags         []string `json:"tags,omitempty"`
+	// Audio Audio assets for a question. Each ref is always present in the wire
+	// payload due to value-type codegen, but an empty `url` ("") signals that
+	// the audio file has not been generated yet — clients must treat that the
+	// same as a missing key.
+	Audio        QuestionAudio `json:"audio,omitempty"`
+	Content      string        `json:"content"`
+	OrderIndex   int32         `json:"orderIndex"`
+	QuestionId   string        `json:"questionId"`
+	QuestionType string        `json:"questionType"`
+	Tags         []string      `json:"tags,omitempty"`
 }
 
 // StudySummaryResponse Counts of questions currently available for study in the given workbook.
