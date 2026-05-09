@@ -210,9 +210,11 @@ test.describe("study: practice mode", () => {
       // when: the user lands on the study page with the day's queue empty
       await page.goto(`${WEB_BASE_URL}/workbooks/${wb.workbookId}/study`);
 
-      // then: the empty-state message and the Continue-practicing CTA are shown
+      // then: the empty-state message and the Continue-practicing CTA are shown.
+      // Note: the CTA is rendered as a BaseUI Button with render={<Link/>}, which
+      // emits an <a href> element but with role="button". Match by role=button.
       await expect(page.getByText("No questions due for study right now.")).toBeVisible();
-      const cta = page.getByRole("link", { name: "Continue practicing (no progress saved)" });
+      const cta = page.getByRole("button", { name: "Continue practicing (no progress saved)" });
       await expect(cta).toBeVisible();
 
       // when: the user clicks the CTA
