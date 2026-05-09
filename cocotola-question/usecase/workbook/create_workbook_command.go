@@ -190,6 +190,7 @@ func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organ
 		domain.ActionViewWorkbook(),
 		domain.ActionUpdateWorkbook(),
 		domain.ActionDeleteWorkbook(),
+		domain.ActionStudyWorkbook(),
 		domain.ActionCreateQuestion(),
 		domain.ActionUpdateQuestion(),
 		domain.ActionDeleteQuestion(),

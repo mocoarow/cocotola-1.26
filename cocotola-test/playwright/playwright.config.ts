@@ -18,6 +18,10 @@ const baseURL = process.env.AUTH_BASE_URL ?? "http://localhost:8000";
 export default defineConfig({
   testDir: "tests",
   fullyParallel: true,
+  // Casbin v3's policy enforcer is not safe under concurrent AddPolicyForUser calls
+  // (concurrent map iteration and map write panics). On CI we serialize workers to
+  // avoid the race; locally we keep the default for speed.
+  workers: process.env.CI ? 1 : undefined,
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: [["list"]],
