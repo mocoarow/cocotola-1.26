@@ -172,8 +172,12 @@ test.describe("study: public workbook (UI)", () => {
     await expect(page.getByRole("heading", { name: "Public Workbooks" })).toBeVisible();
 
     const card = page.locator("div.group").filter({ hasText: target.title }).first();
+    // Clicking "Study" opens the StartStudyDialog (size picker). We then
+    // click "Start" inside the dialog to commit and navigate to the study
+    // page (with a ?limit=N query string the loader requires).
     await card.getByRole("button", { name: "Study", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/workbooks/${target.workbookId}/study$`));
+    await page.getByRole("button", { name: "Start", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/workbooks/${target.workbookId}/study\\?limit=\\d+$`));
     await expect(page.getByRole("heading", { name: "Study Session" })).toBeVisible();
 
     // and: answering every served question correctly. The SSR loader may return

@@ -75,7 +75,11 @@ export type RecordAnswerResponse = {
   totalIncorrect: number;
 };
 
-const SPACE_WAIT_TIMEOUT_MS = 2_500;
+// Auth service provisions the private space asynchronously after user
+// creation. Under CI load (single worker, tests in sequence), 2.5s was
+// insufficient and intermittently timed out the helper before the space
+// became visible. 10s is well within Playwright's per-step budget.
+const SPACE_WAIT_TIMEOUT_MS = 10_000;
 const SPACE_WAIT_INTERVAL_MS = 500;
 
 export async function waitForSpaceByType(

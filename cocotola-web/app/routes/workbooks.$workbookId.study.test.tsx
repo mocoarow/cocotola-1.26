@@ -88,6 +88,27 @@ describe("StudyPage", () => {
     expect(backLink).toHaveAttribute("href", "/workbooks/wb-1");
   });
 
+  // BaseUI Button with render={<Link/>} emits an <a href> but with role="button".
+  // Lock the href + accessible name so future refactors don't silently drop the
+  // practice CTA from the empty state. Match by getByText (text is stable across
+  // the role override).
+  it("empty state surfaces the Continue-practicing CTA pointing at ?practice=true", () => {
+    // given
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [],
+      currentUserId: "owner-1",
+    });
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    const cta = screen.getByText("Continue practicing (no progress saved)").closest("a");
+    expect(cta).toHaveAttribute("href", "/workbooks/wb-1/study?practice=true");
+  });
+
   it("should send empty-state back link to public list when current user is not the owner", () => {
     // given
     setLoaderData({

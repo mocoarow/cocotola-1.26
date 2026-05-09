@@ -121,6 +121,11 @@ async function setupStudy(
 
   await page.goto(`${WEB_BASE_URL}/workbooks/${workbook.workbookId}/study`);
   await expect(page.getByRole("heading", { name: "Study Session" })).toBeVisible();
+  // The heading is part of the layout and appears before the StudySession
+  // child finishes mounting. Wait for the ProgressBar (only rendered in the
+  // "studying" phase) to confirm the question card itself is on screen,
+  // otherwise downstream getByLabel("Blank N") asserts can race the mount.
+  await expect(page.getByText(`0 / ${questions.length}`, { exact: true })).toBeVisible();
 
   return {
     page,
@@ -362,7 +367,9 @@ test.describe("study: mixed workbook (word_fill + multiple_choice)", () => {
     browser,
     request,
   }) => {
-    // given: a workbook with one word_fill and one multiple_choice question
+    // given: a workbook with one word_fill and one multiple_choice question.
+    // The loader shuffles new (no-SRS-record) questions, so the on-screen
+    // order is not deterministic. The test must handle both orderings.
     const { page, cleanup } = await setupStudy(request, browser, [
       {
         type: "word_fill",
@@ -381,35 +388,37 @@ test.describe("study: mixed workbook (word_fill + multiple_choice)", () => {
     ]);
 
     try {
-      // when: a word_fill card appears first; verify the new behavior end-to-end
-      await expect(page.getByLabel("Blank 1")).toBeVisible();
-      await expect(page.getByLabel("Blank 1")).toBeFocused();
+      // when: answering both cards correctly, regardless of which type appears
+      // first. We loop twice and dispatch on the visible card type.
+      const sawType = { word_fill: false, multiple_choice: false };
+      for (let i = 0; i < 2; i++) {
+        const isWordFill = await page.getByLabel("Blank 1").isVisible();
+        if (isWordFill) {
+          sawType.word_fill = true;
+          // Auto-advance focus: filling Blank 1 correctly moves focus to Blank 2.
+          await expect(page.getByLabel("Blank 1")).toBeFocused();
+          await page.getByLabel("Blank 1").fill("hello");
+          await expect(page.getByLabel("Blank 2")).toBeFocused();
+          await page.getByLabel("Blank 2").fill("world");
+        } else {
+          sawType.multiple_choice = true;
+          await expect(page.getByText("Pick the greeting")).toBeVisible();
+          await page.getByRole("button", { name: "Hello", exact: true }).click();
+          await page.getByRole("button", { name: "Check" }).click();
+        }
+        await expect(page.getByText("Correct!")).toBeVisible();
+        // Sanity: the session result must not appear until BOTH cards are done.
+        if (i === 0) {
+          await expect(
+            page.getByRole("heading", { name: "Session Complete!" }),
+          ).not.toBeVisible();
+        }
+        await page.getByRole("button", { name: "Next" }).click();
+      }
 
-      // and: typing the first correct answer moves focus to the second blank
-      await page.getByLabel("Blank 1").fill("hello");
-      await expect(page.getByLabel("Blank 2")).toBeFocused();
-
-      // and: completing the second blank shows the in-card correct screen
-      await page.getByLabel("Blank 2").fill("world");
-      await expect(page.getByText("Correct!")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Next" })).toBeVisible();
-      // and: the session must not have skipped to the result page
-      await expect(
-        page.getByRole("heading", { name: "Session Complete!" }),
-      ).not.toBeVisible();
-
-      // and: clicking Next advances to the multiple_choice question
-      await page.getByRole("button", { name: "Next" }).click();
-      await expect(page.getByText("Pick the greeting")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Hello" })).toBeVisible();
-
-      // and: multiple_choice still uses the legacy Check → Next flow
-      await page.getByRole("button", { name: "Hello", exact: true }).click();
-      await page.getByRole("button", { name: "Check" }).click();
-      await expect(page.getByText("Correct!")).toBeVisible();
-      await page.getByRole("button", { name: "Next" }).click();
-
-      // then: the session result page reports a perfect score
+      // then: both card types were exercised and the session result is perfect
+      expect(sawType.word_fill).toBe(true);
+      expect(sawType.multiple_choice).toBe(true);
       await expect(page.getByRole("heading", { name: "Session Complete!" })).toBeVisible();
       await expect(page.getByText("You scored 100%")).toBeVisible();
     } finally {
@@ -421,7 +430,10 @@ test.describe("study: mixed workbook (word_fill + multiple_choice)", () => {
     browser,
     request,
   }) => {
-    // given: a workbook with one word_fill followed by one multiple_choice
+    // given: a mixed workbook with one word_fill and one multiple_choice.
+    // The loader shuffles new questions, so order is non-deterministic; the
+    // test verifies the per-type action button regardless of which appears
+    // first.
     const { page, cleanup } = await setupStudy(request, browser, [
       {
         type: "word_fill",
@@ -439,21 +451,30 @@ test.describe("study: mixed workbook (word_fill + multiple_choice)", () => {
     ]);
 
     try {
-      // when: the word_fill card is on screen
-      await expect(page.getByLabel("Blank 1")).toBeVisible();
-
-      // then: the action button is "Show answer", not "Check"
-      await expect(page.getByRole("button", { name: "Show answer" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Check", exact: true })).toHaveCount(0);
-
-      // when: the user gives up and reveals the answer, then advances
-      await page.getByRole("button", { name: "Show answer" }).click();
-      await page.getByRole("button", { name: "Next" }).click();
-
-      // then: the next card is multiple_choice and uses the legacy Check button
-      await expect(page.getByText("Pick the greeting")).toBeVisible();
-      await expect(page.getByRole("button", { name: "Check" })).toBeVisible();
-      await expect(page.getByRole("button", { name: "Show answer" })).toHaveCount(0);
+      // when: the user looks at each card in turn (in whichever order they appear)
+      // then: the action button matches the card type
+      const sawType = { word_fill: false, multiple_choice: false };
+      for (let i = 0; i < 2; i++) {
+        const isWordFill = await page.getByLabel("Blank 1").isVisible();
+        if (isWordFill) {
+          sawType.word_fill = true;
+          // word_fill exposes "Show answer" and not "Check"
+          await expect(page.getByRole("button", { name: "Show answer" })).toBeVisible();
+          await expect(page.getByRole("button", { name: "Check", exact: true })).toHaveCount(0);
+          await page.getByRole("button", { name: "Show answer" }).click();
+        } else {
+          sawType.multiple_choice = true;
+          // multiple_choice exposes "Check" and not "Show answer"
+          await expect(page.getByText("Pick the greeting")).toBeVisible();
+          await expect(page.getByRole("button", { name: "Check" })).toBeVisible();
+          await expect(page.getByRole("button", { name: "Show answer" })).toHaveCount(0);
+          await page.getByRole("button", { name: "Hello", exact: true }).click();
+          await page.getByRole("button", { name: "Check" }).click();
+        }
+        await page.getByRole("button", { name: "Next" }).click();
+      }
+      expect(sawType.word_fill).toBe(true);
+      expect(sawType.multiple_choice).toBe(true);
     } finally {
       await cleanup();
     }
