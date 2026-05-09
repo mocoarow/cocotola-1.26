@@ -27,7 +27,7 @@ var workbookResourceMatcher = mock.MatchedBy(func(r domain.Resource) bool {
 })
 
 // expectAllWorkbookPolicies registers a separate mock expectation for each of
-// the six (action, workbook-resource) policy grants performed by
+// the seven (action, workbook-resource) policy grants performed by
 // CreateWorkbook. Restoring the per-action expectations keeps the test
 // regression-sensitive to silently dropping or replacing one of the granted
 // actions.
@@ -36,6 +36,7 @@ func expectAllWorkbookPolicies(policyAdder *mockpolicyAdder) {
 		domain.ActionViewWorkbook(),
 		domain.ActionUpdateWorkbook(),
 		domain.ActionDeleteWorkbook(),
+		domain.ActionStudyWorkbook(),
 		domain.ActionCreateQuestion(),
 		domain.ActionUpdateQuestion(),
 		domain.ActionDeleteQuestion(),
