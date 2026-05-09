@@ -38,13 +38,16 @@ jobs:
       APP_QUESTION_FIRESTORE_PROJECT_ID: local
 
       # --- Auth signing / API keys (CI-only test values, not real secrets) ---
+      # APP_AUTH_SIGNING_KEY / APP_AUTH_API_KEY require min=32 chars (cocotola-auth/config/config.go:25,33).
+      # APP_AUTH_SUPABASE_JWKS_URL must be a valid URL (validate:"required,url"); the dummy is never fetched
+      # because Playwright uses password login, not the Supabase flow.
       # kics-scan ignore-line
       APP_AUTH_SIGNING_KEY: ci-test-signing-key-please-rotate-32b
       # kics-scan ignore-line
-      APP_AUTH_API_KEY: ci-test-auth-api-key
+      APP_AUTH_API_KEY: ci-test-auth-api-key-please-rotate-32b
       # kics-scan ignore-line
       APP_QUESTION_API_KEY: ci-test-question-api-key
-      APP_AUTH_SUPABASE_JWKS_URL: ""
+      APP_AUTH_SUPABASE_JWKS_URL: http://localhost:9999/jwks.json
       APP_AUTH_COOKIE_SECURE: "false"
 
       # --- cocotola-init -> cocotola-app question API (must match APP_QUESTION_API_KEY) ---
@@ -64,8 +67,9 @@ jobs:
       # --- cocotola-web (Vite/React Router) ---
       AUTH_BASE_URL: http://localhost:8000
       QUESTION_BASE_URL: http://localhost:8000
+      # AUTH_API_KEY must equal APP_AUTH_API_KEY above (web -> auth handshake).
       # kics-scan ignore-line
-      AUTH_API_KEY: ci-test-auth-api-key
+      AUTH_API_KEY: ci-test-auth-api-key-please-rotate-32b
       # kics-scan ignore-line
       SESSION_SECRET: ci-test-session-secret-please-rotate-32
       APP_ENV: local
