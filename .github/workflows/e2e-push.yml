@@ -56,13 +56,15 @@ jobs:
       INIT_QUESTION_API_KEY: ci-test-question-api-key
 
       # --- Owner / new-user credentials (cocotola-init + Playwright fixtures) ---
+      # PasswordAuthRequest.Password is constrained to min=8,max=20 chars
+      # (cocotola-auth/api/types.gen.go:170). Both passwords must fit that window.
       OWNER_LOGIN_ID: owner@example.com
       # kics-scan ignore-line
-      OWNER_PASSWORD: ci-test-owner-pw-123 # gitleaks:allow
+      OWNER_PASSWORD: ci-test-owner-pw-1 # gitleaks:allow
       ORGANIZATION_NAME: cocotola
       NEW_USER_LOGIN_ID: testuser@example.com
       # kics-scan ignore-line
-      NEW_USER_PASSWORD: ci-test-newuser-pw-123 # gitleaks:allow
+      NEW_USER_PASSWORD: ci-test-newuser-1 # gitleaks:allow
 
       # --- cocotola-web (Vite/React Router) ---
       AUTH_BASE_URL: http://localhost:8000
