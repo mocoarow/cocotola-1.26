@@ -10,7 +10,12 @@ import {
 } from "./helpers/workbook";
 
 const WEB_BASE_URL = process.env.WEB_BASE_URL ?? "http://localhost:5173";
-const STUDY_LIMIT = 20;
+// Public workbook seeds were expanded to 30 questions each (commit 4c48f00).
+// Pre-fetch the full set so answer-key lookups cover whatever subset the SSR
+// loader serves to the browser (the loader is limited by the dialog's chosen
+// size and shuffles new questions, so the served set is not a deterministic
+// prefix of any single fetch). 100 is the server-side ABSOLUTE_MAX_STUDY_SIZE.
+const STUDY_LIMIT = 100;
 
 type Choice = { id: string; text: string; isCorrect: boolean };
 type MultipleChoiceContent = { questionText: string; choices: Choice[] };
