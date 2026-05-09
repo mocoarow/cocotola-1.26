@@ -5,8 +5,8 @@ go 1.26.1
 require (
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/mocoarow/cocotola-1.26/cocotola-auth v0.0.0-20260329141729-61a05d7320bc
-	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260329141729-61a05d7320bc
-	github.com/mocoarow/cocotola-1.26/cocotola-question v0.0.0-20260404044856-9e08b6035284
+	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26
+	github.com/mocoarow/cocotola-1.26/cocotola-question v0.0.0-20260507155547-07df07b45d26
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 )
 
@@ -36,7 +36,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/envoyproxy/go-control-plane/envoy v1.37.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/gin-contrib/cors v1.7.7 // indirect
@@ -79,7 +78,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/ohler55/ojg v1.28.1 // indirect
 	github.com/orandin/slog-gorm v1.4.0 // indirect
 	github.com/paulmach/orb v0.13.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.3.0 // indirect
@@ -92,7 +90,7 @@ require (
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/samber/slog-gin v1.21.0 // indirect
+	github.com/samber/slog-gin v1.21.1 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

@@ -7,7 +7,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/google/uuid v1.6.0
-	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260429164944-9cbb15f749dd
+	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26
 	github.com/ohler55/ojg v1.28.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.43.0
@@ -81,7 +81,7 @@ require (
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.59.0 // indirect
-	github.com/samber/slog-gin v1.21.0 // indirect
+	github.com/samber/slog-gin v1.21.1 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect

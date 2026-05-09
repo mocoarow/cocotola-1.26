@@ -80,6 +80,7 @@ github.com/dnaeon/go-vcr v1.1.0/go.mod h1:M7tiix8f0r6mKKJ3Yq/kqU1OYf3MnfmBWVbPx/
 github.com/dnaeon/go-vcr v1.2.0/go.mod h1:R4UdLID7HZT3taECzJs4YgbbH6PIGXB6W/sc5OLb6RQ=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
+github.com/envoyproxy/go-control-plane v0.14.0 h1:hbG2kr4RuFj222B6+7T83thSPqLjwBIfQawTkC++2HA=
 github.com/envoyproxy/go-control-plane/envoy v1.37.0 h1:u3riX6BoYRfF4Dr7dwSOroNfdSbEPe9Yyl09/B6wBrQ=
 github.com/envoyproxy/go-control-plane/envoy v1.37.0/go.mod h1:DReE9MMrmecPy+YvQOAOHNYMALuowAnbjjEMkkWOi6A=
 github.com/envoyproxy/protoc-gen-validate v1.3.0 h1:TvGH1wof4H33rezVKWSpqKz5NXWg5VPuZ0uONDT6eb4=
@@ -188,8 +189,8 @@ github.com/microsoft/go-mssqldb v1.9.8 h1:d4IFMvF/o+HdpXUqbBfzHvn/NlFA75YGcfHUUv
 github.com/microsoft/go-mssqldb v1.9.8/go.mod h1:eGSRSGAW4hKMy5YcAenhCDjIRm2rhqIdmmwgciMzLus=
 github.com/mocoarow/cocotola-1.26/cocotola-auth v0.0.0-20260419045521-260f5d17f341 h1:BP+t6PnPOMko9xGX1OlQARyinJ7sWHteO+MAjUNPEGY=
 github.com/mocoarow/cocotola-1.26/cocotola-auth v0.0.0-20260419045521-260f5d17f341/go.mod h1:kP44Z7f5MdtijiaCHeXdnaITVqafjR845hfnpn4plyQ=
-github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260419045521-260f5d17f341 h1:3jaKGVjUmM2sAX/rjG6s4SlXyrbhMa6BJFBcZkHo4PQ=
-github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260419045521-260f5d17f341/go.mod h1:LMxtlZ4FyNm6+otMhke8LVbY40eVbcfjKzww5olMwx4=
+github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26 h1:Lwx69n11uFNW7wk7wCj4IxTaMR5zYEWQ8YKh8cikQlI=
+github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26/go.mod h1:vaLfSFI8oOlfMeq+LPdvWXOFni7edwT2waSOmuD+2GI=
 github.com/mocoarow/slogotel v0.1.0 h1:zR2CyWvvlBvwGGoULLXAZDdvMVktLKdQyJdHTQx4WvQ=
 github.com/mocoarow/slogotel v0.1.0/go.mod h1:pbLR7ldJzrwEfzF0DYawkOUFpfldLm78SMtw5yx4cgI=
 github.com/modocache/gover v0.0.0-20171022184752-b58185e213c5/go.mod h1:caMODM3PzxT8aQXRPkAt8xlV/e7d7w8GM5g0fa5F0D8=
