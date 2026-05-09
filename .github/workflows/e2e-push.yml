@@ -47,6 +47,11 @@ jobs:
       APP_AUTH_SUPABASE_JWKS_URL: ""
       APP_AUTH_COOKIE_SECURE: "false"
 
+      # --- cocotola-init -> cocotola-app question API (must match APP_QUESTION_API_KEY) ---
+      INIT_QUESTION_BASE_URL: http://localhost:8000
+      # kics-scan ignore-line
+      INIT_QUESTION_API_KEY: ci-test-question-api-key
+
       # --- Owner / new-user credentials (cocotola-init + Playwright fixtures) ---
       OWNER_LOGIN_ID: owner@example.com
       # kics-scan ignore-line
@@ -117,9 +122,6 @@ jobs:
             //cocotola-init:cocotola-init \
             //cocotola-app:cocotola-app
 
-      - name: Seed initial data (cocotola-init)
-        run: bazelisk run --config=remote //cocotola-init:cocotola-init
-
       - name: Start cocotola-app (background)
         run: |
           mkdir -p ci-logs
@@ -140,6 +142,11 @@ jobs:
           echo "cocotola-app did not become ready" >&2
           tail -n 200 ci-logs/cocotola-app.log >&2 || true
           exit 1
+
+      # cocotola-init seeds the public space via the question API, so it must
+      # run AFTER cocotola-app is up.
+      - name: Seed initial data (cocotola-init)
+        run: bazelisk run --config=remote //cocotola-init:cocotola-init
 
       - name: Install cocotola-web deps
         working-directory: cocotola-web
