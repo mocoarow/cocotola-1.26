@@ -65,7 +65,7 @@ func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
-	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase)
+	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase, studyhandler.NewAudioURLBuilder(""))
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(summaryUsecase)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(recordUsecase)
 	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, v1, authMiddleware, orgMiddleware)

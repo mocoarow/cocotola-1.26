@@ -233,7 +233,12 @@ function StudySession({
             onAnswer={handleMultipleChoiceAnswer}
           />
         ) : (
-          <WordFillCard key={cardKey} content={question.content} onAnswer={handleWordFillAnswer} />
+          <WordFillCard
+            key={cardKey}
+            content={question.content}
+            audio={question.audio}
+            onAnswer={handleWordFillAnswer}
+          />
         )}
       </div>
     </div>

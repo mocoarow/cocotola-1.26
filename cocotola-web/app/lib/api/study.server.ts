@@ -1,11 +1,29 @@
 import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
 
+export type StudyQuestionAudioRef = {
+  url: string;
+  durationSec: number;
+};
+
+export type StudyQuestionAudio = {
+  source?: StudyQuestionAudioRef;
+  target?: StudyQuestionAudioRef;
+};
+
 export type StudyQuestion = {
   questionId: string;
   questionType: string;
   content: string;
   tags?: string[];
   orderIndex: number;
+  /**
+   * Audio assets for this question. The whole object — and individual
+   * `source`/`target` keys — may be omitted when the audio batch has not yet
+   * generated the files. Empty `url` strings should be treated the same as
+   * "missing": the audio batch sometimes returns the object with empty subfields
+   * during transitional states.
+   */
+  audio?: StudyQuestionAudio;
 };
 
 export type GetStudyQuestionsResponse = {

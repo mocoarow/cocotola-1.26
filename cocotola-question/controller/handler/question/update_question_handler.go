@@ -21,15 +21,17 @@ type UpdateQuestionUsecase interface {
 
 // UpdateQuestionHandler handles the PUT /workbook/:workbookId/question/:questionId endpoint.
 type UpdateQuestionHandler struct {
-	usecase UpdateQuestionUsecase
-	logger  *slog.Logger
+	usecase  UpdateQuestionUsecase
+	response *ResponseBuilder
+	logger   *slog.Logger
 }
 
 // NewUpdateQuestionHandler returns a new UpdateQuestionHandler.
-func NewUpdateQuestionHandler(usecase UpdateQuestionUsecase) *UpdateQuestionHandler {
+func NewUpdateQuestionHandler(usecase UpdateQuestionUsecase, response *ResponseBuilder) *UpdateQuestionHandler {
 	return &UpdateQuestionHandler{
-		usecase: usecase,
-		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, "UpdateQuestionHandler")),
+		usecase:  usecase,
+		response: response,
+		logger:   slog.Default().With(slog.String(liblogging.LoggerNameKey, "UpdateQuestionHandler")),
 	}
 }
 
@@ -85,13 +87,5 @@ func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, api.QuestionResponse{
-		QuestionID:   output.QuestionID,
-		QuestionType: output.QuestionType,
-		Content:      output.Content,
-		Tags:         output.Tags,
-		OrderIndex:   int32(output.OrderIndex),
-		CreatedAt:    output.CreatedAt,
-		UpdatedAt:    output.UpdatedAt,
-	})
+	c.JSON(http.StatusOK, h.response.QuestionResponse(output.Item))
 }

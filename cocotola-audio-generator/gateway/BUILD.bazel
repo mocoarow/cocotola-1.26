@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "gateway",
+    srcs = [
+        "gcs_client.go",
+        "question_client.go",
+        "tts_client.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-audio-generator/domain",
+        "@com_google_cloud_go_storage//:storage",
+        "@com_google_cloud_go_texttospeech//apiv1",
+        "@com_google_cloud_go_texttospeech//apiv1/texttospeechpb",
+    ],
+)

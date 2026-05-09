@@ -60,6 +60,10 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("new question: %w", err)
 	}
 
+	if err := markAudioPendingIfWordFill(q, now); err != nil {
+		return nil, fmt.Errorf("mark audio pending: %w", err)
+	}
+
 	if err := c.questionRepo.Save(ctx, q); err != nil {
 		return nil, fmt.Errorf("save question: %w", err)
 	}
@@ -73,17 +77,7 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("save active question list: %w", err)
 	}
 
-	return &questionservice.AddQuestionOutput{
-		Item: questionservice.Item{
-			QuestionID:   q.ID(),
-			QuestionType: q.QuestionType().Value(),
-			Content:      q.Content(),
-			Tags:         q.Tags(),
-			OrderIndex:   q.OrderIndex(),
-			CreatedAt:    q.CreatedAt(),
-			UpdatedAt:    q.UpdatedAt(),
-		},
-	}, nil
+	return &questionservice.AddQuestionOutput{Item: toServiceItem(q)}, nil
 }
 
 func (c *AddQuestionCommand) saveActiveList(ctx context.Context, workbookID string, questionID string) error {

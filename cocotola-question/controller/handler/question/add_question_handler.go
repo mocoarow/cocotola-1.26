@@ -21,15 +21,17 @@ type AddQuestionUsecase interface {
 
 // AddQuestionHandler handles the POST /workbook/:workbookId/question endpoint.
 type AddQuestionHandler struct {
-	usecase AddQuestionUsecase
-	logger  *slog.Logger
+	usecase  AddQuestionUsecase
+	response *ResponseBuilder
+	logger   *slog.Logger
 }
 
 // NewAddQuestionHandler returns a new AddQuestionHandler.
-func NewAddQuestionHandler(usecase AddQuestionUsecase) *AddQuestionHandler {
+func NewAddQuestionHandler(usecase AddQuestionUsecase, response *ResponseBuilder) *AddQuestionHandler {
 	return &AddQuestionHandler{
-		usecase: usecase,
-		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, "AddQuestionHandler")),
+		usecase:  usecase,
+		response: response,
+		logger:   slog.Default().With(slog.String(liblogging.LoggerNameKey, "AddQuestionHandler")),
 	}
 }
 
@@ -78,13 +80,5 @@ func (h *AddQuestionHandler) AddQuestion(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, api.QuestionResponse{
-		QuestionID:   output.QuestionID,
-		QuestionType: output.QuestionType,
-		Content:      output.Content,
-		Tags:         output.Tags,
-		OrderIndex:   int32(output.OrderIndex),
-		CreatedAt:    output.CreatedAt,
-		UpdatedAt:    output.UpdatedAt,
-	})
+	c.JSON(http.StatusCreated, h.response.QuestionResponse(output.Item))
 }

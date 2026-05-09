@@ -23,13 +23,15 @@ type GetStudyQuestionsUsecase interface {
 // GetStudyQuestionsHandler handles the GET /workbook/:workbookId/study endpoint.
 type GetStudyQuestionsHandler struct {
 	usecase GetStudyQuestionsUsecase
+	audio   *AudioURLBuilder
 	logger  *slog.Logger
 }
 
 // NewGetStudyQuestionsHandler returns a new GetStudyQuestionsHandler.
-func NewGetStudyQuestionsHandler(usecase GetStudyQuestionsUsecase) *GetStudyQuestionsHandler {
+func NewGetStudyQuestionsHandler(usecase GetStudyQuestionsUsecase, audio *AudioURLBuilder) *GetStudyQuestionsHandler {
 	return &GetStudyQuestionsHandler{
 		usecase: usecase,
+		audio:   audio,
 		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, "GetStudyQuestionsHandler")),
 	}
 }
@@ -109,6 +111,7 @@ func (h *GetStudyQuestionsHandler) GetStudyQuestions(c *gin.Context) {
 			Content:      q.Content,
 			Tags:         tags,
 			OrderIndex:   int32(q.OrderIndex),
+			Audio:        h.audio.audioForStudy(q.Audio),
 		})
 	}
 

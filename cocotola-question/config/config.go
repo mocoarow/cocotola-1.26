@@ -20,6 +20,11 @@ type QuestionConfig struct {
 	// APIKey is the shared secret that protects the internal /api/v1/internal
 	// endpoints used by trusted system callers (e.g. cocotola-init batch jobs).
 	APIKey string `yaml:"apiKey" validate:"required"`
+	// AudioPublicBaseURL is the public base URL of the GCS bucket that hosts
+	// generated audio files (e.g. https://storage.googleapis.com/cocotola-audio-prod).
+	// The handler joins this with the per-question object path to produce the
+	// playable URL exposed to the frontend.
+	AudioPublicBaseURL string `yaml:"audioPublicBaseUrl" validate:"required,url"`
 }
 
 // AuthClientConfig holds configuration for the auth service HTTP client.

@@ -22,6 +22,7 @@ jobs:
           - cocotola-init
           - cocotola-lib
           - cocotola-question
+          - cocotola-audio-generator
     name: golang
     runs-on: ubuntu-latest
     steps:

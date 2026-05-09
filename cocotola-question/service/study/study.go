@@ -81,6 +81,25 @@ type QuestionItem struct {
 	Content      string
 	Tags         []string
 	OrderIndex   int
+	// Audio carries playable audio metadata when the audio batch has finished.
+	// Nil when no audio is ready (the typical state for a freshly created
+	// word_fill question).
+	Audio *QuestionItemAudio
+}
+
+// QuestionItemAudio mirrors the same shape as questionservice.AudioOutput but
+// avoids cross-package coupling: study items are independent of the question
+// CRUD response shape.
+type QuestionItemAudio struct {
+	Source *QuestionItemAudioRef
+	Target *QuestionItemAudioRef
+}
+
+// QuestionItemAudioRef carries the storage-relative path and metadata of a
+// single audio file. The handler turns Path into a public URL.
+type QuestionItemAudioRef struct {
+	Path        string
+	DurationSec float64
 }
 
 // GetStudyQuestionsOutput is the output for getting study questions.

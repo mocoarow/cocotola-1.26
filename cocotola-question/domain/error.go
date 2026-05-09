@@ -41,3 +41,23 @@ var ErrSpaceNotFound = errors.New("space not found")
 // ErrInvalidSpaceType is returned when a space lookup against cocotola-auth
 // returns a SpaceType value that this service does not recognize.
 var ErrInvalidSpaceType = errors.New("invalid space type")
+
+// ErrAudioInputHashMismatch is returned by audio batch state transitions when
+// the supplied input hash does not match the question's current audio
+// generation hash (typically because the question was edited mid-flight).
+var ErrAudioInputHashMismatch = errors.New("audio input hash mismatch")
+
+// ErrAudioNotPending is returned when a claim is attempted on a question
+// whose audio generation is not in the pending state.
+var ErrAudioNotPending = errors.New("audio generation is not pending")
+
+// ErrAudioNotGenerating is returned when a complete or fail transition is
+// attempted on a question whose audio generation is not in the generating
+// state.
+var ErrAudioNotGenerating = errors.New("audio generation is not generating")
+
+// ErrAudioConcurrentModification is returned when an audio state transition
+// loses an optimistic-lock race against another writer (typically a concurrent
+// batch instance or a user edit). Callers should treat it identically to
+// ErrAudioNotPending: skip the item and retry on the next batch run.
+var ErrAudioConcurrentModification = errors.New("audio generation concurrent modification")

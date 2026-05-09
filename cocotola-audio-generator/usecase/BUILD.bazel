@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "usecase",
+    srcs = ["generate_audio_batch.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-audio-generator/domain"],
+)
+
+smart_go_test(
+    name = "usecase_test",
+    srcs = [
+        "generate_audio_batch_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":usecase",
+        "//cocotola-audio-generator/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

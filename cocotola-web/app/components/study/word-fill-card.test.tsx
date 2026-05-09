@@ -26,6 +26,48 @@ describe("WordFillCard", () => {
     expect(screen.getByText("こんにちは")).toBeInTheDocument();
   });
 
+  it("should not render source audio button when audio prop is missing", () => {
+    // given
+    const content = makeContent("{{hello}}", "こんにちは");
+    const onAnswer = vi.fn();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+
+    // then
+    expect(screen.queryByRole("button", { name: /source/i })).not.toBeInTheDocument();
+  });
+
+  it("should render source audio button when audio.source.url is provided", () => {
+    // given
+    const content = makeContent("{{hello}}", "こんにちは");
+    const onAnswer = vi.fn();
+    const audio = {
+      source: { url: "https://example.test/audio/source.opus", durationSec: 1.5 },
+    };
+
+    // when
+    render(<WordFillCard content={content} audio={audio} onAnswer={onAnswer} />);
+
+    // then
+    expect(screen.getByRole("button", { name: /source/i })).toBeInTheDocument();
+  });
+
+  it("should not leak target audio button before result phase", () => {
+    // given
+    const content = makeContent("{{hello}}", "こんにちは");
+    const onAnswer = vi.fn();
+    const audio = {
+      target: { url: "https://example.test/audio/target.opus", durationSec: 1.2 },
+    };
+
+    // when
+    render(<WordFillCard content={content} audio={audio} onAnswer={onAnswer} />);
+
+    // then
+    expect(screen.queryByRole("button", { name: /target/i })).not.toBeInTheDocument();
+  });
+
   it("should render input for each blank", () => {
     // given
     const content = makeContent("{{throw}} it {{away}}");

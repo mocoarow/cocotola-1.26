@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { parseWordFillContent } from "~/components/workbook/schemas";
+import type { StudyQuestionAudio } from "~/lib/api/study.server";
 
 type WordFillCardProps = {
   content: string;
+  audio?: StudyQuestionAudio;
   onAnswer: (correct: boolean) => void;
 };
 
@@ -35,7 +37,50 @@ function findNextUnlocked(from: number, correct: boolean[]): number {
   return -1;
 }
 
-export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
+// AudioPlayButton renders an <audio> control plus a small button that triggers
+// playback. It is rendered only when a valid URL is provided so the play UI
+// disappears entirely while the audio batch has not yet produced files.
+function AudioPlayButton({ url, label }: { url: string; label: string }) {
+  const { t } = useTranslation();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  function handlePlay() {
+    const el = audioRef.current;
+    if (!el) return;
+    // Restart from the beginning so repeated taps always play from 0:00.
+    el.currentTime = 0;
+    setFailed(false);
+    el.play().catch((reason) => {
+      // Surface the failure as a small label so the user knows the tap landed
+      // and that nothing will play. Common causes: autoplay rejection by the
+      // browser, network error fetching the audio file, decode error.
+      console.warn("audio playback failed", reason);
+      setFailed(true);
+    });
+  }
+
+  return (
+    <div className="inline-flex flex-col items-end gap-1">
+      <Button type="button" variant="outline" size="sm" aria-label={label} onClick={handlePlay}>
+        <span aria-hidden="true">▶</span>
+        <span className="ml-1 text-xs">{label}</span>
+        {/* Inline audio element keeps the implementation self-contained; the
+            element is hidden so the UI surface is just the button. */}
+        <audio ref={audioRef} src={url} preload="none" className="hidden">
+          <track kind="captions" />
+        </audio>
+      </Button>
+      {failed && (
+        <span role="alert" className="text-xs text-red-600">
+          {t("workbooks.study.audioPlayFailed")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function WordFillCard({ content, audio, onAnswer }: WordFillCardProps) {
   const { t } = useTranslation();
   const parsed = parseWordFillContent(content);
   const [inputs, setInputs] = useState<string[]>([]);
@@ -105,11 +150,17 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
     onAnswer(allCorrect);
   }
 
+  const sourceAudioUrl = audio?.source?.url ?? "";
+  const targetAudioUrl = audio?.target?.url ?? "";
+
   return (
     <div className="space-y-6">
       {parsed.source?.text && (
-        <div className="rounded-lg bg-muted/50 p-4">
-          <p className="text-lg font-medium">{parsed.source.text}</p>
+        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-4">
+          <p className="flex-1 text-lg font-medium">{parsed.source.text}</p>
+          {sourceAudioUrl && (
+            <AudioPlayButton url={sourceAudioUrl} label={t("workbooks.study.playSourceAudio")} />
+          )}
         </div>
       )}
 
@@ -146,6 +197,14 @@ export function WordFillCard({ content, onAnswer }: WordFillCardProps) {
           );
         })}
       </div>
+
+      {/* Target audio reveals the correct sentence. Held back until the user
+          has finished the question to avoid leaking the answer. */}
+      {isResult && targetAudioUrl && (
+        <div className="flex justify-end">
+          <AudioPlayButton url={targetAudioUrl} label={t("workbooks.study.playTargetAudio")} />
+        </div>
+      )}
 
       {parsed.explanation && isResult && (
         <p className="text-sm text-muted-foreground">{parsed.explanation}</p>

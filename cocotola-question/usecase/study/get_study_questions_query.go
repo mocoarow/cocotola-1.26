@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
@@ -130,16 +131,46 @@ func (q *GetStudyQuestionsQuery) fetchQuestionItems(ctx context.Context, workboo
 	}
 
 	items := make([]studyservice.QuestionItem, 0, len(questions))
-	for _, question := range questions {
+	for i := range questions {
+		question := &questions[i]
 		items = append(items, studyservice.QuestionItem{
 			QuestionID:   question.ID(),
 			QuestionType: question.QuestionType().Value(),
 			Content:      question.Content(),
 			Tags:         question.Tags(),
 			OrderIndex:   question.OrderIndex(),
+			Audio:        studyAudioFromQuestion(question),
 		})
 	}
 	return items, nil
+}
+
+func studyAudioFromQuestion(q *domainquestion.Question) *studyservice.QuestionItemAudio {
+	ag := q.AudioGeneration()
+	if ag == nil || !ag.Status().IsReady() {
+		return nil
+	}
+	refs := ag.Refs()
+	out := &studyservice.QuestionItemAudio{
+		Source: nil,
+		Target: nil,
+	}
+	if ref, ok := refs[domainquestion.AudioLangSource]; ok {
+		out.Source = &studyservice.QuestionItemAudioRef{
+			Path:        ref.Path(),
+			DurationSec: ref.DurationSec(),
+		}
+	}
+	if ref, ok := refs[domainquestion.AudioLangTarget]; ok {
+		out.Target = &studyservice.QuestionItemAudioRef{
+			Path:        ref.Path(),
+			DurationSec: ref.DurationSec(),
+		}
+	}
+	if out.Source == nil && out.Target == nil {
+		return nil
+	}
+	return out
 }
 
 // ReviewRatioNumerator and ReviewRatioDenominator define the fixed

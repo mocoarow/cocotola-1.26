@@ -1466,6 +1466,9 @@ components:
         updatedAt:
           type: string
           format: date-time
+        audio:
+          $ref: '#/components/schemas/QuestionAudio'
+          nullable: true
       required:
         - questionId
         - questionType
@@ -1596,6 +1599,9 @@ components:
         orderIndex:
           type: integer
           format: int32
+        audio:
+          $ref: '#/components/schemas/QuestionAudio'
+          nullable: true
     GetStudyQuestionsResponse:
       type: object
       required:
@@ -1705,6 +1711,35 @@ components:
       required:
         - code
         - message
+    QuestionAudioRef:
+      type: object
+      description: |
+        A single audio file reference. `url` is empty ("") when the audio batch
+        has not yet produced the file; clients should hide playback UI for that
+        slot.
+      properties:
+        url:
+          type: string
+          pattern: ^.*$
+        durationSec:
+          type: number
+          format: double
+          minimum: 0
+      required:
+        - url
+        - durationSec
+    QuestionAudio:
+      type: object
+      description: |
+        Audio assets for a question. Each ref is always present in the wire
+        payload due to value-type codegen, but an empty `url` ("") signals that
+        the audio file has not been generated yet — clients must treat that the
+        same as a missing key.
+      properties:
+        source:
+          $ref: '#/components/schemas/QuestionAudioRef'
+        target:
+          $ref: '#/components/schemas/QuestionAudioRef'
   responses: {}
   securitySchemes:
     BearerAuth:

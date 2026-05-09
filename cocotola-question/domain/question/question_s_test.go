@@ -350,3 +350,443 @@ func Test_Edit_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
+
+func Test_Question_AudioGeneration_shouldReturnNil_whenUnset(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// then
+	assert.Nil(t, q.AudioGeneration())
+}
+
+func Test_Question_MarkAudioPending_shouldSetPending_whenInitiallyNil(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+
+	// when
+	q.MarkAudioPending("hash-v1", now)
+
+	// then
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "pending", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, now, ag.UpdatedAt())
+	assert.Equal(t, 0, ag.FailedAttempts())
+	assert.Empty(t, ag.LastError())
+	assert.Nil(t, ag.Refs())
+}
+
+func Test_Question_MarkAudioPending_shouldBeNoOp_whenInputHashUnchanged(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	first := time.Now()
+	q.MarkAudioPending("hash-v1", first)
+
+	// when: same inputHash, later timestamp
+	q.MarkAudioPending("hash-v1", first.Add(time.Hour))
+
+	// then: original state preserved
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, first, ag.UpdatedAt())
+}
+
+func Test_Question_MarkAudioPending_shouldResetState_whenInputHashChanges(t *testing.T) {
+	t.Parallel()
+
+	// given: a question already in ready state
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	ref, err := question.NewAudioRef("audio/questions/x/source.opus", 1.0, 100)
+	require.NoError(t, err)
+	prev, err := question.NewAudioGeneration(
+		question.AudioGenerationStatusReady(),
+		"hash-v0",
+		map[string]question.AudioRef{question.AudioLangSource: ref},
+		time.Now(),
+		2,
+		"",
+	)
+	require.NoError(t, err)
+	q.SetAudioGeneration(prev)
+
+	// when
+	q.MarkAudioPending("hash-v1", time.Now())
+
+	// then: refs and counters are cleared, new hash applied
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "pending", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, 0, ag.FailedAttempts())
+	assert.Nil(t, ag.Refs())
+}
+
+// fixtureAudioGeneration returns a *AudioGeneration with the supplied status
+// for use in audio state-transition tests.
+func fixtureAudioGeneration(t *testing.T, status question.AudioGenerationStatus, inputHash string, updatedAt time.Time, failedAttempts int) *question.AudioGeneration {
+	t.Helper()
+	ag, err := question.NewAudioGeneration(status, inputHash, nil, updatedAt, failedAttempts, "")
+	require.NoError(t, err)
+	return ag
+}
+
+func Test_Question_ClaimAudio_shouldTransitionToGenerating_whenPending(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	queuedAt := time.Now()
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusPending(), "hash-v1", queuedAt, 0))
+	claimedAt := queuedAt.Add(time.Minute)
+
+	// when
+	err = q.ClaimAudio("hash-v1", claimedAt)
+
+	// then
+	require.NoError(t, err)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "generating", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, claimedAt, ag.UpdatedAt())
+	assert.Empty(t, ag.LastError())
+}
+
+func Test_Question_ClaimAudio_shouldReturnError_whenAudioGenerationIsNil(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	err = q.ClaimAudio("hash-v1", time.Now())
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioNotPending)
+}
+
+func Test_Question_ClaimAudio_shouldReturnError_whenStatusIsNotPending(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "generating", status: question.AudioGenerationStatusGenerating()},
+		{name: "ready", status: question.AudioGenerationStatusReady()},
+		{name: "failed", status: question.AudioGenerationStatusFailed()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
+
+			// when
+			err = q.ClaimAudio("hash-v1", time.Now())
+
+			// then
+			require.ErrorIs(t, err, domain.ErrAudioNotPending)
+		})
+	}
+}
+
+func Test_Question_ClaimAudio_shouldReturnError_whenInputHashDoesNotMatch(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusPending(), "hash-v1", time.Now(), 0))
+
+	// when
+	err = q.ClaimAudio("hash-v2", time.Now())
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioInputHashMismatch)
+}
+
+func Test_Question_CompleteAudio_shouldTransitionToReady_whenGenerating(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 1))
+	srcRef, err := question.NewAudioRef("audio/questions/q1/source.opus", 2.5, 1234)
+	require.NoError(t, err)
+	tgtRef, err := question.NewAudioRef("audio/questions/q1/target.opus", 3.5, 5678)
+	require.NoError(t, err)
+	completedAt := time.Now().Add(time.Minute)
+
+	// when
+	err = q.CompleteAudio("hash-v1", map[string]question.AudioRef{
+		question.AudioLangSource: srcRef,
+		question.AudioLangTarget: tgtRef,
+	}, completedAt)
+
+	// then
+	require.NoError(t, err)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "ready", ag.Status().Value())
+	assert.Equal(t, completedAt, ag.UpdatedAt())
+	assert.Equal(t, 0, ag.FailedAttempts())
+	assert.Empty(t, ag.LastError())
+	refs := ag.Refs()
+	assert.Equal(t, srcRef.Path(), refs[question.AudioLangSource].Path())
+	assert.Equal(t, tgtRef.Path(), refs[question.AudioLangTarget].Path())
+}
+
+func Test_Question_CompleteAudio_shouldReturnError_whenStatusIsNotGenerating(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "pending", status: question.AudioGenerationStatusPending()},
+		{name: "ready", status: question.AudioGenerationStatusReady()},
+		{name: "failed", status: question.AudioGenerationStatusFailed()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
+
+			// when
+			err = q.CompleteAudio("hash-v1", nil, time.Now())
+
+			// then
+			require.ErrorIs(t, err, domain.ErrAudioNotGenerating)
+		})
+	}
+}
+
+func Test_Question_CompleteAudio_shouldReturnError_whenInputHashDoesNotMatch(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
+
+	// when
+	err = q.CompleteAudio("hash-v2", nil, time.Now())
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioInputHashMismatch)
+}
+
+func Test_Question_FailAudio_shouldTransitionToFailed_whenGenerating(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 2))
+	failedAt := time.Now().Add(time.Minute)
+
+	// when
+	err = q.FailAudio("hash-v1", "tts: invalid voice", failedAt)
+
+	// then
+	require.NoError(t, err)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "failed", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, failedAt, ag.UpdatedAt())
+	assert.Equal(t, 3, ag.FailedAttempts())
+	assert.Equal(t, "tts: invalid voice", ag.LastError())
+}
+
+func Test_Question_FailAudio_shouldTruncateReason_whenReasonExceedsMaxRunes(t *testing.T) {
+	t.Parallel()
+
+	// given: 600 multi-byte runes (Japanese hiragana 'あ' is 3 bytes each).
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
+	reason := strings.Repeat("あ", 600)
+
+	// when
+	err = q.FailAudio("hash-v1", reason, time.Now())
+
+	// then
+	require.NoError(t, err)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	last := ag.LastError()
+	assert.Len(t, []rune(last), 500)
+	assert.Equal(t, strings.Repeat("あ", 500), last)
+}
+
+func Test_Question_FailAudio_shouldReturnError_whenStatusIsNotGenerating(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "pending", status: question.AudioGenerationStatusPending()},
+		{name: "ready", status: question.AudioGenerationStatusReady()},
+		{name: "failed", status: question.AudioGenerationStatusFailed()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
+
+			// when
+			err = q.FailAudio("hash-v1", "boom", time.Now())
+
+			// then
+			require.ErrorIs(t, err, domain.ErrAudioNotGenerating)
+		})
+	}
+}
+
+func Test_Question_FailAudio_shouldReturnError_whenInputHashDoesNotMatch(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
+
+	// when
+	err = q.FailAudio("hash-v2", "boom", time.Now())
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioInputHashMismatch)
+}
+
+func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenAudioGenerationIsNil(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	reclaimed := q.ReclaimStaleAudio(time.Now(), time.Minute)
+
+	// then
+	assert.False(t, reclaimed)
+	assert.Nil(t, q.AudioGeneration())
+}
+
+func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenStatusIsNotGenerating(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "pending", status: question.AudioGenerationStatusPending()},
+		{name: "ready", status: question.AudioGenerationStatusReady()},
+		{name: "failed", status: question.AudioGenerationStatusFailed()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: stale by clock but wrong status
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			old := time.Now().Add(-time.Hour)
+			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", old, 0))
+
+			// when
+			reclaimed := q.ReclaimStaleAudio(time.Now(), time.Minute)
+
+			// then
+			assert.False(t, reclaimed)
+			assert.Equal(t, tt.status.Value(), q.AudioGeneration().Status().Value())
+		})
+	}
+}
+
+func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenNotStale(t *testing.T) {
+	t.Parallel()
+
+	// given: generating but updated only 10s ago
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", now.Add(-10*time.Second), 0))
+
+	// when
+	reclaimed := q.ReclaimStaleAudio(now, time.Minute)
+
+	// then
+	assert.False(t, reclaimed)
+	assert.Equal(t, "generating", q.AudioGeneration().Status().Value())
+}
+
+func Test_Question_ReclaimStaleAudio_shouldReturnTrueAndResetToPending_whenStale(t *testing.T) {
+	t.Parallel()
+
+	// given: generating updated 10 minutes ago, staleAfter 1 minute
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", now.Add(-10*time.Minute), 4))
+
+	// when
+	reclaimed := q.ReclaimStaleAudio(now, time.Minute)
+
+	// then
+	assert.True(t, reclaimed)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "pending", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, now, ag.UpdatedAt())
+	assert.Equal(t, 4, ag.FailedAttempts(), "failedAttempts must be preserved across reclaim")
+}

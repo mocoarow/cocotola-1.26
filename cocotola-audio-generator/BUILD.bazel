@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "cocotola-audio-generator_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//cocotola-audio-generator/config",
+        "//cocotola-audio-generator/gateway",
+        "//cocotola-audio-generator/usecase",
+    ],
+)
+
+go_binary(
+    name = "cocotola-audio-generator",
+    embed = [":cocotola-audio-generator_lib"],
+    visibility = ["//visibility:public"],
+)

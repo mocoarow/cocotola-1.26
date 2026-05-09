@@ -2,15 +2,12 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"cloud.google.com/go/firestore"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
-	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
@@ -72,25 +69,20 @@ func (r *OwnedWorkbookListRepository) Save(ctx context.Context, list *domain.Own
 		WorkbookIDs: list.Entries(),
 		Version:     list.Version() + 1,
 	}
-	err := firestoresave.SaveVersioned(ctx, firestoresave.SaveArgs[*ownedWorkbookListRecord]{
-		Client:    r.client,
-		Entity:    list,
-		DocRef:    r.ownerDoc(list.OwnerID()),
-		NewRecord: &record,
-		Decode: func(snap *firestore.DocumentSnapshot) (int, error) {
+	return saveVersionedList[*domain.OwnedWorkbookList, string, *ownedWorkbookListRecord](
+		ctx,
+		r.client,
+		r.ownerDoc(list.OwnerID()),
+		list,
+		&record,
+		func(snap *firestore.DocumentSnapshot) (int, error) {
 			var rec ownedWorkbookListRecord
 			if err := snap.DataTo(&rec); err != nil {
 				return 0, fmt.Errorf("decode owned workbook list: %w", err)
 			}
 			return rec.Version, nil
 		},
-		EntityName: "owned workbook list",
-	})
-	if errors.Is(err, libversioned.ErrNotFound) {
-		return domain.ErrOwnedWorkbookListNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("save owned workbook list: %w", err)
-	}
-	return nil
+		"owned workbook list",
+		domain.ErrOwnedWorkbookListNotFound,
+	)
 }

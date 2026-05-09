@@ -45,6 +45,24 @@ type Item struct {
 	OrderIndex   int
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+	// Audio carries playable audio metadata when the audio batch has finished
+	// generating files. Nil when no audio is ready (the typical state for a
+	// freshly created word_fill question).
+	Audio *AudioOutput
+}
+
+// AudioOutput exposes audio refs for a question. Each language slot is nil
+// until the corresponding audio file is ready.
+type AudioOutput struct {
+	Source *AudioRefOutput
+	Target *AudioRefOutput
+}
+
+// AudioRefOutput carries the storage-relative path and metadata of a single
+// audio file. The handler layer turns Path into a public URL.
+type AudioRefOutput struct {
+	Path        string
+	DurationSec float64
 }
 
 // AddQuestionOutput is the output for an added question.

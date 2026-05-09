@@ -1,0 +1,15 @@
+---
+appEnv: ${APP_ENV:-local}
+log:
+  level: ${AUDIO_LOG_LEVEL:-info}
+audio:
+  bucketName: ${AUDIO_BUCKET_NAME:-cocotola-audio-local}
+  maxPerRun: ${AUDIO_MAX_PER_RUN:-200}
+  ttsVoiceJa: ${AUDIO_TTS_VOICE_JA:-ja-JP-Neural2-B}
+  ttsVoiceEn: ${AUDIO_TTS_VOICE_EN:-en-US-Neural2-C}
+  audioEncoding: ${AUDIO_ENCODING:-OGG_OPUS}
+  sampleRateHz: ${AUDIO_SAMPLE_RATE_HZ:-24000}
+  questionApiBaseUrl: ${AUDIO_QUESTION_API_BASE_URL:-http://localhost:8090}
+  questionApiKey: ${AUDIO_QUESTION_API_KEY}
+  questionApiTimeoutSec: ${AUDIO_QUESTION_API_TIMEOUT_SEC:-30}
+  staleAfterSec: ${AUDIO_STALE_AFTER_SEC:-900}
