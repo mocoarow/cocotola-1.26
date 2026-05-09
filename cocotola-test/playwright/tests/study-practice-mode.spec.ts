@@ -291,9 +291,11 @@ test.describe("study: practice mode", () => {
     if (!wb) throw new Error("expected at least one seeded public workbook");
 
     // and: every question already answered correctly so the normal-mode
-    // queue is empty (NextDueAt jumps to tomorrow for correct answers)
+    // queue is empty (NextDueAt jumps to tomorrow for correct answers).
+    // limit=100 is the server-side max — picking less risked leaving a
+    // tail of questions unanswered now that public workbooks have 30 each.
     const sq = await request.get(
-      `/api/v1/workbook/${wb.workbookId}/study?limit=20`,
+      `/api/v1/workbook/${wb.workbookId}/study?limit=100`,
       { headers: { authorization: `Bearer ${userToken}` } },
     );
     const sqBody = (await sq.json()) as {
