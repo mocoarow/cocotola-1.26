@@ -7,12 +7,12 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.2
 	github.com/google/uuid v1.6.0
-	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260429164944-9cbb15f749dd
+	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260507155547-07df07b45d26
 	github.com/ohler55/ojg v1.28.1
 	github.com/stretchr/testify v1.11.1
 	go.opentelemetry.io/otel v1.43.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
-	google.golang.org/api v0.276.0
+	google.golang.org/api v0.278.0
 	google.golang.org/grpc v1.80.0
 )
 
@@ -117,7 +117,7 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/genproto v0.0.0-20260414002931-afd174a4e478 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260414002931-afd174a4e478 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260427160629-7cedc36a6bc4 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/clickhouse v0.7.0 // indirect
