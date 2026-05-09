@@ -229,8 +229,13 @@ test.describe("study: practice mode", () => {
       ).toBeVisible();
       await expect(page.getByRole("heading", { name: "Practice Session" })).toBeVisible();
 
-      // and: the previously-answered question is presented again
+      // and: the previously-answered question is presented again. WordFillCard
+      // auto-focuses Blank 1 in a mount useEffect, so waiting for the focus to
+      // land confirms the controlled input is fully wired before fill() — in CI
+      // (cold Vite dev cache) the visible-but-not-yet-mounted window is wide
+      // enough to drop the first input event when we filled too eagerly.
       await expect(page.getByLabel("Blank 1")).toBeVisible();
+      await expect(page.getByLabel("Blank 1")).toBeFocused();
 
       // when: the user answers correctly in practice mode and clicks Next
       await page.getByLabel("Blank 1").fill("hello");
