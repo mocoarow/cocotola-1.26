@@ -1,0 +1,208 @@
+---
+name: E2E Push
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: e2e-push-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  e2e_playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      # kics-scan ignore-line
+      id-token: write
+      contents: read
+    environment: production
+    env:
+      # --- Postgres (matches compose.common-postgres.yml defaults) ---
+      APP_POSTGRES_USERNAME: username
+      # kics-scan ignore-line
+      APP_POSTGRES_PASSWORD: password
+      APP_POSTGRES_HOST: 127.0.0.1
+      APP_POSTGRES_PORT: "5432"
+      APP_POSTGRES_DATABASE: local
+      INIT_POSTGRES_USERNAME: username
+      # kics-scan ignore-line
+      INIT_POSTGRES_PASSWORD: password
+      INIT_POSTGRES_HOST: 127.0.0.1
+      INIT_POSTGRES_PORT: "5432"
+      INIT_POSTGRES_DATABASE: local
+
+      # --- Firestore emulator ---
+      FIRESTORE_EMULATOR_HOST: 127.0.0.1:8681
+      APP_QUESTION_FIRESTORE_PROJECT_ID: local
+
+      # --- Auth signing / API keys (CI-only test values, not real secrets) ---
+      # kics-scan ignore-line
+      APP_AUTH_SIGNING_KEY: ci-test-signing-key-please-rotate-32b
+      # kics-scan ignore-line
+      APP_AUTH_API_KEY: ci-test-auth-api-key
+      # kics-scan ignore-line
+      APP_QUESTION_API_KEY: ci-test-question-api-key
+      APP_AUTH_SUPABASE_JWKS_URL: ""
+      APP_AUTH_COOKIE_SECURE: "false"
+
+      # --- Owner / new-user credentials (cocotola-init + Playwright fixtures) ---
+      OWNER_LOGIN_ID: owner@example.com
+      # kics-scan ignore-line
+      OWNER_PASSWORD: ci-test-owner-pw-123 # gitleaks:allow
+      ORGANIZATION_NAME: cocotola
+      NEW_USER_LOGIN_ID: testuser@example.com
+      # kics-scan ignore-line
+      NEW_USER_PASSWORD: ci-test-newuser-pw-123 # gitleaks:allow
+
+      # --- cocotola-web (Vite/React Router) ---
+      AUTH_BASE_URL: http://localhost:8000
+      QUESTION_BASE_URL: http://localhost:8000
+      # kics-scan ignore-line
+      AUTH_API_KEY: ci-test-auth-api-key
+      # kics-scan ignore-line
+      SESSION_SECRET: ci-test-session-secret-please-rotate-32
+      APP_ENV: local
+      WEB_BASE_URL: http://localhost:5173
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.26.x
+
+      - uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
+        with:
+          bazelisk-version: 1.x
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - run: bazel info
+
+      - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 10
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            cocotola-web/pnpm-lock.yaml
+            cocotola-test/playwright/pnpm-lock.yaml
+
+      # Taskfile loads `.env` via dotenv. Job-level env vars are already exported,
+      # so an empty file is enough to satisfy the loader.
+      - name: Materialize empty .env for Taskfile loader
+        run: ': > .env'
+
+      - name: Start local infra (Postgres + Firestore + Jaeger)
+        run: task start-local-infra
+
+      - name: Pre-build Bazel binaries (cocotola-init, cocotola-app)
+        run: |
+          bazelisk build --config=remote \
+            //cocotola-init:cocotola-init \
+            //cocotola-app:cocotola-app
+
+      - name: Seed initial data (cocotola-init)
+        run: bazelisk run --config=remote //cocotola-init:cocotola-init
+
+      - name: Start cocotola-app (background)
+        run: |
+          mkdir -p ci-logs
+          nohup bazelisk run --config=remote //cocotola-app:cocotola-app \
+            > ci-logs/cocotola-app.log 2>&1 &
+          echo $! > ci-logs/cocotola-app.pid
+
+      - name: Wait for cocotola-app readiness
+        run: |
+          for _ in $(seq 1 120); do
+            if curl -fsS http://localhost:8000/auth/health > /dev/null \
+              && curl -fsS http://localhost:8000/question/health > /dev/null; then
+              echo "cocotola-app is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "cocotola-app did not become ready" >&2
+          tail -n 200 ci-logs/cocotola-app.log >&2 || true
+          exit 1
+
+      - name: Install cocotola-web deps
+        working-directory: cocotola-web
+        run: pnpm install --frozen-lockfile
+
+      - name: Start cocotola-web (background, dev mode)
+        working-directory: cocotola-web
+        run: |
+          mkdir -p ../ci-logs
+          nohup pnpm run dev > ../ci-logs/cocotola-web.log 2>&1 &
+          echo $! > ../ci-logs/cocotola-web.pid
+
+      - name: Wait for cocotola-web readiness
+        run: |
+          for _ in $(seq 1 120); do
+            if curl -fsS -o /dev/null http://localhost:5173/; then
+              echo "cocotola-web is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "cocotola-web did not become ready" >&2
+          tail -n 200 ci-logs/cocotola-web.log >&2 || true
+          exit 1
+
+      - name: Install Playwright deps
+        working-directory: cocotola-test/playwright
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers (Chromium)
+        working-directory: cocotola-test/playwright
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run Playwright suite
+        run: task e2e-playwright
+
+      - name: Upload Playwright report and traces
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: |
+            cocotola-test/playwright/playwright-report/
+            cocotola-test/playwright/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload service logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-service-logs
+          path: ci-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop background services and tear down infra
+        if: always()
+        run: |
+          if [ -f ci-logs/cocotola-web.pid ]; then
+            kill "$(cat ci-logs/cocotola-web.pid)" 2>/dev/null || true
+          fi
+          if [ -f ci-logs/cocotola-app.pid ]; then
+            kill "$(cat ci-logs/cocotola-app.pid)" 2>/dev/null || true
+          fi
+          docker compose -f compose.local.postgres-firestore-jaeger.yml down -v --remove-orphans || true
