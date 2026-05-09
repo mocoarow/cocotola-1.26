@@ -136,8 +136,8 @@ jobs:
       - name: Wait for cocotola-app readiness
         run: |
           for _ in $(seq 1 120); do
-            if curl -fsS http://localhost:8000/auth/health > /dev/null \
-              && curl -fsS http://localhost:8000/question/health > /dev/null; then
+            if curl -fsS http://localhost:8000/api/v1/auth/health > /dev/null \
+              && curl -fsS http://localhost:8000/api/v1/question/health > /dev/null; then
               echo "cocotola-app is ready"
               exit 0
             fi
