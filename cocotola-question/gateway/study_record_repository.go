@@ -116,6 +116,53 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 	return result, nil
 }
 
+// DeleteByWorkbookID removes every study record the user has for the given
+// workbook. Idempotent: succeeds with zero deletions when there are no records.
+// Deletions are issued in parallel via Firestore's BulkWriter. Because the
+// operation is not transactional, any iterator/enqueue failure as well as
+// per-delete failures are drained and aggregated via errors.Join so partial
+// failures are fully reported to the caller.
+func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error {
+	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
+	defer iter.Stop()
+
+	bw := r.client.BulkWriter(ctx)
+	var (
+		jobs    []*firestore.BulkWriterJob
+		iterErr error
+	)
+
+	for {
+		doc, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			iterErr = fmt.Errorf("iterate study records: %w", err)
+			break
+		}
+		job, err := bw.Delete(doc.Ref)
+		if err != nil {
+			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
+			break
+		}
+		jobs = append(jobs, job)
+	}
+	bw.End()
+
+	jobErrs := make([]error, 0, len(jobs))
+	for _, job := range jobs {
+		if _, err := job.Results(); err != nil {
+			jobErrs = append(jobErrs, fmt.Errorf("delete study record: %w", err))
+		}
+	}
+
+	if iterErr != nil || len(jobErrs) > 0 {
+		return errors.Join(append([]error{iterErr}, jobErrs...)...)
+	}
+	return nil
+}
+
 // FindByWorkbookID returns all study records for a user and workbook.
 func (r *StudyRecordRepository) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.Record, error) {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)

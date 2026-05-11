@@ -179,3 +179,24 @@ type RecordAnswerOutput struct {
 	TotalCorrect       int
 	TotalIncorrect     int
 }
+
+// DeleteStudyHistoryInput is the validated input for clearing a workbook's
+// study history. The operation only affects the operator's own records.
+type DeleteStudyHistoryInput struct {
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
+	WorkbookID     string `validate:"required"`
+}
+
+// NewDeleteStudyHistoryInput creates a validated DeleteStudyHistoryInput.
+func NewDeleteStudyHistoryInput(operatorID, organizationID, workbookID string) (*DeleteStudyHistoryInput, error) {
+	m := &DeleteStudyHistoryInput{
+		OperatorID:     operatorID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate delete study history input: %w", err)
+	}
+	return m, nil
+}

@@ -49,15 +49,20 @@ func noopMiddleware() gin.HandlerFunc {
 
 func initStudyRouter(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, recordUsecase *MockRecordAnswerUsecase) *gin.Engine {
 	t.Helper()
-	return initStudyRouterWithMiddleware(ctx, t, getUsecase, NewMockGetStudySummaryUsecase(t), recordUsecase, fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
+	return initStudyRouterWithMiddleware(ctx, t, getUsecase, NewMockGetStudySummaryUsecase(t), recordUsecase, NewMockDeleteStudyHistoryUsecase(t), fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
 }
 
 func initStudyRouterWithSummary(ctx context.Context, t *testing.T, summaryUsecase *MockGetStudySummaryUsecase) *gin.Engine {
 	t.Helper()
-	return initStudyRouterWithMiddleware(ctx, t, NewMockGetStudyQuestionsUsecase(t), summaryUsecase, NewMockRecordAnswerUsecase(t), fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
+	return initStudyRouterWithMiddleware(ctx, t, NewMockGetStudyQuestionsUsecase(t), summaryUsecase, NewMockRecordAnswerUsecase(t), NewMockDeleteStudyHistoryUsecase(t), fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
 }
 
-func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, summaryUsecase *MockGetStudySummaryUsecase, recordUsecase *MockRecordAnswerUsecase, authMiddleware gin.HandlerFunc, orgMiddleware gin.HandlerFunc) *gin.Engine {
+func initStudyRouterWithDelete(ctx context.Context, t *testing.T, deleteUsecase *MockDeleteStudyHistoryUsecase) *gin.Engine {
+	t.Helper()
+	return initStudyRouterWithMiddleware(ctx, t, NewMockGetStudyQuestionsUsecase(t), NewMockGetStudySummaryUsecase(t), NewMockRecordAnswerUsecase(t), deleteUsecase, fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
+}
+
+func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase *MockGetStudyQuestionsUsecase, summaryUsecase *MockGetStudySummaryUsecase, recordUsecase *MockRecordAnswerUsecase, deleteUsecase *MockDeleteStudyHistoryUsecase, authMiddleware gin.HandlerFunc, orgMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
@@ -68,7 +73,8 @@ func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase
 	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase, studyhandler.NewAudioURLBuilder(""))
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(summaryUsecase)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(recordUsecase)
-	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, v1, authMiddleware, orgMiddleware)
+	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(deleteUsecase)
+	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, deleteStudyHistoryHandler, v1, authMiddleware, orgMiddleware)
 
 	return router
 }

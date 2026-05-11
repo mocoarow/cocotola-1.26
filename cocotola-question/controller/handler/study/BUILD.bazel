@@ -5,6 +5,7 @@ go_library(
     name = "study",
     srcs = [
         "audio_url.go",
+        "delete_study_history_handler.go",
         "get_study_questions_handler.go",
         "get_study_summary_handler.go",
         "record_answer_handler.go",
@@ -26,6 +27,7 @@ go_library(
 smart_go_test(
     name = "study_test",
     srcs = [
+        "delete_study_history_handler_s_test.go",
         "get_study_questions_handler_s_test.go",
         "get_study_summary_handler_s_test.go",
         "helper_test.go",

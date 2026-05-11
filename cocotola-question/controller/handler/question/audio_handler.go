@@ -25,6 +25,8 @@ const (
 	defaultReclaimStaleAudioSecond = 15 * 60
 )
 
+const audioStatusKey = "status"
+
 // AudioBatchUsecase is the use case interface required by AudioHandler.
 type AudioBatchUsecase interface {
 	ListPendingAudio(ctx context.Context, input *questionservice.ListPendingAudioInput) (*questionservice.ListPendingAudioOutput, error)
@@ -130,7 +132,7 @@ func (h *AudioHandler) ClaimAudio(c *gin.Context) {
 		handleAudioError(ctx, h.logger, c, "claim audio", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "generating"})
+	c.JSON(http.StatusOK, gin.H{audioStatusKey: "generating"})
 }
 
 type completeAudioRefRequest struct {
@@ -174,7 +176,7 @@ func (h *AudioHandler) CompleteAudio(c *gin.Context) {
 		handleAudioError(ctx, h.logger, c, "complete audio", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ready"})
+	c.JSON(http.StatusOK, gin.H{audioStatusKey: "ready"})
 }
 
 type failAudioRequest struct {
@@ -204,7 +206,7 @@ func (h *AudioHandler) FailAudio(c *gin.Context) {
 		handleAudioError(ctx, h.logger, c, "fail audio", err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "failed"})
+	c.JSON(http.StatusOK, gin.H{audioStatusKey: "failed"})
 }
 
 func (h *AudioHandler) requireIDs(ctx context.Context, c *gin.Context) (string, string, bool) {

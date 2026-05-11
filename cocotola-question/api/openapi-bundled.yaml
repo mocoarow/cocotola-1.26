@@ -864,6 +864,63 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+    delete:
+      summary: Delete study history
+      deprecated: false
+      description: |
+        Erases all study (SRS) history for the given workbook so subsequent study sessions start as if no questions had ever been answered. The questions themselves are kept. The operation is idempotent: deleting already-empty history returns 204.
+      operationId: deleteStudyHistory
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      responses:
+        '204':
+          description: Successfully deleted study history
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
   /api/v1/workbook/{workbookId}/study/{questionId}/answer:
     post:
       summary: Record an answer

@@ -151,7 +151,8 @@ func Test_GetStudyQuestionsHandler_shouldReturn401_whenUserIDMissing(t *testing.
 	getUsecase := NewMockGetStudyQuestionsUsecase(t)
 	summaryUsecase := NewMockGetStudySummaryUsecase(t)
 	recordUsecase := NewMockRecordAnswerUsecase(t)
-	r := initStudyRouterWithMiddleware(ctx, t, getUsecase, summaryUsecase, recordUsecase, noopMiddleware(), fakeOrgResolverMiddleware(fixtureOrganizationID))
+	deleteUsecase := NewMockDeleteStudyHistoryUsecase(t)
+	r := initStudyRouterWithMiddleware(ctx, t, getUsecase, summaryUsecase, recordUsecase, deleteUsecase, noopMiddleware(), fakeOrgResolverMiddleware(fixtureOrganizationID))
 	w := httptest.NewRecorder()
 
 	// when

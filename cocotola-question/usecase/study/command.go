@@ -34,6 +34,7 @@ type Command struct {
 	*GetStudyQuestionsQuery
 	*GetStudySummaryQuery
 	*RecordAnswerCommand
+	*DeleteStudyHistoryCommand
 }
 
 // questionRepository is the union of question lookup capabilities required by
@@ -43,10 +44,17 @@ type questionRepository interface {
 	questionFinder
 }
 
+// studyRecordRepository is the union of study-record capabilities required by
+// study use cases. The concrete *gateway.StudyRecordRepository satisfies it.
+type studyRecordRepository interface {
+	studyRecordFinder
+	studyRecordSaver
+	studyRecordDeleter
+}
+
 // NewCommand returns a new Command composing all study use cases.
 func NewCommand(
-	studyRecordFinder studyRecordFinder,
-	studyRecordSaver studyRecordSaver,
+	studyRecordRepo studyRecordRepository,
 	activeListRepo activeQuestionListFinder,
 	questionRepo questionRepository,
 	workbookRepo workbookFinder,
@@ -54,8 +62,9 @@ func NewCommand(
 	config UsecaseConfig,
 ) *Command {
 	return &Command{
-		GetStudyQuestionsQuery: NewGetStudyQuestionsQuery(studyRecordFinder, activeListRepo, questionRepo, workbookRepo, authChecker, config),
-		GetStudySummaryQuery:   NewGetStudySummaryQuery(studyRecordFinder, activeListRepo, workbookRepo, authChecker, config),
-		RecordAnswerCommand:    NewRecordAnswerCommand(studyRecordFinder, studyRecordSaver, activeListRepo, questionRepo, workbookRepo, authChecker, config),
+		GetStudyQuestionsQuery:    NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, config),
+		GetStudySummaryQuery:      NewGetStudySummaryQuery(studyRecordRepo, activeListRepo, workbookRepo, authChecker, config),
+		RecordAnswerCommand:       NewRecordAnswerCommand(studyRecordRepo, studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, config),
+		DeleteStudyHistoryCommand: NewDeleteStudyHistoryCommand(studyRecordRepo, workbookRepo, authChecker),
 	}
 }

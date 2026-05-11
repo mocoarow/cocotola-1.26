@@ -18,6 +18,10 @@ type studyRecordSaver interface {
 	Save(ctx context.Context, userID string, record *domainstudy.Record) error
 }
 
+type studyRecordDeleter interface {
+	DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error
+}
+
 type activeQuestionListFinder interface {
 	FindByWorkbookID(ctx context.Context, workbookID string) (*domain.ActiveQuestionList, error)
 }

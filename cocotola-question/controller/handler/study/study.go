@@ -19,6 +19,7 @@ func InitStudyRouter(
 	getStudyQuestionsHandler *GetStudyQuestionsHandler,
 	getStudySummaryHandler *GetStudySummaryHandler,
 	recordAnswerHandler *RecordAnswerHandler,
+	deleteStudyHistoryHandler *DeleteStudyHistoryHandler,
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
@@ -30,6 +31,7 @@ func InitStudyRouter(
 	studyGroup.GET("", getStudyQuestionsHandler.GetStudyQuestions)
 	studyGroup.GET("/summary", getStudySummaryHandler.GetStudySummary)
 	studyGroup.POST("/:questionId/answer", recordAnswerHandler.RecordAnswer)
+	studyGroup.DELETE("", deleteStudyHistoryHandler.DeleteStudyHistory)
 }
 
 func handleStudyError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {

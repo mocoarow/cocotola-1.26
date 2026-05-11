@@ -88,7 +88,7 @@ func Initialize(
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
-	studyCommand := studyusecase.NewCommand(studyRecordRepo, studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{
+	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{
 		ClockFunc:   nil,
 		ShuffleFunc: nil,
 	})
@@ -125,7 +125,8 @@ func Initialize(
 	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand, studyAudioURLBuilder)
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(studyCommand)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
-	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, parent, authMiddleware, orgResolverMiddleware)
+	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(studyCommand)
+	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, deleteStudyHistoryHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)
