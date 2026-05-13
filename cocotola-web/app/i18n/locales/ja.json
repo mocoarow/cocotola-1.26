@@ -90,10 +90,26 @@
       "deleteQuestion": "問題を削除",
       "deleteQuestionConfirmTitle": "問題を削除",
       "deleteQuestionConfirm": "この問題を削除してもよろしいですか？",
+      "clearStudyHistory": "学習履歴をクリア",
+      "clearStudyHistoryConfirmTitle": "学習履歴のクリア",
+      "clearStudyHistoryConfirm": "このワークブックの間隔反復学習履歴をすべてリセットします。問題自体は残りますが、学習進捗は失われます。続行しますか？",
+      "clearStudyHistoryDone": "学習履歴をクリアしました。",
       "errors": {
         "titleRequired": "タイトルは必須です",
         "titleTooLong": "タイトルは200文字以下にしてください"
       }
+    },
+    "debugStudy": {
+      "title": "デバッグ: 学習履歴",
+      "description": "ログイン中ユーザーの間隔反復学習の生データを表示します。ローカル開発時のみ表示されます。",
+      "back": "ワークブックに戻る",
+      "empty": "このワークブックの学習履歴はまだありません。",
+      "questionId": "問題ID",
+      "consecutiveCorrect": "連続正解",
+      "lastAnsweredAt": "最終回答",
+      "nextDueAt": "次回出題",
+      "totalCorrect": "正解",
+      "totalIncorrect": "不正解"
     },
     "addQuestion": {
       "selectType": "問題タイプを選択",

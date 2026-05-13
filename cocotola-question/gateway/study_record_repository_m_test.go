@@ -191,6 +191,84 @@ func Test_StudyRecordRepository_FindByWorkbookID_shouldReturnRecords_whenRecords
 	assert.Len(t, records, 2)
 }
 
+func Test_StudyRecordRepository_DeleteByWorkbookID_shouldRemoveOnlyMatchingRecords(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: two workbooks have records for the same user
+	client := setupFirestoreClient(t)
+	repo := gateway.NewStudyRecordRepository(client)
+	userID := "test-user-delete-" + t.Name()
+	targetWorkbookID := "wb-target"
+	otherWorkbookID := "wb-other"
+	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
+
+	target1 := study.ReconstructRecord(targetWorkbookID, "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
+	target2 := study.ReconstructRecord(targetWorkbookID, "q-2", 0, now, now.Add(10*time.Minute), 0, 1)
+	other := study.ReconstructRecord(otherWorkbookID, "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
+	require.NoError(t, repo.Save(ctx, userID, target1))
+	require.NoError(t, repo.Save(ctx, userID, target2))
+	require.NoError(t, repo.Save(ctx, userID, other))
+
+	// when
+	err := repo.DeleteByWorkbookID(ctx, userID, targetWorkbookID)
+
+	// then
+	require.NoError(t, err)
+
+	deleted, err := repo.FindByWorkbookID(ctx, userID, targetWorkbookID)
+	require.NoError(t, err)
+	assert.Empty(t, deleted)
+
+	survivors, err := repo.FindByWorkbookID(ctx, userID, otherWorkbookID)
+	require.NoError(t, err)
+	assert.Len(t, survivors, 1)
+}
+
+func Test_StudyRecordRepository_DeleteByWorkbookID_shouldNotReturnError_whenNoRecords(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: no records exist for the workbook
+	client := setupFirestoreClient(t)
+	repo := gateway.NewStudyRecordRepository(client)
+	userID := "test-user-delete-empty-" + t.Name()
+
+	// when
+	err := repo.DeleteByWorkbookID(ctx, userID, "wb-nonexistent")
+
+	// then: idempotent — no error on empty deletion
+	require.NoError(t, err)
+}
+
+func Test_StudyRecordRepository_DeleteByWorkbookID_shouldNotAffectOtherUsers(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: two users each have a record under the same workbookID
+	client := setupFirestoreClient(t)
+	repo := gateway.NewStudyRecordRepository(client)
+	userA := "test-user-delete-A-" + t.Name()
+	userB := "test-user-delete-B-" + t.Name()
+	workbookID := "wb-shared"
+	now := time.Date(2026, 4, 25, 10, 0, 0, 0, time.UTC)
+
+	recA := study.ReconstructRecord(workbookID, "q-1", 1, now, now.Add(24*time.Hour), 1, 0)
+	recB := study.ReconstructRecord(workbookID, "q-1", 2, now, now.Add(48*time.Hour), 2, 0)
+	require.NoError(t, repo.Save(ctx, userA, recA))
+	require.NoError(t, repo.Save(ctx, userB, recB))
+
+	// when: user A clears their history
+	err := repo.DeleteByWorkbookID(ctx, userA, workbookID)
+
+	// then: user B's record is untouched
+	require.NoError(t, err)
+
+	survivorB, err := repo.FindByID(ctx, userB, workbookID, "q-1")
+	require.NoError(t, err)
+	assert.Equal(t, 2, survivorB.ConsecutiveCorrect())
+}
+
 func Test_StudyRecordRepository_FindByWorkbookID_shouldNotReturnRecords_whenDifferentWorkbook(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

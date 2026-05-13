@@ -864,6 +864,125 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+    delete:
+      summary: Delete study history
+      deprecated: false
+      description: |
+        Erases all study (SRS) history for the given workbook so subsequent study sessions start as if no questions had ever been answered. The questions themselves are kept. The operation is idempotent: deleting already-empty history returns 204.
+      operationId: deleteStudyHistory
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      responses:
+        '204':
+          description: Successfully deleted study history
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+  /api/v1/workbook/{workbookId}/study/records:
+    get:
+      summary: List study records
+      deprecated: false
+      description: |
+        Returns the operator's raw spaced-repetition records for every question in the workbook that has been answered at least once. Intended for debugging and personal-progress dashboards.
+      operationId: listStudyRecords
+      tags:
+        - study
+      parameters:
+        - name: workbookId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^.*$
+      responses:
+        '200':
+          description: Successfully retrieved study records
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListStudyRecordsResponse'
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '404':
+          description: Workbook not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
   /api/v1/workbook/{workbookId}/study/{questionId}/answer:
     post:
       summary: Record an answer
@@ -1655,6 +1774,52 @@ components:
         reviewRatioDenominator:
           type: integer
           format: int32
+    StudyRecordResponse:
+      type: object
+      description: |
+        A single spaced-repetition record describing the operator's progress for one
+        question. `nextDueAt` is the timestamp at which the question is next eligible
+        for review.
+      required:
+        - workbookId
+        - questionId
+        - consecutiveCorrect
+        - lastAnsweredAt
+        - nextDueAt
+        - totalCorrect
+        - totalIncorrect
+      properties:
+        workbookId:
+          type: string
+          pattern: ^.*$
+        questionId:
+          type: string
+          pattern: ^.*$
+        consecutiveCorrect:
+          type: integer
+          format: int32
+        lastAnsweredAt:
+          type: string
+          format: date-time
+        nextDueAt:
+          type: string
+          format: date-time
+        totalCorrect:
+          type: integer
+          format: int32
+        totalIncorrect:
+          type: integer
+          format: int32
+    ListStudyRecordsResponse:
+      type: object
+      required:
+        - records
+      properties:
+        records:
+          type: array
+          maxItems: 10000
+          items:
+            $ref: '#/components/schemas/StudyRecordResponse'
     RecordAnswerRequest:
       type: object
       description: |

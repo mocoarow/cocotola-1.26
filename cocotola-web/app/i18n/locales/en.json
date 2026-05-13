@@ -90,10 +90,26 @@
       "deleteQuestion": "Delete question",
       "deleteQuestionConfirmTitle": "Delete Question",
       "deleteQuestionConfirm": "Are you sure you want to delete this question?",
+      "clearStudyHistory": "Clear study history",
+      "clearStudyHistoryConfirmTitle": "Clear Study History",
+      "clearStudyHistoryConfirm": "This will reset all your spaced-repetition records for this workbook. Questions stay; progress is lost. Continue?",
+      "clearStudyHistoryDone": "Study history cleared.",
       "errors": {
         "titleRequired": "Title is required",
         "titleTooLong": "Title must be 200 characters or less"
       }
+    },
+    "debugStudy": {
+      "title": "Debug: Study Records",
+      "description": "Raw spaced-repetition state for the authenticated user. Visible only in local development.",
+      "back": "Back to workbook",
+      "empty": "No study records for this workbook yet.",
+      "questionId": "Question ID",
+      "consecutiveCorrect": "Streak",
+      "lastAnsweredAt": "Last answered",
+      "nextDueAt": "Next due",
+      "totalCorrect": "Correct",
+      "totalIncorrect": "Incorrect"
     },
     "addQuestion": {
       "selectType": "Select Question Type",
