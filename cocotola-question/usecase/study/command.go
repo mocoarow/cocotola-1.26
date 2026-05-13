@@ -35,6 +35,7 @@ type Command struct {
 	*GetStudySummaryQuery
 	*RecordAnswerCommand
 	*DeleteStudyHistoryCommand
+	*ListStudyRecordsQuery
 }
 
 // questionRepository is the union of question lookup capabilities required by
@@ -66,5 +67,6 @@ func NewCommand(
 		GetStudySummaryQuery:      NewGetStudySummaryQuery(studyRecordRepo, activeListRepo, workbookRepo, authChecker, config),
 		RecordAnswerCommand:       NewRecordAnswerCommand(studyRecordRepo, studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, config),
 		DeleteStudyHistoryCommand: NewDeleteStudyHistoryCommand(studyRecordRepo, workbookRepo, authChecker),
+		ListStudyRecordsQuery:     NewListStudyRecordsQuery(studyRecordRepo, workbookRepo, authChecker),
 	}
 }

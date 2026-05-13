@@ -1,6 +1,9 @@
-import { useRef, useState } from "react";
+import { BugIcon, Trash2Icon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useFetcher, useLoaderData } from "react-router";
+import { Link, useFetcher, useLoaderData } from "react-router";
+import { useConfirm } from "~/components/confirm-dialog-provider";
+import { Button } from "~/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -25,6 +28,7 @@ import {
   listQuestions,
   updateQuestion,
 } from "~/lib/api/question.server";
+import { deleteStudyHistory } from "~/lib/api/study.server";
 import { getWorkbook, updateWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId";
@@ -139,6 +143,11 @@ export async function action({ request, params }: Route.ActionArgs) {
     return { ok: true };
   }
 
+  if (intent === "clearStudyHistory") {
+    await deleteStudyHistory(accessToken, workbookId);
+    return { ok: true, cleared: true };
+  }
+
   if (intent === "addWordFill") {
     const sourceText = formData.get("sourceText");
     const sourceLang = formData.get("sourceLang");
@@ -206,6 +215,9 @@ export default function WorkbookDetail() {
   const { t } = useTranslation();
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const editFetcher = useFetcher<{ ok: boolean }>();
+  const clearHistoryFetcher = useFetcher<{ ok: boolean; cleared?: boolean }>();
+  const confirm = useConfirm();
+  const [showCleared, setShowCleared] = useState(false);
 
   const saved = useRef(false);
   if (editFetcher.data?.ok && !saved.current) {
@@ -216,10 +228,31 @@ export default function WorkbookDetail() {
     saved.current = false;
   }
 
+  useEffect(() => {
+    if (clearHistoryFetcher.data?.cleared) {
+      setShowCleared(true);
+      const timer = setTimeout(() => setShowCleared(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [clearHistoryFetcher.data]);
+
+  async function handleClearStudyHistory() {
+    const confirmed = await confirm({
+      title: t("workbooks.detail.clearStudyHistoryConfirmTitle"),
+      description: t("workbooks.detail.clearStudyHistoryConfirm"),
+      confirmLabel: t("workbooks.detail.clearStudyHistory"),
+    });
+    if (confirmed) {
+      clearHistoryFetcher.submit({ intent: "clearStudyHistory" }, { method: "post" });
+    }
+  }
+
   const sheetTitle =
     editingQuestion?.questionType === "word_fill"
       ? t("workbooks.addQuestion.titleWordFill")
       : t("workbooks.addQuestion.titleMultipleChoice");
+
+  const isClearing = clearHistoryFetcher.state !== "idle";
 
   return (
     <div>
@@ -228,6 +261,30 @@ export default function WorkbookDetail() {
         description={workbook.description}
         visibility={workbook.visibility}
       />
+
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={handleClearStudyHistory} disabled={isClearing}>
+          <Trash2Icon data-icon="inline-start" className="size-3.5 text-destructive" />
+          <span>{t("workbooks.detail.clearStudyHistory")}</span>
+        </Button>
+        {import.meta.env.DEV && (
+          <Button variant="ghost" size="sm" asChild>
+            <Link to={`/workbooks/${workbook.workbookId}/debug-study`}>
+              <BugIcon data-icon="inline-start" className="size-3.5" />
+              <span>{t("workbooks.debugStudy.title")}</span>
+            </Link>
+          </Button>
+        )}
+        {showCleared && (
+          <span
+            role="status"
+            className="text-sm text-muted-foreground"
+            data-testid="clear-study-history-status"
+          >
+            {t("workbooks.detail.clearStudyHistoryDone")}
+          </span>
+        )}
+      </div>
 
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">{t("workbooks.detail.questionsTitle")}</h2>

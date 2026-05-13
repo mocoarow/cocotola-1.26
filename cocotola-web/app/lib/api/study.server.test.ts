@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  deleteStudyHistory,
   getStudyQuestions,
   getStudySummary,
+  listStudyRecords,
   recordAnswerForMultipleChoice,
   recordAnswerForWordFill,
 } from "./study.server";
@@ -351,5 +353,113 @@ describe("recordAnswerForMultipleChoice", () => {
     await expect(
       recordAnswerForMultipleChoice("token", "wb-1", "q-1", ["c1"]),
     ).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("deleteStudyHistory", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should send DELETE request and resolve on 204", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true, status: 204 });
+
+    // when
+    await deleteStudyHistory("test-token", "wb-1");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:8090/api/v1/workbook/wb-1/study", {
+      method: "DELETE",
+      headers: { Authorization: "Bearer test-token" },
+    });
+  });
+
+  it("should encode workbookId in URL", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true, status: 204 });
+
+    // when
+    await deleteStudyHistory("token", "wb/1");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb%2F1/study",
+      expect.any(Object),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+
+    // when / then
+    await expect(deleteStudyHistory("token", "wb-1")).rejects.toBeInstanceOf(Response);
+  });
+});
+
+describe("listStudyRecords", () => {
+  beforeEach(() => {
+    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("should return records on success", async () => {
+    // given
+    const response = {
+      records: [
+        {
+          workbookId: "wb-1",
+          questionId: "q-1",
+          consecutiveCorrect: 2,
+          lastAnsweredAt: "2026-04-25T10:00:00Z",
+          nextDueAt: "2026-04-26T10:00:00Z",
+          totalCorrect: 3,
+          totalIncorrect: 1,
+        },
+      ],
+    };
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve(response) });
+
+    // when
+    const result = await listStudyRecords("test-token", "wb-1");
+
+    // then
+    expect(result).toEqual(response);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study/records",
+      { headers: { Authorization: "Bearer test-token" } },
+    );
+  });
+
+  it("should encode workbookId in URL", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true, json: () => Promise.resolve({ records: [] }) });
+
+    // when
+    await listStudyRecords("token", "wb/1");
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb%2F1/study/records",
+      expect.any(Object),
+    );
+  });
+
+  it("should throw Response when API returns error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+
+    // when / then
+    await expect(listStudyRecords("token", "wb-1")).rejects.toBeInstanceOf(Response);
   });
 });

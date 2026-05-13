@@ -214,6 +214,71 @@ study:
       - BearerAuth: []
       - CookieAuth: []
 
+study-records:
+  get:
+    summary: List study records
+    deprecated: false
+    description: >
+      Returns the operator's raw spaced-repetition records for every question in
+      the workbook that has been answered at least once. Intended for debugging
+      and personal-progress dashboards.
+    operationId: listStudyRecords
+    tags:
+      - study
+    parameters:
+      - name: workbookId
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^.*$
+    responses:
+      '200':
+        description: Successfully retrieved study records
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/study.yaml#/ListStudyRecordsResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '403':
+        description: Forbidden
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '404':
+        description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
 study-answer:
   post:
     summary: Record an answer

@@ -85,6 +85,11 @@ type ListSharedResponse struct {
 	References []SharedItemResponse `json:"references"`
 }
 
+// ListStudyRecordsResponse defines model for ListStudyRecordsResponse.
+type ListStudyRecordsResponse struct {
+	Records []StudyRecordResponse `json:"records"`
+}
+
 // ListWorkbooksResponse defines model for ListWorkbooksResponse.
 type ListWorkbooksResponse struct {
 	Workbooks []WorkbookResponse `json:"workbooks"`
@@ -182,6 +187,19 @@ type StudyQuestionResponse struct {
 	QuestionId   string        `json:"questionId"`
 	QuestionType string        `json:"questionType"`
 	Tags         []string      `json:"tags,omitempty"`
+}
+
+// StudyRecordResponse A single spaced-repetition record describing the operator's progress for one
+// question. `nextDueAt` is the timestamp at which the question is next eligible
+// for review.
+type StudyRecordResponse struct {
+	ConsecutiveCorrect int32     `json:"consecutiveCorrect"`
+	LastAnsweredAt     time.Time `json:"lastAnsweredAt"`
+	NextDueAt          time.Time `json:"nextDueAt"`
+	QuestionId         string    `json:"questionId"`
+	TotalCorrect       int32     `json:"totalCorrect"`
+	TotalIncorrect     int32     `json:"totalIncorrect"`
+	WorkbookId         string    `json:"workbookId"`
 }
 
 // StudySummaryResponse Counts of questions currently available for study in the given workbook.

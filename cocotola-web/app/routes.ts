@@ -13,5 +13,6 @@ export default [
     route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
     route("workbooks/:workbookId/study", "routes/workbooks.$workbookId.study.tsx"),
     route("workbooks/:workbookId/study-summary", "routes/workbooks.$workbookId.study-summary.tsx"),
+    route("workbooks/:workbookId/debug-study", "routes/workbooks.$workbookId.debug-study.tsx"),
   ]),
 ] satisfies RouteConfig;

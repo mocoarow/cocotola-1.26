@@ -102,6 +102,54 @@ RecordAnswerRequest:
         maxLength: 100
         pattern: ^[A-Za-z0-9_-]+$
 
+StudyRecordResponse:
+  type: object
+  description: |
+    A single spaced-repetition record describing the operator's progress for one
+    question. `nextDueAt` is the timestamp at which the question is next eligible
+    for review.
+  required:
+    - workbookId
+    - questionId
+    - consecutiveCorrect
+    - lastAnsweredAt
+    - nextDueAt
+    - totalCorrect
+    - totalIncorrect
+  properties:
+    workbookId:
+      type: string
+      pattern: ^.*$
+    questionId:
+      type: string
+      pattern: ^.*$
+    consecutiveCorrect:
+      type: integer
+      format: int32
+    lastAnsweredAt:
+      type: string
+      format: date-time
+    nextDueAt:
+      type: string
+      format: date-time
+    totalCorrect:
+      type: integer
+      format: int32
+    totalIncorrect:
+      type: integer
+      format: int32
+
+ListStudyRecordsResponse:
+  type: object
+  required:
+    - records
+  properties:
+    records:
+      type: array
+      maxItems: 10000
+      items:
+        $ref: '#/StudyRecordResponse'
+
 RecordAnswerResponse:
   type: object
   required:

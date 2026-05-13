@@ -20,6 +20,7 @@ func InitStudyRouter(
 	getStudySummaryHandler *GetStudySummaryHandler,
 	recordAnswerHandler *RecordAnswerHandler,
 	deleteStudyHistoryHandler *DeleteStudyHistoryHandler,
+	listStudyRecordsHandler *ListStudyRecordsHandler,
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,
 	middleware ...gin.HandlerFunc,
@@ -30,6 +31,7 @@ func InitStudyRouter(
 
 	studyGroup.GET("", getStudyQuestionsHandler.GetStudyQuestions)
 	studyGroup.GET("/summary", getStudySummaryHandler.GetStudySummary)
+	studyGroup.GET("/records", listStudyRecordsHandler.ListStudyRecords)
 	studyGroup.POST("/:questionId/answer", recordAnswerHandler.RecordAnswer)
 	studyGroup.DELETE("", deleteStudyHistoryHandler.DeleteStudyHistory)
 }

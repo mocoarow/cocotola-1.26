@@ -188,6 +188,44 @@ type DeleteStudyHistoryInput struct {
 	WorkbookID     string `validate:"required"`
 }
 
+// ListStudyRecordsInput is the validated input for listing a workbook's
+// study records belonging to the operator.
+type ListStudyRecordsInput struct {
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
+	WorkbookID     string `validate:"required"`
+}
+
+// NewListStudyRecordsInput creates a validated ListStudyRecordsInput.
+func NewListStudyRecordsInput(operatorID, organizationID, workbookID string) (*ListStudyRecordsInput, error) {
+	m := &ListStudyRecordsInput{
+		OperatorID:     operatorID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate list study records input: %w", err)
+	}
+	return m, nil
+}
+
+// RecordItem mirrors a single study record at the service boundary,
+// decoupling controllers from the domain aggregate.
+type RecordItem struct {
+	WorkbookID         string
+	QuestionID         string
+	ConsecutiveCorrect int
+	LastAnsweredAt     time.Time
+	NextDueAt          time.Time
+	TotalCorrect       int
+	TotalIncorrect     int
+}
+
+// ListStudyRecordsOutput holds the records returned for a workbook.
+type ListStudyRecordsOutput struct {
+	Records []RecordItem
+}
+
 // NewDeleteStudyHistoryInput creates a validated DeleteStudyHistoryInput.
 func NewDeleteStudyHistoryInput(operatorID, organizationID, workbookID string) (*DeleteStudyHistoryInput, error) {
 	m := &DeleteStudyHistoryInput{

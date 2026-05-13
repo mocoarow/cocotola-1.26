@@ -137,3 +137,49 @@ export function recordAnswerForMultipleChoice(
 ): Promise<RecordAnswerResponse> {
   return postRecordAnswer(accessToken, workbookId, questionId, { selectedChoiceIds });
 }
+
+export async function deleteStudyHistory(accessToken: string, workbookId: string): Promise<void> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to delete study history", { status: response.status });
+  }
+}
+
+export type StudyRecord = {
+  workbookId: string;
+  questionId: string;
+  consecutiveCorrect: number;
+  lastAnsweredAt: string;
+  nextDueAt: string;
+  totalCorrect: number;
+  totalIncorrect: number;
+};
+
+export type ListStudyRecordsResponse = {
+  records: StudyRecord[];
+};
+
+export async function listStudyRecords(
+  accessToken: string,
+  workbookId: string,
+): Promise<ListStudyRecordsResponse> {
+  const baseUrl = getQuestionUrl();
+  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study/records`;
+
+  const response = await fetchWithIdToken(baseUrl, url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) {
+    throw new Response("Failed to list study records", { status: response.status });
+  }
+
+  return (await response.json()) as ListStudyRecordsResponse;
+}

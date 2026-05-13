@@ -138,12 +138,15 @@ func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID s
 			if errors.Is(err, iterator.Done) {
 				break
 			}
+
 			iterErr = fmt.Errorf("iterate study records: %w", err)
+
 			break
 		}
 		job, err := bw.Delete(doc.Ref)
 		if err != nil {
 			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
+
 			break
 		}
 		jobs = append(jobs, job)
@@ -158,7 +161,7 @@ func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID s
 	}
 
 	if iterErr != nil || len(jobErrs) > 0 {
-		return errors.Join(append([]error{iterErr}, jobErrs...)...)
+		return fmt.Errorf("delete study records: %w", errors.Join(append([]error{iterErr}, jobErrs...)...))
 	}
 	return nil
 }
