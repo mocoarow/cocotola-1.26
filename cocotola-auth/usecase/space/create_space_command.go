@@ -12,6 +12,10 @@ import (
 	spaceservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space"
 )
 
+// ErrPrivateSpaceMustBeCreatedViaEvent is returned when CreateSpace is called with SpaceType=private.
+// Private spaces are created asynchronously via the SpaceCreated event handler instead.
+var ErrPrivateSpaceMustBeCreatedViaEvent = errors.New("private spaces must be created via event handler")
+
 type spaceSaver interface {
 	Save(ctx context.Context, space *domainspace.Space) error
 }
@@ -75,7 +79,7 @@ func (c *CreateSpaceCommand) CreateSpace(ctx context.Context, input *spaceservic
 	if st.IsPublic() {
 		keyName = domainspace.PublicSpaceKeyName(input.OrganizationName)
 	} else {
-		return nil, errors.New("private spaces must be created via event handler")
+		return nil, ErrPrivateSpaceMustBeCreatedViaEvent
 	}
 
 	s, err := domainspace.Provision(ctx, c.spaceRepo, org.ID(), input.OperatorID, keyName, input.Name, st)

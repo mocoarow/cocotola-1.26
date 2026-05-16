@@ -22,7 +22,10 @@ go_library(
 smart_go_test(
     name = "space_test",
     srcs = [
+        "create_space_command_s_test.go",
         "find_space_query_s_test.go",
+        "fixtures_test.go",
+        "list_spaces_query_s_test.go",
         "mocks_test.go",
     ],
     deps = [
