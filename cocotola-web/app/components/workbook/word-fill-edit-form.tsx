@@ -17,6 +17,8 @@ export function WordFillEditForm({
     source?: { text: string; lang: string };
     target?: { text: string; lang: string };
     explanation?: string;
+    explanation1?: string;
+    explanation2?: string;
   };
   fetcher: ReturnType<typeof useFetcher>;
   onCancel: () => void;
@@ -30,6 +32,14 @@ export function WordFillEditForm({
       <input type="hidden" name="questionId" value={question.questionId} />
       <input type="hidden" name="questionType" value="word_fill" />
       <input type="hidden" name="orderIndex" value={question.orderIndex} />
+      {/* Preserve generated source-attribution explanations across edits; they
+          are not user-editable here, so round-trip them as hidden fields. */}
+      {parsed.explanation1 && (
+        <input type="hidden" name="explanation1" value={parsed.explanation1} />
+      )}
+      {parsed.explanation2 && (
+        <input type="hidden" name="explanation2" value={parsed.explanation2} />
+      )}
 
       <div className="space-y-1.5">
         <label htmlFor="edit-sourceLang" className="text-sm font-medium">

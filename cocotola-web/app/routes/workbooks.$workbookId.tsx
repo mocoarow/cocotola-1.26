@@ -106,10 +106,14 @@ export async function action({ request, params }: Route.ActionArgs) {
       }
 
       const explanation = formData.get("explanation");
+      const explanation1 = formData.get("explanation1");
+      const explanation2 = formData.get("explanation2");
       const content = JSON.stringify({
         source: { text: sourceText, lang: sourceLang },
         target: { text: targetText, lang: targetLang },
         ...(typeof explanation === "string" && explanation.trim() ? { explanation } : {}),
+        ...(typeof explanation1 === "string" && explanation1.trim() ? { explanation1 } : {}),
+        ...(typeof explanation2 === "string" && explanation2.trim() ? { explanation2 } : {}),
       });
 
       const tagsRaw = formData.get("tags");

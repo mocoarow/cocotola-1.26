@@ -28,6 +28,18 @@ describe("parseWordFillContent", () => {
     });
   });
 
+  test("should parse explanation1 and explanation2", () => {
+    const content = JSON.stringify({
+      source: { text: "りんご", lang: "ja" },
+      target: { text: "{{apple}}", lang: "en" },
+      explanation1: "Sentence source(ja): Tatoeba #1",
+      explanation2: "Sentence source(en): Tatoeba #2",
+    });
+    const result = parseWordFillContent(content);
+    expect(result?.explanation1).toBe("Sentence source(ja): Tatoeba #1");
+    expect(result?.explanation2).toBe("Sentence source(en): Tatoeba #2");
+  });
+
   test("should return null for invalid JSON", () => {
     expect(parseWordFillContent("not json")).toBeNull();
   });

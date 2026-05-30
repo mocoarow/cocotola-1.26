@@ -6,6 +6,8 @@ question:
   baseUrl: ${INIT_QUESTION_BASE_URL:-}
   apiKey: ${INIT_QUESTION_API_KEY:-}
   timeoutSec: ${INIT_QUESTION_TIMEOUT_SEC:-10}
+csvSeed:
+  bucketName: ${INIT_CSV_SEED_BUCKET_NAME:-}
 db:
   driverName: ${INIT_DB_DRIVER_NAME:-postgres}
   postgres:

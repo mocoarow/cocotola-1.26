@@ -12,6 +12,7 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/config"
+	"github.com/mocoarow/cocotola-1.26/cocotola-init/gateway"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/initialize"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
@@ -47,7 +48,7 @@ func run() (int, error) {
 	}
 	defer shutdownDB()
 
-	seeder, err := buildSeeder(ctx, cfg.Question)
+	seeder, err := buildSeeder(ctx, cfg.Question, cfg.CSVSeed)
 	if err != nil {
 		return 1, fmt.Errorf("build seeder: %w", err)
 	}
@@ -71,7 +72,7 @@ var ErrQuestionBaseURLRequired = errors.New("question.baseUrl is required")
 // An empty BaseURL is treated as a configuration error rather than a silent
 // skip, so misconfigured deployments fail loudly instead of leaving the
 // public space empty.
-func buildSeeder(ctx context.Context, qcfg config.QuestionClientConfig) (*seed.WorkbookSeeder, error) {
+func buildSeeder(ctx context.Context, qcfg config.QuestionClientConfig, csvCfg config.CSVSeedConfig) (*seed.WorkbookSeeder, error) {
 	if qcfg.BaseURL == "" {
 		return nil, ErrQuestionBaseURLRequired
 	}
@@ -88,11 +89,56 @@ func buildSeeder(ctx context.Context, qcfg config.QuestionClientConfig) (*seed.W
 		return nil, fmt.Errorf("new http client: %w", err)
 	}
 
-	seeds, err := seed.DefaultSeeds()
+	defaultSeeds, err := seed.DefaultSeeds()
 	if err != nil {
 		return nil, fmt.Errorf("load default seeds: %w", err)
 	}
 
+	csvSeeds, err := loadCSVSeeds(ctx, csvCfg)
+	if err != nil {
+		return nil, fmt.Errorf("load csv seeds: %w", err)
+	}
+
+	seeds, err := seed.MergeSeeds(defaultSeeds, csvSeeds)
+	if err != nil {
+		return nil, fmt.Errorf("merge seeds: %w", err)
+	}
+
 	client := seed.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient)
 	return seed.NewWorkbookSeeder(client, seeds), nil
+}
+
+// loadCSVSeeds downloads and converts the CSV-sourced public workbooks declared
+// in the embedded manifest. When the GCS bucket is not configured, CSV seeding
+// is skipped (returns nil); once a bucket is set, any download/parse failure is
+// fatal so a misconfigured deployment fails loudly rather than seeding nothing.
+func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.PublicWorkbookSeed, error) {
+	if csvCfg.BucketName == "" {
+		slog.InfoContext(ctx, "csv seed bucket not configured; skipping csv workbook seeding")
+		return nil, nil
+	}
+
+	manifest, err := seed.DefaultCSVManifest()
+	if err != nil {
+		return nil, fmt.Errorf("load csv manifest: %w", err)
+	}
+	if len(manifest.Workbooks) == 0 {
+		return nil, nil
+	}
+
+	reader, err := gateway.NewGCSReader(ctx, csvCfg.BucketName)
+	if err != nil {
+		return nil, fmt.Errorf("new gcs reader: %w", err)
+	}
+	defer func() {
+		if closeErr := reader.Close(); closeErr != nil {
+			slog.WarnContext(ctx, "close gcs reader", slog.Any("error", closeErr))
+		}
+	}()
+
+	csvSeeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
+	if err != nil {
+		return nil, fmt.Errorf("load csv workbook seeds: %w", err)
+	}
+	return csvSeeds, nil
 }

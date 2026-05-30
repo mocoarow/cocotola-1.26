@@ -9,6 +9,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//cocotola-init/config",
+        "//cocotola-init/gateway",
         "//cocotola-init/initialize",
         "//cocotola-init/seed",
         "//cocotola-lib/gateway",

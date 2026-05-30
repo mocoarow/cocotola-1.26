@@ -5,13 +5,17 @@ go_library(
     name = "seed",
     srcs = [
         "client.go",
+        "csv_converter.go",
+        "csv_loader.go",
         "doc.go",
         "loader.go",
+        "manifest.go",
         "types.go",
         "workbook_seeder.go",
     ],
     embedsrcs = [
         "seeds/public_workbooks.yaml",
+        "manifest/csv_workbooks.yaml",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/seed",
     visibility = ["//visibility:public"],
@@ -25,7 +29,10 @@ smart_go_test(
     name = "seed_test",
     srcs = [
         "client_s_test.go",
+        "csv_loader_s_test.go",
         "loader_s_test.go",
+        "manifest_s_test.go",
+        "merge_s_test.go",
         "mocks_test.go",
         "workbook_seeder_s_test.go",
     ],

@@ -1,0 +1,45 @@
+---
+# CSV-sourced public workbook manifest.
+#
+# Each entry maps one GCS CSV object to one public workbook. The workbook
+# metadata (title / description / seedKey / language) lives HERE, in the repo;
+# the question DATA lives in the CSV object in GCS and may be appended over time.
+#
+# Idempotency / append behavior:
+#   - The workbook is created only if its `seedKey` is new (matched via the
+#     hidden [seedKey:...] marker in the description), otherwise left untouched.
+#   - Each question is added only if its CSV `id` has not been seen (tracked via
+#     the tag `seed-<workbookSeedKey>:<id>`).
+#   Appending rows to the CSV and re-running cocotola-init therefore adds ONLY
+#   the new rows; existing ones are skipped.
+#
+# Requires the GCS bucket to be configured (INIT_CSV_SEED_BUCKET_NAME). When the
+# bucket is empty, CSV seeding is skipped entirely and only the embedded YAML
+# seeds (seeds/public_workbooks.yaml) are applied.
+#
+# Supported `format` values:
+#   tatoeba-wordfill
+#     Required CSV columns: id, srcText, blankText, blankAnswers
+#     Optional CSV columns: tags (CEFR level), sourceType,
+#       srcSentenceNumber, srcAuthor, dstSentenceNumber, dstAuthor
+#     Per row -> one word_fill question:
+#       - question seedKey = id
+#       - source.text = srcText            (lang = sourceLang)
+#       - target.text = blankText with each "___" replaced, in order, by
+#         {{answer}} from the comma-separated blankAnswers (lang = targetLang)
+#       - allowPartialCredit = true when the row has more than one blank
+#       - tags: level:<lowercased tags value(s)>, source:<lowercased sourceType>
+#       - explanation1/explanation2: Tatoeba source attribution (CC BY 2.0 FR).
+#         In this dataset the src* columns describe the target-language (en)
+#         sentence and the dst* columns the source-language (ja) sentence, so
+#         the source-language citation uses dst* and the target-language uses
+#         src*. Both explanations carry the same attribution text.
+csvWorkbooks:
+  - seedKey: cefr-b2-wordfill-v1
+    title: "穴埋め問題: CEFR B2 単語"
+    description: "CEFR B2 レベルの語彙を学ぶ英文穴埋め問題集です。日本語の意味から英文の空欄を埋めます。"
+    language: ja
+    format: tatoeba-wordfill
+    sourceLang: ja
+    targetLang: en
+    gcsObject: cefr_b2.csv

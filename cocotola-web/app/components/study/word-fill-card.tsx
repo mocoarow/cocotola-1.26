@@ -206,8 +206,16 @@ export function WordFillCard({ content, audio, onAnswer }: WordFillCardProps) {
         </div>
       )}
 
-      {parsed.explanation && isResult && (
-        <p className="text-sm text-muted-foreground">{parsed.explanation}</p>
+      {/* explanation1 is shown while answering; explanation2 (falling back to
+          the legacy explanation) is shown once the answer is revealed. These
+          carry source attribution for imported sentences. */}
+      {!isResult && parsed.explanation1 && (
+        <p className="whitespace-pre-line text-sm text-muted-foreground">{parsed.explanation1}</p>
+      )}
+      {isResult && (parsed.explanation2 || parsed.explanation) && (
+        <p className="whitespace-pre-line text-sm text-muted-foreground">
+          {parsed.explanation2 || parsed.explanation}
+        </p>
       )}
 
       {!isResult ? (

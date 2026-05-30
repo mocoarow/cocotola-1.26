@@ -34,10 +34,17 @@ type ScoringModeJSON struct {
 // --- word_fill ---
 
 // WordFillContent represents the JSON content for a word_fill question.
+//
+// Explanation is the legacy single explanation (kept for backward
+// compatibility). Explanation1 is shown while the question is presented and
+// Explanation2 when the answer is revealed; both are used to carry source
+// attribution / licensing for imported sentence data.
 type WordFillContent struct {
 	Source             TextWithLang `json:"source"`
 	Target             TextWithLang `json:"target"`
 	Explanation        string       `json:"explanation"`
+	Explanation1       string       `json:"explanation1"`
+	Explanation2       string       `json:"explanation2"`
 	AllowPartialCredit bool         `json:"allowPartialCredit"`
 }
 
@@ -161,6 +168,12 @@ func validateWordFillContent(content string) error {
 
 	if err := validateExplanation(c.Explanation); err != nil {
 		return fmt.Errorf("validate word_fill explanation: %w", err)
+	}
+	if err := validateExplanation(c.Explanation1); err != nil {
+		return fmt.Errorf("validate word_fill explanation1: %w", err)
+	}
+	if err := validateExplanation(c.Explanation2); err != nil {
+		return fmt.Errorf("validate word_fill explanation2: %w", err)
 	}
 
 	return nil

@@ -30,7 +30,12 @@ function formatZodError(error: ZodError): string {
 export const wordFillContentSchema = z.object({
   source: z.object({ text: z.string(), lang: z.string() }).optional(),
   target: z.object({ text: z.string(), lang: z.string() }).optional(),
+  // explanation is the legacy single explanation. explanation1 is shown while
+  // the question is presented, explanation2 when the answer is revealed; both
+  // carry source attribution / licensing for imported sentence data.
   explanation: z.string().optional(),
+  explanation1: z.string().optional(),
+  explanation2: z.string().optional(),
 });
 
 export const multipleChoiceContentSchema = z.object({

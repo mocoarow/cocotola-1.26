@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "gateway",
+    srcs = [
+        "doc.go",
+        "gcs_reader.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/gateway",
+    visibility = ["//visibility:public"],
+    deps = ["@com_google_cloud_go_storage//:storage"],
+)
+
+smart_go_test(
+    name = "gateway_test",
+    srcs = [
+        "gcs_reader_s_test.go",
+    ],
+    deps = [
+        ":gateway",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
