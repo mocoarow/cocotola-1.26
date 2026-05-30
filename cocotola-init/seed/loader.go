@@ -2,10 +2,16 @@ package seed
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 
 	"go.yaml.in/yaml/v4"
 )
+
+// ErrInvalidSeed is returned when a seed set violates the invariants the seeder
+// relies on (e.g. empty or duplicate seedKeys). It is a sentinel so callers and
+// tests can match it with errors.Is regardless of the surrounding context.
+var ErrInvalidSeed = errors.New("invalid public workbook seed")
 
 //go:embed seeds/public_workbooks.yaml
 var seedsFS embed.FS
@@ -45,6 +51,24 @@ func loadSeedFile(path string) ([]PublicWorkbookSeed, error) {
 	return f.Workbooks, nil
 }
 
+// MergeSeeds concatenates the given seed groups (e.g. the embedded defaults and
+// the CSV-sourced seeds) and enforces global seedKey uniqueness, since the
+// seeder indexes existing workbooks by seedKey across the whole set.
+func MergeSeeds(groups ...[]PublicWorkbookSeed) ([]PublicWorkbookSeed, error) {
+	total := 0
+	for _, g := range groups {
+		total += len(g)
+	}
+	all := make([]PublicWorkbookSeed, 0, total)
+	for _, g := range groups {
+		all = append(all, g...)
+	}
+	if err := validateSeeds(all); err != nil {
+		return nil, fmt.Errorf("merge seeds: %w", err)
+	}
+	return all, nil
+}
+
 // validateSeeds enforces the invariants the seeder relies on:
 //   - workbook seedKeys are non-empty and unique across the file
 //   - question seedKeys are non-empty and unique within a workbook
@@ -53,20 +77,20 @@ func validateSeeds(workbooks []PublicWorkbookSeed) error {
 	for i := range workbooks {
 		wb := workbooks[i]
 		if wb.SeedKey == "" {
-			return fmt.Errorf("workbook[%d] %q: seedKey must not be empty", i, wb.Title)
+			return fmt.Errorf("workbook[%d] %q: seedKey must not be empty: %w", i, wb.Title, ErrInvalidSeed)
 		}
 		if seenWorkbooks[wb.SeedKey] {
-			return fmt.Errorf("workbook[%d]: duplicate seedKey %q", i, wb.SeedKey)
+			return fmt.Errorf("workbook[%d]: duplicate seedKey %q: %w", i, wb.SeedKey, ErrInvalidSeed)
 		}
 		seenWorkbooks[wb.SeedKey] = true
 
 		seenQuestions := make(map[string]bool, len(wb.Questions))
 		for j, q := range wb.Questions {
 			if q.SeedKey == "" {
-				return fmt.Errorf("workbook %q question[%d]: seedKey must not be empty", wb.SeedKey, j)
+				return fmt.Errorf("workbook %q question[%d]: seedKey must not be empty: %w", wb.SeedKey, j, ErrInvalidSeed)
 			}
 			if seenQuestions[q.SeedKey] {
-				return fmt.Errorf("workbook %q question[%d]: duplicate seedKey %q", wb.SeedKey, j, q.SeedKey)
+				return fmt.Errorf("workbook %q question[%d]: duplicate seedKey %q: %w", wb.SeedKey, j, q.SeedKey, ErrInvalidSeed)
 			}
 			seenQuestions[q.SeedKey] = true
 		}

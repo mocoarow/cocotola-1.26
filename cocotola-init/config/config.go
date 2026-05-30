@@ -31,11 +31,19 @@ type QuestionClientConfig struct {
 	TimeoutSec int    `yaml:"timeoutSec" validate:"gte=0"`
 }
 
+// CSVSeedConfig holds settings for seeding public workbooks from CSV objects
+// stored in Google Cloud Storage. When BucketName is empty, CSV seeding is
+// skipped entirely and only the embedded YAML seeds are applied.
+type CSVSeedConfig struct {
+	BucketName string `yaml:"bucketName"`
+}
+
 // Config holds all configuration for the cocotola-init application.
 type Config struct {
 	App      InitConfig           `yaml:"app" validate:"required"`
 	DB       libgateway.DBConfig  `yaml:"db" validate:"required"`
 	Question QuestionClientConfig `yaml:"question"`
+	CSVSeed  CSVSeedConfig        `yaml:"csvSeed"`
 	Log      libgateway.LogConfig `yaml:"log" validate:"required"`
 }
 

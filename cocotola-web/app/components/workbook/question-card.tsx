@@ -86,9 +86,17 @@ export function QuestionCard({
               <span className="font-medium text-muted-foreground">[{parsed.target?.lang}]</span>{" "}
               {parsed.target?.text}
             </p>
-            {parsed.explanation && (
-              <p className="text-xs text-muted-foreground">{parsed.explanation}</p>
-            )}
+            {Array.from(
+              new Set(
+                [parsed.explanation, parsed.explanation1, parsed.explanation2].filter(
+                  Boolean,
+                ) as string[],
+              ),
+            ).map((text) => (
+              <p key={text} className="whitespace-pre-line text-xs text-muted-foreground">
+                {text}
+              </p>
+            ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">{question.content}</p>

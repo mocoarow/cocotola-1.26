@@ -70,6 +70,39 @@ func Test_ValidateContent_shouldSucceed_whenSingleWordFill(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_ValidateContent_shouldSucceed_whenWordFillHasExplanation1And2(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := question.WordFillContent{
+		Source:       question.TextWithLang{Text: "りんご", Lang: "ja"},
+		Target:       question.TextWithLang{Text: "{{apple}}", Lang: "en"},
+		Explanation1: "Sentence source(ja): Tatoeba [#1](https://tatoeba.org/en/sentences/show/1)",
+		Explanation2: "Sentence source(en): Tatoeba [#2](https://tatoeba.org/en/sentences/show/2)",
+	}
+	// when
+	err := question.ValidateContent(question.TypeWordFill(), mustMarshal(t, c))
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_ValidateContent_shouldReturnError_whenWordFillExplanation1HasHTML(t *testing.T) {
+	t.Parallel()
+
+	// given
+	c := question.WordFillContent{
+		Source:       question.TextWithLang{Text: "りんご", Lang: "ja"},
+		Target:       question.TextWithLang{Text: "{{apple}}", Lang: "en"},
+		Explanation1: "<b>not allowed</b>",
+	}
+	// when
+	err := question.ValidateContent(question.TypeWordFill(), mustMarshal(t, c))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
 func Test_ValidateContent_shouldReturnError_whenWordFillHasNoBlanks(t *testing.T) {
 	t.Parallel()
 
