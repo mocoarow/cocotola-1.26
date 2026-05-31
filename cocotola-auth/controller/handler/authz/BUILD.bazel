@@ -26,6 +26,7 @@ smart_go_test(
         "authz_s_test.go",
         "check_handler_s_test.go",
         "helper_test.go",
+        "internal_authz_router_s_test.go",
         "mocks_test.go",
     ],
     deps = [

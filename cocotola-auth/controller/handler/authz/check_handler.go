@@ -139,3 +139,20 @@ func InitAuthzPolicyRouter(
 	authzGroup := parentRouterGroup.Group("authz")
 	authzGroup.POST("/policy", addPolicyHandler.AddPolicy)
 }
+
+// InitInternalAuthzRouter registers ALL internal (service-to-service) authz routes:
+// the authorization check endpoint AND the policy-management endpoint. Internal
+// callers such as cocotola-question need both (creating a workbook performs an
+// authz check and then grants per-resource policies), so they are registered
+// together here. Both the standalone-deployment wiring (cocotola-auth/main.go)
+// and the monolith wiring (cocotola-auth/initialize) MUST call this single
+// function so the two paths cannot drift — a past bug registered /check
+// internally but omitted /policy, making policy grants 404 in production.
+func InitInternalAuthzRouter(
+	checkHandler *CheckHandler,
+	addPolicyHandler *AddPolicyHandler,
+	parentRouterGroup gin.IRouter,
+) {
+	InitAuthzRouter(checkHandler, parentRouterGroup)
+	InitAuthzPolicyRouter(addPolicyHandler, parentRouterGroup)
+}
