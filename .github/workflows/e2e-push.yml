@@ -124,14 +124,14 @@ jobs:
 
       - name: Pre-build Bazel binaries (cocotola-init, cocotola-app)
         run: |
-          bazelisk build --config=remote \
+          bazelisk build --config=remote --remote_upload_local_results=false \
             //cocotola-init:cocotola-init \
             //cocotola-app:cocotola-app
 
       - name: Start cocotola-app (background)
         run: |
           mkdir -p ci-logs
-          nohup bazelisk run --config=remote //cocotola-app:cocotola-app \
+          nohup bazelisk run --config=remote --remote_upload_local_results=false //cocotola-app:cocotola-app \
             > ci-logs/cocotola-app.log 2>&1 &
           echo $! > ci-logs/cocotola-app.pid
 
@@ -152,7 +152,7 @@ jobs:
       # cocotola-init seeds the public space via the question API, so it must
       # run AFTER cocotola-app is up.
       - name: Seed initial data (cocotola-init)
-        run: bazelisk run --config=remote //cocotola-init:cocotola-init
+        run: bazelisk run --config=remote --remote_upload_local_results=false //cocotola-init:cocotola-init
 
       - name: Install cocotola-web deps
         working-directory: cocotola-web
@@ -330,7 +330,7 @@ jobs:
 
       - name: Pre-build Bazel binaries (cocotola-auth, cocotola-question, cocotola-init)
         run: |
-          bazelisk build --config=remote \
+          bazelisk build --config=remote --remote_upload_local_results=false \
             //cocotola-auth:cocotola-auth \
             //cocotola-question:cocotola-question \
             //cocotola-init:cocotola-init
