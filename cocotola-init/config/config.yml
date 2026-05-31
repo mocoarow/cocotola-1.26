@@ -3,7 +3,7 @@ app:
   ownerLoginId: ${OWNER_LOGIN_ID}
   ownerPassword: ${OWNER_PASSWORD}
 question:
-  baseUrl: ${INIT_QUESTION_BASE_URL:-}
+  baseUrl: ${INIT_QUESTION_API_BASE_URL:-}
   apiKey: ${INIT_QUESTION_API_KEY:-}
   timeoutSec: ${INIT_QUESTION_TIMEOUT_SEC:-10}
 csvSeed:

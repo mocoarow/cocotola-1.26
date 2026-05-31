@@ -51,7 +51,7 @@ jobs:
       APP_AUTH_COOKIE_SECURE: "false"
 
       # --- cocotola-init -> cocotola-app question API (must match APP_QUESTION_API_KEY) ---
-      INIT_QUESTION_BASE_URL: http://localhost:8000
+      INIT_QUESTION_API_BASE_URL: http://localhost:8000
       # kics-scan ignore-line
       INIT_QUESTION_API_KEY: ci-test-question-api-key
 
