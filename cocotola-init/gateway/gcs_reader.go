@@ -72,7 +72,7 @@ func (r *GCSReader) ReadObject(ctx context.Context, objectKey string) ([]byte, e
 func ReadAllWithCap(r io.Reader, maxBytes int64) ([]byte, error) {
 	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read all: %w", err)
 	}
 	if int64(len(data)) > maxBytes {
 		return nil, fmt.Errorf(">%d bytes: %w", maxBytes, ErrObjectTooLarge)

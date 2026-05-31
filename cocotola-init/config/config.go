@@ -40,6 +40,7 @@ type CSVSeedConfig struct {
 
 // Config holds all configuration for the cocotola-init application.
 type Config struct {
+	AppEnv   string               `yaml:"appEnv" validate:"required"`
 	App      InitConfig           `yaml:"app" validate:"required"`
 	DB       libgateway.DBConfig  `yaml:"db" validate:"required"`
 	Question QuestionClientConfig `yaml:"question"`

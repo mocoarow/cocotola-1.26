@@ -1,4 +1,5 @@
 ---
+appEnv: ${APP_ENV:-local}
 app:
   ownerLoginId: ${OWNER_LOGIN_ID}
   ownerPassword: ${OWNER_PASSWORD}
