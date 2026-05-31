@@ -15,4 +15,5 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-init/seed:
     interfaces:
       WorkbookAPIClient:
+      WorkbookPolicyEnsurer:
       GCSObjectReader:

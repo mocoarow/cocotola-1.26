@@ -72,7 +72,11 @@ func Test_WorkbookSeeder_shouldCreateAllWorkbooksAndQuestions_onFirstRun(t *test
 		return body.Content == "C2"
 	})).Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds())
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -98,7 +102,11 @@ func Test_WorkbookSeeder_shouldBeIdempotent_onSecondRun(t *testing.T) {
 			{QuestionID: "q-2", Tags: []string{"seed-vocab-v1:q2"}},
 		}, nil)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds())
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -128,7 +136,10 @@ func Test_WorkbookSeeder_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenW
 		return body.Content == "C2"
 	})).Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-existing").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -158,7 +169,10 @@ func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing
 		return body.Content == "C2" && assert.Contains(t, body.Tags, "seed-vocab-v1:q2")
 	})).Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-existing").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -177,7 +191,9 @@ func Test_WorkbookSeeder_shouldReturnError_whenListWorkbooksFails(t *testing.T) 
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, listErr)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds())
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -198,13 +214,40 @@ func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
 		Return("", createErr)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds())
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
 
 	// then
 	require.ErrorIs(t, err, createErr)
+}
+
+func Test_WorkbookSeeder_shouldReturnError_whenEnsurePoliciesFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the workbook is created but granting its policies fails
+	ensureErr := errors.New("forbidden")
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return(nil, nil)
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
+		Return("wb-Vocabulary", nil)
+
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").
+		Return(ensureErr)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then: the error propagates and no questions are added
+	require.ErrorIs(t, err, ensureErr)
 }
 
 func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuestion(t *testing.T) {
@@ -225,7 +268,10 @@ func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuesti
 			captured = append(captured, body)
 		}).Return(nil).Times(2)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -258,7 +304,10 @@ func Test_WorkbookSeeder_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
 		Return(nil).Times(2)
 
-	seeder := seed.NewWorkbookSeeder(client, sampleSeeds()[:1])
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
+
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
