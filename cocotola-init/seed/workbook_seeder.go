@@ -31,20 +31,32 @@ type WorkbookAPIClient interface {
 	AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error
 }
 
+// WorkbookPolicyEnsurer idempotently grants the bootstrap system-owner identity
+// the per-workbook RBAC policies (create_question etc.) it needs to seed
+// questions. The seeder calls it for every workbook it ensures -- before adding
+// any question -- so that workbooks left without policies by a previously
+// failed run (e.g. when cocotola-auth's policy route was not yet registered)
+// are repaired in place instead of permanently returning 403 Forbidden.
+type WorkbookPolicyEnsurer interface {
+	EnsureSystemOwnerWorkbookPolicies(ctx context.Context, organizationID, workbookID string) error
+}
+
 // WorkbookSeeder applies a list of PublicWorkbookSeed against the question
 // service in an idempotent manner.
 type WorkbookSeeder struct {
-	client WorkbookAPIClient
-	seeds  []PublicWorkbookSeed
-	logger *slog.Logger
+	client        WorkbookAPIClient
+	policyEnsurer WorkbookPolicyEnsurer
+	seeds         []PublicWorkbookSeed
+	logger        *slog.Logger
 }
 
-// NewWorkbookSeeder constructs a seeder using the given client and seeds.
-func NewWorkbookSeeder(client WorkbookAPIClient, seeds []PublicWorkbookSeed) *WorkbookSeeder {
+// NewWorkbookSeeder constructs a seeder using the given client, policy ensurer and seeds.
+func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEnsurer, seeds []PublicWorkbookSeed) *WorkbookSeeder {
 	return &WorkbookSeeder{
-		client: client,
-		seeds:  seeds,
-		logger: slog.Default().With(slog.String("component", "public-workbook-seeder")),
+		client:        client,
+		policyEnsurer: policyEnsurer,
+		seeds:         seeds,
+		logger:        slog.Default().With(slog.String("component", "public-workbook-seeder")),
 	}
 }
 
@@ -62,6 +74,13 @@ func (s *WorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organizationID
 		workbookID, err := s.ensureWorkbook(ctx, organizationID, publicSpaceID, sd, bySeedKey)
 		if err != nil {
 			return fmt.Errorf("ensure workbook %q: %w", sd.SeedKey, err)
+		}
+
+		// Grant the per-workbook policies before adding questions. This both
+		// covers freshly created workbooks and repairs ones that an earlier run
+		// persisted without policies, so AddQuestion authorization succeeds.
+		if err := s.policyEnsurer.EnsureSystemOwnerWorkbookPolicies(ctx, organizationID, workbookID); err != nil {
+			return fmt.Errorf("ensure workbook policies %q: %w", sd.SeedKey, err)
 		}
 
 		if err := s.ensureQuestions(ctx, organizationID, workbookID, sd); err != nil {

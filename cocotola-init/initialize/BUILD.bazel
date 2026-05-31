@@ -1,8 +1,12 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "initialize",
-    srcs = ["initializer.go"],
+    srcs = [
+        "initializer.go",
+        "workbook_policy_ensurer.go",
+    ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/initialize",
     visibility = ["//visibility:public"],
     deps = [
@@ -11,6 +15,24 @@ go_library(
         "//cocotola-auth/domain/space",
         "//cocotola-auth/domain/user",
         "//cocotola-auth/gateway",
+        "@io_gorm_gorm//:gorm",
+    ],
+)
+
+smart_go_test(
+    name = "initialize_test",
+    srcs = [
+        "initialize_m_test.go",
+        "workbook_policy_ensurer_m_test.go",
+    ],
+    deps = [
+        ":initialize",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/gateway",
+        "//cocotola-lib/gateway",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
         "@io_gorm_gorm//:gorm",
     ],
 )

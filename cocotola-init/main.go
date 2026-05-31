@@ -48,7 +48,12 @@ func run() (int, error) {
 	}
 	defer shutdownDB()
 
-	seeder, err := buildSeeder(ctx, cfg.AppEnv, cfg.Question, cfg.CSVSeed)
+	policyEnsurer, err := initialize.NewWorkbookPolicyEnsurer(dbConn.DB)
+	if err != nil {
+		return 1, fmt.Errorf("new workbook policy ensurer: %w", err)
+	}
+
+	seeder, err := buildSeeder(ctx, cfg.AppEnv, cfg.Question, cfg.CSVSeed, policyEnsurer)
 	if err != nil {
 		return 1, fmt.Errorf("build seeder: %w", err)
 	}
@@ -72,7 +77,7 @@ var ErrQuestionBaseURLRequired = errors.New("question.baseUrl is required")
 // An empty BaseURL is treated as a configuration error rather than a silent
 // skip, so misconfigured deployments fail loudly instead of leaving the
 // public space empty.
-func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig, csvCfg config.CSVSeedConfig) (*seed.WorkbookSeeder, error) {
+func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig, csvCfg config.CSVSeedConfig, policyEnsurer seed.WorkbookPolicyEnsurer) (*seed.WorkbookSeeder, error) {
 	if qcfg.BaseURL == "" {
 		return nil, ErrQuestionBaseURLRequired
 	}
@@ -105,7 +110,7 @@ func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientC
 	}
 
 	client := seed.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient)
-	return seed.NewWorkbookSeeder(client, seeds), nil
+	return seed.NewWorkbookSeeder(client, policyEnsurer, seeds), nil
 }
 
 // loadCSVSeeds downloads and converts the CSV-sourced public workbooks declared
