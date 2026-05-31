@@ -177,7 +177,7 @@ func Test_LoadCSVWorkbookSeeds_shouldSetWorkbookMetadataFromManifest_notFromCSV(
 }
 
 // sortedKeys returns the sorted top-level keys of a decoded JSON object, so key
-// presence can be asserted independent of marshalling order.
+// presence can be asserted independent of marshaling order.
 func sortedKeys(m map[string]json.RawMessage) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
