@@ -195,7 +195,8 @@ func run() (int, error) {
 	internalAuthV1 := internalV1.Group("auth")
 	{
 		orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
-		authzhandler.InitAuthzRouter(authzCheckHandler, internalAuthV1)
+		addPolicyHandler := authzhandler.NewAddPolicyHandler(rbacRepo)
+		authzhandler.InitInternalAuthzRouter(authzCheckHandler, addPolicyHandler, internalAuthV1)
 		findUserSettingHandler := usersettinghandler.NewFindUserSettingHandler(userSettingRepo)
 		usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
 	}

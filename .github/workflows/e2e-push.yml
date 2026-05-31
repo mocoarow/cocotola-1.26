@@ -219,3 +219,196 @@ jobs:
             kill "$(cat ci-logs/cocotola-app.pid)" 2>/dev/null || true
           fi
           docker compose -f compose.local.postgres-firestore-jaeger.yml down -v --remove-orphans || true
+
+  # The Playwright job above runs the cocotola-app monolith (initialize.go wiring).
+  # Production deploys cocotola-auth and cocotola-question as SEPARATE Cloud Run
+  # services (each main.go), so route registration that differs between main.go
+  # and initialize.go is invisible to the monolith E2E. This job boots the two
+  # standalone binaries and runs cocotola-init against them, exercising the real
+  # cocotola-question -> cocotola-auth internal service-to-service calls
+  # (authz check, space lookup, and authz POLICY grant). A missing internal route
+  # makes cocotola-init fail here, before release.
+  e2e_separated_services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      # kics-scan ignore-line
+      id-token: write
+      contents: read
+    environment: production
+    env:
+      # --- Postgres (shared by cocotola-auth + cocotola-init; schema is applied
+      #     by compose docker-entrypoint-initdb.d) ---
+      AUTH_POSTGRES_USERNAME: username
+      # kics-scan ignore-line
+      AUTH_POSTGRES_PASSWORD: password
+      AUTH_POSTGRES_HOST: 127.0.0.1
+      AUTH_POSTGRES_PORT: "5432"
+      AUTH_POSTGRES_DATABASE: local
+      INIT_POSTGRES_USERNAME: username
+      # kics-scan ignore-line
+      INIT_POSTGRES_PASSWORD: password
+      INIT_POSTGRES_HOST: 127.0.0.1
+      INIT_POSTGRES_PORT: "5432"
+      INIT_POSTGRES_DATABASE: local
+
+      # --- Firestore emulator (cocotola-question) ---
+      FIRESTORE_EMULATOR_HOST: 127.0.0.1:8681
+      QUESTION_FIRESTORE_PROJECT_ID: local
+
+      # --- Standalone service ports (separate from the monolith's 8000) ---
+      AUTH_HTTP_PORT: "8080"
+      AUTH_METRICS_PORT: "8081"
+      QUESTION_HTTP_PORT: "8090"
+      QUESTION_METRICS_PORT: "8091"
+
+      # --- cocotola-question -> cocotola-auth internal API base URL ---
+      AUTH_BASE_URL: http://localhost:8080
+
+      # --- Auth signing / API keys (CI-only test values, not real secrets) ---
+      # AUTH_SIGNING_KEY / AUTH_API_KEY require min=32 chars (cocotola-auth/config/config.go).
+      # kics-scan ignore-line
+      AUTH_SIGNING_KEY: ci-test-signing-key-please-rotate-32b
+      # kics-scan ignore-line
+      AUTH_API_KEY: ci-test-auth-api-key-please-rotate-32b
+      # kics-scan ignore-line
+      QUESTION_API_KEY: ci-test-question-api-key
+      AUTH_SUPABASE_JWKS_URL: http://localhost:9999/jwks.json
+      AUTH_COOKIE_SECURE: "false"
+
+      # --- cocotola-init -> cocotola-question internal API
+      #     (INIT_QUESTION_API_KEY must match QUESTION_API_KEY above) ---
+      INIT_QUESTION_API_BASE_URL: http://localhost:8090
+      # kics-scan ignore-line
+      INIT_QUESTION_API_KEY: ci-test-question-api-key
+
+      # --- Owner credentials (cocotola-init) ---
+      OWNER_LOGIN_ID: owner@example.com
+      # kics-scan ignore-line
+      OWNER_PASSWORD: ci-test-owner-pw-1 # gitleaks:allow
+      ORGANIZATION_NAME: cocotola
+
+      # APP_ENV=local keeps service-to-service HTTP clients on the plain transport
+      # (no Google ID token); production attaches the token via X-Serverless-Authorization.
+      APP_ENV: local
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+
+      - uses: google-github-actions/setup-gcloud@26f734c2779b00b7dda794207734c511110a4368 # v3.0.0
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.26.x
+
+      - uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
+        with:
+          bazelisk-version: 1.x
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+
+      - run: bazel info
+
+      - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Taskfile loads `.env` via dotenv; an empty file satisfies the loader.
+      - name: Materialize empty .env for Taskfile loader
+        run: ': > .env'
+
+      - name: Start local infra (Postgres + Firestore + Jaeger)
+        run: task start-local-infra
+
+      - name: Pre-build Bazel binaries (cocotola-auth, cocotola-question, cocotola-init)
+        run: |
+          bazelisk build --config=remote \
+            //cocotola-auth:cocotola-auth \
+            //cocotola-question:cocotola-question \
+            //cocotola-init:cocotola-init
+
+      - name: Start cocotola-auth (standalone, background)
+        run: |
+          mkdir -p ci-logs
+          nohup bazelisk run --config=remote //cocotola-auth:cocotola-auth \
+            > ci-logs/cocotola-auth.log 2>&1 &
+          echo $! > ci-logs/cocotola-auth.pid
+
+      - name: Wait for cocotola-auth readiness
+        run: |
+          for _ in $(seq 1 120); do
+            if curl -fsS http://localhost:8080/api/v1/auth/health > /dev/null; then
+              echo "cocotola-auth is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "cocotola-auth did not become ready" >&2
+          tail -n 200 ci-logs/cocotola-auth.log >&2 || true
+          exit 1
+
+      - name: Start cocotola-question (standalone, background)
+        run: |
+          mkdir -p ci-logs
+          nohup bazelisk run --config=remote //cocotola-question:cocotola-question \
+            > ci-logs/cocotola-question.log 2>&1 &
+          echo $! > ci-logs/cocotola-question.pid
+
+      - name: Wait for cocotola-question readiness
+        run: |
+          for _ in $(seq 1 120); do
+            if curl -fsS http://localhost:8090/api/v1/question/health > /dev/null; then
+              echo "cocotola-question is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "cocotola-question did not become ready" >&2
+          tail -n 200 ci-logs/cocotola-question.log >&2 || true
+          exit 1
+
+      # Direct probe: a missing route returns gin's 404 "page not found". Any other
+      # status (401/400/204) proves the route is registered. This is the cheap,
+      # explicit guard for the exact regression this job exists to catch.
+      - name: Assert internal authz policy route is registered on cocotola-auth
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            -X POST http://localhost:8080/api/v1/internal/auth/authz/policy \
+            -H "X-Service-Api-Key: ${AUTH_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d '{}')
+          echo "POST /api/v1/internal/auth/authz/policy -> ${code}"
+          if [ "${code}" = "404" ]; then
+            echo "internal authz policy route is NOT registered (404) — regression!" >&2
+            exit 1
+          fi
+
+      # cocotola-init writes the owner/org/space directly to Postgres, then seeds
+      # public workbooks via cocotola-question, which in turn calls cocotola-auth's
+      # internal authz POLICY endpoint. If that route is missing, this step fails.
+      - name: Seed initial data against separated services (cocotola-init)
+        run: bazelisk run --config=remote //cocotola-init:cocotola-init
+
+      - name: Upload separated-service logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-separated-service-logs
+          path: ci-logs/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Stop background services and tear down infra
+        if: always()
+        run: |
+          if [ -f ci-logs/cocotola-question.pid ]; then
+            kill "$(cat ci-logs/cocotola-question.pid)" 2>/dev/null || true
+          fi
+          if [ -f ci-logs/cocotola-auth.pid ]; then
+            kill "$(cat ci-logs/cocotola-auth.pid)" 2>/dev/null || true
+          fi
+          docker compose -f compose.local.postgres-firestore-jaeger.yml down -v --remove-orphans || true
