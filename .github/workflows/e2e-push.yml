@@ -256,6 +256,10 @@ jobs:
       FIRESTORE_EMULATOR_HOST: 127.0.0.1:8681
       QUESTION_FIRESTORE_PROJECT_ID: local
 
+      # cocotola-lib TraceConfig requires a non-empty trace.google.projectId even
+      # when the exporter is "none" (cocotola-lib/gateway/trace.go).
+      TRACE_GOOGLE_PROJECT_ID: local
+
       # --- Standalone service ports (separate from the monolith's 8000) ---
       AUTH_HTTP_PORT: "8080"
       AUTH_METRICS_PORT: "8081"
@@ -331,16 +335,26 @@ jobs:
             //cocotola-question:cocotola-question \
             //cocotola-init:cocotola-init
 
+      # Run the pre-built binaries directly instead of `bazelisk run`: a backgrounded
+      # `bazel run` holds the Bazel command lock for the lifetime of the service, so
+      # starting a second service via `bazel run` would deadlock. Direct execution
+      # also keeps logs free of Bazel output. The binary embeds config.yml (go:embed),
+      # so no runfiles are needed.
       - name: Start cocotola-auth (standalone, background)
         run: |
           mkdir -p ci-logs
-          nohup bazelisk run --config=remote //cocotola-auth:cocotola-auth \
+          nohup bazel-bin/cocotola-auth/cocotola-auth_/cocotola-auth \
             > ci-logs/cocotola-auth.log 2>&1 &
           echo $! > ci-logs/cocotola-auth.pid
 
       - name: Wait for cocotola-auth readiness
         run: |
-          for _ in $(seq 1 120); do
+          for _ in $(seq 1 60); do
+            if ! kill -0 "$(cat ci-logs/cocotola-auth.pid)" 2>/dev/null; then
+              echo "cocotola-auth process exited before becoming ready" >&2
+              tail -n 200 ci-logs/cocotola-auth.log >&2 || true
+              exit 1
+            fi
             if curl -fsS http://localhost:8080/api/v1/auth/health > /dev/null; then
               echo "cocotola-auth is ready"
               exit 0
@@ -354,13 +368,18 @@ jobs:
       - name: Start cocotola-question (standalone, background)
         run: |
           mkdir -p ci-logs
-          nohup bazelisk run --config=remote //cocotola-question:cocotola-question \
+          nohup bazel-bin/cocotola-question/cocotola-question_/cocotola-question \
             > ci-logs/cocotola-question.log 2>&1 &
           echo $! > ci-logs/cocotola-question.pid
 
       - name: Wait for cocotola-question readiness
         run: |
-          for _ in $(seq 1 120); do
+          for _ in $(seq 1 60); do
+            if ! kill -0 "$(cat ci-logs/cocotola-question.pid)" 2>/dev/null; then
+              echo "cocotola-question process exited before becoming ready" >&2
+              tail -n 200 ci-logs/cocotola-question.log >&2 || true
+              exit 1
+            fi
             if curl -fsS http://localhost:8090/api/v1/question/health > /dev/null; then
               echo "cocotola-question is ready"
               exit 0
@@ -391,7 +410,7 @@ jobs:
       # public workbooks via cocotola-question, which in turn calls cocotola-auth's
       # internal authz POLICY endpoint. If that route is missing, this step fails.
       - name: Seed initial data against separated services (cocotola-init)
-        run: bazelisk run --config=remote //cocotola-init:cocotola-init
+        run: bazel-bin/cocotola-init/cocotola-init_/cocotola-init
 
       - name: Upload separated-service logs
         if: always()
