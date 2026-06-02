@@ -1,0 +1,186 @@
+---
+name: Claude Nightly Scan
+on:
+  schedule:
+    - cron: '0 17 * * *'  # UTC 17:00 = JST 02:00
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Target service (auto = day-of-week rotation)'
+        required: false
+        type: choice
+        default: auto
+        options:
+          - auto
+          - cocotola-auth
+          - cocotola-question
+          - cocotola-init
+          - cocotola-lib
+          - cocotola-audio-generator
+      dry_run:
+        description: 'Dry run (no issue creation)'
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: claude-nightly-scan
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve target service
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      service: ${{ steps.pick.outputs.service }}
+    steps:
+      - id: pick
+        env:
+          OVERRIDE: ${{ inputs.service }}
+        run: |
+          set -euo pipefail
+          if [ -n "${OVERRIDE:-}" ] && [ "${OVERRIDE}" != "auto" ]; then
+            SERVICE="${OVERRIDE}"
+          else
+            # UTC weekday: 1=Mon ... 7=Sun.
+            # Cron fires at UTC 17:00 (= JST 02:00 the next calendar day).
+            # We rotate on UTC weekday for stability; weekends are off.
+            DOW=$(date -u +%u)
+            case "${DOW}" in
+              1) SERVICE="cocotola-auth" ;;
+              2) SERVICE="cocotola-question" ;;
+              3) SERVICE="cocotola-init" ;;
+              4) SERVICE="cocotola-lib" ;;
+              5) SERVICE="cocotola-audio-generator" ;;
+              *) SERVICE="" ;;
+            esac
+          fi
+          echo "service=${SERVICE}" >> "${GITHUB_OUTPUT}"
+          if [ -z "${SERVICE}" ]; then
+            echo "::notice::Weekend (UTC) — skipping nightly scan"
+          else
+            echo "::notice::Target service: ${SERVICE}"
+          fi
+
+  scan:
+    name: Scan
+    needs: resolve
+    if: needs.resolve.outputs.service != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+    env:
+      TARGET_SERVICE: ${{ needs.resolve.outputs.service }}
+      DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.APPS_APP_ID }}
+          private-key: ${{ secrets.APPS_PRIVATE_KEY }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude nightly scan
+        uses: anthropics/claude-code-action@12310e4417c3473095c957cb311b3cf59a38d659 # v1.0.99
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
+          prompt: |
+            あなたは cocotola モノレポの夜間コード品質スキャンを担当します。
+
+            ## 実行コンテキスト
+            以下の環境変数が設定されています。Bash コマンド内では
+            そのまま `$VAR` 形式で参照できます (例:
+            `gh issue create --title "[Auto] $TARGET_SERVICE: ..."` )。
+            - `TARGET_SERVICE`: 今夜スキャンするサービス名
+            - `REPO`: `<owner>/<repo>`
+            - `DRY_RUN`: `true` のとき起票しない
+            - 本日の日付は `date -u +%Y-%m-%d` で取得
+
+            ## 手順
+
+            1. **規約理解**: 以下を読む
+               - `CLAUDE.md`
+               - `docs/$TARGET_SERVICE.md` (存在すれば)
+               - `.golangci.yml`
+
+            2. **既存 Issue の重複チェック**:
+               `gh issue list --label claude-proposal --state open --limit 100 --json number,title,body`
+               で取得し、既出トピックを把握する。
+               - open な `claude-proposal` Issue が **10 件以上** ある場合は、
+                 新規起票せず、最終応答に `skip: backlog full (count=N)` と
+                 書いて終了する。
+
+            3. **スキャン対象**: `$TARGET_SERVICE/` 配下のみ。
+               以下の観点で最もインパクトの大きい問題を **最大 3 件** 抽出する:
+               - 800 行を超えるファイル (分割候補)
+               - 50 行を超える関数 (分解候補)
+               - 4 階層を超えるネスト (リファクタ候補)
+               - エラーハンドリングの匂い (ラップせず素通し、`nil, nil` リターン)
+               - TODO/FIXME コメント (`git log -S` で 90 日以上前のもの優先)
+               - 自明でない関数でテストが無いもの
+
+               既存 open Issue と同じトピックは除外する。
+
+            4. **Issue 起票** (DRY_RUN が `false` のときのみ):
+               発見ごとに `gh issue create` で 1 件起票。
+               - Title: `[Auto] <TARGET_SERVICE>: <一行要約>`
+               - Labels:
+                 - `claude-proposal`
+                 - `auto-generated`
+                 - `area/<TARGET_SERVICE>`
+                 - 種別ラベル 1 つ: `refactor` / `test` / `cleanup` / `tech-debt`
+               - Body (Markdown):
+
+                 ```
+                 ## 問題
+                 <何が問題か。`path/to/file.go:42` の形式で参照>
+
+                 ## 提案
+                 <具体的な修正方針>
+
+                 ## 影響範囲
+                 <変更が及ぶファイル・パッケージ>
+
+                 ## 関連ファイル
+                 - path/to/file.go:42
+                 - path/to/other.go:100-150
+
+                 ---
+                 _Generated by Claude nightly scan on YYYY-MM-DD_
+                 ```
+
+               ラベルが無ければ `gh label create <name> --force` で作成
+               (色の目安: `claude-proposal`=8A2BE2, `auto-generated`=cccccc,
+               `area/*`=0e8a16, `refactor`=fbca04, `test`=1d76db,
+               `cleanup`=c5def5, `tech-debt`=d93f0b)。
+
+            5. **DRY_RUN=true** の場合:
+               起票せず、発見内容を最終応答に Markdown で出力する
+               (action が Job Summary に自動転載する)。
+
+            ## 厳守事項
+            - **ソースファイルを 1 つも変更しない**。Issue 起票のみ。
+            - PR を開かない。
+            - 起票は **最大 3 件**。それ以上の発見があっても上位 3 件に絞る。
+            - 同じファイル/関数の重複起票はしない。
+            - 確信が持てない問題 (誤検知の可能性) は起票しない。
+
+            ## 完了報告
+            最終応答に以下のいずれかを必ず含める
+            (action が Job Summary に転載する):
+            - 起票した Issue 番号一覧 (例: `Created: #123, #124, #125`)
+            - スキップ理由 (例: `skip: backlog full (count=12)`)
+            - 発見ゼロ (例: `no actionable findings today`)
+          claude_args: |
+            --max-turns 40
+            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*)"
