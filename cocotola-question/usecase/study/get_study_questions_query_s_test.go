@@ -414,6 +414,43 @@ func Test_GetStudyQuestionsQuery_shouldReturnOneQuestion_whenLimitIsOne(t *testi
 	assert.Equal(t, 2, output.TotalDue)
 }
 
+func Test_GetStudyQuestionsQuery_shouldReturnNonNilEmptySlice_whenNoQuestionsAreDue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a question whose record is not yet due, so selectedIDs will be empty
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	futureDue := fixtureClock.Add(24 * time.Hour)
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 1, fixtureClock, futureDue, 1, 0),
+	}
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, nil, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInput(t, 10)
+
+	// when
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then: Questions must be a non-nil empty slice to prevent null in JSON responses
+	require.NoError(t, err)
+	assert.NotNil(t, output.Questions)
+	assert.Empty(t, output.Questions)
+	assert.Equal(t, 0, output.TotalDue)
+}
+
 func Test_GetStudyQuestionsQuery_shouldReturnForbidden_whenNotAllowed(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
