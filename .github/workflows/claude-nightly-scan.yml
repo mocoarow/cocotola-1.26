@@ -90,10 +90,12 @@ jobs:
           fetch-depth: 1
 
       - name: Run Claude nightly scan
+        id: claude
         uses: anthropics/claude-code-action@12310e4417c3473095c957cb311b3cf59a38d659 # v1.0.99
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
+          display_report: true
           prompt: |
             あなたは cocotola モノレポの夜間コード品質スキャンを担当します。
 
@@ -115,10 +117,14 @@ jobs:
 
             2. **既存 Issue の重複チェック**:
                `gh issue list --label claude-proposal --state open --limit 100 --json number,title,body`
-               で取得し、既出トピックを把握する。
+               で取得し、必要に応じて `gh issue view <番号>` で本文を確認する。
                - open な `claude-proposal` Issue が **10 件以上** ある場合は、
                  新規起票せず、最終応答に `skip: backlog full (count=N)` と
                  書いて終了する。
+               - スキャン結果のすべてが既存 Issue でカバー済みの場合は、
+                 ターンを浪費せず **即座に** `no actionable findings today`
+                 と最終応答して終了する。新規性が低い「無理筋」の発見を
+                 ひねり出して起票しない。
 
             3. **スキャン対象**: `$TARGET_SERVICE/` 配下のみ。
                以下の観点で最もインパクトの大きい問題を **最大 3 件** 抽出する:
@@ -182,5 +188,54 @@ jobs:
             - スキップ理由 (例: `skip: backlog full (count=12)`)
             - 発見ゼロ (例: `no actionable findings today`)
           claude_args: |
-            --max-turns 40
-            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*)"
+            --max-turns 60
+            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label list:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*)"
+
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not set — skipping Slack notify"
+            exit 0
+          fi
+          SINCE=$(date -u -d '90 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
+          if [ "${CLAUDE_OUTCOME}" != "success" ]; then
+            TEXT=$(printf ':x: *Claude Nightly Scan* — `%s`\nstatus: %s\n<%s|Run log>' \
+              "${TARGET_SERVICE}" "${CLAUDE_OUTCOME}" "${RUN_URL}")
+          else
+            RECENT=$(gh issue list \
+              --repo "${REPO}" \
+              --label claude-proposal \
+              --state open \
+              --limit 50 \
+              --json number,title,url,createdAt \
+              | jq --arg s "${SINCE}" --arg svc "${TARGET_SERVICE}" \
+                  '[.[] | select(.createdAt > $s and
+                                 (.title | startswith("[Auto] " + $svc + ":")))]')
+            COUNT=$(echo "${RECENT}" | jq 'length')
+            if [ "${DRY_RUN}" = "true" ]; then
+              HEADER=$(printf ':test_tube: *Claude Nightly Scan (dry-run)* — `%s`' \
+                "${TARGET_SERVICE}")
+              BODY="dry-run complete"
+            elif [ "${COUNT}" = "0" ]; then
+              HEADER=$(printf ':crescent_moon: *Claude Nightly Scan* — `%s`' \
+                "${TARGET_SERVICE}")
+              BODY="完了 / 新規起票なし"
+            else
+              HEADER=$(printf ':crescent_moon: *Claude Nightly Scan* — `%s`' \
+                "${TARGET_SERVICE}")
+              LIST=$(echo "${RECENT}" \
+                | jq -r '.[] | "• <\(.url)|#\(.number)> \(.title)"')
+              BODY=$(printf '完了 / %s 件起票\n%s' "${COUNT}" "${LIST}")
+            fi
+            TEXT=$(printf '%s\n%s\n<%s|Run log>' "${HEADER}" "${BODY}" "${RUN_URL}")
+          fi
+          PAYLOAD=$(jq -n --arg text "${TEXT}" '{text: $text}')
+          curl -sSf -X POST -H 'Content-Type: application/json' \
+            --data "${PAYLOAD}" "${SLACK_WEBHOOK_URL}"
