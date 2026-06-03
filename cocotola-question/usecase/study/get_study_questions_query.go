@@ -122,7 +122,7 @@ func classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record, 
 
 func (q *GetStudyQuestionsQuery) fetchQuestionItems(ctx context.Context, workbookID string, selectedIDs []string) ([]studyservice.QuestionItem, error) {
 	if len(selectedIDs) == 0 {
-		return nil, nil
+		return []studyservice.QuestionItem{}, nil
 	}
 
 	questions, err := q.questionRepo.FindByIDs(ctx, workbookID, selectedIDs)
