@@ -1,0 +1,237 @@
+---
+name: Claude Implement
+on:
+  issues:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to implement'
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: claude-implement-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Validate trigger
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'labeled' &&
+       github.event.label.name == 'claude-approved' &&
+       contains(github.event.issue.labels.*.name, 'claude-proposal'))
+    permissions:
+      issues: read
+    outputs:
+      issue_number: ${{ steps.check.outputs.issue_number }}
+    steps:
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+          DISPATCH_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ "${EVENT}" = "workflow_dispatch" ]; then
+            NUMBER="${DISPATCH_NUMBER}"
+            LABELS=$(gh issue view "${NUMBER}" \
+              --repo "${REPO}" \
+              --json labels \
+              --jq '[.labels[].name]')
+            if ! echo "${LABELS}" | jq -e 'index("claude-proposal")' > /dev/null; then
+              echo "::error::Issue #${NUMBER} lacks claude-proposal label"
+              exit 1
+            fi
+          else
+            NUMBER="${ISSUE_NUMBER}"
+          fi
+          echo "issue_number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "::notice::Target Issue: #${NUMBER}"
+
+  implement:
+    name: Implement
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    env:
+      ISSUE_NUMBER: ${{ needs.guard.outputs.issue_number }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.APPS_APP_ID }}
+          private-key: ${{ secrets.APPS_PRIVATE_KEY }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Skip if existing PR closes this issue
+        id: dedup
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          COUNT=$(gh pr list \
+            --repo "${REPO}" \
+            --state open \
+            --search "in:body \"Closes #${ISSUE_NUMBER}\"" \
+            --json number \
+            --limit 5 | jq 'length')
+          if [ "${COUNT}" -gt 0 ]; then
+            echo "::notice::open PR already references #${ISSUE_NUMBER} — skipping"
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Run Claude implement
+        id: claude
+        if: steps.dedup.outputs.skip == 'false'
+        timeout-minutes: 35
+        uses: anthropics/claude-code-action@12310e4417c3473095c957cb311b3cf59a38d659 # v1.0.99
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
+          display_report: true
+          branch_prefix: claude/issue-
+          prompt: |
+            あなたは cocotola モノレポの実装担当 Claude です。
+
+            ## 実行コンテキスト
+            以下の環境変数が設定されています:
+            - `ISSUE_NUMBER`: 取り組む Issue 番号
+            - `REPO`: `<owner>/<repo>`
+
+            本日の日付は `date -u +%Y-%m-%d` で取得できます。
+
+            ## 手順
+
+            1. **Issue 把握**: `gh issue view "$ISSUE_NUMBER"` で Issue 本文を読み、
+               指摘内容・関連ファイル・提案を理解する。
+
+            2. **規約読み込み**: 以下を読む
+               - `CLAUDE.md`
+               - Issue が指すサービスの `docs/<service>.md` (存在すれば)
+               - `.golangci.yml`
+
+            3. **既存コード把握**: Read / Glob / Grep で関連ファイルと
+               周辺のテストパターンを確認する。
+
+            4. **最小限の実装**: Issue で指摘された範囲のみを修正する。
+               範囲外の "ついで" 修正をしない。
+
+            5. **テスト**: 振る舞いが変わる箇所は Go ユニットテストを追加・更新する。
+               既存のテストパターンに合わせる (テスト名
+               `Test_<X>_should<Y>_when<Z>`、mockery、
+               `given`/`when`/`then` コメント等)。
+
+            6. **コミット**:
+               - `git add` で変更ファイルを明示的に追加 (`git add -A` 禁止)
+               - `git commit -m "<type>: <短い要約>"`
+                 (type は feat/fix/refactor/test/chore のいずれか)
+
+            7. **PR 作成 (draft)**:
+               `gh pr create --draft --title "..." --body "..."` で起こす。
+               - Title: コミットメッセージと同じ `<type>: <短い要約>`
+               - Body には以下を含める:
+                 ```
+                 ## Summary
+                 <何を変えたか>
+
+                 ## Why
+                 <なぜこの変更が必要か>
+
+                 ## Test plan
+                 - [ ] <人間レビュアー向けのテスト項目>
+
+                 Closes #<ISSUE_NUMBER>
+                 ```
+
+            ## 厳守事項
+            - **1 PR = 1 Issue**。Issue で指摘された範囲のみ変更する
+            - **変更行数は合計 300 行以内**。超えそうなら詰め込まず、
+              対応方針を PR 本文の `## 未確定事項` に書いて Draft PR にする
+            - **`task test` は実行しない** (CI に任せる、コスト削減)
+            - **golangci-lint も実行しない** (CI に任せる)
+            - **以下のファイルは変更しない**:
+              - `Taskfile.yml`
+              - `.golangci.yml`
+              - `.github/**`
+              - `**/*.gen.go`
+            - エラーは `fmt.Errorf("...: %w", err)` でラップする
+            - `slog` を使う (`fmt.Println` / `log.Printf` 禁止)
+            - `nil, nil` を返さない (エンティティが無いときはセンチネルエラー)
+            - 確信が持てない箇所は推測で書かず、PR 本文の
+              `## 未確定事項` セクションで人間に判断を委ねる
+
+            ## 完了報告
+            最終応答に以下のいずれかを必ず含める:
+            - `Created PR: #<num>` (成功)
+            - `skip: <理由>` (実装不可と判断した場合)
+          claude_args: |
+            --max-turns 120
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(date:*),Bash(git:*)"
+
+      - name: Notify Slack
+        if: always()
+        timeout-minutes: 3
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ISSUE_URL: ${{ github.server_url }}/${{ github.repository }}/issues/${{ needs.guard.outputs.issue_number }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          DEDUP_SKIP: ${{ steps.dedup.outputs.skip }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not set — skipping Slack notify"
+            exit 0
+          fi
+          if [ "${DEDUP_SKIP}" = "true" ]; then
+            HEADER=$(printf ':leftwards_arrow_with_hook: *Claude Implement* — skipped (existing PR for #%s)' \
+              "${ISSUE_NUMBER}")
+            BODY=$(printf 'Issue: <%s|#%s>' "${ISSUE_URL}" "${ISSUE_NUMBER}")
+          elif [ "${CLAUDE_OUTCOME}" != "success" ]; then
+            HEADER=":x: *Claude Implement* — failed"
+            BODY=$(printf 'Issue: <%s|#%s>\nstatus: %s' \
+              "${ISSUE_URL}" "${ISSUE_NUMBER}" "${CLAUDE_OUTCOME}")
+          else
+            PR_INFO=$(gh pr list \
+              --repo "${REPO}" \
+              --state open \
+              --search "in:body \"Closes #${ISSUE_NUMBER}\"" \
+              --json number,title,url \
+              --limit 5 | jq '.[0] // empty')
+            if [ -z "${PR_INFO}" ]; then
+              HEADER=":hammer_and_wrench: *Claude Implement* — completed (no new PR)"
+              BODY=$(printf 'Issue: <%s|#%s>' "${ISSUE_URL}" "${ISSUE_NUMBER}")
+            else
+              PR_NUM=$(echo "${PR_INFO}" | jq -r '.number')
+              PR_URL=$(echo "${PR_INFO}" | jq -r '.url')
+              PR_TITLE=$(echo "${PR_INFO}" | jq -r '.title')
+              HEADER=$(printf ':hammer_and_wrench: *Claude Implement* — PR <%s|#%s> opened' \
+                "${PR_URL}" "${PR_NUM}")
+              BODY=$(printf 'Issue: <%s|#%s>\n%s' \
+                "${ISSUE_URL}" "${ISSUE_NUMBER}" "${PR_TITLE}")
+            fi
+          fi
+          TEXT=$(printf '%s\n%s\n<%s|Run log>' "${HEADER}" "${BODY}" "${RUN_URL}")
+          PAYLOAD=$(jq -n --arg text "${TEXT}" '{text: $text}')
+          curl -sSf -X POST -H 'Content-Type: application/json' \
+            --data "${PAYLOAD}" "${SLACK_WEBHOOK_URL}"
