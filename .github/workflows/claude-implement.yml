@@ -142,22 +142,24 @@ jobs:
 
             6. **コミット**:
                - `git add` で変更ファイルを明示的に追加 (`git add -A` 禁止)
-               - `git commit -m "<type>: <短い要約>"`
+               - `git commit -m "<type>: <short English summary>"`
                  (type は feat/fix/refactor/test/chore のいずれか)
+               - **コミットメッセージは英語で書く** (Issue 本文が日本語でも)
 
             7. **PR 作成 (draft)**:
                `gh pr create --draft --title "..." --body "..."` で起こす。
-               - Title: コミットメッセージと同じ `<type>: <短い要約>`
-               - Body には以下を含める:
+               - **タイトル・本文すべて英語で書く** (Issue 本文が日本語でも)
+               - Title: コミットメッセージと同じ `<type>: <short English summary>`
+               - Body には以下を英語で含める:
                  ```
                  ## Summary
-                 <何を変えたか>
+                 <what changed>
 
                  ## Why
-                 <なぜこの変更が必要か>
+                 <why this change is needed>
 
                  ## Test plan
-                 - [ ] <人間レビュアー向けのテスト項目>
+                 - [ ] <reviewer-facing checklist item>
 
                  Closes #<ISSUE_NUMBER>
                  ```
@@ -165,7 +167,8 @@ jobs:
             ## 厳守事項
             - **1 PR = 1 Issue**。Issue で指摘された範囲のみ変更する
             - **変更行数は合計 300 行以内**。超えそうなら詰め込まず、
-              対応方針を PR 本文の `## 未確定事項` に書いて Draft PR にする
+              対応方針を PR 本文の `## Open questions` セクション (英語)
+              に書いて Draft PR にする
             - **`task test` は実行しない** (CI に任せる、コスト削減)
             - **golangci-lint も実行しない** (CI に任せる)
             - **以下のファイルは変更しない**:
@@ -177,7 +180,7 @@ jobs:
             - `slog` を使う (`fmt.Println` / `log.Printf` 禁止)
             - `nil, nil` を返さない (エンティティが無いときはセンチネルエラー)
             - 確信が持てない箇所は推測で書かず、PR 本文の
-              `## 未確定事項` セクションで人間に判断を委ねる
+              `## Open questions` セクション (英語) で人間に判断を委ねる
 
             ## 完了報告
             最終応答に以下のいずれかを必ず含める:
