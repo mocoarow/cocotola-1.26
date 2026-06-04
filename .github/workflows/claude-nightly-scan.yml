@@ -96,6 +96,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
           display_report: true
+          # Temporary: surface Claude's tool stream so we can see which tool
+          # calls are being denied and why scans report "no findings". Flip
+          # back to false (or drop the line) once allowedTools is tuned.
+          show_full_output: true
           prompt: |
             あなたは cocotola モノレポの夜間コード品質スキャンを担当します。
 
@@ -107,6 +111,17 @@ jobs:
             - `REPO`: `<owner>/<repo>`
             - `DRY_RUN`: `true` のとき起票しない
             - 本日の日付は `date -u +%Y-%m-%d` で取得
+
+            ## ツール選択ガイド
+            - **ファイル列挙は `Glob` を使う** (`find` は許可されていない)
+              - 例: `Glob("$TARGET_SERVICE/**/*.go")` でサービス配下の全 Go ファイル
+              - テスト除外は Glob 結果に対して `_test.go` を含むものを除く
+            - **ファイル内容は `Read` で読む** (`cat` は許可されていない)
+              - Read は line-numbered で返るので、末尾の行番号 = 総行数
+            - **行数取得は `wc -l <path>`** (例: `wc -l $TARGET_SERVICE/**/*.go`)
+              - bash の glob 展開で複数ファイルの行数を 1 コマンドで取得可能
+            - **ディレクトリ確認は `Glob` で代用** (`ls` は許可されていない)
+            - `find` / `ls` / `cat` は **試さない** (denial が積まれるだけ)
 
             ## 手順
 
@@ -189,7 +204,7 @@ jobs:
             - 発見ゼロ (例: `no actionable findings today`)
           claude_args: |
             --max-turns 60
-            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label list:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*)"
+            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
 
       - name: Notify Slack
         if: always()
