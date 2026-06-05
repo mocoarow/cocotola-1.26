@@ -121,7 +121,21 @@ jobs:
             - **行数取得は `wc -l <path>`** (例: `wc -l $TARGET_SERVICE/**/*.go`)
               - bash の glob 展開で複数ファイルの行数を 1 コマンドで取得可能
             - **ディレクトリ確認は `Glob` で代用** (`ls` は許可されていない)
-            - `find` / `ls` / `cat` は **試さない** (denial が積まれるだけ)
+            - **Issue 本文は `Write` で `/tmp/issue_body_<N>.md` に書き、
+              `gh issue create --body-file /tmp/issue_body_<N>.md` で渡す**。
+              `--body "## 問題..."` のように markdown を直接渡そうとすると、
+              Claude Code の bash 安全システムが「Newline followed by `#`」
+              として弾く。
+            - `find` / `ls` / `cat` は **試さない** (denial が積まれるだけ)。
+            - 以下のパターンは Claude Code の bash 安全システムが
+              ブロックするので **試さない** (denial で turn を浪費する):
+              - `echo "...$VAR..."` 系 (simple_expansion)
+              - `printenv` / `env` / `set` (multiple operations 扱い)
+              - heredoc (`<<EOF`) — `Write` でファイル化する
+              - バックスラッシュエスケープ (`\ ` / `\n` を含む引数)
+              - ブレース展開と引用符の混在 (`{"key":"$VAR"}`)
+              - 環境変数は `$VAR` 単独で引数として渡す形にする
+                (例: `gh issue create --title "[Auto] $TARGET_SERVICE: ..."`)
 
             ## 手順
 
@@ -191,6 +205,8 @@ jobs:
 
             ## 厳守事項
             - **ソースファイルを 1 つも変更しない**。Issue 起票のみ。
+            - `Write` は **`/tmp/` 配下にのみ** 使うこと (Issue 本文の一時保存用)。
+              リポジトリ内のファイルに `Write` しない。
             - PR を開かない。
             - 起票は **最大 3 件**。それ以上の発見があっても上位 3 件に絞る。
             - 同じファイル/関数の重複起票はしない。
@@ -203,8 +219,8 @@ jobs:
             - スキップ理由 (例: `skip: backlog full (count=12)`)
             - 発見ゼロ (例: `no actionable findings today`)
           claude_args: |
-            --max-turns 60
-            --allowedTools "Read,Glob,Grep,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
+            --max-turns 90
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
 
       - name: Notify Slack
         if: always()

@@ -86,6 +86,12 @@ tasks:
     cmds:
       - docker run --rm -v .:/workspace zricethezav/gitleaks:latest detect -c /workspace/.gitleaks.toml --source /workspace --no-banner
 
+  lint-actions:
+    desc: "Run yamllint + pinact against GitHub Actions workflow files (actionlint runs in CI via reviewdog)"
+    cmds:
+      - yamllint -c .yamllint.yml .github/workflows
+      - pinact run --check
+
   lint-web:
     desc: "Run Biome lint and format check for cocotola-web"
     dir: cocotola-web
