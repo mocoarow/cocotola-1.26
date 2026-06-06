@@ -108,6 +108,10 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
           display_report: true
+          # TODO(remove): temporary debug flag to surface permission_denials root cause.
+          # Remove `show_full_output: true` once denials are diagnosed — it leaks
+          # tool-call payloads and file contents into public Action logs.
+          show_full_output: true
           branch_prefix: claude/issue-
           prompt: |
             あなたは cocotola モノレポの実装担当 Claude です。
@@ -186,9 +190,12 @@ jobs:
             最終応答に以下のいずれかを必ず含める:
             - `Created PR: #<num>` (成功)
             - `skip: <理由>` (実装不可と判断した場合)
+
+            さらに `skip:` の場合は、Issue 本体にも理由を残す:
+            `gh issue comment "$ISSUE_NUMBER" --body "skip: <英語の理由>"`
           claude_args: |
             --max-turns 120
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(date:*),Bash(git:*)"
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr list:*),Bash(date:*),Bash(git:*)"
 
       - name: Notify Slack
         if: always()
