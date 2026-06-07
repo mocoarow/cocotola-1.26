@@ -50,6 +50,10 @@ jobs:
               echo "::error::Issue #${NUMBER} lacks claude-proposal label"
               exit 1
             fi
+            if ! echo "${LABELS}" | jq -e 'index("claude-approved")' > /dev/null; then
+              echo "::error::Issue #${NUMBER} lacks claude-approved label"
+              exit 1
+            fi
           else
             NUMBER="${ISSUE_NUMBER}"
           fi
@@ -99,6 +103,21 @@ jobs:
             echo "skip=false" >> "${GITHUB_OUTPUT}"
           fi
 
+      - name: Create implementation branch
+        if: steps.dedup.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          BRANCH="claude/issue-${ISSUE_NUMBER}"
+          if git ls-remote --exit-code --heads origin "${BRANCH}" \
+             > /dev/null 2>&1; then
+            echo "::error::Branch ${BRANCH} already exists on origin — aborting"
+            exit 1
+          fi
+          git switch -c "${BRANCH}"
+          echo "::notice::Switched to ${BRANCH} (agent will commit here, not on main)"
+
       - name: Run Claude implement
         id: claude
         if: steps.dedup.outputs.skip == 'false'
@@ -108,25 +127,29 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ steps.app-token.outputs.token }}
           display_report: true
-          # TODO(remove): temporary debug flag to surface permission_denials root cause.
-          # Remove `show_full_output: true` once denials are diagnosed — it leaks
-          # tool-call payloads and file contents into public Action logs.
-          show_full_output: true
           branch_prefix: claude/issue-
           prompt: |
             あなたは cocotola モノレポの実装担当 Claude です。
 
-            ## 実行コンテキスト
-            以下の環境変数が設定されています:
-            - `ISSUE_NUMBER`: 取り組む Issue 番号
-            - `REPO`: `<owner>/<repo>`
+            ## 実行コンテキスト (固定値)
+            - **Target Issue**: #${{ needs.guard.outputs.issue_number }}
+            - **Repository**: ${{ github.repository }}
+            - **Working branch**: `claude/issue-${{ needs.guard.outputs.issue_number }}`
+              (workflow が既に switch 済み)
+            - 本日の日付は `date -u +%Y-%m-%d` で取得できる
 
-            本日の日付は `date -u +%Y-%m-%d` で取得できます。
+            ## 最初に読め (Hard rules)
+            - **`git push origin main` 禁止**。push 先は
+              `claude/issue-${{ needs.guard.outputs.issue_number }}` のみ
+            - **ブランチを変えない**。`git switch` / `git checkout` で別 branch に移らない
+            - **対象 Issue は上記の固定値**。`gh issue list` で他の Issue を探したり、
+              別 Issue を勝手に拾って実装しない
+            - **環境変数 `$ISSUE_NUMBER` には頼らない** (この prompt の値が真の値)
 
             ## 手順
 
-            1. **Issue 把握**: `gh issue view "$ISSUE_NUMBER"` で Issue 本文を読み、
-               指摘内容・関連ファイル・提案を理解する。
+            1. **Issue 把握**: `gh issue view ${{ needs.guard.outputs.issue_number }}` で
+               Issue 本文を読み、指摘内容・関連ファイル・提案を理解する。
 
             2. **規約読み込み**: 以下を読む
                - `CLAUDE.md`
@@ -165,7 +188,7 @@ jobs:
                  ## Test plan
                  - [ ] <reviewer-facing checklist item>
 
-                 Closes #<ISSUE_NUMBER>
+                 Closes #${{ needs.guard.outputs.issue_number }}
                  ```
 
             ## 厳守事項
@@ -192,10 +215,10 @@ jobs:
             - `skip: <理由>` (実装不可と判断した場合)
 
             さらに `skip:` の場合は、Issue 本体にも理由を残す:
-            `gh issue comment "$ISSUE_NUMBER" --body "skip: <英語の理由>"`
+            `gh issue comment ${{ needs.guard.outputs.issue_number }} --body "skip: <英語の理由>"`
           claude_args: |
             --max-turns 120
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr list:*),Bash(date:*),Bash(git:*)"
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr list:*),Bash(date:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git branch:*)"
 
       - name: Notify Slack
         if: always()
