@@ -7,8 +7,6 @@ import (
 )
 
 func Test_expandEnvWithDefaults_shouldReturnEnvValue_whenVarIsSet(t *testing.T) {
-	t.Parallel()
-
 	// given
 	t.Setenv("TEST_EXPAND_VAR", "hello")
 
@@ -32,8 +30,6 @@ func Test_expandEnvWithDefaults_shouldReturnDefault_whenVarIsUnset(t *testing.T)
 }
 
 func Test_expandEnvWithDefaults_shouldReturnDefault_whenVarIsEmpty(t *testing.T) {
-	t.Parallel()
-
 	// given
 	t.Setenv("TEST_EXPAND_EMPTY", "")
 
@@ -57,8 +53,6 @@ func Test_expandEnvWithDefaults_shouldReturnFirstDefault_whenMultipleSeparators(
 }
 
 func Test_expandEnvWithDefaults_shouldReturnEnvValue_whenNoSeparator(t *testing.T) {
-	t.Parallel()
-
 	// given
 	t.Setenv("TEST_EXPAND_PLAIN", "plainval")
 
