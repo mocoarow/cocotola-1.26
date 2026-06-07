@@ -118,6 +118,29 @@ jobs:
           git switch -c "${BRANCH}"
           echo "::notice::Switched to ${BRANCH} (agent will commit here, not on main)"
 
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        if: steps.dedup.outputs.skip == 'false'
+        with:
+          go-version: 1.26.x
+
+      - uses: bazel-contrib/setup-bazel@083175551ceeceebc757ebee2127fde78840ca77 # 0.18.0
+        if: steps.dedup.outputs.skip == 'false'
+        with:
+          bazelisk-version: 1.x
+          # Share the disk-cache key with test-pr.yml so we hit the warm cache
+          # populated on main. Cold bazel from scratch is ~11 min; with cache
+          # `task gazelle` finishes in seconds.
+          disk-cache: go-bazel
+          repository-cache: true
+
+      - if: steps.dedup.outputs.skip == 'false'
+        run: bazel info
+
+      - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+        if: steps.dedup.outputs.skip == 'false'
+        with:
+          repo-token: ${{ github.token }}
+
       - name: Run Claude implement
         id: claude
         if: steps.dedup.outputs.skip == 'false'
@@ -167,13 +190,29 @@ jobs:
                `Test_<X>_should<Y>_when<Z>`、mockery、
                `given`/`when`/`then` コメント等)。
 
-            6. **コミット**:
+            6. **BUILD.bazel 自動再生成 (必須)**:
+               このリポジトリは Bazel で動いており、`*.go` を追加・改名・
+               削除したり import を変えたら **必ず `task gazelle` を実行**
+               して `BUILD.bazel` を再生成する。手で `BUILD.bazel` を編集
+               しない (`embed`/`deps`/`srcs` のルールを誤ると CI で
+               `undefined: <symbol>` などの compile エラーになる)。
+
+               ```
+               task gazelle
+               git status   # BUILD.bazel に差分が出ているはず
+               ```
+
+               差分が出たら、次のコミットに `git add` で必ず含める。
+
+            7. **コミット**:
                - `git add` で変更ファイルを明示的に追加 (`git add -A` 禁止)
+               - 追加した `*.go` と `task gazelle` が生成した `BUILD.bazel` を
+                 同じコミットに含める
                - `git commit -m "<type>: <short English summary>"`
                  (type は feat/fix/refactor/test/chore のいずれか)
                - **コミットメッセージは英語で書く** (Issue 本文が日本語でも)
 
-            7. **PR 作成 (draft)**:
+            8. **PR 作成 (draft)**:
                `gh pr create --draft --title "..." --body "..."` で起こす。
                - **タイトル・本文すべて英語で書く** (Issue 本文が日本語でも)
                - Title: コミットメッセージと同じ `<type>: <short English summary>`
@@ -218,7 +257,7 @@ jobs:
             `gh issue comment ${{ needs.guard.outputs.issue_number }} --body "skip: <英語の理由>"`
           claude_args: |
             --max-turns 120
-            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr list:*),Bash(date:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git branch:*)"
+            --allowedTools "Read,Glob,Grep,Edit,Write,Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr create:*),Bash(gh pr edit:*),Bash(gh pr list:*),Bash(date:*),Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git config:*),Bash(git branch:*),Bash(task gazelle:*)"
 
       - name: Notify Slack
         if: always()
