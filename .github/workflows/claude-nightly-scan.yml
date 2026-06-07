@@ -166,10 +166,32 @@ jobs:
 
                既存 open Issue と同じトピックは除外する。
 
-            4. **Issue 起票** (DRY_RUN が `false` のときのみ):
-               発見ごとに `gh issue create` で 1 件起票。
+            4. **Issue 起票 + ラベル付与** (DRY_RUN が `false` のときのみ):
+               このリポジトリは GitHub App token で動いているため、
+               `gh issue create --label <name>` を使うとラベルが
+               **silently drop** されて空ラベルの Issue だけ作られる
+               (stderr 空・exit 0 で気付けない)。そのため必ず
+               **create と labeling を別コマンドに分離する**:
+
+               ```
+               # 1. ラベル無しで Issue を作って URL を取り出す
+               URL=$(gh issue create \
+                 --title "[Auto] $TARGET_SERVICE: <一行要約>" \
+                 --body-file /tmp/issue_body_1.md)
+
+               # 2. 番号を URL の末尾から取り出す
+               NUM=${URL##*/}
+
+               # 3. gh issue edit でまとめてラベルを付ける
+               gh issue edit $NUM \
+                 --add-label claude-proposal \
+                 --add-label auto-generated \
+                 --add-label "area/$TARGET_SERVICE" \
+                 --add-label test
+               ```
+
                - Title: `[Auto] <TARGET_SERVICE>: <一行要約>`
-               - Labels:
+               - Labels (必ず `gh issue edit --add-label` で付与):
                  - `claude-proposal`
                  - `auto-generated`
                  - `area/<TARGET_SERVICE>`
@@ -220,7 +242,7 @@ jobs:
             - 発見ゼロ (例: `no actionable findings today`)
           claude_args: |
             --max-turns 90
-            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
 
       - name: Notify Slack
         if: always()
