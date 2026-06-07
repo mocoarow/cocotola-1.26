@@ -190,6 +190,14 @@ jobs:
                `Test_<X>_should<Y>_when<Z>`、mockery、
                `given`/`when`/`then` コメント等)。
 
+               **Go テストの落とし穴 (CI で必ず弾かれる)**:
+               - `t.Setenv` を呼ぶテストでは **`t.Parallel()` を書かない**。
+                 Go のテストフレームワークは「環境変数の変更 + 並列実行」を
+                 検出すると panic させる (`testing: test using t.Setenv ...
+                 can not use t.Parallel`)。環境変数を弄らないテストだけ
+                 `t.Parallel()` を付ける。
+               - `t.Chdir` も同じく `t.Parallel()` と併用不可。
+
             6. **BUILD.bazel 自動再生成 (必須)**:
                このリポジトリは Bazel で動いており、`*.go` を追加・改名・
                削除したり import を変えたら **必ず `task gazelle` を実行**
