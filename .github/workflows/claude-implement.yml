@@ -25,7 +25,9 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.action == 'labeled' &&
        github.event.label.name == 'claude-approved' &&
-       contains(github.event.issue.labels.*.name, 'claude-proposal'))
+       contains(github.event.issue.labels.*.name, 'claude-proposal')) ||
+      (github.event.action == 'labeled' &&
+       github.event.label.name == 'claude-implement')
     permissions:
       issues: read
     outputs:
@@ -46,12 +48,15 @@ jobs:
               --repo "${REPO}" \
               --json labels \
               --jq '[.labels[].name]')
-            if ! echo "${LABELS}" | jq -e 'index("claude-proposal")' > /dev/null; then
-              echo "::error::Issue #${NUMBER} lacks claude-proposal label"
-              exit 1
-            fi
-            if ! echo "${LABELS}" | jq -e 'index("claude-approved")' > /dev/null; then
-              echo "::error::Issue #${NUMBER} lacks claude-approved label"
+            # Accept either: claude-implement on its own (user-requested),
+            # or claude-proposal + claude-approved (nightly-scan-approved).
+            if echo "${LABELS}" | jq -e 'index("claude-implement")' > /dev/null; then
+              :
+            elif echo "${LABELS}" | jq -e 'index("claude-proposal")' > /dev/null \
+                 && echo "${LABELS}" | jq -e 'index("claude-approved")' > /dev/null; then
+              :
+            else
+              echo "::error::Issue #${NUMBER} needs either claude-implement label, or both claude-proposal and claude-approved"
               exit 1
             fi
           else
