@@ -29,7 +29,7 @@ FROM node:${NODE_VERSION}-alpine
 ARG PNPM_VERSION
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-COPY package.json pnpm-lock.yaml /app/
+COPY package.json pnpm-lock.yaml instrumentation.mjs /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 WORKDIR /app
