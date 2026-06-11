@@ -45,6 +45,7 @@ smart_go_test(
         "owned_workbook_list_repository_m_test.go",
         "question_repository_audio_m_test.go",
         "question_repository_m_test.go",
+        "reference_repository_m_test.go",
         "study_record_repository_m_test.go",
     ],
     deps = [
@@ -52,6 +53,7 @@ smart_go_test(
         "//cocotola-lib/domain/versioned",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
+        "//cocotola-question/domain/reference",
         "//cocotola-question/domain/study",
         "@com_github_google_uuid//:uuid",
         "@com_github_stretchr_testify//assert",
