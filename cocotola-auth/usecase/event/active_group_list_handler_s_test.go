@@ -110,6 +110,6 @@ func Test_ActiveGroupListHandler_Handle_shouldReturnError_whenEventTypeIsWrong(t
 	err := handler.Handle(context.Background(), badEvent{})
 
 	// then
-	require.Error(t, err)
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 	orgRepoMock.AssertNotCalled(t, "FindByID")
 }
