@@ -34,4 +34,8 @@ COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 WORKDIR /app
 USER appuser
-CMD ["pnpm", "run", "start"]
+# Run the server directly with node. Going through `pnpm run start` makes
+# corepack download pnpm at runtime (no activation for appuser) and triggers
+# pnpm's verify-deps-before-run auto-install, which fails with EACCES on the
+# root-owned /app and crashes before binding to PORT.
+CMD ["node", "node_modules/.bin/react-router-serve", "./build/server/index.js"]
