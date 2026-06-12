@@ -2,9 +2,10 @@
 extends: default
 
 rules:
-  # 80 chars should be enough, but don't fail if a line is longer
+  # 80 chars should be enough, but don't fail if a line is longer.
+  # 400 accommodates Claude Code allowedTools strings in workflow YAML.
   line-length:
-    max: 200
+    max: 400
   truthy: disable
   comments:
     min-spaces-from-content: 1

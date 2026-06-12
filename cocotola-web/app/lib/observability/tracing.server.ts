@@ -1,9 +1,4 @@
-import {
-  type Attributes,
-  type Span,
-  SpanStatusCode,
-  trace,
-} from "@opentelemetry/api";
+import { type Attributes, type Span, SpanStatusCode, trace } from "@opentelemetry/api";
 
 /**
  * Tracer used for application-level (manual) spans.
