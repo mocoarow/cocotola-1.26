@@ -120,7 +120,7 @@ func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientC
 func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.PublicWorkbookSeed, error) {
 	if csvCfg.BucketName == "" {
 		slog.InfoContext(ctx, "csv seed bucket not configured; skipping csv workbook seeding")
-		return nil, nil
+		return []seed.PublicWorkbookSeed{}, nil
 	}
 
 	manifest, err := seed.DefaultCSVManifest()
@@ -128,7 +128,7 @@ func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.Publ
 		return nil, fmt.Errorf("load csv manifest: %w", err)
 	}
 	if len(manifest.Workbooks) == 0 {
-		return nil, nil
+		return []seed.PublicWorkbookSeed{}, nil
 	}
 
 	reader, err := gateway.NewGCSReader(ctx, csvCfg.BucketName)
