@@ -47,9 +47,10 @@ smart_go_test(
         "question_repository_m_test.go",
         "reference_repository_m_test.go",
         "study_record_repository_m_test.go",
+        "study_record_repository_s_test.go",
     ],
+    embed = [":gateway"],
     deps = [
-        ":gateway",
         "//cocotola-lib/domain/versioned",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
@@ -59,5 +60,6 @@ smart_go_test(
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@com_google_cloud_go_firestore//:firestore",
+        "@org_golang_google_api//iterator",
     ],
 )

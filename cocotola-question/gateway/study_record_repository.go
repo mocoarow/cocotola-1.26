@@ -19,6 +19,36 @@ import (
 
 const studyRecordsSubCollection = "study_records"
 
+// studyRecordIter is the subset of *firestore.DocumentIterator used for deletion.
+type studyRecordIter interface {
+	Next() (*firestore.DocumentSnapshot, error)
+	Stop()
+}
+
+// deleteJobResult is the subset of *firestore.BulkWriterJob used for result checking.
+type deleteJobResult interface {
+	Results() ([]*firestore.WriteResult, error)
+}
+
+// studyRecordBulkDeleter is the subset of *firestore.BulkWriter used for deletion.
+type studyRecordBulkDeleter interface {
+	Delete(dr *firestore.DocumentRef) (deleteJobResult, error)
+	End()
+}
+
+// bulkWriterAdapter adapts *firestore.BulkWriter to studyRecordBulkDeleter.
+type bulkWriterAdapter struct {
+	bw *firestore.BulkWriter
+}
+
+func (a *bulkWriterAdapter) Delete(dr *firestore.DocumentRef) (deleteJobResult, error) {
+	return a.bw.Delete(dr)
+}
+
+func (a *bulkWriterAdapter) End() {
+	a.bw.End()
+}
+
 type studyRecordRecord struct {
 	WorkbookID         string    `firestore:"workbookID"`
 	QuestionID         string    `firestore:"questionID"`
@@ -124,11 +154,17 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 // failures are fully reported to the caller.
 func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
+	bw := &bulkWriterAdapter{bw: r.client.BulkWriter(ctx)}
+	return deleteStudyRecordDocs(iter, bw)
+}
+
+// deleteStudyRecordDocs drains iter, enqueues deletes via bw, and aggregates
+// all iterator, enqueue, and job-level errors via errors.Join.
+func deleteStudyRecordDocs(iter studyRecordIter, bw studyRecordBulkDeleter) error {
 	defer iter.Stop()
 
-	bw := r.client.BulkWriter(ctx)
 	var (
-		jobs    []*firestore.BulkWriterJob
+		jobs    []deleteJobResult
 		iterErr error
 	)
 
@@ -138,15 +174,12 @@ func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID s
 			if errors.Is(err, iterator.Done) {
 				break
 			}
-
 			iterErr = fmt.Errorf("iterate study records: %w", err)
-
 			break
 		}
 		job, err := bw.Delete(doc.Ref)
 		if err != nil {
 			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
-
 			break
 		}
 		jobs = append(jobs, job)
