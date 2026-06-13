@@ -30,7 +30,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnItems_whenServerReturns200(t
 		assert.Equal(t, "/api/v1/internal/audio/questions/pending", r.URL.Path)
 		assert.Equal(t, "test-key", r.Header.Get("X-Service-Api-Key"))
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		if err := json.NewEncoder(w).Encode(map[string]any{
 			"items": []map[string]any{
 				{
 					"workbookId":  "wb-1",
@@ -43,7 +43,9 @@ func Test_QuestionAPIClient_ListPending_shouldReturnItems_whenServerReturns200(t
 					"failedTries": 0,
 				},
 			},
-		})
+		}); err != nil {
+			t.Errorf("encode pending response: %v", err)
+		}
 	})
 	client := newTestQuestionClient(t, handler)
 
@@ -62,7 +64,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -71,7 +73,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	items, err := client.ListPending(context.Background(), 10)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "list pending")
 	assert.Nil(t, items)
 }
 
@@ -79,7 +81,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnNil_whenServerReturns200(t *testin
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -96,7 +98,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnErrClaimRace_whenServerReturns409(
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusConflict)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -113,7 +115,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200NonCo
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -123,7 +125,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200NonCo
 	err := client.Claim(context.Background(), item)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "claim audio")
 	assert.NotErrorIs(t, err, domain.ErrClaimRace)
 }
 
@@ -131,7 +133,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnNil_whenServerReturns200(t *tes
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -151,7 +153,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -161,14 +163,14 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	err := client.Complete(context.Background(), item, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "complete audio")
 }
 
 func Test_QuestionAPIClient_Fail_shouldReturnNil_whenServerReturns200(t *testing.T) {
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -185,7 +187,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -195,7 +197,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	err := client.Fail(context.Background(), item, "reason")
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "fail audio")
 }
 
 func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(t *testing.T) {
@@ -205,7 +207,9 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/internal/audio/questions/reclaim-stale", r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"reclaimed": 3})
+		if err := json.NewEncoder(w).Encode(map[string]any{"reclaimed": 3}); err != nil {
+			t.Errorf("encode reclaim response: %v", err)
+		}
 	})
 	client := newTestQuestionClient(t, handler)
 
@@ -221,7 +225,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -230,6 +234,6 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	n, err := client.ReclaimStale(context.Background(), 15*time.Minute, 10)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "reclaim stale")
 	assert.Equal(t, 0, n)
 }

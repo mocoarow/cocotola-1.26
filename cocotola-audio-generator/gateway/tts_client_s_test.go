@@ -39,7 +39,6 @@ func Test_parseEncoding_shouldReturnError_whenUnknownEncodingGiven(t *testing.T)
 	enc, err := gateway.ParseEncoding("FLAC")
 
 	// then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "FLAC")
+	require.ErrorContains(t, err, "FLAC")
 	assert.Equal(t, texttospeechpb.AudioEncoding_AUDIO_ENCODING_UNSPECIFIED, enc)
 }
