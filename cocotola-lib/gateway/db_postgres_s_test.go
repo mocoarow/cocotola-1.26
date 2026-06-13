@@ -11,6 +11,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
 
+// parseDSN re-parses the built DSN to extract structured fields for assertions.
 func parseDSN(t *testing.T, dsn string) (*url.URL, *pgconn.Config) {
 	t.Helper()
 	u, err := url.Parse(dsn)

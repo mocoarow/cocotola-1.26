@@ -35,7 +35,11 @@ type PostgresConfig struct {
 	Port     int               `yaml:"port" validate:"required"`
 	Database string            `yaml:"database" validate:"required"`
 	SSLMode  string            `yaml:"sslMode"`
-	Params   map[string]string `yaml:"params"`
+	// Params are extra connection parameters appended to the DSN. They are
+	// applied after the struct-level fields, so a key of "sslmode" or
+	// "TimeZone" here overrides the value derived from SSLMode or the default
+	// UTC time zone.
+	Params map[string]string `yaml:"params"`
 }
 
 func initDBPostgres(ctx context.Context, cfg DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
