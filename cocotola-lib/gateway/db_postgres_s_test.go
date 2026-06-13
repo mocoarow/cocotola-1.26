@@ -102,6 +102,56 @@ func Test_BuildPostgresDSN_shouldSkipEmptyParams_whenParamValueIsEmpty(t *testin
 	}
 }
 
+func Test_BuildPostgresDSN_shouldEscapeSingleQuoteInParamValue_whenParamContainsSingleQuote(t *testing.T) {
+	t.Parallel()
+
+	// given
+	cfg := &gateway.PostgresConfig{
+		Username: "user1",
+		Password: "pass1",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+		Params: map[string]string{
+			"application_name": "it's app",
+		},
+	}
+
+	// when
+	dsn := gateway.BuildPostgresDSN(cfg)
+
+	// then
+	if !strings.Contains(dsn, `application_name='it\'s app'`) {
+		t.Fatalf("expected escaped single quote in DSN, got %q", dsn)
+	}
+}
+
+func Test_BuildPostgresDSN_shouldEscapeBackslashInParamValue_whenParamContainsBackslash(t *testing.T) {
+	t.Parallel()
+
+	// given
+	cfg := &gateway.PostgresConfig{
+		Username: "user1",
+		Password: "pass1",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+		Params: map[string]string{
+			"application_name": `back\slash`,
+		},
+	}
+
+	// when
+	dsn := gateway.BuildPostgresDSN(cfg)
+
+	// then
+	if !strings.Contains(dsn, `application_name='back\\slash'`) {
+		t.Fatalf("expected escaped backslash in DSN, got %q", dsn)
+	}
+}
+
 func Test_BuildPostgresDSN_shouldQuoteParamValues_whenParamsProvided(t *testing.T) {
 	t.Parallel()
 

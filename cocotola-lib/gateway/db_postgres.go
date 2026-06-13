@@ -68,11 +68,16 @@ func BuildPostgresDSN(cfg *PostgresConfig) string {
 
 	for k, v := range cfg.Params {
 		if v != "" {
-			fmt.Fprintf(&b, " %s='%s'", k, v)
+			fmt.Fprintf(&b, " %s='%s'", k, escapePgParamValue(v))
 		}
 	}
 
 	return b.String()
+}
+
+func escapePgParamValue(v string) string {
+	v = strings.ReplaceAll(v, `\`, `\\`)
+	return strings.ReplaceAll(v, `'`, `\'`)
 }
 
 // OpenPostgres opens a GORM PostgreSQL connection using the given config.
