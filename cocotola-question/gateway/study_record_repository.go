@@ -19,6 +19,47 @@ import (
 
 const studyRecordsSubCollection = "study_records"
 
+// studyRecordIter is the subset of *firestore.DocumentIterator used for deletion.
+type studyRecordIter interface {
+	Next() (*firestore.DocumentSnapshot, error)
+	Stop()
+}
+
+// studyRecordBulkDeleter is the subset of *firestore.BulkWriter used for deletion.
+// Delete enqueues an item and Wait flushes/drains, returning per-job errors.
+// Returning only error/[]error (not the firestore job interface) keeps ireturn
+// satisfied while preserving testability.
+type studyRecordBulkDeleter interface {
+	Delete(dr *firestore.DocumentRef) error
+	Wait() []error
+}
+
+// bulkWriterAdapter adapts *firestore.BulkWriter to studyRecordBulkDeleter.
+type bulkWriterAdapter struct {
+	bw   *firestore.BulkWriter
+	jobs []*firestore.BulkWriterJob
+}
+
+func (a *bulkWriterAdapter) Delete(dr *firestore.DocumentRef) error {
+	job, err := a.bw.Delete(dr)
+	if err != nil {
+		return fmt.Errorf("enqueue bulk delete: %w", err)
+	}
+	a.jobs = append(a.jobs, job)
+	return nil
+}
+
+func (a *bulkWriterAdapter) Wait() []error {
+	a.bw.End()
+	errs := make([]error, 0, len(a.jobs))
+	for _, job := range a.jobs {
+		if _, err := job.Results(); err != nil {
+			errs = append(errs, fmt.Errorf("bulk delete result: %w", err))
+		}
+	}
+	return errs
+}
+
 type studyRecordRecord struct {
 	WorkbookID         string    `firestore:"workbookID"`
 	QuestionID         string    `firestore:"questionID"`
@@ -124,13 +165,16 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 // failures are fully reported to the caller.
 func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
+	bw := &bulkWriterAdapter{bw: r.client.BulkWriter(ctx), jobs: nil}
+	return deleteStudyRecordDocs(iter, bw)
+}
+
+// deleteStudyRecordDocs drains iter, enqueues deletes via bw, and aggregates
+// all iterator, enqueue, and job-level errors via errors.Join.
+func deleteStudyRecordDocs(iter studyRecordIter, bw studyRecordBulkDeleter) error {
 	defer iter.Stop()
 
-	bw := r.client.BulkWriter(ctx)
-	var (
-		jobs    []*firestore.BulkWriterJob
-		iterErr error
-	)
+	var iterErr error
 
 	for {
 		doc, err := iter.Next()
@@ -143,21 +187,18 @@ func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID s
 
 			break
 		}
-		job, err := bw.Delete(doc.Ref)
-		if err != nil {
+
+		if err := bw.Delete(doc.Ref); err != nil {
 			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
 
 			break
 		}
-		jobs = append(jobs, job)
 	}
-	bw.End()
 
-	jobErrs := make([]error, 0, len(jobs))
-	for _, job := range jobs {
-		if _, err := job.Results(); err != nil {
-			jobErrs = append(jobErrs, fmt.Errorf("delete study record: %w", err))
-		}
+	rawJobErrs := bw.Wait()
+	jobErrs := make([]error, 0, len(rawJobErrs))
+	for _, e := range rawJobErrs {
+		jobErrs = append(jobErrs, fmt.Errorf("delete study record: %w", e))
 	}
 
 	if iterErr != nil || len(jobErrs) > 0 {
