@@ -8,6 +8,7 @@ go_library(
         "context.go",
         "cors.go",
         "doc.go",
+        "http_server.go",
         "metrics_server.go",
         "stringutil.go",
         "web_server.go",

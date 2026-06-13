@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -34,29 +32,5 @@ func WebServerProcess(ctx context.Context, router http.Handler, port int, readHe
 
 	logger.InfoContext(ctx, "http server listening", slog.String("addr", httpServer.Addr))
 
-	errCh := make(chan error)
-
-	go func() {
-		defer close(errCh)
-		if err := httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-			logger.ErrorContext(ctx, "listen and serve", slog.Any("error", err))
-
-			errCh <- err
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), shutdownTime)
-		defer shutdownCancel()
-		if err := httpServer.Shutdown(shutdownCtx); err != nil {
-			logger.ErrorContext(ctx, "server forced to shutdown", slog.Any("error", err))
-
-			return fmt.Errorf("httpServer.Shutdown: %w", err)
-		}
-
-		return nil
-	case err := <-errCh:
-		return fmt.Errorf("httpServer.ListenAndServe: %w", err)
-	}
+	return runHTTPServer(ctx, &httpServer, logger, shutdownTime)
 }
