@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -39,7 +38,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnItems_whenServerReturns200(t
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
 			"items": []map[string]any{
@@ -75,7 +74,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
@@ -85,7 +84,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	items, err := client.ListPending(ctx, 10)
 
 	// then
-	assert.Error(t, err)
+	require.ErrorContains(t, err, "list pending")
 	assert.Nil(t, items)
 }
 
@@ -96,7 +95,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnNil_whenServerReturns200(t *testin
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -114,7 +113,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnErrClaimRace_whenServerReturns409(
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusConflict)
 	}))
 	defer srv.Close()
@@ -124,7 +123,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnErrClaimRace_whenServerReturns409(
 	err := client.Claim(ctx, samplePendingItem())
 
 	// then
-	assert.True(t, errors.Is(err, domain.ErrClaimRace))
+	require.ErrorIs(t, err, domain.ErrClaimRace)
 }
 
 func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200(t *testing.T) {
@@ -132,7 +131,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200(t *t
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 	}))
 	defer srv.Close()
@@ -142,8 +141,8 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200(t *t
 	err := client.Claim(ctx, samplePendingItem())
 
 	// then
-	assert.Error(t, err)
-	assert.False(t, errors.Is(err, domain.ErrClaimRace))
+	require.ErrorContains(t, err, "claim audio")
+	assert.NotErrorIs(t, err, domain.ErrClaimRace)
 }
 
 // Complete
@@ -153,7 +152,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnNil_whenServerReturns200(t *tes
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -175,7 +174,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 	}))
 	defer srv.Close()
@@ -185,7 +184,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	err := client.Complete(ctx, samplePendingItem(), nil)
 
 	// then
-	assert.Error(t, err)
+	require.ErrorContains(t, err, "complete audio")
 }
 
 // Fail
@@ -195,7 +194,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnNil_whenServerReturns200(t *testing
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
@@ -213,7 +212,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 	}))
 	defer srv.Close()
@@ -223,7 +222,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	err := client.Fail(ctx, samplePendingItem(), "synth failed")
 
 	// then
-	assert.Error(t, err)
+	require.ErrorContains(t, err, "fail audio")
 }
 
 // ReclaimStale
@@ -233,7 +232,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnReclaimedCount_whenServerRe
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{"reclaimed": 3})
 	}))
@@ -253,7 +252,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	ctx := context.Background()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 	}))
 	defer srv.Close()
@@ -263,6 +262,6 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	count, err := client.ReclaimStale(ctx, 15*time.Minute, 10)
 
 	// then
-	assert.Error(t, err)
+	require.ErrorContains(t, err, "reclaim stale")
 	assert.Equal(t, 0, count)
 }

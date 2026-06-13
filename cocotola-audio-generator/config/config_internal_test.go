@@ -72,5 +72,5 @@ func Test_expandEnvWithDefaults_shouldReturnEmpty_whenNoSeparatorAndVarUnset(t *
 	got := expandEnvWithDefaults("TEST_EXPAND_NODEFAULT_UNSET")
 
 	// then
-	assert.Equal(t, "", got)
+	assert.Empty(t, got)
 }
