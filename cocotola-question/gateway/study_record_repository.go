@@ -27,7 +27,7 @@ type studyRecordIter interface {
 
 // deleteJobResult is the subset of *firestore.BulkWriterJob used for result checking.
 type deleteJobResult interface {
-	Results() ([]*firestore.WriteResult, error)
+	Results() (*firestore.WriteResult, error)
 }
 
 // studyRecordBulkDeleter is the subset of *firestore.BulkWriter used for deletion.

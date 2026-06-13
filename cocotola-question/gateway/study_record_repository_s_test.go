@@ -36,7 +36,7 @@ type mockDeleteJob struct {
 	err error
 }
 
-func (j *mockDeleteJob) Results() ([]*firestore.WriteResult, error) {
+func (j *mockDeleteJob) Results() (*firestore.WriteResult, error) {
 	return nil, j.err
 }
 
