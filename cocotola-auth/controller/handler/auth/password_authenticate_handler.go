@@ -82,13 +82,14 @@ func (h *PasswordAuthenticateHandler) Authenticate(c *gin.Context) {
 	}
 
 	if tokenDelivery == "cookie" {
-		h.authenticateCookie(c, ctx, authOutput)
+		h.authenticateCookie(c, authOutput)
 	} else {
-		h.authenticateJSON(c, ctx, authOutput)
+		h.authenticateJSON(c, authOutput)
 	}
 }
 
-func (h *PasswordAuthenticateHandler) authenticateCookie(c *gin.Context, ctx context.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+func (h *PasswordAuthenticateHandler) authenticateCookie(c *gin.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+	ctx := c.Request.Context()
 	sessionInput, err := authservice.NewCreateSessionTokenInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "create session token input", slog.Any("error", err))
@@ -110,7 +111,8 @@ func (h *PasswordAuthenticateHandler) authenticateCookie(c *gin.Context, ctx con
 	})
 }
 
-func (h *PasswordAuthenticateHandler) authenticateJSON(c *gin.Context, ctx context.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+func (h *PasswordAuthenticateHandler) authenticateJSON(c *gin.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+	ctx := c.Request.Context()
 	tokenInput, err := authservice.NewCreateTokenPairInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "create token pair input", slog.Any("error", err))
