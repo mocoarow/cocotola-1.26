@@ -72,7 +72,8 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 		return nil, fmt.Errorf("find study records: %w", err)
 	}
 
-	dueIDs, newIDs, reviewCount, newCount := classifyQuestionIDs(activeList.Entries(), studyRecords, q.config.Now(), input.Practice)
+	activeIDs := filterExcluded(activeList.Entries(), input.ExcludeIDs)
+	dueIDs, newIDs, reviewCount, newCount := classifyQuestionIDs(activeIDs, studyRecords, q.config.Now(), input.Practice)
 
 	q.config.Shuffle(len(newIDs), func(i, j int) {
 		newIDs[i], newIDs[j] = newIDs[j], newIDs[i]
@@ -92,6 +93,28 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 		NewCount:    newCount,
 		ReviewCount: reviewCount,
 	}, nil
+}
+
+// filterExcluded removes any entries in excludeIDs from activeIDs while
+// preserving order. Used for resume-session support: the client tracks
+// already-answered questions locally and sends them in excludeIds so the
+// server skips them on the next GetStudyQuestions call.
+func filterExcluded(activeIDs, excludeIDs []string) []string {
+	if len(excludeIDs) == 0 {
+		return activeIDs
+	}
+	excluded := make(map[string]struct{}, len(excludeIDs))
+	for _, id := range excludeIDs {
+		excluded[id] = struct{}{}
+	}
+	result := make([]string, 0, len(activeIDs))
+	for _, id := range activeIDs {
+		if _, skip := excluded[id]; skip {
+			continue
+		}
+		result = append(result, id)
+	}
+	return result
 }
 
 // classifyQuestionIDs splits the active question pool into "new" (no record)

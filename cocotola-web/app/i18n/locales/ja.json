@@ -162,6 +162,7 @@
       "practiceCta": "練習を続ける（成績は記録されません）",
       "description": "{{count}}問の問題があります",
       "noQuestions": "現在、学習する問題はありません。",
+      "resuming": "学習セッションを再開しています…",
       "backToWorkbook": "ワークブックに戻る",
       "backToPublic": "公開ワークブックに戻る",
       "blankInput": "空欄 {{number}}",

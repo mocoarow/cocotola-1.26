@@ -103,6 +103,40 @@ describe("getStudyQuestions", () => {
     // when / then
     await expect(getStudyQuestions("token", "wb-1", 20)).rejects.toBeInstanceOf(Response);
   });
+
+  it("should append repeated excludeIds query params", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ questions: [], totalDue: 0, newCount: 0, reviewCount: 0 }),
+    });
+
+    // when
+    await getStudyQuestions("token", "wb-1", 10, false, ["q-1", "q-2"]);
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study?limit=10&excludeIds=q-1&excludeIds=q-2",
+      expect.any(Object),
+    );
+  });
+
+  it("should skip empty-string entries in excludeIds", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ questions: [], totalDue: 0, newCount: 0, reviewCount: 0 }),
+    });
+
+    // when
+    await getStudyQuestions("token", "wb-1", 10, false, ["", "q-1"]);
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8090/api/v1/workbook/wb-1/study?limit=10&excludeIds=q-1",
+      expect.any(Object),
+    );
+  });
 });
 
 describe("getStudySummary", () => {

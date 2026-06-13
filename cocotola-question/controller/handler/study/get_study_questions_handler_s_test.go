@@ -143,6 +143,32 @@ func Test_GetStudyQuestionsHandler_shouldReturn404_whenWorkbookNotFound(t *testi
 	validateErrorResponse(t, respBytes, "workbook_not_found", "workbook not found")
 }
 
+func Test_GetStudyQuestionsHandler_shouldPassExcludeIDsToUsecase_whenQueryParamRepeated(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: repeated excludeIds query params (form/explode style)
+	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	output := &studyservice.GetStudyQuestionsOutput{
+		Questions: []studyservice.QuestionItem{}, TotalDue: 0, NewCount: 0, ReviewCount: 0,
+	}
+	getUsecase.On("GetStudyQuestions", mock.Anything, mock.MatchedBy(func(in *studyservice.GetStudyQuestionsInput) bool {
+		return len(in.ExcludeIDs) == 2 && in.ExcludeIDs[0] == "q-1" && in.ExcludeIDs[1] == "q-2"
+	})).Return(output, nil).Once()
+
+	recordUsecase := NewMockRecordAnswerUsecase(t)
+	r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+	w := httptest.NewRecorder()
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/api/v1/workbook/"+fixtureWorkbookID+"/study?limit=10&excludeIds=q-1&excludeIds=q-2", nil)
+	require.NoError(t, err)
+	r.ServeHTTP(w, req)
+
+	// then
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 func Test_GetStudyQuestionsHandler_shouldReturn401_whenUserIDMissing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

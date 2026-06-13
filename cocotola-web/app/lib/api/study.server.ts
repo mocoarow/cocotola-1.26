@@ -53,11 +53,15 @@ export async function getStudyQuestions(
   workbookId: string,
   limit: number,
   practice = false,
+  excludeIds: readonly string[] = [],
 ): Promise<GetStudyQuestionsResponse> {
   const clampedLimit = Math.max(1, Math.min(100, Math.floor(limit)));
   const baseUrl = getQuestionUrl();
   const params = new URLSearchParams({ limit: String(clampedLimit) });
   if (practice) params.set("practice", "true");
+  for (const id of excludeIds) {
+    if (id !== "") params.append("excludeIds", id);
+  }
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study?${params.toString()}`;
 
   const response = await fetchWithIdToken(baseUrl, url, {

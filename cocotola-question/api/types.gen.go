@@ -262,6 +262,9 @@ type GetStudyQuestionsParams struct {
 
 	// Practice When `true`, ignores the per-question NextDueAt schedule and returns every active question. Callers using this mode must skip the record answer endpoint so SRS state stays untouched.
 	Practice bool `form:"practice,omitempty" json:"practice,omitempty"`
+
+	// ExcludeIds Question IDs already answered in the in-progress browser session. The server filters them out before classifying due/new questions so a reloaded session resumes from the unanswered remainder. The browser discards this set at the next local 03:00 boundary; the server is stateless and does not persist it.
+	ExcludeIds []string `form:"excludeIds,omitempty" json:"excludeIds,omitempty"`
 }
 
 // GetStudySummaryParams defines parameters for GetStudySummary.

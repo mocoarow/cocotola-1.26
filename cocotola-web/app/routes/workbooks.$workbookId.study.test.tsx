@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import "~/i18n/config";
 
@@ -21,6 +21,7 @@ vi.mock("react-router", async (importOriginal) => {
     ...actual,
     useLoaderData: vi.fn(),
     useRouteLoaderData: vi.fn(),
+    useNavigate: vi.fn(() => vi.fn()),
     useFetcher: vi.fn(() => ({
       state: "idle",
       submit: vi.fn(),
@@ -34,11 +35,13 @@ vi.mock("react-router", async (importOriginal) => {
   };
 });
 
-import { useLoaderData, useRouteLoaderData } from "react-router";
+import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { studySessionStorageKey } from "~/lib/study-session";
 import StudyPage from "./workbooks.$workbookId.study";
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseRouteLoaderData = vi.mocked(useRouteLoaderData);
+const mockedUseNavigate = vi.mocked(useNavigate);
 
 function setLoaderData(args: {
   workbookId: string;
@@ -55,6 +58,8 @@ function setLoaderData(args: {
     workbookId: args.workbookId,
     workbookOwnerId: args.workbookOwnerId,
     questions: args.questions,
+    practice: false,
+    excludeIds: [],
   });
   mockedUseRouteLoaderData.mockReturnValue(
     args.currentUserId === null
@@ -70,6 +75,20 @@ function setLoaderData(args: {
 }
 
 describe("StudyPage", () => {
+  beforeEach(() => {
+    // Reset resume-session storage so the in-progress set from a prior test
+    // does not trigger a redirect in unrelated cases.
+    window.localStorage.clear();
+    // Reset loader-data mocks so a return value left over from one test (e.g.
+    // the rerender path that calls mockReturnValue mid-test) cannot bleed
+    // into a later test that forgets to call setLoaderData first.
+    mockedUseLoaderData.mockReset();
+    mockedUseRouteLoaderData.mockReset();
+    // Keep a working default for useNavigate — most tests don't override it
+    // and would otherwise see `undefined` and crash inside the resume effect.
+    mockedUseNavigate.mockReturnValue(vi.fn());
+  });
+
   it("should render empty state when no questions", () => {
     // given
     setLoaderData({
@@ -266,6 +285,304 @@ describe("StudyPage", () => {
 
     // then (session complete)
     expect(screen.getByText("Session Complete!")).toBeInTheDocument();
+  });
+
+  it("should persist a session record on mount so a reload can resume", () => {
+    // given: no prior session in localStorage
+    window.localStorage.clear();
+    const questions = [
+      {
+        questionId: "q-1",
+        questionType: "word_fill",
+        content: JSON.stringify({
+          source: { text: "hello", lang: "en" },
+          target: { text: "{{hola}}", lang: "es" },
+        }),
+        orderIndex: 0,
+      },
+    ];
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions,
+      currentUserId: "owner-1",
+    });
+
+    // when
+    render(<StudyPage />);
+
+    // then: the session marker is saved with an empty answered set
+    const raw = window.localStorage.getItem(
+      studySessionStorageKey({ userId: "owner-1", workbookId: "wb-1", practice: false }),
+    );
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string);
+    expect(parsed.userId).toBe("owner-1");
+    expect(parsed.answeredIds).toEqual([]);
+    expect(parsed.practice).toBe(false);
+  });
+
+  it("should not surface user A's answeredIds when user B opens the same workbook", () => {
+    // Regression for the shared-browser scenario: A signs in, accumulates
+    // answeredIds, signs out, B signs in. Without per-user scoping the
+    // orchestrator would replay A's IDs into B's URL and queue.
+
+    // given: user A's session is parked in localStorage under A's scope.
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      studySessionStorageKey({ userId: "user-a", workbookId: "wb-1", practice: false }),
+      JSON.stringify({
+        userId: "user-a",
+        workbookId: "wb-1",
+        practice: false,
+        startedAtMs: Date.now(),
+        answeredIds: ["q-secret-A1", "q-secret-A2"],
+      }),
+    );
+
+    const navigateSpy = vi.fn();
+    mockedUseNavigate.mockReturnValue(navigateSpy);
+
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        {
+          questionId: "q-1",
+          questionType: "word_fill",
+          content: JSON.stringify({
+            source: { text: "hello", lang: "en" },
+            target: { text: "{{hola}}", lang: "es" },
+          }),
+          orderIndex: 0,
+        },
+      ],
+      currentUserId: "user-b",
+    });
+
+    // when: user B renders the study page on the same browser.
+    render(<StudyPage />);
+
+    // then: B sees nothing about A's resume state.
+    expect(navigateSpy).not.toHaveBeenCalled();
+    const bRaw = window.localStorage.getItem(
+      studySessionStorageKey({ userId: "user-b", workbookId: "wb-1", practice: false }),
+    );
+    expect(bRaw).not.toBeNull();
+    const bState = JSON.parse(bRaw as string);
+    expect(bState.userId).toBe("user-b");
+    expect(bState.answeredIds).toEqual([]);
+    // And A's stash is left untouched — B never touched A's key.
+    const aRaw = window.localStorage.getItem(
+      studySessionStorageKey({ userId: "user-a", workbookId: "wb-1", practice: false }),
+    );
+    expect(aRaw).not.toBeNull();
+    expect(JSON.parse(aRaw as string).answeredIds).toEqual(["q-secret-A1", "q-secret-A2"]);
+  });
+
+  it("should suppress the pre-resume answer card while a resume redirect is pending", () => {
+    // Regression: between mount and the navigate-driven loader rerun, the
+    // first card of the pre-exclusion queue used to be visible (and clickable
+    // via fetcher.submit) for a moment. A user racing the redirect could
+    // submit an answer for a question they had already finished, sending the
+    // SRS engine a second update.
+
+    // given: localStorage says q-1 is already answered, but the URL carries
+    // no excludeIds and the loader returned the full pool starting with q-1.
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      studySessionStorageKey({ userId: "owner-1", workbookId: "wb-1", practice: false }),
+      JSON.stringify({
+        userId: "owner-1",
+        workbookId: "wb-1",
+        practice: false,
+        startedAtMs: Date.now(),
+        answeredIds: ["q-1"],
+      }),
+    );
+    mockedUseNavigate.mockReturnValue(vi.fn());
+
+    const wordFill = (text: string) =>
+      JSON.stringify({
+        source: { text, lang: "en" },
+        target: { text: "{{translated}}", lang: "es" },
+      });
+
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        { questionId: "q-1", questionType: "word_fill", content: wordFill("ALPHA"), orderIndex: 0 },
+        { questionId: "q-2", questionType: "word_fill", content: wordFill("BETA"), orderIndex: 1 },
+      ],
+      currentUserId: "owner-1",
+    });
+
+    // when: mount fires the resume layout effect synchronously, flips the
+    // gate to "redirecting", and renders the placeholder instead of the
+    // answer card.
+    render(<StudyPage />);
+
+    // then: the placeholder is mounted; the pre-resume card is not.
+    expect(screen.getByTestId("study-resume-pending")).toBeInTheDocument();
+    expect(screen.queryByText("ALPHA")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Check" })).not.toBeInTheDocument();
+  });
+
+  it("should remount and show the first unanswered question after a resume-driven navigate", () => {
+    // Regression: the lazy useState seed in StudySession only runs once per
+    // mount. Without a key change on excludeIds, navigate would trigger a
+    // loader rerun, the loader's post-exclusion list would arrive via
+    // useLoaderData, but the queue would still hold the pre-exclusion items
+    // and re-show questions the user already answered.
+
+    // given: localStorage says q-1, q-2 are already answered, but the URL
+    // still carries no excludeIds and the first loader call returned the full
+    // 3-question pool.
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      studySessionStorageKey({ userId: "owner-1", workbookId: "wb-1", practice: false }),
+      JSON.stringify({
+        userId: "owner-1",
+        workbookId: "wb-1",
+        practice: false,
+        startedAtMs: Date.now(),
+        answeredIds: ["q-1", "q-2"],
+      }),
+    );
+    mockedUseNavigate.mockReturnValue(vi.fn());
+
+    const wordFill = (text: string) =>
+      JSON.stringify({
+        source: { text, lang: "en" },
+        target: { text: "{{translated}}", lang: "es" },
+      });
+
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        { questionId: "q-1", questionType: "word_fill", content: wordFill("ALPHA"), orderIndex: 0 },
+        { questionId: "q-2", questionType: "word_fill", content: wordFill("BETA"), orderIndex: 1 },
+        { questionId: "q-3", questionType: "word_fill", content: wordFill("GAMMA"), orderIndex: 2 },
+      ],
+      currentUserId: "owner-1",
+    });
+
+    // when: render with the first loader payload (mount fires the resume
+    // navigate inside an effect)
+    const { rerender } = render(<StudyPage />);
+
+    // and: simulate the loader rerun delivering the post-exclusion list with
+    // the new excludeIds reflected in the URL.
+    mockedUseLoaderData.mockReturnValue({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        { questionId: "q-3", questionType: "word_fill", content: wordFill("GAMMA"), orderIndex: 2 },
+      ],
+      practice: false,
+      excludeIds: ["q-1", "q-2"],
+    });
+    rerender(<StudyPage />);
+
+    // then: StudySession was remounted by the keyed transition and the
+    // visible card is GAMMA (q-3), not the stale ALPHA (q-1).
+    expect(screen.getByText("GAMMA")).toBeInTheDocument();
+    expect(screen.queryByText("ALPHA")).not.toBeInTheDocument();
+  });
+
+  it("should redirect with excludeIds query params when a session has answered ids", () => {
+    // given: a fresh session with one already-answered question
+    window.localStorage.clear();
+    window.localStorage.setItem(
+      studySessionStorageKey({ userId: "owner-1", workbookId: "wb-1", practice: false }),
+      JSON.stringify({
+        userId: "owner-1",
+        workbookId: "wb-1",
+        practice: false,
+        startedAtMs: Date.now(),
+        answeredIds: ["q-1"],
+      }),
+    );
+
+    const navigateSpy = vi.fn();
+    mockedUseNavigate.mockReturnValue(navigateSpy);
+
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        {
+          questionId: "q-2",
+          questionType: "word_fill",
+          content: JSON.stringify({
+            source: { text: "hi", lang: "en" },
+            target: { text: "{{hola}}", lang: "es" },
+          }),
+          orderIndex: 0,
+        },
+      ],
+      currentUserId: "owner-1",
+    });
+
+    // when
+    render(<StudyPage />);
+
+    // then: navigate was called with excludeIds in the search string
+    expect(navigateSpy).toHaveBeenCalledTimes(1);
+    const target = navigateSpy.mock.calls[0]?.[0];
+    expect(typeof target).toBe("string");
+    expect(target as string).toMatch(/excludeIds=q-1/);
+  });
+
+  it("should clear the localStorage session when the user finishes the last question", async () => {
+    // Verifies that finishing the queue removes the resume marker — without
+    // putting the clear call inside the setQueue updater (which would violate
+    // the React rule that updaters be pure).
+
+    // given
+    window.localStorage.clear();
+    const user = userEvent.setup();
+    const questions = [
+      {
+        questionId: "q-1",
+        questionType: "multiple_choice",
+        content: JSON.stringify({
+          questionText: "Only question",
+          choices: [
+            { id: "right", text: "Right", isCorrect: true },
+            { id: "wrong", text: "Wrong", isCorrect: false },
+          ],
+          shuffleChoices: false,
+          showCorrectCount: false,
+        }),
+        orderIndex: 0,
+      },
+    ];
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions,
+      currentUserId: "owner-1",
+    });
+    render(<StudyPage />);
+    // The mount effect seeds an empty session.
+    const sessionKey = studySessionStorageKey({
+      userId: "owner-1",
+      workbookId: "wb-1",
+      practice: false,
+    });
+    expect(window.localStorage.getItem(sessionKey)).not.toBeNull();
+
+    // when: answer correctly, advance to the done screen.
+    await user.click(screen.getByText("Right"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // then: session marker is gone.
+    expect(screen.getByText("Session Complete!")).toBeInTheDocument();
+    expect(window.localStorage.getItem(sessionKey)).toBeNull();
   });
 
   it("should send wrong-answered question to the back of the queue and require all to be correct", async () => {
