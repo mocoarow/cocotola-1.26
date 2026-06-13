@@ -1,4 +1,4 @@
-package gateway
+package gateway_test
 
 import (
 	"errors"
@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/api/iterator"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 )
 
 // --- mocks ---
@@ -32,33 +34,32 @@ func (m *mockStudyRecordIter) Next() (*firestore.DocumentSnapshot, error) {
 
 func (m *mockStudyRecordIter) Stop() {}
 
-type mockDeleteJob struct {
-	err error
-}
-
-func (j *mockDeleteJob) Results() (*firestore.WriteResult, error) {
-	return nil, j.err
-}
-
 type mockStudyRecordBulkDeleter struct {
 	deleteErr error
 	jobErrs   []error
-	jobIdx    int
+	deleted   int
 }
 
-func (m *mockStudyRecordBulkDeleter) Delete(_ *firestore.DocumentRef) (deleteJobResult, error) {
+func (m *mockStudyRecordBulkDeleter) Delete(_ *firestore.DocumentRef) error {
 	if m.deleteErr != nil {
-		return nil, m.deleteErr
+		return m.deleteErr
 	}
-	var jobErr error
-	if m.jobIdx < len(m.jobErrs) {
-		jobErr = m.jobErrs[m.jobIdx]
-		m.jobIdx++
-	}
-	return &mockDeleteJob{err: jobErr}, nil
+
+	m.deleted++
+
+	return nil
 }
 
-func (m *mockStudyRecordBulkDeleter) End() {}
+func (m *mockStudyRecordBulkDeleter) Wait() []error {
+	n := min(m.deleted, len(m.jobErrs))
+	errs := make([]error, 0, n)
+	for _, e := range m.jobErrs[:n] {
+		if e != nil {
+			errs = append(errs, e)
+		}
+	}
+	return errs
+}
 
 // --- tests ---
 
@@ -70,7 +71,7 @@ func Test_deleteStudyRecordDocs_shouldReturnNil_whenNoDocuments(t *testing.T) {
 	bw := &mockStudyRecordBulkDeleter{}
 
 	// when
-	err := deleteStudyRecordDocs(iter, bw)
+	err := gateway.DeleteStudyRecordDocs(iter, bw)
 
 	// then
 	require.NoError(t, err)
@@ -84,12 +85,11 @@ func Test_deleteStudyRecordDocs_shouldReturnError_whenIterFails(t *testing.T) {
 	bw := &mockStudyRecordBulkDeleter{}
 
 	// when
-	err := deleteStudyRecordDocs(iter, bw)
+	err := gateway.DeleteStudyRecordDocs(iter, bw)
 
 	// then: error surfaces wrapped under the outer delete-study-records message
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "delete study records")
-	assert.ErrorContains(t, err, "iterate study records")
+	require.ErrorContains(t, err, "delete study records")
+	require.ErrorContains(t, err, "iterate study records")
 	assert.ErrorContains(t, err, "firestore unavailable")
 }
 
@@ -102,12 +102,11 @@ func Test_deleteStudyRecordDocs_shouldReturnError_whenEnqueueFails(t *testing.T)
 	bw := &mockStudyRecordBulkDeleter{deleteErr: errors.New("bw closed")}
 
 	// when
-	err := deleteStudyRecordDocs(iter, bw)
+	err := gateway.DeleteStudyRecordDocs(iter, bw)
 
 	// then: loop breaks on first enqueue error; error is surfaced
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "delete study records")
-	assert.ErrorContains(t, err, "enqueue delete")
+	require.ErrorContains(t, err, "delete study records")
+	require.ErrorContains(t, err, "enqueue delete")
 	assert.ErrorContains(t, err, "bw closed")
 }
 
@@ -123,11 +122,10 @@ func Test_deleteStudyRecordDocs_shouldReturnError_whenJobFails(t *testing.T) {
 	}
 
 	// when
-	err := deleteStudyRecordDocs(iter, bw)
+	err := gateway.DeleteStudyRecordDocs(iter, bw)
 
 	// then: job error is aggregated and returned
-	require.Error(t, err)
-	assert.ErrorContains(t, err, "delete study records")
-	assert.ErrorContains(t, err, "delete study record")
+	require.ErrorContains(t, err, "delete study records")
+	require.ErrorContains(t, err, "delete study record")
 	assert.ErrorContains(t, err, "permission denied")
 }

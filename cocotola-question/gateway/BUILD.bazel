@@ -42,6 +42,7 @@ smart_go_test(
     srcs = [
         "active_question_list_repository_m_test.go",
         "auth_client_s_test.go",
+        "export_test.go",
         "owned_workbook_list_repository_m_test.go",
         "question_repository_audio_m_test.go",
         "question_repository_m_test.go",

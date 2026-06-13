@@ -25,28 +25,39 @@ type studyRecordIter interface {
 	Stop()
 }
 
-// deleteJobResult is the subset of *firestore.BulkWriterJob used for result checking.
-type deleteJobResult interface {
-	Results() (*firestore.WriteResult, error)
-}
-
 // studyRecordBulkDeleter is the subset of *firestore.BulkWriter used for deletion.
+// Delete enqueues an item and Wait flushes/drains, returning per-job errors.
+// Returning only error/[]error (not the firestore job interface) keeps ireturn
+// satisfied while preserving testability.
 type studyRecordBulkDeleter interface {
-	Delete(dr *firestore.DocumentRef) (deleteJobResult, error)
-	End()
+	Delete(dr *firestore.DocumentRef) error
+	Wait() []error
 }
 
 // bulkWriterAdapter adapts *firestore.BulkWriter to studyRecordBulkDeleter.
 type bulkWriterAdapter struct {
-	bw *firestore.BulkWriter
+	bw   *firestore.BulkWriter
+	jobs []*firestore.BulkWriterJob
 }
 
-func (a *bulkWriterAdapter) Delete(dr *firestore.DocumentRef) (deleteJobResult, error) {
-	return a.bw.Delete(dr)
+func (a *bulkWriterAdapter) Delete(dr *firestore.DocumentRef) error {
+	job, err := a.bw.Delete(dr)
+	if err != nil {
+		return fmt.Errorf("enqueue bulk delete: %w", err)
+	}
+	a.jobs = append(a.jobs, job)
+	return nil
 }
 
-func (a *bulkWriterAdapter) End() {
+func (a *bulkWriterAdapter) Wait() []error {
 	a.bw.End()
+	errs := make([]error, 0, len(a.jobs))
+	for _, job := range a.jobs {
+		if _, err := job.Results(); err != nil {
+			errs = append(errs, fmt.Errorf("bulk delete result: %w", err))
+		}
+	}
+	return errs
 }
 
 type studyRecordRecord struct {
@@ -154,7 +165,7 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 // failures are fully reported to the caller.
 func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
-	bw := &bulkWriterAdapter{bw: r.client.BulkWriter(ctx)}
+	bw := &bulkWriterAdapter{bw: r.client.BulkWriter(ctx), jobs: nil}
 	return deleteStudyRecordDocs(iter, bw)
 }
 
@@ -163,10 +174,7 @@ func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID s
 func deleteStudyRecordDocs(iter studyRecordIter, bw studyRecordBulkDeleter) error {
 	defer iter.Stop()
 
-	var (
-		jobs    []deleteJobResult
-		iterErr error
-	)
+	var iterErr error
 
 	for {
 		doc, err := iter.Next()
@@ -174,23 +182,23 @@ func deleteStudyRecordDocs(iter studyRecordIter, bw studyRecordBulkDeleter) erro
 			if errors.Is(err, iterator.Done) {
 				break
 			}
-			iterErr = fmt.Errorf("iterate study records: %w", err)
-			break
-		}
-		job, err := bw.Delete(doc.Ref)
-		if err != nil {
-			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
-			break
-		}
-		jobs = append(jobs, job)
-	}
-	bw.End()
 
-	jobErrs := make([]error, 0, len(jobs))
-	for _, job := range jobs {
-		if _, err := job.Results(); err != nil {
-			jobErrs = append(jobErrs, fmt.Errorf("delete study record: %w", err))
+			iterErr = fmt.Errorf("iterate study records: %w", err)
+
+			break
 		}
+
+		if err := bw.Delete(doc.Ref); err != nil {
+			iterErr = fmt.Errorf("enqueue delete %s: %w", doc.Ref.ID, err)
+
+			break
+		}
+	}
+
+	rawJobErrs := bw.Wait()
+	jobErrs := make([]error, 0, len(rawJobErrs))
+	for _, e := range rawJobErrs {
+		jobErrs = append(jobErrs, fmt.Errorf("delete study record: %w", e))
 	}
 
 	if iterErr != nil || len(jobErrs) > 0 {
