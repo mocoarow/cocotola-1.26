@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
+	"net/url"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -56,31 +57,44 @@ func OpenPostgresWithDSN(dsn string, logLevel slog.Level, appName string) (*gorm
 }
 
 // BuildPostgresDSN builds a PostgreSQL DSN string from the given config.
-func BuildPostgresDSN(cfg *PostgresConfig) string {
+// The DSN uses URL form so userinfo, host, and query params are escaped by
+// net/url, and pgconn.ParseConfig validates the result rejecting malformed
+// connection strings before they reach the driver.
+func BuildPostgresDSN(cfg *PostgresConfig) (string, error) {
 	sslMode := cfg.SSLMode
 	if sslMode == "" {
 		sslMode = "disable"
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=UTC",
-		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, sslMode)
-
+	q := url.Values{}
+	q.Set("sslmode", sslMode)
+	q.Set("TimeZone", "UTC")
 	for k, v := range cfg.Params {
 		if v != "" {
-			fmt.Fprintf(&b, " %s='%s'", k, escapePgParamValue(v))
+			q.Set(k, v)
 		}
 	}
 
-	return b.String()
-}
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(cfg.Username, cfg.Password),
+		Host:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Path:     "/" + cfg.Database,
+		RawQuery: q.Encode(),
+	}
+	dsn := u.String()
 
-func escapePgParamValue(v string) string {
-	v = strings.ReplaceAll(v, `\`, `\\`)
-	return strings.ReplaceAll(v, `'`, `\'`)
+	if _, err := pgconn.ParseConfig(dsn); err != nil {
+		return "", fmt.Errorf("parse postgres dsn: %w", err)
+	}
+	return dsn, nil
 }
 
 // OpenPostgres opens a GORM PostgreSQL connection using the given config.
 func OpenPostgres(cfg *PostgresConfig, logLevel slog.Level, appName string) (*gorm.DB, error) {
-	return OpenPostgresWithDSN(BuildPostgresDSN(cfg), logLevel, appName)
+	dsn, err := BuildPostgresDSN(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("build postgres dsn: %w", err)
+	}
+	return OpenPostgresWithDSN(dsn, logLevel, appName)
 }
