@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "gateway",
@@ -13,6 +14,22 @@ go_library(
         "//cocotola-audio-generator/domain",
         "@com_google_cloud_go_storage//:storage",
         "@com_google_cloud_go_texttospeech//apiv1",
+        "@com_google_cloud_go_texttospeech//apiv1/texttospeechpb",
+    ],
+)
+
+smart_go_test(
+    name = "gateway_test",
+    srcs = [
+        "export_test.go",
+        "question_client_s_test.go",
+        "tts_client_s_test.go",
+    ],
+    embed = [":gateway"],
+    deps = [
+        "//cocotola-audio-generator/domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
         "@com_google_cloud_go_texttospeech//apiv1/texttospeechpb",
     ],
 )
