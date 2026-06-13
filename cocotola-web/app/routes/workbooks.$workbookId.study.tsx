@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Link,
   type ShouldRevalidateFunctionArgs,
   useFetcher,
   useLoaderData,
+  useNavigate,
   useRouteLoaderData,
 } from "react-router";
 import { MultipleChoiceCard } from "~/components/study/multiple-choice-card";
@@ -12,6 +13,7 @@ import { ProgressBar } from "~/components/study/progress-bar";
 import { StudyResult } from "~/components/study/study-result";
 import { WordFillCard } from "~/components/study/word-fill-card";
 import { Button } from "~/components/ui/button";
+import { useStudyResume } from "~/hooks/use-study-resume";
 import {
   getStudyQuestions,
   recordAnswerForMultipleChoice,
@@ -20,6 +22,12 @@ import {
 } from "~/lib/api/study.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
+import {
+  appendAnsweredId,
+  clampExcludeIds,
+  clearStudySession,
+  studyRemountKey,
+} from "~/lib/study-session";
 import type { Route } from "./+types/workbooks.$workbookId.study";
 import type { loader as workbooksLayoutLoader } from "./workbooks";
 
@@ -34,15 +42,20 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const url = new URL(request.url);
   const practice = url.searchParams.get("practice") === "true";
   const limit = parseLimit(url.searchParams.get("limit"));
+  // Defense in depth: drop entries the server would 400 (empty, too long,
+  // over the count cap) before we issue the API call. The server validates
+  // again at the trust boundary.
+  const excludeIds = clampExcludeIds(url.searchParams.getAll("excludeIds"));
   const [workbook, data] = await Promise.all([
     getWorkbook(accessToken, workbookId),
-    getStudyQuestions(accessToken, workbookId, limit, practice),
+    getStudyQuestions(accessToken, workbookId, limit, practice, excludeIds),
   ]);
   return {
     workbookId,
     workbookOwnerId: workbook.ownerId,
     questions: data.questions,
     practice,
+    excludeIds,
   };
 }
 
@@ -110,25 +123,62 @@ export async function action({ request, params }: Route.ActionArgs) {
 
 type Phase = "studying" | "done";
 
+function StudyResumePlaceholder() {
+  const { t } = useTranslation();
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      data-testid="study-resume-pending"
+      className="mx-auto flex max-w-2xl flex-col items-center justify-center py-16 text-sm text-muted-foreground"
+    >
+      {t("workbooks.study.resuming")}
+    </div>
+  );
+}
+
 function StudySession({
+  userId,
   workbookId,
   questions,
   practice,
+  loaderExcludeIds,
   backUrl,
   backLabel,
 }: {
+  userId: string | null;
   workbookId: string;
   questions: StudyQuestion[];
   practice: boolean;
+  loaderExcludeIds: string[];
   backUrl: string;
   backLabel: string;
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher();
+  const navigate = useNavigate();
   const [queue, setQueue] = useState<StudyQuestion[]>(() => questions);
   const [correctCount, setCorrectCount] = useState(0);
   const [incorrectCount, setIncorrectCount] = useState(0);
   const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
+  // "redirecting" suppresses the answer card during the navigate→remount
+  // window so the user cannot click a question that the resume orchestrator
+  // is about to remove. Without this gate, a fast click on the pre-resume
+  // first card fires fetcher.submit and double-updates the SRS state.
+  const resumeStatus = useStudyResume({
+    userId,
+    workbookId,
+    practice,
+    loaderExcludeIds,
+    navigate,
+  });
+
+  // Resume gate: hide the answer card (and its click handlers) while the
+  // navigate-driven loader rerun is in flight, so the user cannot
+  // double-submit an already-answered question.
+  if (resumeStatus === "redirecting") {
+    return <StudyResumePlaceholder />;
+  }
 
   // Structural empty-state guard: derived from the loader prop, not the local
   // queue. The queue can also reach length 0 (after the last correct answer)
@@ -176,8 +226,26 @@ function StudySession({
       [question.questionId]: (prev[question.questionId] ?? 0) + 1,
     }));
     if (correct) {
+      // Persist completion so a F5 mid-session resumes without re-showing
+      // questions the user has finished. Incorrect attempts are not stored:
+      // they get re-queued in memory and the user will retry within this
+      // session; if they reload before retrying, the question reappears
+      // fresh (matching the pre-resume behavior). Skip the persistence side
+      // when userId is unknown so we never write under an ambiguous scope.
+      const scope = userId === null ? null : { userId, workbookId, practice };
+      if (scope !== null) {
+        appendAnsweredId(scope, question.questionId, Date.now());
+      }
+      // Read the queue length here, BEFORE setQueue, so the "session done"
+      // decision lives outside the setState updater. The updater itself must
+      // stay pure — StrictMode runs it twice — even though clearStudySession
+      // happens to be idempotent today.
+      const finishesSession = queue.length === 1;
       setCorrectCount((c) => c + 1);
       setQueue((q) => q.slice(1));
+      if (scope !== null && finishesSession) {
+        clearStudySession(scope);
+      }
     } else {
       setIncorrectCount((c) => c + 1);
       setQueue((q) => {
@@ -246,15 +314,28 @@ function StudySession({
 }
 
 export default function StudyPage() {
-  const { workbookId, workbookOwnerId, questions, practice } = useLoaderData<typeof loader>();
+  const { workbookId, workbookOwnerId, questions, practice, excludeIds } =
+    useLoaderData<typeof loader>();
   const layoutData = useRouteLoaderData<typeof workbooksLayoutLoader>("routes/workbooks");
   const { t } = useTranslation();
 
-  const isOwner = layoutData?.user?.userId === workbookOwnerId;
+  // Normalise undefined / "" to null at the boundary so downstream code only
+  // has to check for null when deciding whether the session helpers may run.
+  const rawUserId = layoutData?.user?.userId;
+  const currentUserId = rawUserId === undefined || rawUserId === "" ? null : rawUserId;
+  const isOwner = currentUserId === workbookOwnerId;
   const backUrl = isOwner ? `/workbooks/${workbookId}` : "/workbooks/public";
   const backLabel = isOwner
     ? t("workbooks.study.backToWorkbook")
     : t("workbooks.study.backToPublic");
+
+  // Recompute only when the inputs change. excludeIds is a fresh array
+  // reference on every loader rerun so the memo key naturally invalidates at
+  // the same rate the underlying value changes.
+  const remountKey = useMemo(
+    () => studyRemountKey(currentUserId, practice, excludeIds),
+    [currentUserId, practice, excludeIds],
+  );
 
   return (
     <div>
@@ -275,16 +356,21 @@ export default function StudyPage() {
         )}
       </div>
       <StudySession
-        // Force remount when toggling between normal and practice modes.
-        // StudySession seeds its `queue` from `questions` via useState, which
-        // only runs once per mount — without a key change, navigating from
-        // the empty-state Continue-practicing CTA reuses the old (zero-length)
-        // queue and immediately renders the "Session Complete! 0%" result
-        // screen against the freshly loaded 10 questions.
-        key={practice ? "practice" : "normal"}
+        // The key folds in both the mode and the loader's excludeIds so that:
+        //   1. Toggling normal <-> practice forces a remount (otherwise the
+        //      StudySession's useState seed runs once and the Continue-
+        //      practicing CTA inherits the old empty queue).
+        //   2. A resume-driven navigate (mount effect appends excludeIds and
+        //      triggers a loader rerun) also forces a remount so the queue is
+        //      re-seeded from the post-exclusion question list. Without the
+        //      excludeIds segment the queue retained the pre-exclusion items
+        //      and re-showed questions the user already answered.
+        key={remountKey}
+        userId={currentUserId}
         workbookId={workbookId}
         questions={questions}
         practice={practice}
+        loaderExcludeIds={excludeIds}
         backUrl={backUrl}
         backLabel={backLabel}
       />

@@ -8,28 +8,56 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
+// MaxExcludeIDsCount caps the size of the client-supplied resume set
+// (questions already answered in the in-progress browser session) so a
+// malicious or buggy client cannot send an unbounded list.
+const MaxExcludeIDsCount = 1000
+
+// MaxExcludeIDLength caps each entry in the resume set. Mirrors
+// MaxChoiceIDLength so the two question-ID inputs hit the same upper bound,
+// keeping per-request memory bounded even if the count cap is reached.
+const MaxExcludeIDLength = 100
+
 // GetStudyQuestionsInput is the validated input for getting study questions.
 //
 // Practice is an off-the-record mode: when true, the usecase ignores the
 // per-question NextDueAt schedule and returns every active question. Callers
 // using this mode are expected to skip the "record answer" endpoint so the
 // user's spaced-repetition records and counters stay untouched.
+//
+// ExcludeIDs lets the client resume an interrupted study session by skipping
+// questions it has already answered locally. The server is stateless; the
+// browser tracks the in-progress set and discards it at the next local 03:00
+// boundary.
 type GetStudyQuestionsInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
 	WorkbookID     string `validate:"required"`
 	Limit          int    `validate:"gte=1,lte=100"`
 	Practice       bool
+	ExcludeIDs     []string
 }
 
 // NewGetStudyQuestionsInput creates a validated GetStudyQuestionsInput.
-func NewGetStudyQuestionsInput(operatorID string, organizationID string, workbookID string, limit int, practice bool) (*GetStudyQuestionsInput, error) {
+func NewGetStudyQuestionsInput(operatorID string, organizationID string, workbookID string, limit int, practice bool, excludeIDs []string) (*GetStudyQuestionsInput, error) {
+	if len(excludeIDs) > MaxExcludeIDsCount {
+		return nil, fmt.Errorf("excludeIds count exceeds limit (max %d, got %d): %w", MaxExcludeIDsCount, len(excludeIDs), domain.ErrInvalidArgument)
+	}
+	for i, id := range excludeIDs {
+		if id == "" {
+			return nil, fmt.Errorf("excludeIds[%d] is empty: %w", i, domain.ErrInvalidArgument)
+		}
+		if len(id) > MaxExcludeIDLength {
+			return nil, fmt.Errorf("excludeIds[%d] exceeds length limit (max %d, got %d): %w", i, MaxExcludeIDLength, len(id), domain.ErrInvalidArgument)
+		}
+	}
 	m := &GetStudyQuestionsInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 		Limit:          limit,
 		Practice:       practice,
+		ExcludeIDs:     excludeIDs,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate get study questions input: %w", err)

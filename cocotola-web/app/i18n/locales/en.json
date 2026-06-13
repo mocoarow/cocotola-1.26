@@ -162,6 +162,7 @@
       "practiceCta": "Continue practicing (no progress saved)",
       "description": "{{count}} questions to study",
       "noQuestions": "No questions due for study right now.",
+      "resuming": "Resuming your study session…",
       "backToWorkbook": "Back to Workbook",
       "backToPublic": "Back to Public Workbooks",
       "blankInput": "Blank {{number}}",

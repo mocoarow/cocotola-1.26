@@ -818,6 +818,20 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: excludeIds
+          in: query
+          required: false
+          description: |
+            Question IDs already answered in the in-progress browser session. The server filters them out before classifying due/new questions so a reloaded session resumes from the unanswered remainder. The browser discards this set at the next local 03:00 boundary; the server is stateless and does not persist it.
+          schema:
+            type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 100
+            maxItems: 1000
+          style: form
+          explode: true
       responses:
         '200':
           description: Successfully retrieved study questions

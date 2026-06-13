@@ -19,14 +19,21 @@ import (
 
 func newGetStudyQuestionsInput(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false)
+	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false, nil)
 	require.NoError(t, err)
 	return input
 }
 
 func newGetStudyQuestionsInputForPractice(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, true)
+	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, true, nil)
+	require.NoError(t, err)
+	return input
+}
+
+func newGetStudyQuestionsInputWithExcludeIDs(t *testing.T, limit int, excludeIDs []string) *studyservice.GetStudyQuestionsInput {
+	t.Helper()
+	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false, excludeIDs)
 	require.NoError(t, err)
 	return input
 }
@@ -549,4 +556,134 @@ func Test_GetStudyQuestionsQuery_shouldReturnQuestions_whenWorkbookIsPublic(t *t
 	assert.Len(t, output.Questions, 1)
 	assert.Equal(t, fixtureQuestionID, output.Questions[0].QuestionID)
 	authChecker.AssertNotCalled(t, "IsAllowed")
+}
+
+func Test_GetStudyQuestionsQuery_shouldExcludeRequestedIDs_whenExcludeIDsProvided(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: an active list with 3 new questions, and the client asks to skip "q-1"
+	// because the user already answered it in the in-progress session.
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	activeIDs := []string{"q-1", "q-2", "q-3"}
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, activeIDs...), nil)
+
+	questions := []domainquestion.Question{
+		*domainquestion.ReconstructQuestion("q-2", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"c","target":"d","sourceLang":"en","targetLang":"ja","blanks":["c"]}`, nil, 1, 1, now, now),
+		*domainquestion.ReconstructQuestion("q-3", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"e","target":"f","sourceLang":"en","targetLang":"ja","blanks":["e"]}`, nil, 2, 1, now, now),
+	}
+	questionRepo := newMockquestionBatchFinder(t)
+	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
+
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInputWithExcludeIDs(t, 10, []string{"q-1"})
+
+	// when
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then: q-1 is filtered out, only q-2 and q-3 remain, and TotalDue reflects post-exclusion size
+	require.NoError(t, err)
+	assert.Len(t, output.Questions, 2)
+	returnedIDs := []string{output.Questions[0].QuestionID, output.Questions[1].QuestionID}
+	assert.NotContains(t, returnedIDs, "q-1")
+	assert.Equal(t, 2, output.TotalDue)
+	assert.Equal(t, 2, output.NewCount)
+}
+
+func Test_GetStudyQuestionsQuery_shouldReturnAllQuestions_whenExcludeIDsIsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionRepo := newMockquestionBatchFinder(t)
+	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(fixtureQuestions(), nil)
+
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return([]domainstudy.Record{}, nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInputWithExcludeIDs(t, 10, []string{})
+
+	// when
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then: empty excludeIDs behaves identically to nil
+	require.NoError(t, err)
+	assert.Len(t, output.Questions, 1)
+	assert.Equal(t, fixtureQuestionID, output.Questions[0].QuestionID)
+	assert.Equal(t, 1, output.TotalDue)
+}
+
+func Test_GetStudyQuestionsQuery_shouldExcludeDueRecords_whenExcludedIDHasStudyRecord(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a due record on q-1 plus a new q-2. Client excludes q-1.
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	pastDue := fixtureClock.Add(-24 * time.Hour)
+	activeIDs := []string{"q-1", "q-2"}
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, activeIDs...), nil)
+
+	questions := []domainquestion.Question{
+		*domainquestion.ReconstructQuestion("q-2", fixtureWorkbookID, domainquestion.TypeWordFill(), `{"source":"c","target":"d","sourceLang":"en","targetLang":"ja","blanks":["c"]}`, nil, 1, 1, now, now),
+	}
+	questionRepo := newMockquestionBatchFinder(t)
+	questionRepo.On("FindByIDs", mock.Anything, fixtureWorkbookID, mock.Anything).Return(questions, nil)
+
+	records := []domainstudy.Record{
+		*domainstudy.ReconstructRecord(fixtureWorkbookID, "q-1", 1, pastDue, pastDue, 1, 0),
+	}
+	studyRecordRepo := newMockstudyRecordFinder(t)
+	studyRecordRepo.On("FindByWorkbookID", mock.Anything, fixtureOperatorID, fixtureWorkbookID).Return(records, nil)
+
+	query := studyusecase.NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, testConfig)
+	input := newGetStudyQuestionsInputWithExcludeIDs(t, 10, []string{"q-1"})
+
+	// when
+	output, err := query.GetStudyQuestions(ctx, input)
+
+	// then: q-1 is excluded from review pool, only q-2 (new) survives, counts reflect post-exclusion
+	require.NoError(t, err)
+	assert.Len(t, output.Questions, 1)
+	assert.Equal(t, "q-2", output.Questions[0].QuestionID)
+	assert.Equal(t, 1, output.TotalDue)
+	assert.Equal(t, 0, output.ReviewCount)
+	assert.Equal(t, 1, output.NewCount)
 }
