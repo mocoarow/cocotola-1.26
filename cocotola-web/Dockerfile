@@ -29,9 +29,15 @@ FROM node:${NODE_VERSION}-alpine
 ARG PNPM_VERSION
 RUN corepack enable && corepack prepare pnpm@${PNPM_VERSION} --activate
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-COPY package.json pnpm-lock.yaml /app/
+COPY package.json pnpm-lock.yaml instrumentation.mjs /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 WORKDIR /app
 USER appuser
-CMD ["pnpm", "run", "start"]
+# Run the server directly with node. Going through `pnpm run start` makes
+# corepack download pnpm at runtime (no activation for appuser) and triggers
+# pnpm's verify-deps-before-run auto-install, which fails with EACCES on the
+# root-owned /app and crashes before binding to PORT. Invoke the real JS entry
+# (not the .bin shell shim, which Node would mis-parse as JS) and load the OTEL
+# instrumentation that `package.json`'s start script set via NODE_OPTIONS.
+CMD ["node", "--import", "./instrumentation.mjs", "node_modules/@react-router/serve/bin.js", "./build/server/index.js"]

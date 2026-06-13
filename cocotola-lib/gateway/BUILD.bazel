@@ -61,6 +61,7 @@ smart_go_test(
         "export_test.go",
         "http_client_test.go",
         "log_test.go",
+        "signal_watch_s_test.go",
         "trace_s_test.go",
     ],
     embed = [":gateway"],

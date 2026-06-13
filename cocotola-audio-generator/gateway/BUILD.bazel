@@ -20,11 +20,16 @@ go_library(
 
 smart_go_test(
     name = "gateway_test",
-    srcs = ["question_client_test.go"],
+    srcs = [
+        "export_test.go",
+        "question_client_s_test.go",
+        "tts_client_s_test.go",
+    ],
+    embed = [":gateway"],
     deps = [
-        ":gateway",
         "//cocotola-audio-generator/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_texttospeech//apiv1/texttospeechpb",
     ],
 )

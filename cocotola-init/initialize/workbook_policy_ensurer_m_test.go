@@ -4,7 +4,6 @@ package initialize_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,7 +44,7 @@ func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldGrantAll
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	workbookID := fmt.Sprintf("wb-%s", orgID.String())
+	workbookID := "wb-" + orgID.String()
 
 	// when
 	err = ensurer.EnsureSystemOwnerWorkbookPolicies(ctx, orgID.String(), workbookID)
@@ -88,7 +87,7 @@ func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldNotGrant
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	workbookID := fmt.Sprintf("wb-%s", orgID.String())
+	workbookID := "wb-" + orgID.String()
 
 	// when
 	err = ensurer.EnsureSystemOwnerWorkbookPolicies(ctx, orgID.String(), workbookID)
@@ -110,7 +109,7 @@ func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldBeIdempo
 	require.NoError(t, err)
 
 	orgID := randOrgID(t)
-	workbookID := fmt.Sprintf("wb-%s", orgID.String())
+	workbookID := "wb-" + orgID.String()
 
 	// when: the same workbook is ensured twice, mirroring a repeated init run
 	require.NoError(t, ensurer.EnsureSystemOwnerWorkbookPolicies(ctx, orgID.String(), workbookID))

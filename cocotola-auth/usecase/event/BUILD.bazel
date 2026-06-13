@@ -21,6 +21,7 @@ go_library(
 smart_go_test(
     name = "event_test",
     srcs = [
+        "active_group_list_handler_s_test.go",
         "active_user_list_handler_s_test.go",
         "fixtures_test.go",
         "mocks_test.go",

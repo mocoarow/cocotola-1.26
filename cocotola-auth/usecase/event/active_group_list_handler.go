@@ -37,7 +37,7 @@ func NewActiveGroupListHandler(
 func (h *ActiveGroupListHandler) Handle(ctx context.Context, event domain.Event) error {
 	e, ok := event.(domain.GroupCreated)
 	if !ok {
-		return fmt.Errorf("unexpected event type: %T", event)
+		return fmt.Errorf("unexpected event type %T: %w", event, domain.ErrInvalidArgument)
 	}
 
 	return handleActiveListEvent[domain.ActiveGroupList, domain.GroupID](
