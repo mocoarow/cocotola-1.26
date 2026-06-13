@@ -190,7 +190,7 @@ export function clearStudySession(
  * The whole tuple is JSON-encoded — never string-concatenated with a
  * separator — so no part of the input can collide with another by containing
  * a delimiter. The excludeIds slice is sorted so set-equivalent inputs (the
- * URL serialiser does not guarantee order) map to the same key, matching the
+ * URL serializer does not guarantee order) map to the same key, matching the
  * set semantics used elsewhere (sameStringSet, server-side filterExcluded).
  */
 export function studyRemountKey(

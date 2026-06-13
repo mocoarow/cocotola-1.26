@@ -308,7 +308,7 @@ describe("studyRemountKey", () => {
     const b = studyRemountKey("user-a", false, ["q-1", "q-2"]);
 
     // then: set-equivalent inputs map to the same key so we don't trigger a
-    // spurious remount when the URL serialises the IDs in a different order.
+    // spurious remount when the URL serializes the IDs in a different order.
     expect(a).toBe(b);
   });
 
@@ -345,7 +345,7 @@ describe("studyRemountKey", () => {
   it("should distinguish a null userId from a user literally named like the sentinel", () => {
     // given/when: even if a userId looks like a sentinel string we might
     // pick for null (e.g. "anon", "null"), JSON encoding the tuple keeps the
-    // two cases separate — null serialises as `null`, a string as `"..."`.
+    // two cases separate — null serializes as `null`, a string as `"..."`.
     const nullUser = studyRemountKey(null, false, []);
     const stringUser = studyRemountKey("null", false, []);
 

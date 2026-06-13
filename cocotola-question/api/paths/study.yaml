@@ -120,6 +120,7 @@ study:
           type: array
           items:
             type: string
+            pattern: ^.*$
             minLength: 1
             maxLength: 100
           maxItems: 1000

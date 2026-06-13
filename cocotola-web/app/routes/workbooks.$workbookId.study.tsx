@@ -319,7 +319,7 @@ export default function StudyPage() {
   const layoutData = useRouteLoaderData<typeof workbooksLayoutLoader>("routes/workbooks");
   const { t } = useTranslation();
 
-  // Normalise undefined / "" to null at the boundary so downstream code only
+  // Normalize undefined / "" to null at the boundary so downstream code only
   // has to check for null when deciding whether the session helpers may run.
   const rawUserId = layoutData?.user?.userId;
   const currentUserId = rawUserId === undefined || rawUserId === "" ? null : rawUserId;

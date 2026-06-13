@@ -31,11 +31,11 @@ export type UseStudyResumeArgs = {
  *
  * The server is stateless — we replay the answered IDs through the URL so the
  * loader's GetStudyQuestions call excludes them. Skipped entirely when the
- * userId is null: callers are expected to normalise empty strings to null at
+ * userId is null: callers are expected to normalize empty strings to null at
  * the boundary so this hook only needs the one check. The storage key is
  * scoped per user to prevent A→B login leakage on a shared browser. The
  * study route's server loader already requireAuth's, so a null userId here
- * means the layout loader hasn't materialised in this render path — better
+ * means the layout loader hasn't materialized in this render path — better
  * to study without resume than to risk surfacing another user's answered IDs.
  */
 export function useStudyResume({
