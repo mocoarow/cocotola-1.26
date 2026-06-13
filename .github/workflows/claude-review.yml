@@ -1,0 +1,219 @@
+---
+name: Claude Review
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions: {}
+
+concurrency:
+  group: claude-review-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Validate trigger
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Only react to comments that:
+    #   - mention @claude in the body, and
+    #   - are attached to a pull request (not a plain issue), and
+    #   - are not authored by a bot (avoid feedback loops with our own posts).
+    if: |
+      contains(github.event.comment.body, '@claude') &&
+      github.event.comment.user.type != 'Bot' &&
+      (github.event_name == 'pull_request_review_comment' ||
+       github.event.issue.pull_request != null)
+    permissions:
+      pull-requests: read
+    outputs:
+      pr_number: ${{ steps.check.outputs.pr_number }}
+    steps:
+      - id: check
+        env:
+          PR_FROM_ISSUE: ${{ github.event.issue.number }}
+          PR_FROM_REVIEW: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          NUMBER="${PR_FROM_ISSUE:-}"
+          if [ -z "${NUMBER}" ]; then
+            NUMBER="${PR_FROM_REVIEW:-}"
+          fi
+          if [ -z "${NUMBER}" ]; then
+            echo "::error::Could not resolve PR number from event"
+            exit 1
+          fi
+          echo "pr_number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "::notice::Target PR: #${NUMBER}"
+
+  review:
+    name: Review
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      PR_NUMBER: ${{ needs.guard.outputs.pr_number }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.APPS_APP_ID }}
+          private-key: ${{ secrets.APPS_PRIVATE_KEY }}
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: React to the triggering comment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          # Give immediate feedback that the mention was picked up. Best-effort:
+          # never fail the job just because the reaction call did not stick.
+          if [ "${EVENT}" = "pull_request_review_comment" ]; then
+            ENDPOINT="repos/${REPO}/pulls/comments/${COMMENT_ID}/reactions"
+          else
+            ENDPOINT="repos/${REPO}/issues/comments/${COMMENT_ID}/reactions"
+          fi
+          gh api --method POST "${ENDPOINT}" -f content=eyes || \
+            echo "::warning::Could not add reaction to comment ${COMMENT_ID}"
+
+      - name: Check out PR head
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          # Bring the PR's head code into the working tree so Claude can read the
+          # changed files for context (not just the raw diff).
+          gh pr checkout "${PR_NUMBER}" --repo "${REPO}"
+
+      - name: Run Claude review
+        id: claude
+        timeout-minutes: 25
+        uses: anthropics/claude-code-action@12310e4417c3473095c957cb311b3cf59a38d659 # v1.0.99
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
+          display_report: true
+          prompt: |
+            あなたは cocotola モノレポのコードレビュー担当 Claude です。
+            PR に対して `@claude` メンション付きのコメントが付いたので、
+            その PR の変更内容をレビューしてコメントを投稿します。
+
+            ## 実行コンテキスト (固定値)
+            - **Target PR**: #${{ needs.guard.outputs.pr_number }}
+            - **Repository**: ${{ github.repository }}
+            - ワークツリーには既に PR head が checkout 済み
+            - 本日の日付は `date -u +%Y-%m-%d` で取得できる
+
+            ## 最初に読め (Hard rules)
+            - **ソースコードを 1 行も変更しない**。レビュー (コメント) のみ。
+            - **PR を merge / close しない**。`git push` しない。
+            - **対象 PR は上記の固定値**。他の PR を勝手に拾わない。
+            - レビュー本文は **英語で書く** (コメント本文が日本語でも)。
+
+            ## 手順
+
+            1. **PR 把握**:
+               - `gh pr view ${{ needs.guard.outputs.pr_number }}` で
+                 タイトル・本文・変更ファイル一覧を読む。
+               - `gh pr diff ${{ needs.guard.outputs.pr_number }}` で差分を読む。
+
+            2. **規約読み込み**: 以下を読む
+               - `CLAUDE.md`
+               - 変更が触れているサービスの `docs/<service>.md` (存在すれば)
+               - `.golangci.yml`
+
+            3. **コンテキスト把握**: Read / Glob / Grep で、変更ファイルの
+               周辺コードや既存のテストパターンを確認する。
+
+            4. **レビュー観点** (このリポジトリで特に重視する点):
+               - エラーは `fmt.Errorf("...: %w", err)` でラップしているか
+               - `slog` を使っているか (`fmt.Println` / `log.Printf` は NG)
+               - `nil, nil` を返していないか (エンティティ不在はセンチネルエラー)
+               - 振る舞いが変わる箇所にテストがあるか
+                 (テスト名 `Test_<X>_should<Y>_when<Z>`、mockery、
+                 `given`/`when`/`then` コメント等の既存パターンに沿うか)
+               - `t.Setenv` / `t.Chdir` を使うテストで `t.Parallel()` を
+                 付けていないか (CI で panic する)
+               - `*.go` の追加・改名・削除や import 変更に対して
+                 `BUILD.bazel` が更新されているか (`task gazelle` 漏れ)
+               - 関数・ファイルが過度に大きくないか、ネストが深すぎないか
+               - 命名・責務分割・セキュリティ上の懸念
+
+            5. **レビュー投稿**:
+               - レビュー本文を `Write` で `/tmp/review.md` に書く
+                 (markdown を `--body` に直接渡すと bash 安全システムが弾く)。
+               - `gh pr review ${{ needs.guard.outputs.pr_number }} --comment --body-file /tmp/review.md`
+                 で投稿する。
+                 - **`--approve` / `--request-changes` は使わない**
+                   (人間の判断に委ねる)。`--comment` のみ。
+               - レビュー本文の構成 (英語):
+                 ```
+                 ## Review summary
+                 <2-3 行で全体所感>
+
+                 ## Findings
+                 - `path/to/file.go:42` — <指摘内容と理由>
+                 - `path/to/file.go:88` — <指摘内容と理由>
+
+                 ## Nits (optional)
+                 - <些細な指摘>
+
+                 ---
+                 _Reviewed by Claude on YYYY-MM-DD_
+                 ```
+               - 指摘が無い (LGTM) 場合も、その旨を `## Review summary` に
+                 簡潔に書いて投稿する。
+
+            ## 厳守事項
+            - 確信が持てない指摘 (誤検知の可能性) は出さない。
+            - 範囲は **この PR の差分** に限定する。差分外の既存コードの
+              粗探しはしない。
+            - 推測でコードを書き換える提案はしない。具体的な行・理由を示す。
+            - `/tmp/` 以外のファイルに `Write` しない。
+
+            ## 完了報告
+            最終応答に以下を含める:
+            - `Reviewed PR: #${{ needs.guard.outputs.pr_number }}` (投稿成功)
+            - もしくはスキップ理由 (`skip: <英語の理由>`)
+          claude_args: |
+            --max-turns 90
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr review:*),Bash(date:*),Bash(git diff:*),Bash(git log:*)"
+
+      - name: Notify Slack
+        if: always()
+        timeout-minutes: 3
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          PR_URL: ${{ github.server_url }}/${{ github.repository }}/pull/${{ needs.guard.outputs.pr_number }}
+          CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "::warning::SLACK_WEBHOOK_URL is not set — skipping Slack notify"
+            exit 0
+          fi
+          if [ "${CLAUDE_OUTCOME}" != "success" ]; then
+            HEADER=":x: *Claude Review* — failed"
+            BODY=$(printf 'PR: <%s|#%s>\nstatus: %s' \
+              "${PR_URL}" "${PR_NUMBER}" "${CLAUDE_OUTCOME}")
+          else
+            HEADER=":mag: *Claude Review* — posted"
+            BODY=$(printf 'PR: <%s|#%s>' "${PR_URL}" "${PR_NUMBER}")
+          fi
+          TEXT=$(printf '%s\n%s\n<%s|Run log>' "${HEADER}" "${BODY}" "${RUN_URL}")
+          PAYLOAD=$(jq -n --arg text "${TEXT}" '{text: $text}')
+          curl -sSf -X POST -H 'Content-Type: application/json' \
+            --data "${PAYLOAD}" "${SLACK_WEBHOOK_URL}"
