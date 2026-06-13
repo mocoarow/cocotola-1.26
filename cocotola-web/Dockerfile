@@ -37,5 +37,7 @@ USER appuser
 # Run the server directly with node. Going through `pnpm run start` makes
 # corepack download pnpm at runtime (no activation for appuser) and triggers
 # pnpm's verify-deps-before-run auto-install, which fails with EACCES on the
-# root-owned /app and crashes before binding to PORT.
-CMD ["node", "node_modules/.bin/react-router-serve", "./build/server/index.js"]
+# root-owned /app and crashes before binding to PORT. Invoke the real JS entry
+# (not the .bin shell shim, which Node would mis-parse as JS) and load the OTEL
+# instrumentation that `package.json`'s start script set via NODE_OPTIONS.
+CMD ["node", "--import", "./instrumentation.mjs", "node_modules/@react-router/serve/bin.js", "./build/server/index.js"]
