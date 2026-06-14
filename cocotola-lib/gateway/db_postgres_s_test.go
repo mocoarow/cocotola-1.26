@@ -241,3 +241,50 @@ func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInPassword_whenPasswordHasRes
 	_, pg := parseDSN(t, dsn)
 	assert.Equal(t, "p@ss/w:o?r#d", pg.Password)
 }
+
+func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInUsername_whenUsernameHasReservedChars(t *testing.T) {
+	t.Parallel()
+
+	// given: username contains URL-reserved chars (@, /, :)
+	cfg := &gateway.PostgresConfig{
+		Username: "us@r/na:me",
+		Password: "pass1",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+	}
+
+	// when
+	dsn, err := gateway.BuildPostgresDSN(cfg)
+
+	// then: pgconn decodes the username back to its literal form
+	require.NoError(t, err)
+	_, pg := parseDSN(t, dsn)
+	assert.Equal(t, "us@r/na:me", pg.User)
+}
+
+func Test_BuildPostgresDSN_shouldOverrideSSLMode_whenParamsContainsSSLMode(t *testing.T) {
+	t.Parallel()
+
+	// given: a sslmode key in Params conflicts with the struct-level SSLMode
+	cfg := &gateway.PostgresConfig{
+		Username: "user1",
+		Password: "pass1",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+		Params: map[string]string{
+			"sslmode": "require",
+		},
+	}
+
+	// when
+	dsn, err := gateway.BuildPostgresDSN(cfg)
+
+	// then: the Params value wins over the struct-level SSLMode
+	require.NoError(t, err)
+	u, _ := parseDSN(t, dsn)
+	assert.Equal(t, "require", u.Query().Get("sslmode"))
+}
