@@ -6,8 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
+	"net"
+	"net/url"
+	"strconv"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	gormpostgres "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -34,7 +37,11 @@ type PostgresConfig struct {
 	Port     int               `yaml:"port" validate:"required"`
 	Database string            `yaml:"database" validate:"required"`
 	SSLMode  string            `yaml:"sslMode"`
-	Params   map[string]string `yaml:"params"`
+	// Params are extra connection parameters appended to the DSN. They are
+	// applied after the struct-level fields, so a key of "sslmode" or
+	// "TimeZone" here overrides the value derived from SSLMode or the default
+	// UTC time zone.
+	Params map[string]string `yaml:"params"`
 }
 
 func initDBPostgres(ctx context.Context, cfg DBConfig, logLevel slog.Level, appName string) (*DBConnection, *sql.DB, error) {
@@ -56,26 +63,46 @@ func OpenPostgresWithDSN(dsn string, logLevel slog.Level, appName string) (*gorm
 }
 
 // BuildPostgresDSN builds a PostgreSQL DSN string from the given config.
-func BuildPostgresDSN(cfg *PostgresConfig) string {
+// It returns an error when the resulting connection string fails validation.
+// All critical connection fields (host, port, user, password, database,
+// sslmode) are set explicitly in the URL, so the corresponding libpq
+// environment variables (e.g. PGHOST, PGPASSFILE) are overridden during
+// parsing by pgconn.ParseConfig.
+func BuildPostgresDSN(cfg *PostgresConfig) (string, error) {
 	sslMode := cfg.SSLMode
 	if sslMode == "" {
 		sslMode = "disable"
 	}
 
-	var b strings.Builder
-	fmt.Fprintf(&b, "host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=UTC",
-		cfg.Host, cfg.Username, cfg.Password, cfg.Database, cfg.Port, sslMode)
-
+	q := url.Values{}
+	q.Set("sslmode", sslMode)
+	q.Set("TimeZone", "UTC")
 	for k, v := range cfg.Params {
 		if v != "" {
-			fmt.Fprintf(&b, " %s='%s'", k, v)
+			q.Set(k, v)
 		}
 	}
 
-	return b.String()
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(cfg.Username, cfg.Password),
+		Host:     net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
+		Path:     "/" + cfg.Database,
+		RawQuery: q.Encode(),
+	}
+	dsn := u.String()
+
+	if _, err := pgconn.ParseConfig(dsn); err != nil {
+		return "", fmt.Errorf("parse postgres dsn: %w", err)
+	}
+	return dsn, nil
 }
 
 // OpenPostgres opens a GORM PostgreSQL connection using the given config.
 func OpenPostgres(cfg *PostgresConfig, logLevel slog.Level, appName string) (*gorm.DB, error) {
-	return OpenPostgresWithDSN(BuildPostgresDSN(cfg), logLevel, appName)
+	dsn, err := BuildPostgresDSN(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("build postgres dsn: %w", err)
+	}
+	return OpenPostgresWithDSN(dsn, logLevel, appName)
 }
