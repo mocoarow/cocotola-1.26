@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "handler",
@@ -6,6 +7,7 @@ go_library(
         "doc.go",
         "helper.go",
         "router.go",
+        "user_setting_loader.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler",
     visibility = ["//visibility:public"],
@@ -14,5 +16,14 @@ go_library(
         "//cocotola-auth/domain",
         "//cocotola-lib/controller",
         "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "handler_test",
+    srcs = ["mocks_test.go"],
+    deps = [
+        "//cocotola-auth/domain",
+        "@com_github_stretchr_testify//mock",
     ],
 )

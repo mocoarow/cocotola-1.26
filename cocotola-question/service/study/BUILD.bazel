@@ -11,10 +11,14 @@ go_library(
 
 smart_go_test(
     name = "study_test",
-    srcs = ["study_s_test.go"],
+    srcs = [
+        "dashboard_validator_drift_s_test.go",
+        "study_s_test.go",
+    ],
     deps = [
         ":study",
         "//cocotola-question/domain",
+        "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
 )

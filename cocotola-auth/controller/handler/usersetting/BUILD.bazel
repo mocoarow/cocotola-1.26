@@ -5,7 +5,10 @@ go_library(
     name = "usersetting",
     srcs = [
         "find_user_setting_handler.go",
+        "update_daily_goal_handler.go",
         "update_language_handler.go",
+        "update_shared.go",
+        "update_timezone_handler.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting",
     visibility = ["//visibility:public"],
@@ -26,7 +29,9 @@ smart_go_test(
         "find_user_setting_handler_s_test.go",
         "helper_test.go",
         "mocks_test.go",
+        "update_daily_goal_handler_s_test.go",
         "update_language_handler_s_test.go",
+        "update_timezone_handler_s_test.go",
         "usersetting_s_test.go",
     ],
     deps = [
