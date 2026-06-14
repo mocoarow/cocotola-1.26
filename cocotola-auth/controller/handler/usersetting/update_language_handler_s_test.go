@@ -33,10 +33,10 @@ func Test_UpdateLanguageHandler_shouldReturn204_whenSettingExists(t *testing.T) 
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en")
+	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
 	require.NoError(t, err)
 	existing.SetVersion(7) // simulate a row already persisted with version=7
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
 		return s.AppUserID() == fixtureAppUserID && s.Language() == "ja" && s.Version() == 7
@@ -57,7 +57,7 @@ func Test_UpdateLanguageHandler_shouldCreateDefault_whenSettingNotFound(t *testi
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, domain.ErrUserSettingNotFound)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
 		// version==0 confirms the handler took the INSERT path (default-init).
@@ -79,7 +79,7 @@ func Test_UpdateLanguageHandler_shouldReturn401_whenUserIDMissing(t *testing.T) 
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	noopMiddleware := func(c *gin.Context) { c.Next() }
 	r := initExternalUserSettingRouter(ctx, t, saver, noopMiddleware)
 	w := httptest.NewRecorder()
@@ -99,7 +99,7 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
@@ -118,7 +118,7 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageMissing(t *testing.T
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
@@ -137,7 +137,7 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageWrongLength(t *testi
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
@@ -155,7 +155,7 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageOutsideWhitelist(t *
 
 	// given (binding accepts only en/ja/ko; valid ISO 639-1 codes outside the
 	// whitelist must be rejected at the API boundary before reaching the repo)
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
@@ -174,9 +174,9 @@ func Test_UpdateLanguageHandler_shouldReturn409_whenConcurrentModification(t *te
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en")
+	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
 	require.NoError(t, err)
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
 	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
@@ -197,10 +197,10 @@ func Test_UpdateLanguageHandler_shouldReturn404_whenSettingDeletedConcurrently(t
 	ctx := context.Background()
 
 	// given: caller loaded a setting at version 7, but the row was deleted before save
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en")
+	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
 	require.NoError(t, err)
 	existing.SetVersion(7)
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
 	saver.On("Save", mock.Anything, mock.Anything).Return(domain.ErrUserSettingNotFound)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
@@ -221,7 +221,7 @@ func Test_UpdateLanguageHandler_shouldReturn500_whenFindFailsUnexpectedly(t *tes
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, errors.New("db connection lost"))
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
@@ -239,9 +239,9 @@ func Test_UpdateLanguageHandler_shouldReturn500_whenSaveFailsUnexpectedly(t *tes
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en")
+	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
 	require.NoError(t, err)
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
 	saver.On("Save", mock.Anything, mock.Anything).Return(errors.New("db connection lost"))
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
@@ -260,7 +260,7 @@ func Test_UpdateLanguageHandler_shouldRouteOnlyToPUT(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingSaver(t)
+	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 

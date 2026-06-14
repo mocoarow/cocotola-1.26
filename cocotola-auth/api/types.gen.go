@@ -142,10 +142,20 @@ type FindSpaceResponseSpaceType string
 
 // GetMeResponse defines model for GetMeResponse.
 type GetMeResponse struct {
-	Language         string             `json:"language"`
-	LoginID          string             `json:"loginId"`
-	OrganizationName string             `json:"organizationName"`
-	UserID           openapi_types.UUID `json:"userId"`
+	// DailyGoal Target number of problems to solve per day.
+	DailyGoal        int    `json:"dailyGoal"`
+	Language         string `json:"language"`
+	LoginID          string `json:"loginId"`
+	OrganizationName string `json:"organizationName"`
+
+	// Timezone IANA timezone name used to bucket study activity by day. The value is a
+	// zone identifier from the IANA Time Zone Database (e.g. "Asia/Tokyo").
+	// The `pattern` only restricts the character set; values returned here
+	// have already been resolved through Go's `time.LoadLocation` by the
+	// auth service, so clients may trust the name to be a real IANA entry
+	// rather than re-validating against the pattern alone.
+	Timezone string             `json:"timezone"`
+	UserID   openapi_types.UUID `json:"userId"`
 }
 
 // GuestAuthRequest defines model for GuestAuthRequest.
@@ -207,6 +217,12 @@ type SupabaseExchangeRequest struct {
 	SupabaseJWT      string `binding:"required" json:"supabaseJwt"`
 }
 
+// UpdateUserDailyGoalRequest defines model for UpdateUserDailyGoalRequest.
+type UpdateUserDailyGoalRequest struct {
+	// DailyGoal Target number of problems per day. Must be between 1 and 500 inclusive.
+	DailyGoal int `binding:"required,min=1,max=500" json:"dailyGoal"`
+}
+
 // UpdateUserLanguageRequest defines model for UpdateUserLanguageRequest.
 type UpdateUserLanguageRequest struct {
 	// Language User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
@@ -215,6 +231,19 @@ type UpdateUserLanguageRequest struct {
 
 // UpdateUserLanguageRequestLanguage User's preferred UI language. Must be one of the supported language codes ("en", "ja", "ko").
 type UpdateUserLanguageRequestLanguage string
+
+// UpdateUserTimezoneRequest defines model for UpdateUserTimezoneRequest.
+type UpdateUserTimezoneRequest struct {
+	// Timezone IANA timezone name (e.g. "Asia/Tokyo", "America/Los_Angeles"). Must be a
+	// zone identifier present in the IANA Time Zone Database
+	// (https://www.iana.org/time-zones). The `pattern` field below only
+	// constrains the character set as a defense-in-depth measure; the server
+	// additionally resolves the name through Go's `time.LoadLocation` and
+	// returns 400 when the name does not exist in the runtime tz database.
+	// Sending e.g. "Not/AZone" matches the pattern but is rejected at
+	// validation.
+	Timezone string `binding:"required,max=64" json:"timezone"`
+}
 
 // CheckAuthorizationParams defines parameters for CheckAuthorization.
 type CheckAuthorizationParams struct {
@@ -267,8 +296,14 @@ type CreateSpaceJSONRequestBody = CreateSpaceRequest
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserRequest
 
+// UpdateUserDailyGoalJSONRequestBody defines body for UpdateUserDailyGoal for application/json ContentType.
+type UpdateUserDailyGoalJSONRequestBody = UpdateUserDailyGoalRequest
+
 // UpdateUserLanguageJSONRequestBody defines body for UpdateUserLanguage for application/json ContentType.
 type UpdateUserLanguageJSONRequestBody = UpdateUserLanguageRequest
+
+// UpdateUserTimezoneJSONRequestBody defines body for UpdateUserTimezone for application/json ContentType.
+type UpdateUserTimezoneJSONRequestBody = UpdateUserTimezoneRequest
 
 // SupabaseExchangeJSONRequestBody defines body for SupabaseExchange for application/json ContentType.
 type SupabaseExchangeJSONRequestBody = SupabaseExchangeRequest

@@ -16,3 +16,38 @@ UpdateUserLanguageRequest:
       maxLength: 2
   required:
     - language
+
+UpdateUserDailyGoalRequest:
+  type: object
+  properties:
+    dailyGoal:
+      type: integer
+      description: Target number of problems per day. Must be between 1 and 500 inclusive.
+      x-oapi-codegen-extra-tags:
+        binding: required,min=1,max=500
+      minimum: 1
+      maximum: 500
+  required:
+    - dailyGoal
+
+UpdateUserTimezoneRequest:
+  type: object
+  properties:
+    timezone:
+      type: string
+      description: |
+        IANA timezone name (e.g. "Asia/Tokyo", "America/Los_Angeles"). Must be a
+        zone identifier present in the IANA Time Zone Database
+        (https://www.iana.org/time-zones). The `pattern` field below only
+        constrains the character set as a defense-in-depth measure; the server
+        additionally resolves the name through Go's `time.LoadLocation` and
+        returns 400 when the name does not exist in the runtime tz database.
+        Sending e.g. "Not/AZone" matches the pattern but is rejected at
+        validation.
+      x-oapi-codegen-extra-tags:
+        binding: required,max=64
+      pattern: ^[A-Za-z_/+\-0-9]+$
+      minLength: 1
+      maxLength: 64
+  required:
+    - timezone

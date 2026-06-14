@@ -46,6 +46,8 @@ paths:
     $ref: 'paths/study.yaml#/study-records'
   /api/v1/workbook/{workbookId}/study/{questionId}/answer:
     $ref: 'paths/study.yaml#/study-answer'
+  /api/v1/study/dashboard:
+    $ref: 'paths/study.yaml#/study-dashboard'
   /api/v1/internal/workbook:
     $ref: 'paths/workbook.yaml#/internal-workbook'
   /api/v1/internal/workbook/{workbookId}:
@@ -96,6 +98,10 @@ components:
       $ref: 'schemas/study.yaml#/RecordAnswerRequest'
     RecordAnswerResponse:
       $ref: 'schemas/study.yaml#/RecordAnswerResponse'
+    DashboardDailyItem:
+      $ref: 'schemas/study.yaml#/DashboardDailyItem'
+    GetDashboardResponse:
+      $ref: 'schemas/study.yaml#/GetDashboardResponse'
     HealthCheckResponse:
       $ref: 'schemas/health.yaml#/HealthCheckResponse'
     ErrorResponse:

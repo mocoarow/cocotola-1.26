@@ -15,6 +15,7 @@ import { WordFillCard } from "~/components/study/word-fill-card";
 import { Button } from "~/components/ui/button";
 import { useStudyResume } from "~/hooks/use-study-resume";
 import {
+  type AnswerLocaleHeaders,
   getStudyQuestions,
   recordAnswerForMultipleChoice,
   recordAnswerForWordFill,
@@ -22,6 +23,12 @@ import {
 } from "~/lib/api/study.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
+import {
+  detectBrowserTimezone,
+  getLocalDateKey,
+  isValidIanaTimezoneShape,
+  isValidLocalDateKey,
+} from "~/lib/format/local-date";
 import {
   appendAnsweredId,
   clampExcludeIds,
@@ -100,6 +107,7 @@ export async function action({ request, params }: Route.ActionArgs) {
 
   const questionId = String(formData.get("questionId") ?? "");
   const questionType = String(formData.get("questionType") ?? "");
+  const locale = parseAnswerLocale(formData);
 
   if (questionType === "multiple_choice") {
     const raw = String(formData.get("selectedChoiceIds") ?? "[]");
@@ -112,13 +120,41 @@ export async function action({ request, params }: Route.ActionArgs) {
     if (!Array.isArray(parsed) || !parsed.every((v): v is string => typeof v === "string")) {
       throw new Response("selectedChoiceIds must be an array of strings", { status: 400 });
     }
-    const result = await recordAnswerForMultipleChoice(accessToken, workbookId, questionId, parsed);
+    const result = await recordAnswerForMultipleChoice(
+      accessToken,
+      workbookId,
+      questionId,
+      parsed,
+      locale,
+    );
     return { ok: true, result };
   }
 
   const correct = formData.get("correct") === "true";
-  const result = await recordAnswerForWordFill(accessToken, workbookId, questionId, correct);
+  const result = await recordAnswerForWordFill(
+    accessToken,
+    workbookId,
+    questionId,
+    correct,
+    locale,
+  );
   return { ok: true, result };
+}
+
+/**
+ * Pulls the client-supplied user-local date and IANA timezone out of the
+ * form. Returns undefined when either is absent or malformed so the
+ * backend will still record the SRS answer (the daily-stats bucket simply
+ * does not advance for that submission). The shape guards live in
+ * lib/format/local-date so a tampered form body cannot reach the backend
+ * with a different schema than the dashboard's settings action enforces.
+ */
+function parseAnswerLocale(formData: FormData): AnswerLocaleHeaders | undefined {
+  const localDateKey = String(formData.get("localDateKey") ?? "");
+  const timezone = String(formData.get("timezone") ?? "");
+  if (!isValidLocalDateKey(localDateKey)) return undefined;
+  if (!isValidIanaTimezoneShape(timezone)) return undefined;
+  return { localDateKey, timezone };
 }
 
 type Phase = "studying" | "done";
@@ -145,6 +181,7 @@ function StudySession({
   loaderExcludeIds,
   backUrl,
   backLabel,
+  timezone,
 }: {
   userId: string | null;
   workbookId: string;
@@ -153,6 +190,7 @@ function StudySession({
   loaderExcludeIds: string[];
   backUrl: string;
   backLabel: string;
+  timezone: string;
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher();
@@ -268,6 +306,8 @@ function StudySession({
         questionId: question.questionId,
         questionType: "multiple_choice",
         selectedChoiceIds: JSON.stringify(selectedChoiceIds),
+        localDateKey: getLocalDateKey(timezone),
+        timezone,
       },
       { method: "post", action: actionPath },
     );
@@ -281,6 +321,8 @@ function StudySession({
         questionId: question.questionId,
         questionType: "word_fill",
         correct: String(correct),
+        localDateKey: getLocalDateKey(timezone),
+        timezone,
       },
       { method: "post", action: actionPath },
     );
@@ -373,6 +415,12 @@ export default function StudyPage() {
         loaderExcludeIds={excludeIds}
         backUrl={backUrl}
         backLabel={backLabel}
+        // `||` is intentional here (not `??`): an empty-string timezone
+        // from the parser is just as unusable as undefined, so both
+        // should fall through to the browser-detected default. Switching
+        // to `??` would let `""` past the fallback and forward an
+        // invalid X-Local-Timezone header on the next answer submit.
+        timezone={layoutData?.user?.timezone || detectBrowserTimezone()}
       />
     </div>
   );

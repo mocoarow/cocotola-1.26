@@ -4,23 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
 	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
+
+	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
 // RecordAnswerCommand handles recording a study answer.
 type RecordAnswerCommand struct {
-	studyRecordFinder studyRecordFinder
-	studyRecordSaver  studyRecordSaver
-	activeListRepo    activeQuestionListFinder
-	questionFinder    questionFinder
-	workbookRepo      workbookFinder
-	authChecker       authorizationChecker
-	config            UsecaseConfig
+	studyRecordFinder     studyRecordFinder
+	studyRecordSaver      studyRecordSaver
+	activeListRepo        activeQuestionListFinder
+	questionFinder        questionFinder
+	workbookRepo          workbookFinder
+	authChecker           authorizationChecker
+	dailyStatsIncrementer dailyStatsIncrementer
+	config                UsecaseConfig
+	logger                *slog.Logger
 }
 
 // NewRecordAnswerCommand returns a new RecordAnswerCommand.
@@ -31,16 +37,19 @@ func NewRecordAnswerCommand(
 	questionFinder questionFinder,
 	workbookRepo workbookFinder,
 	authChecker authorizationChecker,
+	dailyStatsIncrementer dailyStatsIncrementer,
 	config UsecaseConfig,
 ) *RecordAnswerCommand {
 	return &RecordAnswerCommand{
-		studyRecordFinder: studyRecordFinder,
-		studyRecordSaver:  studyRecordSaver,
-		activeListRepo:    activeListRepo,
-		questionFinder:    questionFinder,
-		workbookRepo:      workbookRepo,
-		authChecker:       authChecker,
-		config:            config,
+		studyRecordFinder:     studyRecordFinder,
+		studyRecordSaver:      studyRecordSaver,
+		activeListRepo:        activeListRepo,
+		questionFinder:        questionFinder,
+		workbookRepo:          workbookRepo,
+		authChecker:           authChecker,
+		dailyStatsIncrementer: dailyStatsIncrementer,
+		config:                config,
+		logger:                slog.Default().With(slog.String(liblogging.LoggerNameKey, "RecordAnswerCommand")),
 	}
 }
 
@@ -158,10 +167,26 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 		return nil, fmt.Errorf("save study record: %w", err)
 	}
 
+	c.incrementDailyStat(ctx, input, correct, now)
+
 	return &studyservice.RecordAnswerOutput{
 		NextDueAt:          record.NextDueAt(),
 		ConsecutiveCorrect: record.ConsecutiveCorrect(),
 		TotalCorrect:       record.TotalCorrect(),
 		TotalIncorrect:     record.TotalIncorrect(),
 	}, nil
+}
+
+// incrementDailyStat is best-effort: a missing user-local date/timezone
+// (e.g. an older client that doesn't send the headers) or a transient
+// Firestore error must not fail the answer record itself. The dashboard
+// tolerates an occasionally-missing tick more cheaply than the SRS
+// pipeline tolerates a duplicated or lost answer.
+func (c *RecordAnswerCommand) incrementDailyStat(ctx context.Context, input *studyservice.RecordAnswerInput, correct bool, now time.Time) {
+	if input.LocalDateKey == "" || input.Timezone == "" {
+		return
+	}
+	if err := c.dailyStatsIncrementer.IncrementToday(ctx, input.OperatorID, input.LocalDateKey, input.Timezone, correct, now); err != nil {
+		c.logger.WarnContext(ctx, "increment daily stats", slog.String("user_id", input.OperatorID), slog.String("date", input.LocalDateKey), slog.Any("error", err))
+	}
 }

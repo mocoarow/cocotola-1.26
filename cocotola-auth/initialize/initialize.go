@@ -168,8 +168,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 
 	// external user-setting routes (authenticated).
 	// NOTE: also wired in cocotola-auth/main.go for the standalone-deployment path.
-	updateLanguageHandler := usersettinghandler.NewUpdateLanguageHandler(userSettingRepo)
-	usersettinghandler.InitExternalUserSettingRouter(updateLanguageHandler, authV1, authMiddleware)
+	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
 
 	// group usecase + controller
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -35,9 +34,16 @@ func NewGetMeHandler(settingFinder userSettingFinder) *GetMeHandler {
 	}
 }
 
+// userPreferences captures the user-setting fields exposed to /auth/me.
+type userPreferences struct {
+	language  string
+	dailyGoal int
+	timezone  string
+}
+
 // GetMe handles GET /auth/me and returns the authenticated user's identity
-// together with their preferred language. Missing user-setting rows fall back
-// to the default language so that long-lived sessions without an explicit
+// together with their user-setting preferences. Missing user-setting rows
+// fall back to default values so long-lived sessions without an explicit
 // preference keep working.
 func (h *GetMeHandler) GetMe(c *gin.Context) {
 	ctx := c.Request.Context()
@@ -57,9 +63,9 @@ func (h *GetMeHandler) GetMe(c *gin.Context) {
 
 	organizationName := c.GetString(controller.ContextFieldOrganizationName{})
 
-	language, err := h.resolveLanguage(ctx, userID)
+	prefs, err := h.resolvePreferences(ctx, userID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "resolve user language", slog.Any("error", err))
+		h.logger.ErrorContext(ctx, "resolve user preferences", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 		return
 	}
@@ -68,17 +74,20 @@ func (h *GetMeHandler) GetMe(c *gin.Context) {
 		UserID:           userID.UUID(),
 		LoginID:          loginID,
 		OrganizationName: organizationName,
-		Language:         language,
+		Language:         prefs.language,
+		DailyGoal:        prefs.dailyGoal,
+		Timezone:         prefs.timezone,
 	})
 }
 
-func (h *GetMeHandler) resolveLanguage(ctx context.Context, userID domain.AppUserID) (string, error) {
-	setting, err := h.settingFinder.FindByAppUserID(ctx, userID)
+func (h *GetMeHandler) resolvePreferences(ctx context.Context, userID domain.AppUserID) (userPreferences, error) {
+	setting, err := handler.LoadOrInitUserSetting(ctx, h.settingFinder, userID)
 	if err != nil {
-		if errors.Is(err, domain.ErrUserSettingNotFound) {
-			return domain.DefaultLanguage(), nil
-		}
-		return "", fmt.Errorf("find user setting %s: %w", userID, err)
+		return userPreferences{}, fmt.Errorf("load or init user setting %s: %w", userID, err)
 	}
-	return setting.Language(), nil
+	return userPreferences{
+		language:  setting.Language(),
+		dailyGoal: setting.DailyGoal(),
+		timezone:  setting.Timezone(),
+	}, nil
 }

@@ -19,7 +19,7 @@ func Test_FindUserSettingHandler_shouldReturn200_whenSettingExists(t *testing.T)
 	ctx := context.Background()
 
 	// given
-	setting, err := domain.NewUserSetting(fixtureAppUserID, 5, "ja")
+	setting, err := domain.NewUserSetting(fixtureAppUserID, 5, "ja", 25, "America/Los_Angeles")
 	require.NoError(t, err)
 	settingFinder := newMockuserSettingFinder(t)
 	settingFinder.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(setting, nil)
@@ -37,13 +37,32 @@ func Test_FindUserSettingHandler_shouldReturn200_whenSettingExists(t *testing.T)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	jsonObj := parseJSON(t, respBytes)
+
 	maxWbExpr := parseExpr(t, "$.maxWorkbooks")
 	maxWb := maxWbExpr.Get(jsonObj)
 	require.Len(t, maxWb, 1)
 	assert.EqualValues(t, 5, maxWb[0])
+
+	// Persisted UserSetting overrides defaults — verify the non-default
+	// values flow through to the response so a regression in the field
+	// mapping cannot hide behind a default-equal value.
+	languageExpr := parseExpr(t, "$.language")
+	language := languageExpr.Get(jsonObj)
+	require.Len(t, language, 1)
+	assert.Equal(t, "ja", language[0])
+
+	dailyGoalExpr := parseExpr(t, "$.dailyGoal")
+	dailyGoal := dailyGoalExpr.Get(jsonObj)
+	require.Len(t, dailyGoal, 1)
+	assert.EqualValues(t, 25, dailyGoal[0])
+
+	timezoneExpr := parseExpr(t, "$.timezone")
+	timezone := timezoneExpr.Get(jsonObj)
+	require.Len(t, timezone, 1)
+	assert.Equal(t, "America/Los_Angeles", timezone[0])
 }
 
-func Test_FindUserSettingHandler_shouldReturnDefault_whenSettingNotFound(t *testing.T) {
+func Test_FindUserSettingHandler_shouldReturnDefaults_whenSettingNotFound(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -63,11 +82,31 @@ func Test_FindUserSettingHandler_shouldReturnDefault_whenSettingNotFound(t *test
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 
+	// Pin every defaulted field here so the "internal user-setting GET
+	// returns sensible defaults when no row exists" contract has a single
+	// canonical assertion. Any drift between domain defaults and the
+	// values surfaced to the internal caller breaks this test.
 	jsonObj := parseJSON(t, respBytes)
+
 	maxWbExpr := parseExpr(t, "$.maxWorkbooks")
 	maxWb := maxWbExpr.Get(jsonObj)
 	require.Len(t, maxWb, 1)
 	assert.EqualValues(t, 3, maxWb[0])
+
+	languageExpr := parseExpr(t, "$.language")
+	language := languageExpr.Get(jsonObj)
+	require.Len(t, language, 1)
+	assert.Equal(t, domain.DefaultLanguage(), language[0])
+
+	dailyGoalExpr := parseExpr(t, "$.dailyGoal")
+	dailyGoal := dailyGoalExpr.Get(jsonObj)
+	require.Len(t, dailyGoal, 1)
+	assert.EqualValues(t, domain.DefaultDailyGoal(), dailyGoal[0])
+
+	timezoneExpr := parseExpr(t, "$.timezone")
+	timezone := timezoneExpr.Get(jsonObj)
+	require.Len(t, timezone, 1)
+	assert.Equal(t, domain.DefaultTimezone(), timezone[0])
 }
 
 func Test_FindUserSettingHandler_shouldReturn400_whenUserIDMissing(t *testing.T) {

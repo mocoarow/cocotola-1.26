@@ -78,6 +78,7 @@ func Initialize(
 	referenceRepo := gateway.NewReferenceRepository(firestoreClient)
 	ownedWorkbookListRepo := gateway.NewOwnedWorkbookListRepository(firestoreClient)
 	studyRecordRepo := gateway.NewStudyRecordRepository(firestoreClient)
+	studyDailyStatsRepo := gateway.NewStudyDailyStatsRepository(firestoreClient)
 	activeQuestionListRepo := gateway.NewActiveQuestionListRepository(firestoreClient)
 	healthRepo := gateway.NewHealthRepository(firestoreClient)
 
@@ -88,7 +89,7 @@ func Initialize(
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
-	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyusecase.UsecaseConfig{
+	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, studyusecase.UsecaseConfig{
 		ClockFunc:   nil,
 		ShuffleFunc: nil,
 	})
@@ -127,7 +128,9 @@ func Initialize(
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
 	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(studyCommand)
 	listStudyRecordsHandler := studyhandler.NewListStudyRecordsHandler(studyCommand)
+	getDashboardHandler := studyhandler.NewGetDashboardHandler(studyCommand)
 	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, deleteStudyHistoryHandler, listStudyRecordsHandler, parent, authMiddleware, orgResolverMiddleware)
+	studyhandler.InitDashboardRouter(getDashboardHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)

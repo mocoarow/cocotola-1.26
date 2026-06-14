@@ -205,10 +205,7 @@ func run() (int, error) {
 
 	// user-setting (external, auth-protected).
 	// NOTE: also wired in cocotola-auth/initialize/initialize.go for the cocotola-app path.
-	{
-		updateLanguageHandler := usersettinghandler.NewUpdateLanguageHandler(userSettingRepo)
-		usersettinghandler.InitExternalUserSettingRouter(updateLanguageHandler, authV1, authMiddleware)
-	}
+	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
 
 	// organization lookup (external, auth-protected)
 	{

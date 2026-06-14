@@ -125,8 +125,26 @@ GetMeResponse:
     language:
       type: string
       pattern: ^[a-z]{2}$
+    dailyGoal:
+      type: integer
+      description: Target number of problems to solve per day.
+      minimum: 1
+      maximum: 500
+    timezone:
+      type: string
+      description: |
+        IANA timezone name used to bucket study activity by day. The value is a
+        zone identifier from the IANA Time Zone Database (e.g. "Asia/Tokyo").
+        The `pattern` only restricts the character set; values returned here
+        have already been resolved through Go's `time.LoadLocation` by the
+        auth service, so clients may trust the name to be a real IANA entry
+        rather than re-validating against the pattern alone.
+      pattern: ^[A-Za-z_/+\-0-9]+$
+      maxLength: 64
   required:
     - userId
     - loginId
     - organizationName
     - language
+    - dailyGoal
+    - timezone

@@ -15,6 +15,42 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway"
 )
 
+type listPendingResponse struct {
+	Items []pendingItemPayload `json:"items"`
+}
+
+type pendingItemPayload struct {
+	WorkbookID  string `json:"workbookId"`
+	QuestionID  string `json:"questionId"`
+	SourceText  string `json:"sourceText"`
+	SourceLang  string `json:"sourceLang"`
+	TargetText  string `json:"targetText"`
+	TargetLang  string `json:"targetLang"`
+	InputHash   string `json:"inputHash"`
+	FailedTries int    `json:"failedTries"`
+}
+
+type reclaimStaleResponse struct {
+	Reclaimed int `json:"reclaimed"`
+}
+
+// writeJSON is invoked from the test-server handler, i.e. a goroutine
+// other than the one running the test function. t.Fatal/Fatalf would only
+// call runtime.Goexit on the handler goroutine and leave the test body
+// blocked on an empty HTTP response; t.Errorf is goroutine-safe and the
+// early return prevents the encoder from writing partial output after
+// the failure is recorded.
+func writeJSON(t *testing.T, w http.ResponseWriter, body any) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Errorf("encode response body: %v", err)
+
+		return
+	}
+}
+
 func newTestQuestionClient(t *testing.T, handler http.Handler) *gateway.QuestionAPIClient {
 	t.Helper()
 	srv := httptest.NewServer(handler)
@@ -29,23 +65,20 @@ func Test_QuestionAPIClient_ListPending_shouldReturnItems_whenServerReturns200(t
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/internal/audio/questions/pending", r.URL.Path)
 		assert.Equal(t, "test-key", r.Header.Get("X-Service-Api-Key"))
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{
+		writeJSON(t, w, listPendingResponse{
+			Items: []pendingItemPayload{
 				{
-					"workbookId":  "wb-1",
-					"questionId":  "q-1",
-					"sourceText":  "りんご",
-					"sourceLang":  "ja",
-					"targetText":  "apple",
-					"targetLang":  "en",
-					"inputHash":   "abc",
-					"failedTries": 0,
+					WorkbookID:  "wb-1",
+					QuestionID:  "q-1",
+					SourceText:  "りんご",
+					SourceLang:  "ja",
+					TargetText:  "apple",
+					TargetLang:  "en",
+					InputHash:   "abc",
+					FailedTries: 0,
 				},
 			},
-		}); err != nil {
-			t.Errorf("encode pending response: %v", err)
-		}
+		})
 	})
 	client := newTestQuestionClient(t, handler)
 
@@ -206,10 +239,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(
 	// given
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/internal/audio/questions/reclaim-stale", r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(map[string]any{"reclaimed": 3}); err != nil {
-			t.Errorf("encode reclaim response: %v", err)
-		}
+		writeJSON(t, w, reclaimStaleResponse{Reclaimed: 3})
 	})
 	client := newTestQuestionClient(t, handler)
 

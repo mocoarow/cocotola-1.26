@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "study",
     srcs = [
+        "daily_stat.go",
         "doc.go",
         "interval.go",
         "study_record.go",
@@ -16,6 +17,7 @@ go_library(
 smart_go_test(
     name = "study_test",
     srcs = [
+        "daily_stat_s_test.go",
         "interval_s_test.go",
         "study_record_s_test.go",
     ],

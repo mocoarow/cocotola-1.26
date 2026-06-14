@@ -27,6 +27,7 @@
   },
   "workbooks": {
     "nav": {
+      "dashboard": "ダッシュボード",
       "myWorkbooks": "マイワークブック",
       "public": "公開",
       "comingSoon": "準備中",
@@ -183,6 +184,51 @@
         "incorrect": "不正解",
         "total": "合計"
       }
+    }
+  },
+  "dashboard": {
+    "title": "学習ダッシュボード",
+    "subtitle": "毎日の学習リズムを一目で確認。",
+    "empty": "まだ学習履歴がありません。1問解いて連続日数をスタートしましょう。",
+    "graph": {
+      "label": "学習アクティビティの草グラフ",
+      "heading": "学習履歴",
+      "range": "{{from}} 〜 {{to}}",
+      "cellTitle": "{{date}}: {{count}}問（正解 {{correct}}）",
+      "legendLess": "少",
+      "legendMore": "多",
+      "day": {
+        "1": "月",
+        "3": "水",
+        "5": "金"
+      }
+    },
+    "streak": {
+      "label": "連続日数",
+      "heading": "現在の連続日数",
+      "currentValue_other": "{{count}} 日",
+      "longest_other": "最長: {{count}} 日"
+    },
+    "goal": {
+      "label": "今日の目標",
+      "heading": "今日の目標",
+      "progress": "{{today}} / {{goal}}",
+      "reached": "目標達成！この調子で続けよう。",
+      "remaining_other": "目標まであと {{count}} 問。"
+    },
+    "settings": {
+      "heading": "設定",
+      "dailyGoalLabel": "1日の目標問題数",
+      "dailyGoalHint": "1〜500の範囲で指定してください。",
+      "timezoneLabel": "タイムゾーン",
+      "timezoneHint": "日単位の集計に使用します。既存のバケットは書き込み時のタイムゾーンを保持します。",
+      "save": "設定を保存",
+      "saved": "設定を保存しました。",
+      "partialFailure": "一部の設定を保存できませんでした: {{fields}}。該当項目をもう一度保存してください。"
+    },
+    "totals": {
+      "active_other": "活動日数 {{count}}",
+      "answered_other": "解答 {{count}} 件"
     }
   },
   "errors": {
