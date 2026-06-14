@@ -172,6 +172,29 @@ func Test_BuildPostgresDSN_shouldEscapeBackslashInParamValue_whenParamContainsBa
 	assert.Equal(t, `back\slash`, pg.RuntimeParams["application_name"])
 }
 
+func Test_BuildPostgresDSN_shouldBracketIPv6Host_whenHostIsIPv6Address(t *testing.T) {
+	t.Parallel()
+
+	// given: host is an IPv6 literal that must be bracketed in URL form
+	cfg := &gateway.PostgresConfig{
+		Username: "user1",
+		Password: "pass1",
+		Host:     "::1",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+	}
+
+	// when
+	dsn, err := gateway.BuildPostgresDSN(cfg)
+
+	// then: pgconn resolves the bracketed host back to the literal address
+	require.NoError(t, err)
+	u, pg := parseDSN(t, dsn)
+	assert.Equal(t, "[::1]:5432", u.Host)
+	assert.Equal(t, "::1", pg.Host)
+}
+
 func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInPassword_whenPasswordHasReservedChars(t *testing.T) {
 	t.Parallel()
 

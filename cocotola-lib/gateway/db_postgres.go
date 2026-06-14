@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	gormpostgres "gorm.io/driver/postgres"
@@ -82,7 +84,7 @@ func BuildPostgresDSN(cfg *PostgresConfig) (string, error) {
 	u := url.URL{
 		Scheme:   "postgres",
 		User:     url.UserPassword(cfg.Username, cfg.Password),
-		Host:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Host:     net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
 		Path:     "/" + cfg.Database,
 		RawQuery: q.Encode(),
 	}
