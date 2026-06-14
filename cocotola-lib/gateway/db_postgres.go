@@ -64,10 +64,10 @@ func OpenPostgresWithDSN(dsn string, logLevel slog.Level, appName string) (*gorm
 
 // BuildPostgresDSN builds a PostgreSQL DSN string from the given config.
 // It returns an error when the resulting connection string fails validation.
-// Note that the underlying pgconn.ParseConfig also consults libpq environment
-// variables (e.g. PGPASSFILE, PGSERVICEFILE) as defaults, so a malformed
-// service or passfile in the environment can make this fail even for a
-// structurally valid config.
+// Username, password, host, port, database, and sslmode are always set
+// explicitly, so libpq environment variables are not consulted during parsing
+// unless a "service" key is added via Params, in which case pgconn.ParseConfig
+// reads PGSERVICEFILE.
 func BuildPostgresDSN(cfg *PostgresConfig) (string, error) {
 	sslMode := cfg.SSLMode
 	if sslMode == "" {

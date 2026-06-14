@@ -175,7 +175,7 @@ func Test_BuildPostgresDSN_shouldEscapeBackslashInParamValue_whenParamContainsBa
 func Test_BuildPostgresDSN_shouldPreserveSpaceInParamValue_whenParamContainsSpace(t *testing.T) {
 	t.Parallel()
 
-	// given: param value contains a space, encoded as '+' and decoded back
+	// given: param value contains a space
 	cfg := &gateway.PostgresConfig{
 		Username: "user1",
 		Password: "pass1",
