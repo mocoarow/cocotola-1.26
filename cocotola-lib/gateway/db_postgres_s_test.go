@@ -172,6 +172,31 @@ func Test_BuildPostgresDSN_shouldEscapeBackslashInParamValue_whenParamContainsBa
 	assert.Equal(t, `back\slash`, pg.RuntimeParams["application_name"])
 }
 
+func Test_BuildPostgresDSN_shouldPreserveSpaceInParamValue_whenParamContainsSpace(t *testing.T) {
+	t.Parallel()
+
+	// given: param value contains a space, encoded as '+' and decoded back
+	cfg := &gateway.PostgresConfig{
+		Username: "user1",
+		Password: "pass1",
+		Host:     "localhost",
+		Port:     5432,
+		Database: "testdb",
+		SSLMode:  "disable",
+		Params: map[string]string{
+			"application_name": "my app",
+		},
+	}
+
+	// when
+	dsn, err := gateway.BuildPostgresDSN(cfg)
+
+	// then
+	require.NoError(t, err)
+	_, pg := parseDSN(t, dsn)
+	assert.Equal(t, "my app", pg.RuntimeParams["application_name"])
+}
+
 func Test_BuildPostgresDSN_shouldBracketIPv6Host_whenHostIsIPv6Address(t *testing.T) {
 	t.Parallel()
 
