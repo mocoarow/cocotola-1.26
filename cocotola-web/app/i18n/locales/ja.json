@@ -30,10 +30,10 @@
       "dashboard": "ダッシュボード",
       "myWorkbooks": "マイワークブック",
       "public": "公開",
+      "settings": "設定",
       "comingSoon": "準備中",
       "logout": "ログアウト",
-      "sidebarLabel": "ワークブック",
-      "languageLabel": "言語を選択"
+      "sidebarLabel": "ワークブック"
     },
     "index": {
       "title": "マイワークブック",
@@ -216,19 +216,34 @@
       "reached": "目標達成！この調子で続けよう。",
       "remaining_other": "目標まであと {{count}} 問。"
     },
-    "settings": {
-      "heading": "設定",
+    "totals": {
+      "active_other": "活動日数 {{count}}",
+      "answered_other": "解答 {{count}} 件"
+    }
+  },
+  "settings": {
+    "title": "設定",
+    "subtitle": "アカウントの設定をまとめて管理できます。",
+    "account": {
+      "heading": "アカウント",
+      "loginIdLabel": "ログインID",
+      "organizationLabel": "組織"
+    },
+    "language": {
+      "heading": "言語",
+      "label": "表示言語",
+      "hint": "変更した言語は即座にUIに反映され、アカウントにも保存されます。"
+    },
+    "study": {
+      "heading": "学習設定",
       "dailyGoalLabel": "1日の目標問題数",
       "dailyGoalHint": "1〜500の範囲で指定してください。",
       "timezoneLabel": "タイムゾーン",
       "timezoneHint": "日単位の集計に使用します。既存のバケットは書き込み時のタイムゾーンを保持します。",
+      "timezoneDetected": "検出された値: {{timezone}}",
       "save": "設定を保存",
       "saved": "設定を保存しました。",
       "partialFailure": "一部の設定を保存できませんでした: {{fields}}。該当項目をもう一度保存してください。"
-    },
-    "totals": {
-      "active_other": "活動日数 {{count}}",
-      "answered_other": "解答 {{count}} 件"
     }
   },
   "errors": {
