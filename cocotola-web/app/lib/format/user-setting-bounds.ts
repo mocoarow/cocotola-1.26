@@ -1,5 +1,5 @@
 /**
- * Numeric bounds for user-setting fields, centralised so the same
+ * Numeric bounds for user-setting fields, centralized so the same
  * limits cannot drift between the JSX form attributes and the action's
  * server-side validation. Mirrors the Go-side constants in
  * cocotola-auth/domain/user_setting.go (minAllowedDailyGoal /

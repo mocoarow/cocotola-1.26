@@ -29,7 +29,7 @@ export type UserPreferences = {
 /**
  * Loads the authenticated user's identity and preferences from /auth/me.
  *
- * Centralised here so the loaders in routes/workbooks.tsx and
+ * Centralized here so the loaders in routes/workbooks.tsx and
  * routes/dashboard.tsx (and any future surface that needs the same fields)
  * cannot drift apart on the response shape.
  *

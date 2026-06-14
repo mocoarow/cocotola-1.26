@@ -79,7 +79,7 @@ async function savePreferenceField(
   } catch (err) {
     if (err instanceof Response && err.status >= 300 && err.status < 400) {
       // Redirect (e.g. session-expiry redirect to /login). React Router
-      // recognises thrown Responses with Location headers — leave them
+      // recognizes thrown Responses with Location headers — leave them
       // alone so the navigation happens instead of being recorded as a
       // field-level save failure.
       throw err;

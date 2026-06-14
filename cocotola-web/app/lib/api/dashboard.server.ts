@@ -24,7 +24,7 @@ export type DashboardResponse = {
 // Min / max mirror studyservice.{Min,Max}DashboardDays on the Go side.
 // DEFAULT is purely an HTTP-client convention (the backend has its own
 // 365 default for the days query parameter) so it lives only on this
-// boundary. Centralising it as a constant keeps the clamp fallback and
+// boundary. Centralizing it as a constant keeps the clamp fallback and
 // the function default in sync — a previous version used the literal
 // 365 in two places, which would have drifted on the next bump.
 const MIN_DASHBOARD_DAYS = 7;

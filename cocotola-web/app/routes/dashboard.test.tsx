@@ -15,7 +15,7 @@ vi.mock("~/lib/api/dashboard.server", () => ({
 // Cover every concrete export the route module imports, not just the
 // ones touched by the current tests. The component-only tests below do
 // not exercise the loader, but any future test that does (or any
-// reorganisation of the route module that imports a new helper into
+// reorganization of the route module that imports a new helper into
 // component scope) would otherwise hit `undefined` instead of a mock
 // when the route's import binding is evaluated.
 vi.mock("~/lib/api/user-setting.server", () => ({

@@ -37,7 +37,7 @@ export function detectBrowserTimezone(fallback = "UTC"): string {
 /**
  * Anchored regex enforcing the YYYY-MM-DD shape used everywhere we
  * round-trip a date through HTTP (X-Local-Date header, form fields, etc.).
- * Centralised here so server-side route guards and any future client-side
+ * Centralized here so server-side route guards and any future client-side
  * checks cannot drift apart on the wire format.
  */
 export const LOCAL_DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,7 +49,7 @@ export const LOCAL_DATE_KEY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * validity only — the backend additionally resolves the name through
  * Go's `time.LoadLocation` to reject syntactically-valid-but-nonexistent
  * zones (e.g. "Not/AZone"). Defined here so every form action that
- * sanitises the field reaches for the same regex.
+ * sanitizes the field reaches for the same regex.
  */
 export const TIMEZONE_PATTERN = /^[A-Za-z_/+\-0-9]{1,64}$/;
 
