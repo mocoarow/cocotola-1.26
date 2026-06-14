@@ -30,10 +30,10 @@
       "dashboard": "Dashboard",
       "myWorkbooks": "My Workbooks",
       "public": "Public",
+      "settings": "Settings",
       "comingSoon": "soon",
       "logout": "Logout",
-      "sidebarLabel": "Workbooks",
-      "languageLabel": "Select language"
+      "sidebarLabel": "Workbooks"
     },
     "index": {
       "title": "My Workbooks",
@@ -219,21 +219,36 @@
       "remaining_one": "{{count}} problem left to reach today's goal.",
       "remaining_other": "{{count}} problems left to reach today's goal."
     },
-    "settings": {
-      "heading": "Preferences",
-      "dailyGoalLabel": "Daily goal (problems)",
-      "dailyGoalHint": "Choose a number between 1 and 500.",
-      "timezoneLabel": "Timezone",
-      "timezoneHint": "Used to bucket each day's activity. Existing buckets keep the timezone they were written under.",
-      "save": "Save preferences",
-      "saved": "Preferences saved.",
-      "partialFailure": "Some preferences could not be saved: {{fields}}. Please retry the highlighted fields."
-    },
     "totals": {
       "active_one": "{{count}} active day",
       "active_other": "{{count}} active days",
       "answered_one": "{{count}} answer",
       "answered_other": "{{count}} answers"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your account preferences in one place.",
+    "account": {
+      "heading": "Account",
+      "loginIdLabel": "Login ID",
+      "organizationLabel": "Organization"
+    },
+    "language": {
+      "heading": "Language",
+      "label": "Display language",
+      "hint": "Changing the language updates the UI immediately and is saved to your account."
+    },
+    "study": {
+      "heading": "Study preferences",
+      "dailyGoalLabel": "Daily goal (problems)",
+      "dailyGoalHint": "Choose a number between 1 and 500.",
+      "timezoneLabel": "Timezone",
+      "timezoneHint": "Used to bucket each day's activity. Existing buckets keep the timezone they were written under.",
+      "timezoneDetected": "Detected: {{timezone}}",
+      "save": "Save preferences",
+      "saved": "Preferences saved.",
+      "partialFailure": "Some preferences could not be saved: {{fields}}. Please retry the highlighted fields."
     }
   },
   "errors": {

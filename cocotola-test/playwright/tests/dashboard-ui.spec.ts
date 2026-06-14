@@ -59,8 +59,8 @@ async function openAuthenticatedDashboard(
   });
   const url = new URL(WEB_BASE_URL);
   // Drop the JSON Content-Type that playwright.config.ts sets globally for
-  // API tests — the dashboard's settings form posts as
-  // application/x-www-form-urlencoded and would otherwise be rejected.
+  // API tests so the UI navigation runs with browser-default headers
+  // (matching what a real user agent would send).
   const context = await browser.newContext({ extraHTTPHeaders: {} });
   await context.addCookies([
     {
@@ -210,35 +210,24 @@ test.describe("dashboard (UI)", () => {
     await close();
   });
 
-  test("saves the daily goal preference and persists across reload", async ({
+  test("does_not_render_preferences_form_after_settings_page_moved", async ({
     browser,
     request,
   }) => {
-    // given: a fresh user on /dashboard with the form pre-filled by the loader
+    // given: a fresh user on /dashboard
     const ownerToken = await authenticatePassword(request, {
       loginId: testEnv.ownerLoginId,
       password: testEnv.ownerPassword,
       organizationName: testEnv.organizationName,
     });
-    const user = await provisionUser(request, ownerToken, "dashboard-prefs");
+    const user = await provisionUser(request, ownerToken, "dashboard-no-prefs");
     const { page, close } = await openAuthenticatedDashboard(browser, user.token);
 
-    const dailyGoalInput = page.locator("#dailyGoal");
-    await expect(dailyGoalInput).toBeVisible();
-
-    // when: changing the daily goal and submitting the preferences form
-    await dailyGoalInput.fill("25");
-    // The form has a single submit button; identifying by type is locale-safe.
-    // scope to the form section to avoid colliding with any header buttons.
-    const settingsSection = page.locator('section:has(#dailyGoal)');
-    await settingsSection.locator('button[type="submit"]').click();
-
-    // then: the saved confirmation appears
-    await expect(page.getByTestId("settings-saved")).toBeVisible();
-
-    // and: the change survives a full reload (loader rehydrates from /auth/me)
-    await page.reload();
-    await expect(page.locator("#dailyGoal")).toHaveValue("25");
+    // then: the daily-goal preference input lives on /settings now,
+    // not on the dashboard. A regression that re-introduces the form
+    // here would catch the user out by saving twice (dashboard + settings).
+    await expect(page.locator("#dailyGoal")).toHaveCount(0);
+    await expect(page.locator("#timezone")).toHaveCount(0);
 
     await close();
   });

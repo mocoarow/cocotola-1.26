@@ -30,10 +30,10 @@
       "dashboard": "대시보드",
       "myWorkbooks": "내 워크북",
       "public": "공개",
+      "settings": "설정",
       "comingSoon": "준비 중",
       "logout": "로그아웃",
-      "sidebarLabel": "워크북",
-      "languageLabel": "언어 선택"
+      "sidebarLabel": "워크북"
     },
     "index": {
       "title": "내 워크북",
@@ -216,19 +216,34 @@
       "reached": "목표 달성! 계속 가봅시다.",
       "remaining_other": "오늘의 목표까지 {{count}}문제 남음."
     },
-    "settings": {
-      "heading": "환경설정",
+    "totals": {
+      "active_other": "활동일 {{count}}",
+      "answered_other": "답변 {{count}}"
+    }
+  },
+  "settings": {
+    "title": "설정",
+    "subtitle": "계정 환경설정을 한곳에서 관리합니다.",
+    "account": {
+      "heading": "계정",
+      "loginIdLabel": "로그인 ID",
+      "organizationLabel": "조직"
+    },
+    "language": {
+      "heading": "언어",
+      "label": "표시 언어",
+      "hint": "변경한 언어는 즉시 UI에 반영되고 계정에도 저장됩니다."
+    },
+    "study": {
+      "heading": "학습 환경설정",
       "dailyGoalLabel": "일일 목표 (문제 수)",
       "dailyGoalHint": "1과 500 사이의 숫자를 선택하세요.",
       "timezoneLabel": "시간대",
       "timezoneHint": "각 일자 버킷에 사용됩니다. 기존 버킷은 기록 시점의 시간대를 유지합니다.",
+      "timezoneDetected": "감지된 값: {{timezone}}",
       "save": "환경설정 저장",
       "saved": "환경설정을 저장했습니다.",
       "partialFailure": "일부 환경설정을 저장하지 못했습니다: {{fields}}. 해당 항목을 다시 저장해 주세요."
-    },
-    "totals": {
-      "active_other": "활동일 {{count}}",
-      "answered_other": "답변 {{count}}"
     }
   },
   "errors": {

@@ -6,9 +6,9 @@ export default [
   route("signup", "routes/signup.tsx"),
   route("auth/callback", "routes/auth.callback.tsx"),
   route("logout", "routes/logout.tsx"),
-  route("user-language", "routes/user-language.tsx"),
   layout("routes/workbooks.tsx", [
     route("dashboard", "routes/dashboard.tsx"),
+    route("settings", "routes/settings.tsx"),
     route("workbooks", "routes/workbooks.index.tsx"),
     route("workbooks/public", "routes/workbooks.public.tsx"),
     route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
