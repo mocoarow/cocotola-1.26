@@ -3,13 +3,13 @@ package usersetting
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -20,7 +20,10 @@ type userSettingFinder interface {
 }
 
 type findUserSettingResponse struct {
-	MaxWorkbooks int `json:"maxWorkbooks"`
+	MaxWorkbooks int    `json:"maxWorkbooks"`
+	Language     string `json:"language"`
+	DailyGoal    int    `json:"dailyGoal"`
+	Timezone     string `json:"timezone"`
 }
 
 // FindUserSettingHandler handles the GET /auth/user-setting endpoint.
@@ -55,28 +58,18 @@ func (h *FindUserSettingHandler) FindUserSetting(c *gin.Context) {
 		return
 	}
 
-	setting, err := h.settingFinder.FindByAppUserID(ctx, appUserID)
+	setting, err := handler.LoadOrInitUserSetting(ctx, h.settingFinder, appUserID)
 	if err != nil {
-		if errors.Is(err, domain.ErrUserSettingNotFound) {
-			// Return default values when no setting exists.
-			defaultSetting, defErr := domain.NewDefaultUserSetting(appUserID)
-			if defErr != nil {
-				h.logger.ErrorContext(ctx, "create default user setting", slog.Any("error", defErr))
-				c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-				return
-			}
-			c.JSON(http.StatusOK, findUserSettingResponse{
-				MaxWorkbooks: defaultSetting.MaxWorkbooks(),
-			})
-			return
-		}
-		h.logger.ErrorContext(ctx, "find user setting", slog.Any("error", err))
+		h.logger.ErrorContext(ctx, "load user setting", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 		return
 	}
 
 	c.JSON(http.StatusOK, findUserSettingResponse{
 		MaxWorkbooks: setting.MaxWorkbooks(),
+		Language:     setting.Language(),
+		DailyGoal:    setting.DailyGoal(),
+		Timezone:     setting.Timezone(),
 	})
 }
 
@@ -94,18 +87,24 @@ func InitUserSettingRouter(
 	settingGroup.GET("", handlers...)
 }
 
-// InitExternalUserSettingRouter sets up the externally-exposed user-setting
-// routes. These are protected by the auth middleware (JWT/cookie) so that the
-// authenticated user can mutate only their own settings.
-func InitExternalUserSettingRouter(
-	updateLanguageHandler *UpdateLanguageHandler,
+// WireExternalUserSettingHandlers constructs every external user-setting
+// update handler from the supplied saver and mounts them under the parent
+// router group. Single entry point so main.go (standalone deployment) and
+// initialize/ (cocotola-app composite deployment) do not have to keep the
+// per-endpoint constructor list synchronized; adding a new update endpoint
+// only requires touching this function (plus its handler file and the
+// router setup below).
+func WireExternalUserSettingHandlers(
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,
+	settingSaver userSettingFinderSaver,
 	middleware ...gin.HandlerFunc,
 ) {
 	settingGroup := parentRouterGroup.Group("user-setting")
 	settingGroup.Use(authMiddleware)
 	settingGroup.Use(middleware...)
 
-	settingGroup.PUT("/language", updateLanguageHandler.UpdateLanguage)
+	settingGroup.PUT("/language", NewUpdateLanguageHandler(settingSaver).UpdateLanguage)
+	settingGroup.PUT("/daily-goal", NewUpdateDailyGoalHandler(settingSaver).UpdateDailyGoal)
+	settingGroup.PUT("/timezone", NewUpdateTimezoneHandler(settingSaver).UpdateTimezone)
 }

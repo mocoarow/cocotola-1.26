@@ -44,7 +44,7 @@ func fakeAuthMiddleware(userID domain.AppUserID) gin.HandlerFunc {
 	}
 }
 
-func initExternalUserSettingRouter(_ context.Context, t *testing.T, settingSaver *mockuserSettingSaver, authMiddleware gin.HandlerFunc) *gin.Engine {
+func initExternalUserSettingRouter(_ context.Context, t *testing.T, settingSaver *mockuserSettingFinderSaver, authMiddleware gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(context.Background(), serverConfig, domain.AppName)
@@ -53,8 +53,7 @@ func initExternalUserSettingRouter(_ context.Context, t *testing.T, settingSaver
 	v1 := api.Group("v1")
 	authV1 := v1.Group("auth")
 
-	updateLanguageHandler := usersettinghandler.NewUpdateLanguageHandler(settingSaver)
-	usersettinghandler.InitExternalUserSettingRouter(updateLanguageHandler, authV1, authMiddleware)
+	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, settingSaver)
 
 	return router
 }

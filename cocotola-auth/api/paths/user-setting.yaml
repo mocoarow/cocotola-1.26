@@ -50,3 +50,107 @@ update-language:
     security:
       - BearerAuth: []
       - CookieAuth: []
+
+update-daily-goal:
+  put:
+    summary: Update daily problem goal
+    deprecated: false
+    description: Update the authenticated user's daily problem count goal.
+    operationId: updateUserDailyGoal
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-setting.yaml#/UpdateUserDailyGoalRequest'
+          examples: {}
+      required: true
+    responses:
+      '204':
+        description: Successfully updated
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Conflict (concurrent modification)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
+update-timezone:
+  put:
+    summary: Update preferred timezone
+    deprecated: false
+    description: Update the authenticated user's preferred IANA timezone.
+    operationId: updateUserTimezone
+    tags:
+      - auth
+    parameters: []
+    requestBody:
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/user-setting.yaml#/UpdateUserTimezoneRequest'
+          examples: {}
+      required: true
+    responses:
+      '204':
+        description: Successfully updated
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Conflict (concurrent modification)
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []

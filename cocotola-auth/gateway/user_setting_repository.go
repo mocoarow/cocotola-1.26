@@ -22,6 +22,8 @@ type userSettingRecord struct {
 	UpdatedBy    string    `gorm:"column:updated_by"`
 	MaxWorkbooks int       `gorm:"column:max_workbooks"`
 	Language     string    `gorm:"column:language"`
+	DailyGoal    int       `gorm:"column:daily_goal"`
+	Timezone     string    `gorm:"column:timezone"`
 }
 
 func (userSettingRecord) TableName() string {
@@ -37,7 +39,7 @@ func toUserSettingDomain(r *userSettingRecord) (*domain.UserSetting, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse app user id %s: %w", r.AppUserID, err)
 	}
-	setting, err := domain.ReconstructUserSetting(appUserID, r.MaxWorkbooks, r.Language)
+	setting, err := domain.ReconstructUserSetting(appUserID, r.MaxWorkbooks, r.Language, r.DailyGoal, r.Timezone)
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct user setting: %w", err)
 	}
@@ -68,6 +70,8 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		UpdatedBy:    operatorID,
 		MaxWorkbooks: setting.MaxWorkbooks(),
 		Language:     setting.Language(),
+		DailyGoal:    setting.DailyGoal(),
+		Timezone:     setting.Timezone(),
 	}
 	err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*userSettingRecord]{
 		DB:     r.db,
@@ -77,6 +81,8 @@ func (r *UserSettingRepository) Save(ctx context.Context, setting *domain.UserSe
 		Updates: map[string]any{
 			"max_workbooks": record.MaxWorkbooks,
 			"language":      record.Language,
+			"daily_goal":    record.DailyGoal,
+			"timezone":      record.Timezone,
 			"updated_by":    operatorID,
 		},
 		EntityName:   "user setting",

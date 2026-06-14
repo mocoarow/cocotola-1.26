@@ -402,6 +402,108 @@ paths:
       security:
         - BearerAuth: []
         - CookieAuth: []
+  /api/v1/auth/user-setting/daily-goal:
+    put:
+      summary: Update daily problem goal
+      deprecated: false
+      description: Update the authenticated user's daily problem count goal.
+      operationId: updateUserDailyGoal
+      tags:
+        - auth
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserDailyGoalRequest'
+            examples: {}
+        required: true
+      responses:
+        '204':
+          description: Successfully updated
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '409':
+          description: Conflict (concurrent modification)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+  /api/v1/auth/user-setting/timezone:
+    put:
+      summary: Update preferred timezone
+      deprecated: false
+      description: Update the authenticated user's preferred IANA timezone.
+      operationId: updateUserTimezone
+      tags:
+        - auth
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserTimezoneRequest'
+            examples: {}
+        required: true
+      responses:
+        '204':
+          description: Successfully updated
+          headers: {}
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '409':
+          description: Conflict (concurrent modification)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
   /api/v1/auth/group:
     post:
       summary: Create a group
@@ -865,11 +967,29 @@ components:
         language:
           type: string
           pattern: ^[a-z]{2}$
+        dailyGoal:
+          type: integer
+          description: Target number of problems to solve per day.
+          minimum: 1
+          maximum: 500
+        timezone:
+          type: string
+          description: |
+            IANA timezone name used to bucket study activity by day. The value is a
+            zone identifier from the IANA Time Zone Database (e.g. "Asia/Tokyo").
+            The `pattern` only restricts the character set; values returned here
+            have already been resolved through Go's `time.LoadLocation` by the
+            auth service, so clients may trust the name to be a real IANA entry
+            rather than re-validating against the pattern alone.
+          pattern: ^[A-Za-z_/+\-0-9]+$
+          maxLength: 64
       required:
         - userId
         - loginId
         - organizationName
         - language
+        - dailyGoal
+        - timezone
     UpdateUserLanguageRequest:
       type: object
       properties:
@@ -887,6 +1007,39 @@ components:
           maxLength: 2
       required:
         - language
+    UpdateUserDailyGoalRequest:
+      type: object
+      properties:
+        dailyGoal:
+          type: integer
+          description: Target number of problems per day. Must be between 1 and 500 inclusive.
+          x-oapi-codegen-extra-tags:
+            binding: required,min=1,max=500
+          minimum: 1
+          maximum: 500
+      required:
+        - dailyGoal
+    UpdateUserTimezoneRequest:
+      type: object
+      properties:
+        timezone:
+          type: string
+          description: |
+            IANA timezone name (e.g. "Asia/Tokyo", "America/Los_Angeles"). Must be a
+            zone identifier present in the IANA Time Zone Database
+            (https://www.iana.org/time-zones). The `pattern` field below only
+            constrains the character set as a defense-in-depth measure; the server
+            additionally resolves the name through Go's `time.LoadLocation` and
+            returns 400 when the name does not exist in the runtime tz database.
+            Sending e.g. "Not/AZone" matches the pattern but is rejected at
+            validation.
+          x-oapi-codegen-extra-tags:
+            binding: required,max=64
+          pattern: ^[A-Za-z_/+\-0-9]+$
+          minLength: 1
+          maxLength: 64
+      required:
+        - timezone
     CreateGroupRequest:
       type: object
       properties:

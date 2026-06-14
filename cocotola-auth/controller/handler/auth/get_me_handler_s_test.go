@@ -20,7 +20,7 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 	// given
 	authUsecase := NewMockAuthUsecase(t)
 	settingFinder := newMockuserSettingFinder(t)
-	setting, err := domain.NewUserSetting(fixtureAppUserID, 5, "ja")
+	setting, err := domain.NewUserSetting(fixtureAppUserID, 5, "ja", 25, "America/Los_Angeles")
 	require.NoError(t, err)
 	settingFinder.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(setting, nil)
 	r := initAuthRouterWithDeps(ctx, t, authUsecase, fakeAuthMiddleware(fixtureAppUserID, "user42", "org1"), settingFinder)
@@ -55,9 +55,22 @@ func Test_GetMeHandler_GetMe_shouldReturn200_whenAuthenticated(t *testing.T) {
 	language := languageExpr.Get(jsonObj)
 	require.Len(t, language, 1)
 	assert.Equal(t, "ja", language[0])
+
+	// Persisted UserSetting overrides defaults — verify the non-default
+	// values flow through to the response so a regression in the
+	// preferences mapping cannot hide behind a default-equal value.
+	dailyGoalExpr := parseExpr(t, "$.dailyGoal")
+	dailyGoal := dailyGoalExpr.Get(jsonObj)
+	require.Len(t, dailyGoal, 1)
+	assert.EqualValues(t, 25, dailyGoal[0])
+
+	timezoneExpr := parseExpr(t, "$.timezone")
+	timezone := timezoneExpr.Get(jsonObj)
+	require.Len(t, timezone, 1)
+	assert.Equal(t, "America/Los_Angeles", timezone[0])
 }
 
-func Test_GetMeHandler_GetMe_shouldReturnDefaultLanguage_whenSettingNotFound(t *testing.T) {
+func Test_GetMeHandler_GetMe_shouldReturnDefaults_whenSettingNotFound(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -77,11 +90,26 @@ func Test_GetMeHandler_GetMe_shouldReturnDefaultLanguage_whenSettingNotFound(t *
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 
+	// Pin every defaulted field here so the "/auth/me returns sensible
+	// defaults when no UserSetting row exists" contract has a single
+	// canonical assertion. Any drift between domain defaults and the
+	// values surfaced to the client breaks this test.
 	jsonObj := parseJSON(t, respBytes)
+
 	languageExpr := parseExpr(t, "$.language")
 	language := languageExpr.Get(jsonObj)
 	require.Len(t, language, 1)
-	assert.Equal(t, "en", language[0])
+	assert.Equal(t, domain.DefaultLanguage(), language[0])
+
+	dailyGoalExpr := parseExpr(t, "$.dailyGoal")
+	dailyGoal := dailyGoalExpr.Get(jsonObj)
+	require.Len(t, dailyGoal, 1)
+	assert.EqualValues(t, domain.DefaultDailyGoal(), dailyGoal[0])
+
+	timezoneExpr := parseExpr(t, "$.timezone")
+	timezone := timezoneExpr.Get(jsonObj)
+	require.Len(t, timezone, 1)
+	assert.Equal(t, domain.DefaultTimezone(), timezone[0])
 }
 
 func Test_GetMeHandler_GetMe_shouldReturn401_whenUserIDMissing(t *testing.T) {
