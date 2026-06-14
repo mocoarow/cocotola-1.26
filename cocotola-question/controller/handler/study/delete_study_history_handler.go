@@ -57,7 +57,11 @@ func (h *DeleteStudyHistoryHandler) DeleteStudyHistory(c *gin.Context) {
 		return
 	}
 
-	input, err := studyservice.NewDeleteStudyHistoryInput(userID, organizationID, workbookID)
+	input, err := studyservice.NewDeleteStudyHistoryInput(studyservice.DeleteStudyHistoryInputParams{
+		OperatorID:     userID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+	})
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid delete study history input", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))

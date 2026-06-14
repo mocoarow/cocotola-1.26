@@ -38,12 +38,22 @@ type GetStudyQuestionsInput struct {
 	ExcludeIDs     []string
 }
 
+// GetStudyQuestionsInputParams holds the named parameters for NewGetStudyQuestionsInput.
+type GetStudyQuestionsInputParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+	Limit          int
+	Practice       bool
+	ExcludeIDs     []string
+}
+
 // NewGetStudyQuestionsInput creates a validated GetStudyQuestionsInput.
-func NewGetStudyQuestionsInput(operatorID string, organizationID string, workbookID string, limit int, practice bool, excludeIDs []string) (*GetStudyQuestionsInput, error) {
-	if len(excludeIDs) > MaxExcludeIDsCount {
-		return nil, fmt.Errorf("excludeIds count exceeds limit (max %d, got %d): %w", MaxExcludeIDsCount, len(excludeIDs), domain.ErrInvalidArgument)
+func NewGetStudyQuestionsInput(p GetStudyQuestionsInputParams) (*GetStudyQuestionsInput, error) {
+	if len(p.ExcludeIDs) > MaxExcludeIDsCount {
+		return nil, fmt.Errorf("excludeIds count exceeds limit (max %d, got %d): %w", MaxExcludeIDsCount, len(p.ExcludeIDs), domain.ErrInvalidArgument)
 	}
-	for i, id := range excludeIDs {
+	for i, id := range p.ExcludeIDs {
 		if id == "" {
 			return nil, fmt.Errorf("excludeIds[%d] is empty: %w", i, domain.ErrInvalidArgument)
 		}
@@ -52,12 +62,12 @@ func NewGetStudyQuestionsInput(operatorID string, organizationID string, workboo
 		}
 	}
 	m := &GetStudyQuestionsInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		WorkbookID:     workbookID,
-		Limit:          limit,
-		Practice:       practice,
-		ExcludeIDs:     excludeIDs,
+		OperatorID:     p.OperatorID,
+		OrganizationID: p.OrganizationID,
+		WorkbookID:     p.WorkbookID,
+		Limit:          p.Limit,
+		Practice:       p.Practice,
+		ExcludeIDs:     p.ExcludeIDs,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate get study questions input: %w", err)
@@ -77,13 +87,21 @@ type GetStudySummaryInput struct {
 	Practice       bool
 }
 
+// GetStudySummaryInputParams holds the named parameters for NewGetStudySummaryInput.
+type GetStudySummaryInputParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+	Practice       bool
+}
+
 // NewGetStudySummaryInput creates a validated GetStudySummaryInput.
-func NewGetStudySummaryInput(operatorID, organizationID, workbookID string, practice bool) (*GetStudySummaryInput, error) {
+func NewGetStudySummaryInput(p GetStudySummaryInputParams) (*GetStudySummaryInput, error) {
 	m := &GetStudySummaryInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		WorkbookID:     workbookID,
-		Practice:       practice,
+		OperatorID:     p.OperatorID,
+		OrganizationID: p.OrganizationID,
+		WorkbookID:     p.WorkbookID,
+		Practice:       p.Practice,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate get study summary input: %w", err)
@@ -168,17 +186,28 @@ type RecordAnswerInput struct {
 	Timezone          string
 }
 
+// RecordAnswerInputForWordFillParams holds the named parameters for NewRecordAnswerInputForWordFill.
+type RecordAnswerInputForWordFillParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+	QuestionID     string
+	Correct        bool
+	LocalDateKey   string
+	Timezone       string
+}
+
 // NewRecordAnswerInputForWordFill creates a validated RecordAnswerInput for word_fill questions.
-func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, questionID string, correct bool, localDateKey, timezone string) (*RecordAnswerInput, error) {
+func NewRecordAnswerInputForWordFill(p RecordAnswerInputForWordFillParams) (*RecordAnswerInput, error) {
 	m := &RecordAnswerInput{
-		OperatorID:        operatorID,
-		OrganizationID:    organizationID,
-		WorkbookID:        workbookID,
-		QuestionID:        questionID,
-		Correct:           &correct,
+		OperatorID:        p.OperatorID,
+		OrganizationID:    p.OrganizationID,
+		WorkbookID:        p.WorkbookID,
+		QuestionID:        p.QuestionID,
+		Correct:           &p.Correct,
 		SelectedChoiceIDs: nil,
-		LocalDateKey:      localDateKey,
-		Timezone:          timezone,
+		LocalDateKey:      p.LocalDateKey,
+		Timezone:          p.Timezone,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
@@ -186,26 +215,37 @@ func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, que
 	return m, nil
 }
 
+// RecordAnswerInputForMultipleChoiceParams holds the named parameters for NewRecordAnswerInputForMultipleChoice.
+type RecordAnswerInputForMultipleChoiceParams struct {
+	OperatorID        string
+	OrganizationID    string
+	WorkbookID        string
+	QuestionID        string
+	SelectedChoiceIDs []string
+	LocalDateKey      string
+	Timezone          string
+}
+
 // NewRecordAnswerInputForMultipleChoice creates a validated RecordAnswerInput for multiple_choice questions.
-func NewRecordAnswerInputForMultipleChoice(operatorID, organizationID, workbookID, questionID string, selectedChoiceIDs []string, localDateKey, timezone string) (*RecordAnswerInput, error) {
-	if len(selectedChoiceIDs) > MaxSelectedChoiceIDsCount {
-		return nil, fmt.Errorf("selectedChoiceIds count exceeds limit (max %d, got %d): %w", MaxSelectedChoiceIDsCount, len(selectedChoiceIDs), domain.ErrInvalidArgument)
+func NewRecordAnswerInputForMultipleChoice(p RecordAnswerInputForMultipleChoiceParams) (*RecordAnswerInput, error) {
+	if len(p.SelectedChoiceIDs) > MaxSelectedChoiceIDsCount {
+		return nil, fmt.Errorf("selectedChoiceIds count exceeds limit (max %d, got %d): %w", MaxSelectedChoiceIDsCount, len(p.SelectedChoiceIDs), domain.ErrInvalidArgument)
 	}
-	for i, id := range selectedChoiceIDs {
+	for i, id := range p.SelectedChoiceIDs {
 		if len(id) > MaxChoiceIDLength {
 			return nil, fmt.Errorf("selectedChoiceIds[%d] exceeds length limit (max %d, got %d): %w", i, MaxChoiceIDLength, len(id), domain.ErrInvalidArgument)
 		}
 	}
-	ids := selectedChoiceIDs
+	ids := p.SelectedChoiceIDs
 	m := &RecordAnswerInput{
-		OperatorID:        operatorID,
-		OrganizationID:    organizationID,
-		WorkbookID:        workbookID,
-		QuestionID:        questionID,
+		OperatorID:        p.OperatorID,
+		OrganizationID:    p.OrganizationID,
+		WorkbookID:        p.WorkbookID,
+		QuestionID:        p.QuestionID,
 		Correct:           nil,
 		SelectedChoiceIDs: &ids,
-		LocalDateKey:      localDateKey,
-		Timezone:          timezone,
+		LocalDateKey:      p.LocalDateKey,
+		Timezone:          p.Timezone,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
@@ -229,6 +269,26 @@ type DeleteStudyHistoryInput struct {
 	WorkbookID     string `validate:"required"`
 }
 
+// DeleteStudyHistoryInputParams holds the named parameters for NewDeleteStudyHistoryInput.
+type DeleteStudyHistoryInputParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+}
+
+// NewDeleteStudyHistoryInput creates a validated DeleteStudyHistoryInput.
+func NewDeleteStudyHistoryInput(p DeleteStudyHistoryInputParams) (*DeleteStudyHistoryInput, error) {
+	m := &DeleteStudyHistoryInput{
+		OperatorID:     p.OperatorID,
+		OrganizationID: p.OrganizationID,
+		WorkbookID:     p.WorkbookID,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate delete study history input: %w", err)
+	}
+	return m, nil
+}
+
 // ListStudyRecordsInput is the validated input for listing a workbook's
 // study records belonging to the operator.
 type ListStudyRecordsInput struct {
@@ -237,12 +297,19 @@ type ListStudyRecordsInput struct {
 	WorkbookID     string `validate:"required"`
 }
 
+// ListStudyRecordsInputParams holds the named parameters for NewListStudyRecordsInput.
+type ListStudyRecordsInputParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+}
+
 // NewListStudyRecordsInput creates a validated ListStudyRecordsInput.
-func NewListStudyRecordsInput(operatorID, organizationID, workbookID string) (*ListStudyRecordsInput, error) {
+func NewListStudyRecordsInput(p ListStudyRecordsInputParams) (*ListStudyRecordsInput, error) {
 	m := &ListStudyRecordsInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		WorkbookID:     workbookID,
+		OperatorID:     p.OperatorID,
+		OrganizationID: p.OrganizationID,
+		WorkbookID:     p.WorkbookID,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate list study records input: %w", err)
@@ -267,19 +334,6 @@ type ListStudyRecordsOutput struct {
 	Records []RecordItem
 }
 
-// NewDeleteStudyHistoryInput creates a validated DeleteStudyHistoryInput.
-func NewDeleteStudyHistoryInput(operatorID, organizationID, workbookID string) (*DeleteStudyHistoryInput, error) {
-	m := &DeleteStudyHistoryInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		WorkbookID:     workbookID,
-	}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate delete study history input: %w", err)
-	}
-	return m, nil
-}
-
 // MinDashboardDays / MaxDashboardDays bound the requested contribution-graph
 // window. 7 supports a one-week mini-view; 730 supports the GitHub-style
 // "two-year" maximum, which is more than enough for the canonical 365-day
@@ -302,13 +356,21 @@ type GetDashboardInput struct {
 	TodayDateKey   string `validate:"required"`
 }
 
+// GetDashboardInputParams holds the named parameters for NewGetDashboardInput.
+type GetDashboardInputParams struct {
+	OperatorID     string
+	OrganizationID string
+	Days           int
+	TodayDateKey   string
+}
+
 // NewGetDashboardInput creates a validated GetDashboardInput.
-func NewGetDashboardInput(operatorID, organizationID string, days int, todayDateKey string) (*GetDashboardInput, error) {
+func NewGetDashboardInput(p GetDashboardInputParams) (*GetDashboardInput, error) {
 	m := &GetDashboardInput{
-		OperatorID:     operatorID,
-		OrganizationID: organizationID,
-		Days:           days,
-		TodayDateKey:   todayDateKey,
+		OperatorID:     p.OperatorID,
+		OrganizationID: p.OrganizationID,
+		Days:           p.Days,
+		TodayDateKey:   p.TodayDateKey,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate get dashboard input: %w", err)

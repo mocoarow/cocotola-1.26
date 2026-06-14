@@ -19,21 +19,40 @@ import (
 
 func newGetStudyQuestionsInput(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false, nil)
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		Limit:          limit,
+		Practice:       false,
+	})
 	require.NoError(t, err)
 	return input
 }
 
 func newGetStudyQuestionsInputForPractice(t *testing.T, limit int) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, true, nil)
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		Limit:          limit,
+		Practice:       true,
+	})
 	require.NoError(t, err)
 	return input
 }
 
 func newGetStudyQuestionsInputWithExcludeIDs(t *testing.T, limit int, excludeIDs []string) *studyservice.GetStudyQuestionsInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudyQuestionsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, limit, false, excludeIDs)
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		Limit:          limit,
+		Practice:       false,
+		ExcludeIDs:     excludeIDs,
+	})
 	require.NoError(t, err)
 	return input
 }

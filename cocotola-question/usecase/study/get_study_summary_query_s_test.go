@@ -17,14 +17,24 @@ import (
 
 func newGetStudySummaryInput(t *testing.T) *studyservice.GetStudySummaryInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudySummaryInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, false)
+	input, err := studyservice.NewGetStudySummaryInput(studyservice.GetStudySummaryInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		Practice:       false,
+	})
 	require.NoError(t, err)
 	return input
 }
 
 func newGetStudySummaryInputForPractice(t *testing.T) *studyservice.GetStudySummaryInput {
 	t.Helper()
-	input, err := studyservice.NewGetStudySummaryInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, true)
+	input, err := studyservice.NewGetStudySummaryInput(studyservice.GetStudySummaryInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		Practice:       true,
+	})
 	require.NoError(t, err)
 	return input
 }

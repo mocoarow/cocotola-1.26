@@ -29,7 +29,12 @@ func Test_GetDashboardQuery_shouldReturnZeroOutput_whenNoStats(t *testing.T) {
 	finder := newMockdailyStatsFinder(t)
 	finder.On("FindRange", mock.Anything, fixtureOperatorID, "2026-06-08", "2026-06-14").Return([]domainstudy.DailyStat{}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -58,7 +63,12 @@ func Test_GetDashboardQuery_shouldFillGapsWithZeroBuckets(t *testing.T) {
 		mustDailyStat(t, "2026-06-14", 3, 2),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -89,7 +99,12 @@ func Test_GetDashboardQuery_shouldReturnTodayProgress(t *testing.T) {
 		mustDailyStat(t, "2026-06-14", 7, 6),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -113,7 +128,12 @@ func Test_GetDashboardQuery_shouldComputeCurrentStreak_whenTodayHasActivity(t *t
 		mustDailyStat(t, "2026-06-14", 1, 1),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -136,7 +156,12 @@ func Test_GetDashboardQuery_shouldGracePeriodCurrentStreak_whenTodayEmptyButYest
 		mustDailyStat(t, "2026-06-13", 1, 1),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -158,7 +183,12 @@ func Test_GetDashboardQuery_shouldReturnZeroCurrentStreak_whenBothTodayAndYester
 		mustDailyStat(t, "2026-06-11", 5, 5),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 7, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           7,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
@@ -187,7 +217,12 @@ func Test_GetDashboardQuery_shouldReportLongestStreak_acrossMultipleRuns(t *test
 		mustDailyStat(t, "2026-06-14", 1, 1),
 	}, nil)
 	q := studyusecase.NewGetDashboardQuery(finder)
-	input, err := studyservice.NewGetDashboardInput(fixtureOperatorID, fixtureOrganizationID, 14, "2026-06-14")
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		Days:           14,
+		TodayDateKey:   "2026-06-14",
+	})
 	require.NoError(t, err)
 
 	// when
