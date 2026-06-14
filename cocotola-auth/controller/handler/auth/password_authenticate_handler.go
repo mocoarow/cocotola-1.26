@@ -81,46 +81,54 @@ func (h *PasswordAuthenticateHandler) Authenticate(c *gin.Context) {
 		return
 	}
 
-	switch tokenDelivery {
-	case "cookie":
-		sessionInput, err := authservice.NewCreateSessionTokenInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "create session token input", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-
-		sessionOutput, err := h.usecase.CreateSessionToken(ctx, sessionInput)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "create session token", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-
-		h.cookieConfig.SetTokenCookie(c.Writer, sessionOutput.RawToken, h.sessionTokenTTLMin)
-		c.JSON(http.StatusOK, api.AuthenticateResponse{
-			AccessToken:  nil,
-			RefreshToken: nil,
-		})
-	default:
-		tokenInput, err := authservice.NewCreateTokenPairInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "create token pair input", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-
-		tokenOutput, err := h.usecase.CreateTokenPair(ctx, tokenInput)
-		if err != nil {
-			h.logger.ErrorContext(ctx, "create token pair", slog.Any("error", err))
-			c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-			return
-		}
-
-		resp := api.AuthenticateResponse{
-			AccessToken:  &tokenOutput.AccessToken,
-			RefreshToken: &tokenOutput.RefreshToken,
-		}
-		c.JSON(http.StatusOK, resp)
+	if tokenDelivery == "cookie" {
+		h.authenticateCookie(c, authOutput)
+	} else {
+		h.authenticateJSON(c, authOutput)
 	}
+}
+
+func (h *PasswordAuthenticateHandler) authenticateCookie(c *gin.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+	ctx := c.Request.Context()
+	sessionInput, err := authservice.NewCreateSessionTokenInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "create session token input", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+
+	sessionOutput, err := h.usecase.CreateSessionToken(ctx, sessionInput)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "create session token", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+
+	h.cookieConfig.SetTokenCookie(c.Writer, sessionOutput.RawToken, h.sessionTokenTTLMin)
+	c.JSON(http.StatusOK, api.AuthenticateResponse{
+		AccessToken:  nil,
+		RefreshToken: nil,
+	})
+}
+
+func (h *PasswordAuthenticateHandler) authenticateJSON(c *gin.Context, authOutput *authservice.PasswordAuthenticateOutput) {
+	ctx := c.Request.Context()
+	tokenInput, err := authservice.NewCreateTokenPairInput(authOutput.UserID, authOutput.LoginID, authOutput.OrganizationName)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "create token pair input", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+
+	tokenOutput, err := h.usecase.CreateTokenPair(ctx, tokenInput)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "create token pair", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		return
+	}
+
+	c.JSON(http.StatusOK, api.AuthenticateResponse{
+		AccessToken:  &tokenOutput.AccessToken,
+		RefreshToken: &tokenOutput.RefreshToken,
+	})
 }

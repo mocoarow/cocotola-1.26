@@ -27,6 +27,7 @@ go_library(
         "//cocotola-lib/process",
         "@com_github_go_sql_driver_mysql//:mysql",
         "@com_github_googlecloudplatform_opentelemetry_operations_go_exporter_trace//:trace",
+        "@com_github_jackc_pgx_v5//pgconn",
         "@com_github_mocoarow_slogotel//:slogotel",
         "@com_github_orandin_slog_gorm//:slog-gorm",
         "@io_gorm_driver_mysql//:mysql",
@@ -66,6 +67,7 @@ smart_go_test(
     ],
     embed = [":gateway"],
     deps = [
+        "@com_github_jackc_pgx_v5//pgconn",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@io_opentelemetry_go_otel_sdk//trace",

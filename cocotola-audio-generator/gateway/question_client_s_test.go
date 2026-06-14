@@ -196,7 +196,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	err := client.Complete(context.Background(), item, nil)
 
 	// then
-	require.ErrorContains(t, err, "complete")
+	require.ErrorContains(t, err, "complete audio")
 }
 
 func Test_QuestionAPIClient_Fail_shouldReturnNil_whenServerReturns200(t *testing.T) {
@@ -230,7 +230,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	err := client.Fail(context.Background(), item, "reason")
 
 	// then
-	require.ErrorContains(t, err, "fail")
+	require.ErrorContains(t, err, "fail audio")
 }
 
 func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(t *testing.T) {
@@ -264,6 +264,6 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	n, err := client.ReclaimStale(context.Background(), 15*time.Minute, 10)
 
 	// then
-	require.ErrorContains(t, err, "reclaim")
+	require.ErrorContains(t, err, "reclaim stale")
 	assert.Equal(t, 0, n)
 }

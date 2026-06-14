@@ -183,3 +183,58 @@ func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn400_whenXTokenDel
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	validateErrorResponse(t, respBytes, "invalid_token_delivery", "X-Token-Delivery must be 'json' or 'cookie'")
 }
+
+func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn500_whenCreateTokenPairReturnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authUsecase := NewMockAuthUsecase(t)
+	authOutput, err := authservice.NewPasswordAuthenticateOutput(fixtureAppUserID, "user1", "org1")
+	require.NoError(t, err)
+	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(authOutput, nil).Once()
+	authUsecase.On("CreateTokenPair", mock.Anything, mock.Anything).Return(nil, errors.New("token pair error")).Once()
+
+	r := initAuthRouter(ctx, t, authUsecase)
+	w := httptest.NewRecorder()
+	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/auth/authenticate", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	validateErrorResponse(t, respBytes, "internal_server_error", "Internal Server Error")
+}
+
+func Test_PasswordAuthenticateHandler_Authenticate_shouldReturn500_whenCreateSessionTokenReturnsError(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authUsecase := NewMockAuthUsecase(t)
+	authOutput, err := authservice.NewPasswordAuthenticateOutput(fixtureAppUserID, "user1", "org1")
+	require.NoError(t, err)
+	authUsecase.On("PasswordAuthenticate", mock.Anything, mock.Anything).Return(authOutput, nil).Once()
+	authUsecase.On("CreateSessionToken", mock.Anything, mock.Anything).Return(nil, errors.New("session token error")).Once()
+
+	r := initAuthRouter(ctx, t, authUsecase)
+	w := httptest.NewRecorder()
+	body := `{"loginId":"user1","password":"password1","organizationName":"org1"}`
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/auth/authenticate", strings.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Token-Delivery", "cookie")
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	validateErrorResponse(t, respBytes, "internal_server_error", "Internal Server Error")
+}
