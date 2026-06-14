@@ -15,6 +15,42 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway"
 )
 
+type listPendingResponse struct {
+	Items []pendingItemPayload `json:"items"`
+}
+
+type pendingItemPayload struct {
+	WorkbookID  string `json:"workbookId"`
+	QuestionID  string `json:"questionId"`
+	SourceText  string `json:"sourceText"`
+	SourceLang  string `json:"sourceLang"`
+	TargetText  string `json:"targetText"`
+	TargetLang  string `json:"targetLang"`
+	InputHash   string `json:"inputHash"`
+	FailedTries int    `json:"failedTries"`
+}
+
+type reclaimStaleResponse struct {
+	Reclaimed int `json:"reclaimed"`
+}
+
+// writeJSON is invoked from the test-server handler, i.e. a goroutine
+// other than the one running the test function. t.Fatal/Fatalf would only
+// call runtime.Goexit on the handler goroutine and leave the test body
+// blocked on an empty HTTP response; t.Errorf is goroutine-safe and the
+// early return prevents the encoder from writing partial output after
+// the failure is recorded.
+func writeJSON(t *testing.T, w http.ResponseWriter, body any) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(body); err != nil {
+		t.Errorf("encode response body: %v", err)
+
+		return
+	}
+}
+
 func newTestQuestionClient(t *testing.T, handler http.Handler) *gateway.QuestionAPIClient {
 	t.Helper()
 	srv := httptest.NewServer(handler)
@@ -29,18 +65,17 @@ func Test_QuestionAPIClient_ListPending_shouldReturnItems_whenServerReturns200(t
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/internal/audio/questions/pending", r.URL.Path)
 		assert.Equal(t, "test-key", r.Header.Get("X-Service-Api-Key"))
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"items": []map[string]any{
+		writeJSON(t, w, listPendingResponse{
+			Items: []pendingItemPayload{
 				{
-					"workbookId":  "wb-1",
-					"questionId":  "q-1",
-					"sourceText":  "りんご",
-					"sourceLang":  "ja",
-					"targetText":  "apple",
-					"targetLang":  "en",
-					"inputHash":   "abc",
-					"failedTries": 0,
+					WorkbookID:  "wb-1",
+					QuestionID:  "q-1",
+					SourceText:  "りんご",
+					SourceLang:  "ja",
+					TargetText:  "apple",
+					TargetLang:  "en",
+					InputHash:   "abc",
+					FailedTries: 0,
 				},
 			},
 		})
@@ -62,7 +97,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -71,7 +106,7 @@ func Test_QuestionAPIClient_ListPending_shouldReturnError_whenServerReturnsNon20
 	items, err := client.ListPending(context.Background(), 10)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "list pending")
 	assert.Nil(t, items)
 }
 
@@ -79,7 +114,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnNil_whenServerReturns200(t *testin
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -96,7 +131,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnErrClaimRace_whenServerReturns409(
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusConflict)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -113,7 +148,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200NonCo
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -123,7 +158,7 @@ func Test_QuestionAPIClient_Claim_shouldReturnError_whenServerReturnsNon200NonCo
 	err := client.Claim(context.Background(), item)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "claim audio")
 	assert.NotErrorIs(t, err, domain.ErrClaimRace)
 }
 
@@ -131,7 +166,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnNil_whenServerReturns200(t *tes
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -151,7 +186,7 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -161,14 +196,14 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	err := client.Complete(context.Background(), item, nil)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "complete")
 }
 
 func Test_QuestionAPIClient_Fail_shouldReturnNil_whenServerReturns200(t *testing.T) {
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -185,7 +220,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -195,7 +230,7 @@ func Test_QuestionAPIClient_Fail_shouldReturnError_whenServerReturnsNon200(t *te
 	err := client.Fail(context.Background(), item, "reason")
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "fail")
 }
 
 func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(t *testing.T) {
@@ -204,8 +239,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnCount_whenServerReturns200(
 	// given
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "/api/v1/internal/audio/questions/reclaim-stale", r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{"reclaimed": 3})
+		writeJSON(t, w, reclaimStaleResponse{Reclaimed: 3})
 	})
 	client := newTestQuestionClient(t, handler)
 
@@ -221,7 +255,7 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	t.Parallel()
 
 	// given
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "server error", http.StatusInternalServerError)
 	})
 	client := newTestQuestionClient(t, handler)
@@ -230,6 +264,6 @@ func Test_QuestionAPIClient_ReclaimStale_shouldReturnError_whenServerReturnsNon2
 	n, err := client.ReclaimStale(context.Background(), 15*time.Minute, 10)
 
 	// then
-	require.Error(t, err)
+	require.ErrorContains(t, err, "reclaim")
 	assert.Equal(t, 0, n)
 }
