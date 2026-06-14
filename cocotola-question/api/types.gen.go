@@ -51,10 +51,37 @@ type CreateWorkbookRequest struct {
 // CreateWorkbookRequestVisibility defines model for CreateWorkbookRequest.Visibility.
 type CreateWorkbookRequestVisibility string
 
+// DashboardDailyItem One day's bucket of study activity on the contribution graph.
+type DashboardDailyItem struct {
+	AnsweredCount int32 `json:"answeredCount"`
+	CorrectCount  int32 `json:"correctCount"`
+
+	// Date Calendar date (user-local) in YYYY-MM-DD form.
+	Date string `json:"date"`
+}
+
 // ErrorResponse defines model for ErrorResponse.
 type ErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
+}
+
+// GetDashboardResponse User-scoped study dashboard data: contribution-graph buckets within the
+// requested window, calendar-day streak counters (one or more answers
+// required per day), today's running totals, and aggregate counts across
+// the window. The buckets fully cover [from, to] with zero entries on
+// inactive days.
+type GetDashboardResponse struct {
+	ActiveDays    int32                `json:"activeDays"`
+	CurrentStreak int32                `json:"currentStreak"`
+	Days          []DashboardDailyItem `json:"days"`
+	From          string               `json:"from"`
+	LongestStreak int32                `json:"longestStreak"`
+	To            string               `json:"to"`
+	TodayCorrect  int32                `json:"todayCorrect"`
+	TodayCount    int32                `json:"todayCount"`
+	TotalAnswered int32                `json:"totalAnswered"`
+	TotalCorrect  int32                `json:"totalCorrect"`
 }
 
 // GetStudyQuestionsResponse defines model for GetStudyQuestionsResponse.
@@ -254,6 +281,15 @@ type WorkbookResponseVisibility string
 // InternalListWorkbooksParams defines parameters for InternalListWorkbooks.
 type InternalListWorkbooksParams struct {
 	SpaceId string `form:"spaceId" json:"spaceId"`
+}
+
+// GetStudyDashboardParams defines parameters for GetStudyDashboard.
+type GetStudyDashboardParams struct {
+	// Days Number of days in the contribution window. Defaults to 365.
+	Days int32 `form:"days,omitempty" json:"days,omitempty"`
+
+	// XLocalDate The caller's "today" in YYYY-MM-DD form (user's local TZ).
+	XLocalDate string `json:"X-Local-Date"`
 }
 
 // GetStudyQuestionsParams defines parameters for GetStudyQuestions.

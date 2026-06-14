@@ -29,6 +29,12 @@ type dailyStatsIncrementer interface {
 	IncrementToday(ctx context.Context, userID string, dateKey string, timezone string, correct bool, now time.Time) error
 }
 
+// dailyStatsFinder reads the user's per-day study counters within an
+// inclusive [from, to] YYYY-MM-DD range.
+type dailyStatsFinder interface {
+	FindRange(ctx context.Context, userID string, fromDateKey string, toDateKey string) ([]domainstudy.DailyStat, error)
+}
+
 type activeQuestionListFinder interface {
 	FindByWorkbookID(ctx context.Context, workbookID string) (*domain.ActiveQuestionList, error)
 }

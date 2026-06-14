@@ -170,3 +170,82 @@ RecordAnswerResponse:
     totalIncorrect:
       type: integer
       format: int32
+
+DashboardDailyItem:
+  type: object
+  description: One day's bucket of study activity on the contribution graph.
+  required:
+    - date
+    - answeredCount
+    - correctCount
+  properties:
+    date:
+      type: string
+      description: Calendar date (user-local) in YYYY-MM-DD form.
+      pattern: ^\d{4}-\d{2}-\d{2}$
+    answeredCount:
+      type: integer
+      format: int32
+    correctCount:
+      type: integer
+      format: int32
+
+GetDashboardResponse:
+  type: object
+  description: |
+    User-scoped study dashboard data: contribution-graph buckets within the
+    requested window, calendar-day streak counters (one or more answers
+    required per day), today's running totals, and aggregate counts across
+    the window. The buckets fully cover [from, to] with zero entries on
+    inactive days.
+  required:
+    - from
+    - to
+    - days
+    - currentStreak
+    - longestStreak
+    - todayCount
+    - todayCorrect
+    - activeDays
+    - totalAnswered
+    - totalCorrect
+  properties:
+    from:
+      type: string
+      pattern: ^\d{4}-\d{2}-\d{2}$
+    to:
+      type: string
+      pattern: ^\d{4}-\d{2}-\d{2}$
+    days:
+      type: array
+      maxItems: 730
+      items:
+        $ref: '#/DashboardDailyItem'
+    currentStreak:
+      type: integer
+      format: int32
+      minimum: 0
+    longestStreak:
+      type: integer
+      format: int32
+      minimum: 0
+    todayCount:
+      type: integer
+      format: int32
+      minimum: 0
+    todayCorrect:
+      type: integer
+      format: int32
+      minimum: 0
+    activeDays:
+      type: integer
+      format: int32
+      minimum: 0
+    totalAnswered:
+      type: integer
+      format: int32
+      minimum: 0
+    totalCorrect:
+      type: integer
+      format: int32
+      minimum: 0

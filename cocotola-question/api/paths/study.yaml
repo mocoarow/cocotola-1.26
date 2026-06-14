@@ -298,6 +298,71 @@ study-records:
       - BearerAuth: []
       - CookieAuth: []
 
+study-dashboard:
+  get:
+    summary: Get user study dashboard
+    deprecated: false
+    description: >
+      Returns the user-scoped study dashboard data used to render the
+      contribution graph, streak counters, and today's progress card. The
+      window covers [today - days + 1, today] in the caller's local
+      calendar; the frontend resolves "today" in the user's local
+      timezone before sending X-Local-Date, so the server does not need
+      the timezone on this endpoint.
+    operationId: getStudyDashboard
+    tags:
+      - study
+    parameters:
+      - name: days
+        in: query
+        required: false
+        description: Number of days in the contribution window. Defaults to 365.
+        schema:
+          type: integer
+          format: int32
+          minimum: 7
+          maximum: 730
+          default: 365
+      - name: X-Local-Date
+        in: header
+        required: true
+        description: The caller's "today" in YYYY-MM-DD form (user's local TZ).
+        schema:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+    responses:
+      '200':
+        description: Successfully retrieved dashboard
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/study.yaml#/GetDashboardResponse'
+        headers: {}
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '500':
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+    security:
+      - BearerAuth: []
+      - CookieAuth: []
+
 study-answer:
   post:
     summary: Record an answer

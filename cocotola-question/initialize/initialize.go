@@ -128,7 +128,9 @@ func Initialize(
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
 	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(studyCommand)
 	listStudyRecordsHandler := studyhandler.NewListStudyRecordsHandler(studyCommand)
+	getDashboardHandler := studyhandler.NewGetDashboardHandler(studyCommand)
 	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, deleteStudyHistoryHandler, listStudyRecordsHandler, parent, authMiddleware, orgResolverMiddleware)
+	studyhandler.InitDashboardRouter(getDashboardHandler, parent, authMiddleware, orgResolverMiddleware)
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)

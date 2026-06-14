@@ -279,3 +279,63 @@ func NewDeleteStudyHistoryInput(operatorID, organizationID, workbookID string) (
 	}
 	return m, nil
 }
+
+// MinDashboardDays / MaxDashboardDays bound the requested contribution-graph
+// window. 7 supports a one-week mini-view; 730 supports the GitHub-style
+// "two-year" maximum, which is more than enough for the canonical 365-day
+// graph without leaving headroom for accidentally-unbounded ranges.
+const (
+	MinDashboardDays = 7
+	MaxDashboardDays = 730
+)
+
+// GetDashboardInput is the validated input for the user-scoped study
+// dashboard. TodayDateKey is the client's "today" in YYYY-MM-DD form
+// (the frontend computes it in the user's local timezone before sending
+// X-Local-Date) so server clocks stay decoupled from the user's local
+// calendar; the usecase derives the [today - days + 1, today] window
+// purely from the date string and does not need the timezone here.
+type GetDashboardInput struct {
+	OperatorID     string `validate:"required"`
+	OrganizationID string `validate:"required"`
+	Days           int    `validate:"gte=7,lte=730"`
+	TodayDateKey   string `validate:"required"`
+}
+
+// NewGetDashboardInput creates a validated GetDashboardInput.
+func NewGetDashboardInput(operatorID, organizationID string, days int, todayDateKey string) (*GetDashboardInput, error) {
+	m := &GetDashboardInput{
+		OperatorID:     operatorID,
+		OrganizationID: organizationID,
+		Days:           days,
+		TodayDateKey:   todayDateKey,
+	}
+	if err := domain.ValidateStruct(m); err != nil {
+		return nil, fmt.Errorf("validate get dashboard input: %w", err)
+	}
+	return m, nil
+}
+
+// DashboardDailyItem mirrors a single daily bucket on the service boundary.
+type DashboardDailyItem struct {
+	Date          string
+	AnsweredCount int
+	CorrectCount  int
+}
+
+// GetDashboardOutput holds the data needed to render the dashboard: the
+// per-day contribution buckets within the requested window, the rolling
+// streak counters (calendar-day based, requiring at least one answer per
+// day), today's running total, and the all-window aggregates.
+type GetDashboardOutput struct {
+	From          string
+	To            string
+	Days          []DashboardDailyItem
+	CurrentStreak int
+	LongestStreak int
+	TodayCount    int
+	TodayCorrect  int
+	ActiveDays    int
+	TotalAnswered int
+	TotalCorrect  int
+}

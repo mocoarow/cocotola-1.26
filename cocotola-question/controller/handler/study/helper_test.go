@@ -85,6 +85,20 @@ func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase
 	return router
 }
 
+func initDashboardRouter(ctx context.Context, t *testing.T, dashboardUsecase *MockGetDashboardUsecase, authMiddleware gin.HandlerFunc, orgMiddleware gin.HandlerFunc) *gin.Engine {
+	t.Helper()
+
+	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
+	require.NoError(t, err)
+	api := router.Group("api")
+	v1 := api.Group("v1")
+
+	getDashboardHandler := studyhandler.NewGetDashboardHandler(dashboardUsecase)
+	studyhandler.InitDashboardRouter(getDashboardHandler, v1, authMiddleware, orgMiddleware)
+
+	return router
+}
+
 func readBytes(t *testing.T, b *bytes.Buffer) []byte {
 	t.Helper()
 	respBytes, err := io.ReadAll(b)
