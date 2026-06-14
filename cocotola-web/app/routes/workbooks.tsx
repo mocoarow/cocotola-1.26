@@ -1,6 +1,6 @@
-import { BookOpenIcon, GlobeIcon, LogOutIcon } from "lucide-react";
+import { ActivityIcon, BookOpenIcon, GlobeIcon, LogOutIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Form, Link, Outlet, redirect, useFetcher, useLoaderData, useLocation } from "react-router";
+import { Form, Link, Outlet, useFetcher, useLoaderData, useLocation } from "react-router";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -21,48 +21,47 @@ import {
   SidebarTrigger,
 } from "~/components/ui/sidebar";
 import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
-import { fetchWithIdToken } from "~/lib/api/fetch.server";
+import { getUserPreferences, type UserPreferences } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
-import { destroySession, getSession } from "~/lib/auth/session.server";
 import type { Route } from "./+types/workbooks";
 
 export async function loader({ request }: Route.LoaderArgs) {
   console.info("[workbooks] loader called");
   const { accessToken } = await requireAuth(request);
 
-  const authUrl = process.env.AUTH_BASE_URL;
-  if (!authUrl) {
-    throw new Error("AUTH_BASE_URL environment variable is required");
+  // Layout-level loader: render the outlet even when /auth/me transiently
+  // fails (5xx) so the rest of the app stays reachable. The original
+  // implementation returned `{ user: null }` on non-401 errors; that
+  // graceful degradation was lost when this loader was refactored onto
+  // getUserPreferences, which throws Response for every non-2xx. Catch
+  // those Responses here and fall back to null — but propagate the 3xx
+  // Responses (the redirect("/login") that redirectOnUnauthorized fires
+  // on 401) so session expiry still takes the user to the login screen.
+  let user: UserPreferences | null = null;
+  try {
+    user = await getUserPreferences(request, accessToken);
+  } catch (e) {
+    if (e instanceof Response && e.status >= 300 && e.status < 400) throw e;
+    console.error("[workbooks] /auth/me failed (degraded render):", e);
   }
 
-  const meUrl = `${authUrl}/api/v1/auth/me`;
-  console.info(`[workbooks] fetching user info: url=${meUrl}`);
-
-  const response = await fetchWithIdToken(authUrl, meUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (response.status === 401) {
-    console.info("[workbooks] /auth/me returned 401, destroying session");
-    const session = await getSession(request);
-    throw redirect("/login", { headers: { "Set-Cookie": await destroySession(session) } });
+  if (user !== null) {
+    // loginId is email-shaped PII; log only the opaque userId so server
+    // logs stay compliance-safe. Richer per-request attributes belong on
+    // OTEL spans, not in console output.
+    console.info(`[workbooks] user loaded: userId=${user.userId}`);
   }
 
-  if (!response.ok) {
-    console.error(`[workbooks] /auth/me failed: status=${response.status}`);
-    return { user: null };
-  }
-
-  const user = (await response.json()) as {
-    userId: string;
-    loginId: string;
-    organizationName: string;
-  };
-  console.info(`[workbooks] user loaded: userId=${user.userId}, loginId=${user.loginId}`);
   return { user };
 }
 
 const navItems = [
+  {
+    titleKey: "workbooks.nav.dashboard",
+    href: "/dashboard",
+    icon: ActivityIcon,
+    disabled: false,
+  },
   {
     titleKey: "workbooks.nav.myWorkbooks",
     href: "/workbooks",

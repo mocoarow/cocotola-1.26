@@ -99,21 +99,40 @@ export async function getStudySummary(
   return (await response.json()) as StudySummary;
 }
 
+/**
+ * Locale headers sent with the answer POST so the backend can bucket the
+ * answer into the dashboard contribution graph using the user's local
+ * "today". Both fields are optional at the wire level — the backend will
+ * still record the SRS answer if absent, but the daily-stats counter will
+ * not advance.
+ */
+export type AnswerLocaleHeaders = {
+  localDateKey: string;
+  timezone: string;
+};
+
 async function postRecordAnswer(
   accessToken: string,
   workbookId: string,
   questionId: string,
   body: Record<string, unknown>,
+  locale?: AnswerLocaleHeaders,
 ): Promise<RecordAnswerResponse> {
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/study/${encodeURIComponent(questionId)}/answer`;
 
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+  };
+  if (locale && locale.localDateKey !== "" && locale.timezone !== "") {
+    headers["X-Local-Date"] = locale.localDateKey;
+    headers["X-Local-Timezone"] = locale.timezone;
+  }
+
   const response = await fetchWithIdToken(baseUrl, url, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(body),
   });
 
@@ -129,8 +148,9 @@ export function recordAnswerForWordFill(
   workbookId: string,
   questionId: string,
   correct: boolean,
+  locale?: AnswerLocaleHeaders,
 ): Promise<RecordAnswerResponse> {
-  return postRecordAnswer(accessToken, workbookId, questionId, { correct });
+  return postRecordAnswer(accessToken, workbookId, questionId, { correct }, locale);
 }
 
 export function recordAnswerForMultipleChoice(
@@ -138,8 +158,9 @@ export function recordAnswerForMultipleChoice(
   workbookId: string,
   questionId: string,
   selectedChoiceIds: string[],
+  locale?: AnswerLocaleHeaders,
 ): Promise<RecordAnswerResponse> {
-  return postRecordAnswer(accessToken, workbookId, questionId, { selectedChoiceIds });
+  return postRecordAnswer(accessToken, workbookId, questionId, { selectedChoiceIds }, locale);
 }
 
 export async function deleteStudyHistory(accessToken: string, workbookId: string): Promise<void> {

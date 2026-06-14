@@ -27,6 +27,7 @@
   },
   "workbooks": {
     "nav": {
+      "dashboard": "대시보드",
       "myWorkbooks": "내 워크북",
       "public": "공개",
       "comingSoon": "준비 중",
@@ -183,6 +184,51 @@
         "incorrect": "오답",
         "total": "총계"
       }
+    }
+  },
+  "dashboard": {
+    "title": "학습 대시보드",
+    "subtitle": "매일의 학습 리듬을 한눈에.",
+    "empty": "아직 활동 기록이 없습니다. 첫 문제를 풀어 연속 기록을 시작하세요.",
+    "graph": {
+      "label": "활동 잔디 그래프",
+      "heading": "기여",
+      "range": "{{from}} — {{to}}",
+      "cellTitle": "{{date}}: {{count}}문제 풀이 ({{correct}} 정답)",
+      "legendLess": "적음",
+      "legendMore": "많음",
+      "day": {
+        "1": "월",
+        "3": "수",
+        "5": "금"
+      }
+    },
+    "streak": {
+      "label": "연속 기록",
+      "heading": "현재 연속 기록",
+      "currentValue_other": "{{count}}일",
+      "longest_other": "최장: {{count}}일"
+    },
+    "goal": {
+      "label": "오늘의 목표",
+      "heading": "오늘의 목표",
+      "progress": "{{today}} / {{goal}}",
+      "reached": "목표 달성! 계속 가봅시다.",
+      "remaining_other": "오늘의 목표까지 {{count}}문제 남음."
+    },
+    "settings": {
+      "heading": "환경설정",
+      "dailyGoalLabel": "일일 목표 (문제 수)",
+      "dailyGoalHint": "1과 500 사이의 숫자를 선택하세요.",
+      "timezoneLabel": "시간대",
+      "timezoneHint": "각 일자 버킷에 사용됩니다. 기존 버킷은 기록 시점의 시간대를 유지합니다.",
+      "save": "환경설정 저장",
+      "saved": "환경설정을 저장했습니다.",
+      "partialFailure": "일부 환경설정을 저장하지 못했습니다: {{fields}}. 해당 항목을 다시 저장해 주세요."
+    },
+    "totals": {
+      "active_other": "활동일 {{count}}",
+      "answered_other": "답변 {{count}}"
     }
   },
   "errors": {

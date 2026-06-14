@@ -11,7 +11,7 @@ export async function action({ request }: Route.ActionArgs) {
   if (typeof language !== "string" || !supportedLanguages.includes(language as SupportedLanguage)) {
     throw new Response("language is invalid", { status: 400 });
   }
-  await updateUserLanguage(accessToken, language);
+  await updateUserLanguage(request, accessToken, language);
   return { ok: true };
 }
 

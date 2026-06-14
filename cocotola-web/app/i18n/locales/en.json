@@ -27,6 +27,7 @@
   },
   "workbooks": {
     "nav": {
+      "dashboard": "Dashboard",
       "myWorkbooks": "My Workbooks",
       "public": "Public",
       "comingSoon": "soon",
@@ -183,6 +184,56 @@
         "incorrect": "Incorrect",
         "total": "Total"
       }
+    }
+  },
+  "dashboard": {
+    "title": "Learning Dashboard",
+    "subtitle": "Your daily learning rhythm at a glance.",
+    "empty": "No activity yet. Solve your first problem to start your streak.",
+    "graph": {
+      "label": "Activity contribution graph",
+      "heading": "Contributions",
+      "range": "{{from}} — {{to}}",
+      "cellTitle": "{{date}}: {{count}} answered ({{correct}} correct)",
+      "legendLess": "Less",
+      "legendMore": "More",
+      "day": {
+        "1": "Mon",
+        "3": "Wed",
+        "5": "Fri"
+      }
+    },
+    "streak": {
+      "label": "Streak",
+      "heading": "Current streak",
+      "currentValue_one": "{{count}} day",
+      "currentValue_other": "{{count}} days",
+      "longest_one": "Longest: {{count}} day",
+      "longest_other": "Longest: {{count}} days"
+    },
+    "goal": {
+      "label": "Today's goal",
+      "heading": "Today's goal",
+      "progress": "{{today}} / {{goal}}",
+      "reached": "Goal reached. Keep going!",
+      "remaining_one": "{{count}} problem left to reach today's goal.",
+      "remaining_other": "{{count}} problems left to reach today's goal."
+    },
+    "settings": {
+      "heading": "Preferences",
+      "dailyGoalLabel": "Daily goal (problems)",
+      "dailyGoalHint": "Choose a number between 1 and 500.",
+      "timezoneLabel": "Timezone",
+      "timezoneHint": "Used to bucket each day's activity. Existing buckets keep the timezone they were written under.",
+      "save": "Save preferences",
+      "saved": "Preferences saved.",
+      "partialFailure": "Some preferences could not be saved: {{fields}}. Please retry the highlighted fields."
+    },
+    "totals": {
+      "active_one": "{{count}} active day",
+      "active_other": "{{count}} active days",
+      "answered_one": "{{count}} answer",
+      "answered_other": "{{count}} answers"
     }
   },
   "errors": {
