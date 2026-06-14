@@ -2,6 +2,7 @@ package study
 
 import (
 	"context"
+	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
@@ -20,6 +21,12 @@ type studyRecordSaver interface {
 
 type studyRecordDeleter interface {
 	DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error
+}
+
+// dailyStatsIncrementer increments the user's per-day study counters used
+// by the dashboard contribution graph, streak, and goal cards.
+type dailyStatsIncrementer interface {
+	IncrementToday(ctx context.Context, userID string, dateKey string, timezone string, correct bool, now time.Time) error
 }
 
 type activeQuestionListFinder interface {

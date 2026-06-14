@@ -150,6 +150,13 @@ const (
 // Exactly one of Correct or SelectedChoiceIDs must be set, matched to the
 // question's type. The usecase enforces the per-type rule once the question
 // is loaded (the handler also rejects "neither set" / "both set" earlier).
+//
+// LocalDateKey and Timezone are the client-supplied user-local "today" used
+// to bucket the answer into the dashboard's daily contribution graph. They
+// are optional: when empty, the daily-stats increment is skipped (the answer
+// itself is still recorded). The handler reads these from the X-Local-Date
+// and X-Local-Timezone headers respectively, which keeps server clocks and
+// user TZ preferences independent of the SRS write path.
 type RecordAnswerInput struct {
 	OperatorID        string `validate:"required"`
 	OrganizationID    string `validate:"required"`
@@ -157,10 +164,12 @@ type RecordAnswerInput struct {
 	QuestionID        string `validate:"required"`
 	Correct           *bool
 	SelectedChoiceIDs *[]string
+	LocalDateKey      string
+	Timezone          string
 }
 
 // NewRecordAnswerInputForWordFill creates a validated RecordAnswerInput for word_fill questions.
-func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, questionID string, correct bool) (*RecordAnswerInput, error) {
+func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, questionID string, correct bool, localDateKey, timezone string) (*RecordAnswerInput, error) {
 	m := &RecordAnswerInput{
 		OperatorID:        operatorID,
 		OrganizationID:    organizationID,
@@ -168,6 +177,8 @@ func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, que
 		QuestionID:        questionID,
 		Correct:           &correct,
 		SelectedChoiceIDs: nil,
+		LocalDateKey:      localDateKey,
+		Timezone:          timezone,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
@@ -176,7 +187,7 @@ func NewRecordAnswerInputForWordFill(operatorID, organizationID, workbookID, que
 }
 
 // NewRecordAnswerInputForMultipleChoice creates a validated RecordAnswerInput for multiple_choice questions.
-func NewRecordAnswerInputForMultipleChoice(operatorID, organizationID, workbookID, questionID string, selectedChoiceIDs []string) (*RecordAnswerInput, error) {
+func NewRecordAnswerInputForMultipleChoice(operatorID, organizationID, workbookID, questionID string, selectedChoiceIDs []string, localDateKey, timezone string) (*RecordAnswerInput, error) {
 	if len(selectedChoiceIDs) > MaxSelectedChoiceIDsCount {
 		return nil, fmt.Errorf("selectedChoiceIds count exceeds limit (max %d, got %d): %w", MaxSelectedChoiceIDsCount, len(selectedChoiceIDs), domain.ErrInvalidArgument)
 	}
@@ -193,6 +204,8 @@ func NewRecordAnswerInputForMultipleChoice(operatorID, organizationID, workbookI
 		QuestionID:        questionID,
 		Correct:           nil,
 		SelectedChoiceIDs: &ids,
+		LocalDateKey:      localDateKey,
+		Timezone:          timezone,
 	}
 	if err := domain.ValidateStruct(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
