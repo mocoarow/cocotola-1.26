@@ -70,7 +70,12 @@ func (h *GetStudySummaryHandler) GetStudySummary(c *gin.Context) {
 		practice = v
 	}
 
-	input, err := studyservice.NewGetStudySummaryInput(userID, organizationID, workbookID, practice)
+	input, err := studyservice.NewGetStudySummaryInput(studyservice.GetStudySummaryInputParams{
+		OperatorID:     userID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+		Practice:       practice,
+	})
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid get study summary input", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))

@@ -139,7 +139,15 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct and selectedChoiceIds are mutually exclusive"))
 		return nil, false
 	case body.Correct != nil:
-		in, err := studyservice.NewRecordAnswerInputForWordFill(ids.userID, ids.organizationID, ids.workbookID, ids.questionID, *body.Correct, localDateKey, timezone)
+		in, err := studyservice.NewRecordAnswerInputForWordFill(studyservice.RecordAnswerInputForWordFillParams{
+			OperatorID:     ids.userID,
+			OrganizationID: ids.organizationID,
+			WorkbookID:     ids.workbookID,
+			QuestionID:     ids.questionID,
+			Correct:        *body.Correct,
+			LocalDateKey:   localDateKey,
+			Timezone:       timezone,
+		})
 		if err != nil {
 			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
 			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
@@ -147,7 +155,15 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 		}
 		return in, true
 	default:
-		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(ids.userID, ids.organizationID, ids.workbookID, ids.questionID, *body.SelectedChoiceIDs, localDateKey, timezone)
+		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(studyservice.RecordAnswerInputForMultipleChoiceParams{
+			OperatorID:        ids.userID,
+			OrganizationID:    ids.organizationID,
+			WorkbookID:        ids.workbookID,
+			QuestionID:        ids.questionID,
+			SelectedChoiceIDs: *body.SelectedChoiceIDs,
+			LocalDateKey:      localDateKey,
+			Timezone:          timezone,
+		})
 		if err != nil {
 			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
 			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))

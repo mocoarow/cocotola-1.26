@@ -17,7 +17,11 @@ import (
 
 func newListStudyRecordsInput(t *testing.T) *studyservice.ListStudyRecordsInput {
 	t.Helper()
-	input, err := studyservice.NewListStudyRecordsInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID)
+	input, err := studyservice.NewListStudyRecordsInput(studyservice.ListStudyRecordsInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+	})
 	require.NoError(t, err)
 	return input
 }

@@ -76,14 +76,26 @@ func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.Acti
 
 func newRecordAnswerInputForWordFill(t *testing.T, correct bool) *studyservice.RecordAnswerInput {
 	t.Helper()
-	input, err := studyservice.NewRecordAnswerInputForWordFill(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, correct, "", "")
+	input, err := studyservice.NewRecordAnswerInputForWordFill(studyservice.RecordAnswerInputForWordFillParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		QuestionID:     fixtureQuestionID,
+		Correct:        correct,
+	})
 	require.NoError(t, err)
 	return input
 }
 
 func newRecordAnswerInputForMultipleChoice(t *testing.T, ids []string) *studyservice.RecordAnswerInput {
 	t.Helper()
-	input, err := studyservice.NewRecordAnswerInputForMultipleChoice(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, ids, "", "")
+	input, err := studyservice.NewRecordAnswerInputForMultipleChoice(studyservice.RecordAnswerInputForMultipleChoiceParams{
+		OperatorID:        fixtureOperatorID,
+		OrganizationID:    fixtureOrganizationID,
+		WorkbookID:        fixtureWorkbookID,
+		QuestionID:        fixtureQuestionID,
+		SelectedChoiceIDs: ids,
+	})
 	require.NoError(t, err)
 	return input
 }
@@ -514,7 +526,15 @@ func Test_RecordAnswerCommand_shouldRecordAnswer_whenWorkbookIsPublic(t *testing
 
 func newRecordAnswerInputForWordFillWithLocale(t *testing.T, correct bool, localDateKey, timezone string) *studyservice.RecordAnswerInput {
 	t.Helper()
-	input, err := studyservice.NewRecordAnswerInputForWordFill(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID, fixtureQuestionID, correct, localDateKey, timezone)
+	input, err := studyservice.NewRecordAnswerInputForWordFill(studyservice.RecordAnswerInputForWordFillParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		QuestionID:     fixtureQuestionID,
+		Correct:        correct,
+		LocalDateKey:   localDateKey,
+		Timezone:       timezone,
+	})
 	require.NoError(t, err)
 	return input
 }

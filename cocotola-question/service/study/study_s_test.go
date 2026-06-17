@@ -20,7 +20,14 @@ func Test_NewGetStudyQuestionsInput_shouldSucceed_whenExcludeIDsCountIsAtLimit(t
 	}
 
 	// when
-	input, err := studyservice.NewGetStudyQuestionsInput("op", "org", "wb", 10, false, excludeIDs)
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     "op",
+		OrganizationID: "org",
+		WorkbookID:     "wb",
+		Limit:          10,
+		Practice:       false,
+		ExcludeIDs:     excludeIDs,
+	})
 
 	// then: the boundary case is accepted (the check uses > not >=).
 	require.NoError(t, err)
@@ -38,7 +45,13 @@ func Test_NewGetStudyQuestionsInput_shouldReturnError_whenExcludeIDsCountExceeds
 	}
 
 	// when
-	_, err := studyservice.NewGetStudyQuestionsInput("op", "org", "wb", 10, false, excludeIDs)
+	_, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     "op",
+		OrganizationID: "org",
+		WorkbookID:     "wb",
+		Limit:          10,
+		ExcludeIDs:     excludeIDs,
+	})
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -51,7 +64,13 @@ func Test_NewGetStudyQuestionsInput_shouldSucceed_whenExcludeIDLengthIsAtLimit(t
 	atLimit := strings.Repeat("a", studyservice.MaxExcludeIDLength)
 
 	// when
-	input, err := studyservice.NewGetStudyQuestionsInput("op", "org", "wb", 10, false, []string{atLimit})
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     "op",
+		OrganizationID: "org",
+		WorkbookID:     "wb",
+		Limit:          10,
+		ExcludeIDs:     []string{atLimit},
+	})
 
 	// then: the boundary case is accepted (the check uses > not >=).
 	require.NoError(t, err)
@@ -66,7 +85,13 @@ func Test_NewGetStudyQuestionsInput_shouldReturnError_whenExcludeIDExceedsLength
 	overLimit := strings.Repeat("a", studyservice.MaxExcludeIDLength+1)
 
 	// when
-	_, err := studyservice.NewGetStudyQuestionsInput("op", "org", "wb", 10, false, []string{overLimit})
+	_, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     "op",
+		OrganizationID: "org",
+		WorkbookID:     "wb",
+		Limit:          10,
+		ExcludeIDs:     []string{overLimit},
+	})
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -81,7 +106,13 @@ func Test_NewGetStudyQuestionsInput_shouldReturnError_whenExcludeIDIsEmpty(t *te
 	// filtering.
 
 	// when
-	_, err := studyservice.NewGetStudyQuestionsInput("op", "org", "wb", 10, false, []string{""})
+	_, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     "op",
+		OrganizationID: "org",
+		WorkbookID:     "wb",
+		Limit:          10,
+		ExcludeIDs:     []string{""},
+	})
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)

@@ -83,7 +83,12 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 		return
 	}
 
-	input, err := studyservice.NewGetDashboardInput(userID, organizationID, days, todayKey)
+	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
+		OperatorID:     userID,
+		OrganizationID: organizationID,
+		Days:           days,
+		TodayDateKey:   todayKey,
+	})
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid dashboard input", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "invalid request parameters"))

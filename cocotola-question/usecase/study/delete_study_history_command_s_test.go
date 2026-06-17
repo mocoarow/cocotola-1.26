@@ -15,7 +15,11 @@ import (
 
 func newDeleteStudyHistoryInput(t *testing.T) *studyservice.DeleteStudyHistoryInput {
 	t.Helper()
-	input, err := studyservice.NewDeleteStudyHistoryInput(fixtureOperatorID, fixtureOrganizationID, fixtureWorkbookID)
+	input, err := studyservice.NewDeleteStudyHistoryInput(studyservice.DeleteStudyHistoryInputParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+	})
 	require.NoError(t, err)
 	return input
 }

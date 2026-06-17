@@ -88,7 +88,14 @@ func (h *GetStudyQuestionsHandler) GetStudyQuestions(c *gin.Context) {
 
 	excludeIDs := c.QueryArray("excludeIds")
 
-	input, err := studyservice.NewGetStudyQuestionsInput(userID, organizationID, workbookID, limit, practice, excludeIDs)
+	input, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
+		OperatorID:     userID,
+		OrganizationID: organizationID,
+		WorkbookID:     workbookID,
+		Limit:          limit,
+		Practice:       practice,
+		ExcludeIDs:     excludeIDs,
+	})
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid get study questions input", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))
