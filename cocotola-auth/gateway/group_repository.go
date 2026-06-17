@@ -34,10 +34,18 @@ func (r *groupRecord) GetVersion() int {
 	return r.Version
 }
 
-func toGroupDomain(r *groupRecord) *domaingroup.Group {
-	g := domaingroup.ReconstructGroup(domain.MustParseGroupID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), r.Name, r.Enabled)
+func toGroupDomain(r *groupRecord) (*domaingroup.Group, error) {
+	id, err := domain.ParseGroupID(r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid group id %q in db: %w", r.ID, err)
+	}
+	orgID, err := domain.ParseOrganizationID(r.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization id %q in db: %w", r.OrganizationID, err)
+	}
+	g := domaingroup.ReconstructGroup(id, orgID, r.Name, r.Enabled)
 	g.SetVersion(r.Version)
-	return g
+	return g, nil
 }
 
 // GroupRepository implements group persistence using GORM.
@@ -98,7 +106,11 @@ func (r *GroupRepository) FindByID(ctx context.Context, id domain.GroupID) (*dom
 		}
 		return nil, fmt.Errorf("find group by id: %w", err)
 	}
-	return toGroupDomain(&record), nil
+	group, err := toGroupDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert group domain: %w", err)
+	}
+	return group, nil
 }
 
 // FindByName looks up a group by organization ID and name.
@@ -112,5 +124,9 @@ func (r *GroupRepository) FindByName(ctx context.Context, organizationID domain.
 		}
 		return nil, fmt.Errorf("find group by name: %w", err)
 	}
-	return toGroupDomain(&record), nil
+	group, err := toGroupDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert group domain: %w", err)
+	}
+	return group, nil
 }

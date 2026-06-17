@@ -42,7 +42,19 @@ func toSpaceDomain(r *spaceRecord) (*domainspace.Space, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid space type %q: %w", r.SpaceType, err)
 	}
-	s := domainspace.ReconstructSpace(domain.MustParseSpaceID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.MustParseAppUserID(r.OwnerID), r.KeyName, r.Name, st, r.Deleted)
+	id, err := domain.ParseSpaceID(r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid space id %q in db: %w", r.ID, err)
+	}
+	orgID, err := domain.ParseOrganizationID(r.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization id %q in db: %w", r.OrganizationID, err)
+	}
+	ownerID, err := domain.ParseAppUserID(r.OwnerID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid owner id %q in db: %w", r.OwnerID, err)
+	}
+	s := domainspace.ReconstructSpace(id, orgID, ownerID, r.KeyName, r.Name, st, r.Deleted)
 	s.SetVersion(r.Version)
 	return s, nil
 }

@@ -42,7 +42,15 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 
 	edges := make([]domaingroup.HierarchyEdge, len(records))
 	for i := range records {
-		edges[i] = domaingroup.ReconstructHierarchyEdge(domain.MustParseGroupID(records[i].ParentGroupID), domain.MustParseGroupID(records[i].ChildGroupID))
+		parentID, err := domain.ParseGroupID(records[i].ParentGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid parent group id %q in db: %w", records[i].ParentGroupID, err)
+		}
+		childID, err := domain.ParseGroupID(records[i].ChildGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid child group id %q in db: %w", records[i].ChildGroupID, err)
+		}
+		edges[i] = domaingroup.ReconstructHierarchyEdge(parentID, childID)
 	}
 
 	hierarchy, err := domaingroup.NewHierarchy(organizationID, edges)

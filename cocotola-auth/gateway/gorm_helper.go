@@ -107,7 +107,7 @@ func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domaintok
 }
 
 // findMemberIDs queries records by organization_id and extracts member IDs as strings.
-func findMemberIDs[R any, ID any](ctx context.Context, db *gorm.DB, organizationID domain.OrganizationID, extractID func(R) ID, label string) ([]ID, error) {
+func findMemberIDs[R any, ID any](ctx context.Context, db *gorm.DB, organizationID domain.OrganizationID, extractID func(R) (ID, error), label string) ([]ID, error) {
 	var records []R
 	if err := db.WithContext(ctx).Where("organization_id = ?", organizationID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find %s: %w", label, err)
@@ -115,7 +115,11 @@ func findMemberIDs[R any, ID any](ctx context.Context, db *gorm.DB, organization
 
 	ids := make([]ID, len(records))
 	for i := range records {
-		ids[i] = extractID(records[i])
+		id, err := extractID(records[i])
+		if err != nil {
+			return nil, fmt.Errorf("extract id from %s record: %w", label, err)
+		}
+		ids[i] = id
 	}
 	return ids, nil
 }

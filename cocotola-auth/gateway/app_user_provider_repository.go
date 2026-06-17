@@ -35,16 +35,22 @@ func (r *appUserProviderRecord) GetVersion() int {
 	return r.Version
 }
 
-func toAppUserProviderDomain(r *appUserProviderRecord) *domainuser.AppUserProvider {
-	p := domainuser.ReconstructAppUserProvider(
-		domain.MustParseAppUserProviderID(r.ID),
-		domain.MustParseAppUserID(r.AppUserID),
-		domain.MustParseOrganizationID(r.OrganizationID),
-		r.Provider,
-		r.ProviderID,
-	)
+func toAppUserProviderDomain(r *appUserProviderRecord) (*domainuser.AppUserProvider, error) {
+	id, err := domain.ParseAppUserProviderID(r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid app user provider id %q in db: %w", r.ID, err)
+	}
+	appUserID, err := domain.ParseAppUserID(r.AppUserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid app user id %q in db: %w", r.AppUserID, err)
+	}
+	orgID, err := domain.ParseOrganizationID(r.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization id %q in db: %w", r.OrganizationID, err)
+	}
+	p := domainuser.ReconstructAppUserProvider(id, appUserID, orgID, r.Provider, r.ProviderID)
 	p.SetVersion(r.Version)
-	return p
+	return p, nil
 }
 
 // AppUserProviderRepository implements app user provider persistence using GORM.
@@ -107,7 +113,11 @@ func (r *AppUserProviderRepository) FindByProviderID(ctx context.Context, organi
 		}
 		return nil, fmt.Errorf("find app user provider by provider id: %w", err)
 	}
-	return toAppUserProviderDomain(&record), nil
+	p, err := toAppUserProviderDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert app user provider domain: %w", err)
+	}
+	return p, nil
 }
 
 // FindByAppUserID looks up all provider links for a given app user.
@@ -120,7 +130,11 @@ func (r *AppUserProviderRepository) FindByAppUserID(ctx context.Context, appUser
 	}
 	result := make([]domainuser.AppUserProvider, len(records))
 	for i := range records {
-		result[i] = *toAppUserProviderDomain(&records[i])
+		p, err := toAppUserProviderDomain(&records[i])
+		if err != nil {
+			return nil, fmt.Errorf("convert app user provider domain: %w", err)
+		}
+		result[i] = *p
 	}
 	return result, nil
 }
