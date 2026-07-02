@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "config",
@@ -11,4 +12,14 @@ go_library(
         "//cocotola-lib/gateway",
         "@in_yaml_go_yaml_v4//:yaml",
     ],
+)
+
+smart_go_test(
+    name = "config_test",
+    srcs = [
+        "config_test.go",
+        "export_test.go",
+    ],
+    embed = [":config"],
+    deps = ["@com_github_stretchr_testify//assert"],
 )
