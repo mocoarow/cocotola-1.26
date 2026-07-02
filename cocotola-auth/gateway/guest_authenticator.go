@@ -45,7 +45,11 @@ func (a *GuestAuthenticator) Authenticate(ctx context.Context, organizationName 
 		return nil, domain.ErrUnauthenticated
 	}
 
-	userInfo, err := authservice.NewUserInfo(domain.MustParseAppUserID(record.ID), record.LoginID, record.OrganizationName, time.Now())
+	userID, err := domain.ParseAppUserID(record.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id %q in db: %w", record.ID, err)
+	}
+	userInfo, err := authservice.NewUserInfo(userID, record.LoginID, record.OrganizationName, time.Now())
 	if err != nil {
 		return nil, fmt.Errorf("create user info: %w", err)
 	}

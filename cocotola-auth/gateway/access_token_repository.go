@@ -29,8 +29,12 @@ func (accessTokenRecord) TableName() string {
 	return "access_token"
 }
 
-func toAccessTokenDomain(r *accessTokenRecord) *domaintoken.AccessToken {
-	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toAccessTokenDomain(r *accessTokenRecord) (*domaintoken.AccessToken, error) {
+	userID, err := domain.ParseAppUserID(r.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id %q in db: %w", r.UserID, err)
+	}
+	return domaintoken.ReconstructAccessToken(r.ID, r.RefreshTokenID, userID, domain.LoginID(r.LoginID), r.OrganizationName, r.CreatedAt, r.ExpiresAt, r.RevokedAt), nil
 }
 
 // AccessTokenRepository implements access token persistence using GORM.
@@ -72,7 +76,11 @@ func (r *AccessTokenRepository) FindByID(ctx context.Context, id string) (*domai
 		}
 		return nil, fmt.Errorf("find access token by id: %w", err)
 	}
-	return toAccessTokenDomain(&record), nil
+	token, err := toAccessTokenDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert access token domain: %w", err)
+	}
+	return token, nil
 }
 
 // FindByRefreshTokenID returns all access tokens that belong to the given refresh token.
@@ -85,7 +93,11 @@ func (r *AccessTokenRepository) FindByRefreshTokenID(ctx context.Context, refres
 	}
 	tokens := make([]domaintoken.AccessToken, len(records))
 	for i := range records {
-		tokens[i] = *toAccessTokenDomain(&records[i])
+		token, err := toAccessTokenDomain(&records[i])
+		if err != nil {
+			return nil, fmt.Errorf("convert access token domain: %w", err)
+		}
+		tokens[i] = *token
 	}
 	return tokens, nil
 }

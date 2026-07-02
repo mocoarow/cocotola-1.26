@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
@@ -100,8 +101,9 @@ func Test_toOrganizationDomain_shouldReconstructOrganization_whenRecordIsValid(t
 		MaxActiveGroups: 50,
 	}
 	// when
-	org := gateway.ToOrganizationDomain(record)
+	org, err := gateway.ToOrganizationDomain(record)
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), org.ID())
 	assert.Equal(t, "org1", org.Name())
 	assert.Equal(t, 100, org.MaxActiveUsers())
@@ -123,8 +125,9 @@ func Test_toAppUserDomain_shouldReconstructAppUser_whenRecordIsValid(t *testing.
 		Enabled:        true,
 	}
 	// when
-	user := gateway.ToAppUserDomain(record)
+	user, err := gateway.ToAppUserDomain(record)
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, domain.MustParseAppUserID(fixtureUserIDStr), user.ID())
 	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), user.OrganizationID())
 	assert.Equal(t, domain.LoginID("user@example.com"), user.LoginID())
@@ -143,10 +146,26 @@ func Test_toAppUserDomain_shouldReconstructDisabledAppUser_whenEnabledIsFalse(t 
 		Enabled:        false,
 	}
 	// when
-	user := gateway.ToAppUserDomain(record)
+	user, err := gateway.ToAppUserDomain(record)
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, domain.MustParseAppUserID(fixtureUserIDStr), user.ID())
 	assert.False(t, user.Enabled())
+}
+
+func Test_toAppUserDomain_shouldReturnError_whenIDIsInvalid(t *testing.T) {
+	t.Parallel()
+	// given
+	record := &gateway.AppUserRecordForTest{
+		ID:             "not-a-uuid",
+		OrganizationID: "00000000-0000-7000-8000-000000000010",
+		LoginID:        "user@example.com",
+		Enabled:        true,
+	}
+	// when
+	_, err := gateway.ToAppUserDomain(record)
+	// then
+	assert.Error(t, err)
 }
 
 func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
@@ -164,8 +183,9 @@ func Test_toGroupDomain_shouldReconstructGroup_whenRecordIsValid(t *testing.T) {
 		Enabled:        true,
 	}
 	// when
-	group := gateway.ToGroupDomain(record)
+	group, err := gateway.ToGroupDomain(record)
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
 	assert.Equal(t, domain.MustParseOrganizationID(fixtureOrgIDStr), group.OrganizationID())
 	assert.Equal(t, "admins", group.Name())
@@ -184,8 +204,37 @@ func Test_toGroupDomain_shouldReconstructDisabledGroup_whenEnabledIsFalse(t *tes
 		Enabled:        false,
 	}
 	// when
-	group := gateway.ToGroupDomain(record)
+	group, err := gateway.ToGroupDomain(record)
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, domain.MustParseGroupID(fixtureGroupIDStr), group.ID())
 	assert.False(t, group.Enabled())
+}
+
+func Test_toOrganizationDomain_shouldReturnError_whenIDIsInvalid(t *testing.T) {
+	t.Parallel()
+	// given
+	record := &gateway.OrganizationRecordForTest{
+		ID:   "not-a-uuid",
+		Name: "org1",
+	}
+	// when
+	_, err := gateway.ToOrganizationDomain(record)
+	// then
+	assert.Error(t, err)
+}
+
+func Test_toGroupDomain_shouldReturnError_whenIDIsInvalid(t *testing.T) {
+	t.Parallel()
+	// given
+	record := &gateway.GroupRecordForTest{
+		ID:             "not-a-uuid",
+		OrganizationID: "00000000-0000-7000-8000-000000000010",
+		Name:           "admins",
+		Enabled:        true,
+	}
+	// when
+	_, err := gateway.ToGroupDomain(record)
+	// then
+	assert.Error(t, err)
 }

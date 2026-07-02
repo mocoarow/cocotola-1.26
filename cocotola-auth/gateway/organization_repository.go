@@ -33,10 +33,14 @@ func (r *organizationRecord) GetVersion() int {
 	return r.Version
 }
 
-func toOrganizationDomain(r *organizationRecord) *domain.Organization {
-	o := domain.ReconstructOrganization(domain.MustParseOrganizationID(r.ID), r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
+func toOrganizationDomain(r *organizationRecord) (*domain.Organization, error) {
+	id, err := domain.ParseOrganizationID(r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization id %q in db: %w", r.ID, err)
+	}
+	o := domain.ReconstructOrganization(id, r.Name, r.MaxActiveUsers, r.MaxActiveGroups)
 	o.SetVersion(r.Version)
-	return o
+	return o, nil
 }
 
 // OrganizationRepository implements organization persistence using GORM.
@@ -97,7 +101,11 @@ func (r *OrganizationRepository) FindByID(ctx context.Context, id domain.Organiz
 		}
 		return nil, fmt.Errorf("find organization by id: %w", err)
 	}
-	return toOrganizationDomain(&record), nil
+	org, err := toOrganizationDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert organization domain: %w", err)
+	}
+	return org, nil
 }
 
 // FindByName looks up an organization by its name.
@@ -109,5 +117,9 @@ func (r *OrganizationRepository) FindByName(ctx context.Context, name string) (*
 		}
 		return nil, fmt.Errorf("find organization by name: %w", err)
 	}
-	return toOrganizationDomain(&record), nil
+	org, err := toOrganizationDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert organization domain: %w", err)
+	}
+	return org, nil
 }

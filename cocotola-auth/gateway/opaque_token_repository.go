@@ -28,8 +28,12 @@ type refreshTokenRecord struct {
 
 func (refreshTokenRecord) TableName() string { return "refresh_token" }
 
-func toRefreshTokenDomain(r *refreshTokenRecord) *domaintoken.RefreshToken {
-	return domaintoken.ReconstructRefreshToken(r.ID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toRefreshTokenDomain(r *refreshTokenRecord) (*domaintoken.RefreshToken, error) {
+	userID, err := domain.ParseAppUserID(r.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id %q in db: %w", r.UserID, err)
+	}
+	return domaintoken.ReconstructRefreshToken(r.ID, userID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt), nil
 }
 
 // RefreshTokenRepository implements refresh token persistence using GORM.
@@ -66,7 +70,11 @@ func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, hash strin
 	if err != nil {
 		return nil, fmt.Errorf("find refresh token by hash: %w", err)
 	}
-	return toRefreshTokenDomain(record), nil
+	token, err := toRefreshTokenDomain(record)
+	if err != nil {
+		return nil, fmt.Errorf("convert refresh token domain: %w", err)
+	}
+	return token, nil
 }
 
 // --- session token ---
@@ -86,8 +94,12 @@ type sessionTokenRecord struct {
 
 func (sessionTokenRecord) TableName() string { return "session_token" }
 
-func toSessionTokenDomain(r *sessionTokenRecord) *domaintoken.SessionToken {
-	return domaintoken.ReconstructSessionToken(r.ID, domain.MustParseAppUserID(r.UserID), domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt)
+func toSessionTokenDomain(r *sessionTokenRecord) (*domaintoken.SessionToken, error) {
+	userID, err := domain.ParseAppUserID(r.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id %q in db: %w", r.UserID, err)
+	}
+	return domaintoken.ReconstructSessionToken(r.ID, userID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt), nil
 }
 
 // SessionTokenRepository implements session token persistence using GORM.
@@ -124,5 +136,9 @@ func (r *SessionTokenRepository) FindByTokenHash(ctx context.Context, hash strin
 	if err != nil {
 		return nil, fmt.Errorf("find session token by hash: %w", err)
 	}
-	return toSessionTokenDomain(record), nil
+	token, err := toSessionTokenDomain(record)
+	if err != nil {
+		return nil, fmt.Errorf("convert session token domain: %w", err)
+	}
+	return token, nil
 }

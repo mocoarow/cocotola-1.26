@@ -41,7 +41,11 @@ func (r *GroupUsersRepository) FindByGroupID(ctx context.Context, groupID domain
 
 	userIDs := make([]domain.AppUserID, len(records))
 	for i := range records {
-		userIDs[i] = domain.MustParseAppUserID(records[i].UserID)
+		uid, err := domain.ParseAppUserID(records[i].UserID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid user id %q in db: %w", records[i].UserID, err)
+		}
+		userIDs[i] = uid
 	}
 
 	gu, err := domaingroup.NewUsers(groupID, userIDs)

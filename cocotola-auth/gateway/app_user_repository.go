@@ -40,14 +40,22 @@ func (r *appUserRecord) GetVersion() int {
 	return r.Version
 }
 
-func toAppUserDomain(r *appUserRecord) *domainuser.AppUser {
+func toAppUserDomain(r *appUserRecord) (*domainuser.AppUser, error) {
+	id, err := domain.ParseAppUserID(r.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid app user id %q in db: %w", r.ID, err)
+	}
+	orgID, err := domain.ParseOrganizationID(r.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid organization id %q in db: %w", r.OrganizationID, err)
+	}
 	var hashedPw string
 	if r.HashedPassword != nil {
 		hashedPw = *r.HashedPassword
 	}
-	u := domainuser.ReconstructAppUser(domain.MustParseAppUserID(r.ID), domain.MustParseOrganizationID(r.OrganizationID), domain.LoginID(r.LoginID), hashedPw, r.Enabled)
+	u := domainuser.ReconstructAppUser(id, orgID, domain.LoginID(r.LoginID), hashedPw, r.Enabled)
 	u.SetVersion(r.Version)
-	return u
+	return u, nil
 }
 
 func toAppUserRecord(user *domainuser.AppUser, version int) appUserRecord {
@@ -123,7 +131,11 @@ func (r *AppUserRepository) FindByID(ctx context.Context, id domain.AppUserID) (
 		}
 		return nil, fmt.Errorf("find app user by id: %w", err)
 	}
-	return toAppUserDomain(&record), nil
+	user, err := toAppUserDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert app user domain: %w", err)
+	}
+	return user, nil
 }
 
 // FindByLoginID looks up an app user by organization ID and login ID.
@@ -137,5 +149,9 @@ func (r *AppUserRepository) FindByLoginID(ctx context.Context, organizationID do
 		}
 		return nil, fmt.Errorf("find app user by login id: %w", err)
 	}
-	return toAppUserDomain(&record), nil
+	user, err := toAppUserDomain(&record)
+	if err != nil {
+		return nil, fmt.Errorf("convert app user domain: %w", err)
+	}
+	return user, nil
 }
