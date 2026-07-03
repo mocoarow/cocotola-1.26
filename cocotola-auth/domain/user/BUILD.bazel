@@ -20,6 +20,7 @@ smart_go_test(
     srcs = [
         "app_user_s_test.go",
         "password_hasher_s_test.go",
+        "provisioning_s_test.go",
     ],
     deps = [
         ":user",

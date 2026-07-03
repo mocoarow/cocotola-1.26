@@ -26,6 +26,7 @@ smart_go_test(
         "group_hierarchy_s_test.go",
         "group_s_test.go",
         "group_users_s_test.go",
+        "provisioning_s_test.go",
     ],
     deps = [
         ":group",
