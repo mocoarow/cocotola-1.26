@@ -53,6 +53,11 @@ func run() (int, error) {
 		slog.String("env", cfg.AppEnv),
 	)
 
+	enc, err := gateway.ParseAudioEncoding(cfg.Audio.AudioEncoding)
+	if err != nil {
+		return 1, fmt.Errorf("parse audio encoding: %w", err)
+	}
+
 	tts, err := gateway.NewTTSClient(ctx, cfg.Audio.AudioEncoding, cfg.Audio.SampleRateHz)
 	if err != nil {
 		return 1, fmt.Errorf("new tts client: %w", err)
@@ -87,8 +92,8 @@ func run() (int, error) {
 		gcs,
 		usecase.BatchConfig{
 			MaxPerRun:   cfg.Audio.MaxPerRun,
-			ContentType: contentTypeFor(cfg.Audio.AudioEncoding),
-			ObjectExt:   objectExtFor(cfg.Audio.AudioEncoding),
+			ContentType: enc.ContentType,
+			ObjectExt:   enc.ObjectExt,
 			Voices: usecase.VoiceConfig{
 				JaVoice: cfg.Audio.TTSVoiceJa,
 				JaLang:  "ja-JP",
@@ -105,24 +110,3 @@ func run() (int, error) {
 	return 0, nil
 }
 
-func contentTypeFor(encoding string) string {
-	switch encoding {
-	case "OGG_OPUS":
-		return "audio/ogg; codecs=opus"
-	case "MP3":
-		return "audio/mpeg"
-	default:
-		return "application/octet-stream"
-	}
-}
-
-func objectExtFor(encoding string) string {
-	switch encoding {
-	case "OGG_OPUS":
-		return ".opus"
-	case "MP3":
-		return ".mp3"
-	default:
-		return ".bin"
-	}
-}
