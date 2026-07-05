@@ -115,42 +115,52 @@ func convertWordFillCSV(sourceLang, targetLang string, data []byte) ([]QuestionS
 		}
 		seen[id] = true
 
-		answers := splitCommaList(cell(row, idx, "blankAnswers"))
-		target, err := buildWordFillTarget(cell(row, idx, "blankText"), answers)
-		if err != nil {
-			return nil, fmt.Errorf("line %d (id %s): %w", lineNum, id, err)
-		}
-
-		// Source attribution. In this dataset the src* columns describe the
-		// target-language (English) sentence and the dst* columns the
-		// source-language (Japanese) sentence, so the columns are paired with
-		// the opposite language. The source-language citation is listed first.
-		attribution := tatoebaAttribution([]sentenceCitation{
-			{lang: sourceLang, number: cell(row, idx, "dstSentenceNumber"), author: cell(row, idx, "dstAuthor")},
-			{lang: targetLang, number: cell(row, idx, "srcSentenceNumber"), author: cell(row, idx, "srcAuthor")},
-		})
-
-		content, err := marshalWordFillContent(
-			cell(row, idx, "srcText"), sourceLang,
-			target, targetLang,
-			attribution, attribution,
-			len(answers) > 1,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("line %d (id %s): %w", lineNum, id, err)
-		}
-
 		orderIndex++
-		questions = append(questions, QuestionSeed{
-			SeedKey:      id,
-			QuestionType: questionTypeWordFill,
-			Content:      content,
-			Tags:         wordFillTags(row, idx),
-			OrderIndex:   orderIndex,
-		})
+		q, err := convertWordFillRow(row, idx, lineNum, id, sourceLang, targetLang, orderIndex)
+		if err != nil {
+			return nil, err
+		}
+		questions = append(questions, q)
 	}
 
 	return questions, nil
+}
+
+// convertWordFillRow converts a single CSV data row into a QuestionSeed.
+// The id and duplicate-check are handled by the caller; this function owns
+// only the field-level transformations (blank expansion, attribution, marshal).
+func convertWordFillRow(row []string, idx map[string]int, lineNum int, id, sourceLang, targetLang string, orderIndex int32) (QuestionSeed, error) {
+	answers := splitCommaList(cell(row, idx, "blankAnswers"))
+	target, err := buildWordFillTarget(cell(row, idx, "blankText"), answers)
+	if err != nil {
+		return QuestionSeed{}, fmt.Errorf("line %d (id %s): %w", lineNum, id, err)
+	}
+
+	// In this dataset the src* columns describe the target-language (English)
+	// sentence and dst* columns the source-language (Japanese) sentence, so
+	// columns are paired with the opposite language.
+	attribution := tatoebaAttribution([]sentenceCitation{
+		{lang: sourceLang, number: cell(row, idx, "dstSentenceNumber"), author: cell(row, idx, "dstAuthor")},
+		{lang: targetLang, number: cell(row, idx, "srcSentenceNumber"), author: cell(row, idx, "srcAuthor")},
+	})
+
+	content, err := marshalWordFillContent(
+		cell(row, idx, "srcText"), sourceLang,
+		target, targetLang,
+		attribution, attribution,
+		len(answers) > 1,
+	)
+	if err != nil {
+		return QuestionSeed{}, fmt.Errorf("line %d (id %s): %w", lineNum, id, err)
+	}
+
+	return QuestionSeed{
+		SeedKey:      id,
+		QuestionType: questionTypeWordFill,
+		Content:      content,
+		Tags:         wordFillTags(row, idx),
+		OrderIndex:   orderIndex,
+	}, nil
 }
 
 // buildWordFillTarget replaces each "___" in blankText with the matching

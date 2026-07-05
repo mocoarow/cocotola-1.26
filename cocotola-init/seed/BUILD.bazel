@@ -29,6 +29,7 @@ smart_go_test(
     name = "seed_test",
     srcs = [
         "client_s_test.go",
+        "csv_converter_s_test.go",
         "csv_loader_s_test.go",
         "loader_s_test.go",
         "manifest_s_test.go",
@@ -36,8 +37,8 @@ smart_go_test(
         "mocks_test.go",
         "workbook_seeder_s_test.go",
     ],
+    embed = [":seed"],
     deps = [
-        ":seed",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
