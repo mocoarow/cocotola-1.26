@@ -73,6 +73,7 @@ smart_go_test(
         "rbac_repository_m_test.go",
         "repository_s_test.go",
         "supabase_verifier_s_test.go",
+        "user_authenticator_m_test.go",
     ],
     embed = [":gateway"],
     deps = [
