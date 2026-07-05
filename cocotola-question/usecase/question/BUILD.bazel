@@ -32,6 +32,8 @@ smart_go_test(
         "add_question_command_s_test.go",
         "audio_batch_command_s_test.go",
         "delete_question_command_s_test.go",
+        "get_question_query_s_test.go",
+        "list_questions_query_s_test.go",
         "mocks_test.go",
         "update_question_command_s_test.go",
     ],

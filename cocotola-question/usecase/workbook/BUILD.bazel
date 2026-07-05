@@ -27,6 +27,8 @@ smart_go_test(
     srcs = [
         "create_workbook_command_s_test.go",
         "delete_workbook_command_s_test.go",
+        "get_workbook_query_s_test.go",
+        "list_workbooks_query_s_test.go",
         "mocks_test.go",
         "update_workbook_command_s_test.go",
     ],
