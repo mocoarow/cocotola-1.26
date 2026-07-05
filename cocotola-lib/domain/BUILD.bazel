@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "domain",
@@ -10,5 +11,15 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_go_playground_validator_v10//:validator",
+    ],
+)
+
+smart_go_test(
+    name = "domain_test",
+    srcs = ["validator_test.go"],
+    deps = [
+        ":domain",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )
