@@ -71,11 +71,15 @@ func Test_GenerateAudioBatch_shouldClaimAndCompleteItem_whenSynthesisSucceeds(t 
 	api := NewMockQuestionAPI(t)
 	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
 	api.EXPECT().Claim(ctx, item).Return(nil)
-	api.EXPECT().Complete(ctx, item, mock.Anything).Return(nil)
+	api.EXPECT().Complete(ctx, item, mock.MatchedBy(func(refs map[string]domain.AudioRef) bool {
+		_, hasSource := refs[domain.SlotSource]
+		_, hasTarget := refs[domain.SlotTarget]
+		return hasSource && hasTarget
+	})).Return(nil)
 	tts := NewMockTTS(t)
-	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
 	storage := NewMockStorage(t)
-	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
 
 	// when
 	processed, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
