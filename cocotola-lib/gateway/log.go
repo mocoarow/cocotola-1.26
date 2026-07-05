@@ -109,11 +109,7 @@ func InitLogProvider(ctx context.Context, logConfig LogConfig, appName string) (
 	slog.SetDefault(slog.New(filteredHandler))
 
 	return func() {
-		shutdownBaseCtx := context.Background()
-		if ctx != nil {
-			shutdownBaseCtx = context.WithoutCancel(ctx)
-		}
-		shutdownCtx, cancel := context.WithTimeout(shutdownBaseCtx, logShutdownTimeout)
+		shutdownCtx, cancel := newShutdownCtx(ctx, logShutdownTimeout)
 		defer cancel()
 
 		if err := lp.Shutdown(shutdownCtx); err != nil {

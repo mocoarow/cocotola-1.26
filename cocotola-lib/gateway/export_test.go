@@ -1,6 +1,10 @@
 package gateway
 
-import "log/slog"
+import (
+	"context"
+	"log/slog"
+	"time"
+)
 
 // StringToLogLevel exports stringToLogLevel for testing.
 var StringToLogLevel = stringToLogLevel
@@ -14,4 +18,9 @@ func NewLevelFilterHandlerForTest(handler slog.Handler, minLevel slog.Level) slo
 		handler:  handler,
 		minLevel: minLevel,
 	}
+}
+
+// NewShutdownCtxForTest exports newShutdownCtx for testing.
+func NewShutdownCtxForTest(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
+	return newShutdownCtx(ctx, timeout)
 }

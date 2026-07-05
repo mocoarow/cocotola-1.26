@@ -106,11 +106,7 @@ func InitTracerProvider(ctx context.Context, traceConfig TraceConfig, appName st
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
 	return func() {
-		shutdownBaseCtx := context.Background()
-		if ctx != nil {
-			shutdownBaseCtx = context.WithoutCancel(ctx)
-		}
-		shutdownCtx, cancel := context.WithTimeout(shutdownBaseCtx, traceShutdownTimeout)
+		shutdownCtx, cancel := newShutdownCtx(ctx, traceShutdownTimeout)
 		defer cancel()
 
 		if err := tp.Shutdown(shutdownCtx); err != nil {
