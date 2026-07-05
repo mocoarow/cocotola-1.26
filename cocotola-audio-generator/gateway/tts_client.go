@@ -12,7 +12,7 @@ import (
 // turning a single utterance into an OGG/Opus byte stream.
 type TTSClient struct {
 	client       *texttospeech.Client
-	encoding     texttospeechpb.AudioEncoding
+	encoding     AudioEncoding
 	sampleRateHz int32
 }
 
@@ -22,7 +22,7 @@ func NewTTSClient(ctx context.Context, encoding string, sampleRateHz int) (*TTSC
 	if err != nil {
 		return nil, fmt.Errorf("new texttospeech client: %w", err)
 	}
-	enc, err := parseEncoding(encoding)
+	enc, err := ParseAudioEncoding(encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (c *TTSClient) Synthesize(ctx context.Context, text, voice, lang string) ([
 	voiceParams.Name = voice
 
 	audioCfg := new(texttospeechpb.AudioConfig)
-	audioCfg.AudioEncoding = c.encoding
+	audioCfg.AudioEncoding = c.encoding.TTSEncoding()
 	audioCfg.SampleRateHertz = c.sampleRateHz
 
 	req := new(texttospeechpb.SynthesizeSpeechRequest)
@@ -75,14 +75,3 @@ func (c *TTSClient) Synthesize(ctx context.Context, text, voice, lang string) ([
 	return resp.AudioContent, nil
 }
 
-func parseEncoding(name string) (texttospeechpb.AudioEncoding, error) {
-	switch name {
-	case "OGG_OPUS":
-		return texttospeechpb.AudioEncoding_OGG_OPUS, nil
-	case "MP3":
-		return texttospeechpb.AudioEncoding_MP3, nil
-	default:
-		return texttospeechpb.AudioEncoding_AUDIO_ENCODING_UNSPECIFIED,
-			fmt.Errorf("unsupported audio encoding %q", name)
-	}
-}
