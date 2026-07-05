@@ -38,11 +38,12 @@ type AudioBatchCommand struct {
 	pending pendingAudioFinder
 	stale   staleGeneratingAudioFinder
 	saver   questionSaver
+	config  UsecaseConfig
 }
 
 // NewAudioBatchCommand returns a new AudioBatchCommand.
-func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, saver questionSaver) *AudioBatchCommand {
-	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, saver: saver}
+func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, saver questionSaver, config UsecaseConfig) *AudioBatchCommand {
+	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, saver: saver, config: config}
 }
 
 // ListPendingAudio returns up to input.Limit pending queue entries.
@@ -94,7 +95,7 @@ func (c *AudioBatchCommand) ClaimAudio(ctx context.Context, input *questionservi
 	if err != nil {
 		return fmt.Errorf("find question: %w", err)
 	}
-	if err := q.ClaimAudio(input.InputHash, time.Now()); err != nil {
+	if err := q.ClaimAudio(input.InputHash, c.config.Now()); err != nil {
 		return fmt.Errorf("claim audio: %w", err)
 	}
 	if err := c.saver.Save(ctx, q); err != nil {
@@ -118,7 +119,7 @@ func (c *AudioBatchCommand) CompleteAudio(ctx context.Context, input *questionse
 		}
 		refs[k] = ref
 	}
-	if err := q.CompleteAudio(input.InputHash, refs, time.Now()); err != nil {
+	if err := q.CompleteAudio(input.InputHash, refs, c.config.Now()); err != nil {
 		return fmt.Errorf("complete audio: %w", err)
 	}
 	if err := c.saver.Save(ctx, q); err != nil {
@@ -135,7 +136,7 @@ func (c *AudioBatchCommand) FailAudio(ctx context.Context, input *questionservic
 	if err != nil {
 		return fmt.Errorf("find question: %w", err)
 	}
-	if err := q.FailAudio(input.InputHash, input.Reason, time.Now()); err != nil {
+	if err := q.FailAudio(input.InputHash, input.Reason, c.config.Now()); err != nil {
 		return fmt.Errorf("fail audio: %w", err)
 	}
 	if err := c.saver.Save(ctx, q); err != nil {
@@ -152,7 +153,7 @@ func (c *AudioBatchCommand) FailAudio(ctx context.Context, input *questionservic
 //
 // Returns the number of items successfully reclaimed.
 func (c *AudioBatchCommand) ReclaimStaleAudio(ctx context.Context, input *questionservice.ReclaimStaleAudioInput) (*questionservice.ReclaimStaleAudioOutput, error) {
-	now := time.Now()
+	now := c.config.Now()
 	staleBefore := now.Add(-input.StaleAfter)
 	questions, err := c.stale.FindStaleGenerating(ctx, staleBefore, input.Limit)
 	if err != nil {
