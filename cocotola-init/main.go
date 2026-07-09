@@ -73,6 +73,10 @@ func run() (int, error) {
 // because seeding the public space is part of its mandatory bootstrap.
 var ErrQuestionBaseURLRequired = errors.New("question.baseUrl is required")
 
+// newHTTPClientFn is a package-level variable wrapping libgateway.NewHTTPClient
+// so unit tests can inject a spy without a real network or GCP credentials.
+var newHTTPClientFn = libgateway.NewHTTPClient
+
 // buildSeeder constructs the public workbook seeder from the validated config.
 // An empty BaseURL is treated as a configuration error rather than a silent
 // skip, so misconfigured deployments fail loudly instead of leaving the
@@ -89,7 +93,7 @@ func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientC
 		timeoutSec = defaultTimeoutSec
 	}
 	timeout := time.Duration(timeoutSec) * time.Second
-	httpClient, err := libgateway.NewHTTPClient(ctx, appEnv, qcfg.BaseURL, timeout)
+	httpClient, err := newHTTPClientFn(ctx, appEnv, qcfg.BaseURL, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("new http client: %w", err)
 	}
