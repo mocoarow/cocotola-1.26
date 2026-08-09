@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	cloud.google.com/go/firestore v1.22.0
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.32.0
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.33.0
 	github.com/gin-contrib/cors v1.7.7
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.3
@@ -48,7 +48,7 @@ require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/ClickHouse/ch-go v0.72.0 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.46.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.56.0 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.57.0 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bytedance/gopkg v0.1.4 // indirect
