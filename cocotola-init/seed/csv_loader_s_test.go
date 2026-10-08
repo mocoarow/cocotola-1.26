@@ -235,6 +235,23 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenBlankCountMismatchesAnswers
 	require.ErrorIs(t, err, seed.ErrInvalidCSVRow)
 }
 
+func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenBlankTextHasNoPlaceholder(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: no "___" and no answers, so the blank/answer counts still agree
+	csv := wordFillHeader +
+		"1,3,日本語,English sentence.,English sentence.,B1,,1,CK,2,KK,tatoeba\n"
+	reader := NewMockGCSObjectReader(t)
+	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
+
+	// when
+	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidCSVRow)
+}
+
 func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenRequiredColumnMissing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
