@@ -224,9 +224,10 @@ func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInPassword_whenPasswordHasRes
 	t.Parallel()
 
 	// given: password contains URL-reserved chars (@, /, :, ?, #)
+	reservedChars := "p@ss/w:o?r#d"
 	cfg := &gateway.PostgresConfig{
 		Username: "user1",
-		Password: "p@ss/w:o?r#d",
+		Password: reservedChars,
 		Host:     "localhost",
 		Port:     5432,
 		Database: "testdb",
@@ -239,7 +240,7 @@ func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInPassword_whenPasswordHasRes
 	// then: pgconn decodes the password back to its literal form
 	require.NoError(t, err)
 	_, pg := parseDSN(t, dsn)
-	assert.Equal(t, "p@ss/w:o?r#d", pg.Password)
+	assert.Equal(t, reservedChars, pg.Password)
 }
 
 func Test_BuildPostgresDSN_shouldEscapeSpecialCharsInUsername_whenUsernameHasReservedChars(t *testing.T) {

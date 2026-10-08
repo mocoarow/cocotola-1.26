@@ -257,9 +257,9 @@ describe("getUserPreferences (response parser)", () => {
     const prefs = await getUserPreferences(fakeRequest(), "token");
 
     // then
-    expect(prefs.userId).toBe("good");          // valid → kept
-    expect(prefs.dailyGoal).toBe(10);            // string → default
-    expect(prefs.timezone).toBe("Asia/Tokyo");  // valid → kept
-    expect(prefs.language).toBe("en");           // null → default
+    expect(prefs.userId).toBe("good"); // valid → kept
+    expect(prefs.dailyGoal).toBe(10); // string → default
+    expect(prefs.timezone).toBe("Asia/Tokyo"); // valid → kept
+    expect(prefs.language).toBe("en"); // null → default
   });
 });

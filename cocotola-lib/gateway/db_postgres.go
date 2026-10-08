@@ -31,12 +31,12 @@ func (*DialectPostgres) BoolDefaultValue() string {
 
 // PostgresConfig holds PostgreSQL connection parameters.
 type PostgresConfig struct {
-	Username string            `yaml:"username" validate:"required"`
-	Password string            `yaml:"password" validate:"required"`
-	Host     string            `yaml:"host" validate:"required"`
-	Port     int               `yaml:"port" validate:"required"`
-	Database string            `yaml:"database" validate:"required"`
-	SSLMode  string            `yaml:"sslMode"`
+	Username string `yaml:"username" validate:"required"`
+	Password string `yaml:"password" validate:"required"`
+	Host     string `yaml:"host" validate:"required"`
+	Port     int    `yaml:"port" validate:"required"`
+	Database string `yaml:"database" validate:"required"`
+	SSLMode  string `yaml:"sslMode"`
 	// Params are extra connection parameters appended to the DSN. They are
 	// applied after the struct-level fields, so a key of "sslmode" or
 	// "TimeZone" here overrides the value derived from SSLMode or the default
@@ -84,11 +84,17 @@ func BuildPostgresDSN(cfg *PostgresConfig) (string, error) {
 	}
 
 	u := url.URL{
-		Scheme:   "postgres",
-		User:     url.UserPassword(cfg.Username, cfg.Password),
-		Host:     net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
-		Path:     "/" + cfg.Database,
-		RawQuery: q.Encode(),
+		Scheme:      "postgres",
+		Opaque:      "",
+		User:        url.UserPassword(cfg.Username, cfg.Password),
+		Host:        net.JoinHostPort(cfg.Host, strconv.Itoa(cfg.Port)),
+		Path:        "/" + cfg.Database,
+		RawPath:     "",
+		OmitHost:    false,
+		ForceQuery:  false,
+		RawQuery:    q.Encode(),
+		Fragment:    "",
+		RawFragment: "",
 	}
 	dsn := u.String()
 

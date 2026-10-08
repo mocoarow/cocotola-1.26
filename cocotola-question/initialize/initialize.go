@@ -113,7 +113,9 @@ func Initialize(
 	deleteQuestionHandler := questionhandler.NewDeleteQuestionHandler(questionCommand)
 	questionhandler.InitQuestionRouter(addQuestionHandler, getQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo, questionusecase.UsecaseConfig{})
+	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo, questionusecase.UsecaseConfig{
+		ClockFunc: nil,
+	})
 	audioHandler := questionhandler.NewAudioHandler(audioBatchCommand)
 
 	shareWorkbookHandler := sharinghandler.NewShareWorkbookHandler(sharingCommand)
