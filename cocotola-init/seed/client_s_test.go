@@ -5,9 +5,11 @@ package seed_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -163,6 +165,55 @@ func Test_QuestionAPIClient_AddQuestion_shouldHitWorkbookScopedPath(t *testing.T
 	require.Len(t, *calls, 1)
 	c := (*calls)[0]
 	assert.Equal(t, "/api/v1/internal/workbook/wb-1/question", c.Path)
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldDecodeAllQuestions_whenResponseExceedsOneMiB(t *testing.T) {
+	t.Parallel()
+
+	// given: enough questions that the JSON body is larger than 1 MiB
+	const questionCount = 20000
+	questions := make([]seed.QuestionListItem, questionCount)
+	for i := range questions {
+		questions[i] = seed.QuestionListItem{
+			QuestionID: fmt.Sprintf("01900000-0000-7000-8000-%012d", i),
+			Tags:       []string{fmt.Sprintf("seed-cefr-b1-wordfill-v1:%d", i), "level:b1", "source:tatoeba"},
+		}
+	}
+	body, err := json.Marshal(map[string]any{"questions": questions})
+	require.NoError(t, err)
+	require.Greater(t, len(body), 1<<20)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	got, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.NoError(t, err)
+	assert.Len(t, got, questionCount)
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReturnError_whenResponseExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given: a single question whose ID alone is 32 MiB
+	body := `{"questions":[{"questionId":"` + strings.Repeat("a", 32<<20) + `","tags":[]}]}`
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, body)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
 }
 
 func Test_QuestionAPIClient_shouldReturnError_whenServerReturnsNon2xx(t *testing.T) {

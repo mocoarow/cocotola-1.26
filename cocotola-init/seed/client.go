@@ -15,11 +15,12 @@ const (
 	// serviceAuthHeader names the inbound authentication header used by the
 	// internal cocotola-question endpoints. It is intentionally not called
 	// "ApiKey" to avoid gosec G101 false positives on the constant name.
-	serviceAuthHeader    = "X-Service-Api-Key"
-	organizationIDHeader = "X-Organization-Id"
-	contentTypeJSON      = "application/json"
-	maxBodyBytes         = 1 << 20
-	maxErrorBodyBytes    = 512
+	serviceAuthHeader         = "X-Service-Api-Key"
+	organizationIDHeader      = "X-Organization-Id"
+	contentTypeJSON           = "application/json"
+	maxBodyBytes              = 1 << 20
+	maxListQuestionsBodyBytes = 32 << 20
+	maxErrorBodyBytes         = 512
 )
 
 // QuestionAPIClient is a minimal HTTP client for cocotola-question's
@@ -58,7 +59,7 @@ func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, s
 	reqURL := c.baseURL + "/api/v1/internal/workbook?" + q.Encode()
 
 	var resp listWorkbooksResponse
-	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxBodyBytes); err != nil {
 		return nil, fmt.Errorf("list workbooks (space %s): %w", spaceID, err)
 	}
 	return resp.Workbooks, nil
@@ -84,7 +85,7 @@ type WorkbookResponse struct {
 func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, body CreateWorkbookRequest) (string, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook"
 	var resp WorkbookResponse
-	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp); err != nil {
+	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
 		return "", fmt.Errorf("create workbook: %w", err)
 	}
 	return resp.WorkbookID, nil
@@ -105,7 +106,7 @@ func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, w
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
 
 	var resp listQuestionsResponse
-	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxListQuestionsBodyBytes); err != nil {
 		return nil, fmt.Errorf("list questions (workbook %s): %w", workbookID, err)
 	}
 	return resp.Questions, nil
@@ -122,7 +123,7 @@ type AddQuestionRequest struct {
 // AddQuestion calls POST /api/v1/internal/workbook/{workbookId}/question.
 func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error {
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
-	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil); err != nil {
+	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil, maxBodyBytes); err != nil {
 		return fmt.Errorf("add question (workbook %s): %w", workbookID, err)
 	}
 	return nil
@@ -130,7 +131,7 @@ func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, wor
 
 // do issues an authenticated HTTP request and decodes the JSON response into out
 // (when out is non-nil). Non-2xx responses are surfaced as wrapped errors.
-func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any) error {
+func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any, maxDecodeBytes int64) error {
 	req, err := c.newRequest(ctx, method, reqURL, organizationID, body)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
@@ -155,7 +156,7 @@ func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organization
 		return nil
 	}
 
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxBodyBytes)).Decode(out); err != nil {
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxDecodeBytes)).Decode(out); err != nil {
 		return fmt.Errorf("decode response: %w", err)
 	}
 	return nil
