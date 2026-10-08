@@ -37,6 +37,13 @@ workbook:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
+      '409':
+        description: Owned workbook limit reached
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
       '500':
         description: Internal server error
         content:
@@ -256,6 +263,12 @@ internal-workbook:
               $ref: '../schemas/workbook.yaml#/WorkbookResponse'
       '400':
         description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '409':
+        description: Owned workbook limit reached
         content:
           application/json:
             schema:

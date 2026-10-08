@@ -86,6 +86,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
+        '409':
+          description: Owned workbook limit reached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
         '500':
           description: Internal server error
           content:
@@ -1156,6 +1163,12 @@ paths:
                 $ref: '#/components/schemas/WorkbookResponse'
         '400':
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Owned workbook limit reached
           content:
             application/json:
               schema:
