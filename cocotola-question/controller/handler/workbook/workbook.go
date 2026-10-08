@@ -72,6 +72,11 @@ func handleWorkbookError(ctx context.Context, logger *slog.Logger, c *gin.Contex
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("owned_workbook_list_not_found", "owned workbook list not found"))
 		return
 	}
+	if errors.Is(err, domain.ErrOwnedWorkbookLimitReached) {
+		logger.WarnContext(ctx, "owned workbook limit reached", slog.Any("error", err))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("owned_workbook_limit_reached", "owned workbook limit reached"))
+		return
+	}
 	logger.ErrorContext(ctx, action, slog.Any("error", err))
 	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }
