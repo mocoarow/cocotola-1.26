@@ -74,4 +74,3 @@ func (c *TTSClient) Synthesize(ctx context.Context, text, voice, lang string) ([
 	}
 	return resp.AudioContent, nil
 }
-

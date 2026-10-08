@@ -40,5 +40,5 @@ func Test_newShutdownCtx_shouldStripCancellation_whenParentIsCancelled(t *testin
 	parentCancel()
 
 	// then
-	assert.NoError(t, shutdownCtx.Err(), "shutdown context should not be cancelled when parent is cancelled")
+	assert.NoError(t, shutdownCtx.Err(), "shutdown context should not be canceled when parent is canceled")
 }
