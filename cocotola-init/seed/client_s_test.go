@@ -22,6 +22,8 @@ import (
 const (
 	testAPIKey       = "test-api-key"
 	testRequestOrgID = "org-1"
+	// listQuestionsLimitBytes mirrors the unexported limit in client.go.
+	listQuestionsLimitBytes = 32 << 20
 )
 
 // recordedCall captures one inbound HTTP request the client makes during a test.
@@ -197,15 +199,22 @@ func Test_QuestionAPIClient_ListQuestions_shouldDecodeAllQuestions_whenResponseE
 	assert.Len(t, got, questionCount)
 }
 
-func Test_QuestionAPIClient_ListQuestions_shouldReturnError_whenResponseExceedsLimit(t *testing.T) {
-	t.Parallel()
-
-	// given: a single question whose ID alone is 32 MiB
-	body := `{"questions":[{"questionId":"` + strings.Repeat("a", 32<<20) + `","tags":[]}]}`
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+// newOversizedListQuestionsServer returns a server whose ListQuestions body is
+// larger than listQuestionsLimitBytes: a single question whose ID alone fills it.
+func newOversizedListQuestionsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	body := `{"questions":[{"questionId":"` + strings.Repeat("a", listQuestionsLimitBytes) + `","tags":[]}]}`
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, body)
 	}))
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReturnMaxBytesError_whenResponseExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newOversizedListQuestionsServer(t)
 	defer srv.Close()
 	client := newClient(srv)
 
@@ -213,7 +222,24 @@ func Test_QuestionAPIClient_ListQuestions_shouldReturnError_whenResponseExceedsL
 	_, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
 
 	// then
-	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
+	var maxErr *http.MaxBytesError
+	require.ErrorAs(t, err, &maxErr)
+	assert.Equal(t, int64(listQuestionsLimitBytes), maxErr.Limit)
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReportLimitInMessage_whenResponseExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newOversizedListQuestionsServer(t)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.ErrorContains(t, err, fmt.Sprintf("response body exceeds %d bytes", listQuestionsLimitBytes))
 }
 
 func Test_QuestionAPIClient_shouldReturnError_whenServerReturnsNon2xx(t *testing.T) {

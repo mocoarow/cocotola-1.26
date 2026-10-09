@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -156,7 +157,10 @@ func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organization
 		return nil
 	}
 
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxDecodeBytes)).Decode(out); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(nil, resp.Body, maxDecodeBytes)).Decode(out); err != nil {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			return fmt.Errorf("decode response: response body exceeds %d bytes: %w", maxDecodeBytes, err)
+		}
 		return fmt.Errorf("decode response: %w", err)
 	}
 	return nil
