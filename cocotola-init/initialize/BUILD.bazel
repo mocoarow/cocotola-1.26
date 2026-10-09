@@ -5,6 +5,7 @@ go_library(
     name = "initialize",
     srcs = [
         "initializer.go",
+        "public_space_finder.go",
         "workbook_policy_ensurer.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/initialize",
@@ -23,12 +24,14 @@ smart_go_test(
     name = "initialize_test",
     srcs = [
         "initialize_m_test.go",
+        "public_space_finder_m_test.go",
         "workbook_policy_ensurer_m_test.go",
     ],
     deps = [
         ":initialize",
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/rbac",
+        "//cocotola-auth/domain/space",
         "//cocotola-auth/gateway",
         "//cocotola-lib/gateway",
         "@com_github_stretchr_testify//assert",
