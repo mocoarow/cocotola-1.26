@@ -33,10 +33,6 @@ const (
 	// csvHeaderRows is the number of leading rows occupied by the header.
 	csvHeaderRows = 1
 
-	// maxInvalidRowPercent is the share of data rows that may be skipped as
-	// invalid before the whole CSV is rejected.
-	maxInvalidRowPercent = 5
-
 	// Tatoeba attribution building blocks. Sentences imported from Tatoeba are
 	// licensed CC BY 2.0 FR and must credit the sentence id and author.
 	tatoebaSentenceURL = "https://tatoeba.org/en/sentences/show/"
@@ -44,6 +40,10 @@ const (
 	tatoebaLicenseName = "CC BY 2.0 FR"
 	tatoebaLicenseURL  = "https://creativecommons.org/licenses/by/2.0/fr/"
 )
+
+// MaxInvalidRowPercent is the share of rows that may be invalid before an
+// import is rejected.
+const MaxInvalidRowPercent = 5
 
 // CSV converter errors. They are sentinels so callers (and tests) can match
 // them with errors.Is regardless of the surrounding context message.
@@ -56,7 +56,7 @@ var (
 	// ErrInvalidCSVRow marks a data row that cannot be converted, or a CSV
 	// without any data row.
 	ErrInvalidCSVRow = errors.New("invalid csv row")
-	// ErrTooManyInvalidCSVRows is returned when more than maxInvalidRowPercent
+	// ErrTooManyInvalidCSVRows is returned when more than MaxInvalidRowPercent
 	// of the data rows are invalid.
 	ErrTooManyInvalidCSVRows = errors.New("too many invalid csv rows")
 )
@@ -94,17 +94,17 @@ type csvConversion struct {
 	skipped   []skippedCSVRow
 }
 
-// skippedCSVRow identifies an invalid row by its 1-based record number,
-// counting the header as record 1.
+// skippedCSVRow identifies an invalid row by its position, on the same basis
+// as QuestionSeed.OrderIndex.
 type skippedCSVRow struct {
-	record int
+	index  int32
 	reason error
 }
 
-// tooManyInvalidRows reports whether more than maxInvalidRowPercent of the
+// tooManyInvalidRows reports whether more than MaxInvalidRowPercent of the
 // data rows were skipped.
 func (c csvConversion) tooManyInvalidRows() bool {
-	return len(c.skipped)*100 > c.totalRows*maxInvalidRowPercent
+	return len(c.skipped)*100 > c.totalRows*MaxInvalidRowPercent
 }
 
 // convertCSV converts raw CSV bytes into question seeds according to format.
@@ -132,16 +132,16 @@ func convertWordFillCSV(sourceLang, targetLang string, data []byte) (csvConversi
 	var skipped []skippedCSVRow
 	seen := make(map[string]bool, len(rows))
 	for i, row := range rows {
-		record := i + csvHeaderRows + 1
+		index := int32(i + 1)
 		if len(row) != len(header) {
 			reason := fmt.Errorf("%d fields, header has %d: %w", len(row), len(header), ErrInvalidCSVRow)
-			skipped = append(skipped, skippedCSVRow{record: record, reason: reason})
+			skipped = append(skipped, skippedCSVRow{index: index, reason: reason})
 
 			continue
 		}
-		q, err := convertWordFillRow(row, idx, seen, sourceLang, targetLang, int32(i+1))
+		q, err := convertWordFillRow(row, idx, seen, sourceLang, targetLang, index)
 		if err != nil {
-			skipped = append(skipped, skippedCSVRow{record: record, reason: err})
+			skipped = append(skipped, skippedCSVRow{index: index, reason: err})
 			continue
 		}
 		seen[q.SeedKey] = true

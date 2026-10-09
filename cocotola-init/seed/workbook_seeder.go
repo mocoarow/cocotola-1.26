@@ -62,35 +62,55 @@ func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEns
 	}
 }
 
-// SeedPublicWorkbooks creates each seed's workbook (if absent) and then each
-// nested question (if absent). Existing entities are detected via seedKey markers.
+// WorkbookOutput is the result of seeding one workbook.
+// MaxExistingOrderIndex is the largest OrderIndex among the seed's questions
+// that already existed before this run.
+type WorkbookOutput struct {
+	SeedKey               string
+	AddedOrderIndexes     []int32
+	RejectedOrderIndexes  []int32
+	SkippedExisting       int
+	MaxExistingOrderIndex int32
+}
+
+// SeedPublicWorkbooks seeds the workbooks given to NewWorkbookSeeder.
 func (s *WorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error {
+	_, err := s.SeedWorkbooks(ctx, organizationID, publicSpaceID, s.seeds)
+	return err
+}
+
+// SeedWorkbooks creates each seed's workbook (if absent) and then each nested
+// question (if absent). Existing entities are detected via seedKey markers.
+func (s *WorkbookSeeder) SeedWorkbooks(ctx context.Context, organizationID, publicSpaceID string, seeds []PublicWorkbookSeed) ([]WorkbookOutput, error) {
 	existing, err := s.client.ListWorkbooks(ctx, organizationID, publicSpaceID)
 	if err != nil {
-		return fmt.Errorf("list existing workbooks: %w", err)
+		return nil, fmt.Errorf("list existing workbooks: %w", err)
 	}
 
 	bySeedKey := indexWorkbooksBySeedKey(existing)
 
-	for _, sd := range s.seeds {
+	outputs := make([]WorkbookOutput, 0, len(seeds))
+	for _, sd := range seeds {
 		workbookID, err := s.ensureWorkbook(ctx, organizationID, publicSpaceID, sd, bySeedKey)
 		if err != nil {
-			return fmt.Errorf("ensure workbook %q: %w", sd.SeedKey, err)
+			return nil, fmt.Errorf("ensure workbook %q: %w", sd.SeedKey, err)
 		}
 
 		// Grant the per-workbook policies before adding questions. This both
 		// covers freshly created workbooks and repairs ones that an earlier run
 		// persisted without policies, so AddQuestion authorization succeeds.
 		if err := s.policyEnsurer.EnsureSystemOwnerWorkbookPolicies(ctx, organizationID, workbookID); err != nil {
-			return fmt.Errorf("ensure workbook policies %q: %w", sd.SeedKey, err)
+			return nil, fmt.Errorf("ensure workbook policies %q: %w", sd.SeedKey, err)
 		}
 
-		if err := s.ensureQuestions(ctx, organizationID, workbookID, sd); err != nil {
-			return fmt.Errorf("ensure questions for workbook %q: %w", sd.SeedKey, err)
+		output, err := s.ensureQuestions(ctx, organizationID, workbookID, sd)
+		if err != nil {
+			return nil, fmt.Errorf("ensure questions for workbook %q: %w", sd.SeedKey, err)
 		}
+		outputs = append(outputs, output)
 	}
 
-	return nil
+	return outputs, nil
 }
 
 func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, publicSpaceID string, sd PublicWorkbookSeed, existing map[string]string) (string, error) {
@@ -129,22 +149,23 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 	return workbookID, nil
 }
 
-func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, workbookID string, sd PublicWorkbookSeed) error {
+func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, workbookID string, sd PublicWorkbookSeed) (WorkbookOutput, error) {
+	output := WorkbookOutput{SeedKey: sd.SeedKey, AddedOrderIndexes: nil, RejectedOrderIndexes: nil, SkippedExisting: 0, MaxExistingOrderIndex: 0}
 	if len(sd.Questions) == 0 {
-		return nil
+		return output, nil
 	}
 
 	existing, err := s.client.ListQuestions(ctx, organizationID, workbookID)
 	if err != nil {
-		return fmt.Errorf("list existing questions: %w", err)
+		return WorkbookOutput{}, fmt.Errorf("list existing questions: %w", err)
 	}
 	seenTags := indexQuestionTags(existing)
 
-	var added, skippedExisting, rejected int
 	for _, q := range sd.Questions {
 		tag := questionTag(sd.SeedKey, q.SeedKey)
 		if seenTags[tag] {
-			skippedExisting++
+			output.SkippedExisting++
+			output.MaxExistingOrderIndex = max(output.MaxExistingOrderIndex, q.OrderIndex)
 			s.logger.DebugContext(ctx, "question already seeded",
 				slog.String("workbook_seed_key", sd.SeedKey),
 				slog.String("question_seed_key", q.SeedKey),
@@ -155,22 +176,22 @@ func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, wo
 
 		wasRejected, err := s.addQuestion(ctx, organizationID, workbookID, sd.SeedKey, tag, q)
 		if err != nil {
-			return err
+			return WorkbookOutput{}, err
 		}
 		if wasRejected {
-			rejected++
+			output.RejectedOrderIndexes = append(output.RejectedOrderIndexes, q.OrderIndex)
 		} else {
-			added++
+			output.AddedOrderIndexes = append(output.AddedOrderIndexes, q.OrderIndex)
 		}
 	}
 
-	s.logger.InfoContext(ctx, "workbook questions seeded",
+	s.logger.DebugContext(ctx, "workbook questions seeded",
 		slog.String("workbook_seed_key", sd.SeedKey),
-		slog.Int("added", added),
-		slog.Int("skipped_existing", skippedExisting),
-		slog.Int("rejected", rejected),
+		slog.Int("added", len(output.AddedOrderIndexes)),
+		slog.Int("skipped_existing", output.SkippedExisting),
+		slog.Int("rejected", len(output.RejectedOrderIndexes)),
 	)
-	return nil
+	return output, nil
 }
 
 // addQuestion adds one question. A 400 response means the question's content

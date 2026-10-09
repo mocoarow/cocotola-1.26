@@ -144,5 +144,9 @@ func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.Publ
 	if err != nil {
 		return nil, fmt.Errorf("load csv workbook seeds: %w", err)
 	}
-	return csvSeeds, nil
+	seeds := make([]seed.PublicWorkbookSeed, 0, len(csvSeeds))
+	for _, s := range csvSeeds {
+		seeds = append(seeds, s.Seed)
+	}
+	return seeds, nil
 }

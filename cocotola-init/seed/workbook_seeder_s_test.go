@@ -149,6 +149,69 @@ func Test_WorkbookSeeder_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenW
 	require.NoError(t, err)
 }
 
+// csvSeeds returns a workbook seed whose questions carry non-zero OrderIndex
+// values, like seeds converted from a CSV.
+func csvSeeds() []seed.PublicWorkbookSeed {
+	return []seed.PublicWorkbookSeed{{
+		SeedKey:  "vocab-v1",
+		Title:    "Vocabulary",
+		Language: "ja",
+		Questions: []seed.QuestionSeed{
+			{SeedKey: "q1", QuestionType: "word_fill", Content: "C1", OrderIndex: 5},
+			{SeedKey: "q2", QuestionType: "word_fill", Content: "C2", OrderIndex: 7},
+			{SeedKey: "q3", QuestionType: "word_fill", Content: "C3", OrderIndex: 9},
+		},
+	}}
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReportPositionsAndMaxExistingOrderIndex_whenSomeQuestionsExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: q1 and q2 were imported before
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", Description: "[seedKey:vocab-v1]"}}, nil)
+	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
+		Return([]seed.QuestionListItem{
+			{QuestionID: "q-1", Tags: []string{"seed-vocab-v1:q1"}},
+			{QuestionID: "q-2", Tags: []string{"seed-vocab-v1:q2"}},
+		}, nil)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), nil)
+
+	// when
+	got, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, csvSeeds())
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []seed.WorkbookOutput{
+		{SeedKey: "vocab-v1", AddedOrderIndexes: []int32{9}, RejectedOrderIndexes: nil, SkippedExisting: 2, MaxExistingOrderIndex: 7},
+	}, got)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejectedWith400(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: nothing imported yet; the server rejects C1
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).Return(nil)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), nil)
+
+	// when
+	got, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, csvSeeds())
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []seed.WorkbookOutput{
+		{SeedKey: "vocab-v1", AddedOrderIndexes: []int32{7, 9}, RejectedOrderIndexes: []int32{5}, SkippedExisting: 0, MaxExistingOrderIndex: 0},
+	}, got)
+}
+
 func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
