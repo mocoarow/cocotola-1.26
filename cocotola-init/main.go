@@ -115,8 +115,7 @@ func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientC
 
 // loadCSVSeeds downloads and converts the CSV-sourced public workbooks declared
 // in the embedded manifest. When the GCS bucket is not configured, CSV seeding
-// is skipped (returns nil); once a bucket is set, any download/parse failure is
-// fatal so a misconfigured deployment fails loudly rather than seeding nothing.
+// is skipped.
 func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.PublicWorkbookSeed, error) {
 	if csvCfg.BucketName == "" {
 		slog.InfoContext(ctx, "csv seed bucket not configured; skipping csv workbook seeding")
