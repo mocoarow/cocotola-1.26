@@ -242,7 +242,26 @@ func Test_QuestionAPIClient_ListQuestions_shouldReportLimitInMessage_whenRespons
 	require.ErrorContains(t, err, fmt.Sprintf("response body exceeds %d bytes", listQuestionsLimitBytes))
 }
 
-func Test_QuestionAPIClient_shouldReturnError_whenServerReturnsNon2xx(t *testing.T) {
+func Test_QuestionAPIClient_shouldReturnHTTPStatusError_whenServerReturnsNon2xx(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+
+	// then
+	var statusErr *seed.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusBadRequest, statusErr.StatusCode)
+}
+
+func Test_QuestionAPIClient_shouldIncludeStatusInMessage_whenServerReturnsNon2xx(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

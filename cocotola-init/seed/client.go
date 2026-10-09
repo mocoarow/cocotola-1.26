@@ -197,12 +197,24 @@ func drainBody(ctx context.Context, body io.Reader) {
 	}
 }
 
-// statusError formats a non-2xx response into a single error, including a
-// truncated body snippet to aid debugging.
+// HTTPStatusError is returned when cocotola-question answers with a non-2xx
+// status. Body is a truncated snippet of the response body.
+type HTTPStatusError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *HTTPStatusError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("status %d", e.StatusCode)
+	}
+	return fmt.Sprintf("status %d: %s", e.StatusCode, e.Body)
+}
+
 func statusError(resp *http.Response) error {
 	errBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
 	if readErr != nil {
-		return fmt.Errorf("status %d: read error body: %w", resp.StatusCode, readErr)
+		return fmt.Errorf("%w: read error body: %w", &HTTPStatusError{StatusCode: resp.StatusCode, Body: ""}, readErr)
 	}
-	return fmt.Errorf("status %d: %s", resp.StatusCode, string(errBody))
+	return &HTTPStatusError{StatusCode: resp.StatusCode, Body: string(errBody)}
 }

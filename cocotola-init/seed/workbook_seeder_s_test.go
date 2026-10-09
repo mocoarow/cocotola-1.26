@@ -5,6 +5,7 @@ package seed_test
 import (
 	"context"
 	"errors"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -248,6 +249,103 @@ func Test_WorkbookSeeder_shouldReturnError_whenEnsurePoliciesFails(t *testing.T)
 
 	// then: the error propagates and no questions are added
 	require.ErrorIs(t, err, ensureErr)
+}
+
+// existingVocabularyClient returns a client mock whose vocab-v1 workbook
+// exists with no questions yet.
+func existingVocabularyClient(ctx context.Context, t *testing.T) *MockWorkbookAPIClient {
+	t.Helper()
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", Description: "[seedKey:vocab-v1]"}}, nil)
+	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").Return(nil, nil)
+	return client
+}
+
+func existingVocabularyEnsurer(ctx context.Context, t *testing.T) *MockWorkbookPolicyEnsurer {
+	t.Helper()
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-existing").Return(nil)
+	return ensurer
+}
+
+func addQuestionWithContent(content string) any {
+	return mock.MatchedBy(func(body seed.AddQuestionRequest) bool { return body.Content == content })
+}
+
+func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith403(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the server forbids C1 with 403; C2 must not be attempted
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(&seed.HTTPStatusError{StatusCode: http.StatusForbidden})
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then
+	var statusErr *seed.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusForbidden, statusErr.StatusCode)
+}
+
+func Test_WorkbookSeeder_shouldAddRemainingQuestions_whenQuestionRejectedWith400(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the server rejects C1 with 400
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
+		Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then: C2 is still added
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the server fails C1 with 500; C2 must not be attempted
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(&seed.HTTPStatusError{StatusCode: http.StatusInternalServerError})
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then
+	var statusErr *seed.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusInternalServerError, statusErr.StatusCode)
+}
+
+func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a transport error on C1; C2 must not be attempted
+	sendErr := errors.New("connection reset")
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(sendErr)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then
+	require.ErrorIs(t, err, sendErr)
 }
 
 func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuestion(t *testing.T) {

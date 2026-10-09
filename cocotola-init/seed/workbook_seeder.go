@@ -2,8 +2,10 @@ package seed
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strings"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
@@ -138,10 +140,12 @@ func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, wo
 	}
 	seenTags := indexQuestionTags(existing)
 
+	var added, skippedExisting, rejected int
 	for _, q := range sd.Questions {
 		tag := questionTag(sd.SeedKey, q.SeedKey)
 		if seenTags[tag] {
-			s.logger.InfoContext(ctx, "question already seeded",
+			skippedExisting++
+			s.logger.DebugContext(ctx, "question already seeded",
 				slog.String("workbook_seed_key", sd.SeedKey),
 				slog.String("question_seed_key", q.SeedKey),
 			)
@@ -149,23 +153,54 @@ func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, wo
 			continue
 		}
 
-		body := AddQuestionRequest{
-			QuestionType: q.QuestionType,
-			Content:      q.Content,
-			Tags:         append([]string{tag}, q.Tags...),
-			OrderIndex:   q.OrderIndex,
+		wasRejected, err := s.addQuestion(ctx, organizationID, workbookID, sd.SeedKey, tag, q)
+		if err != nil {
+			return err
 		}
-		if err := s.client.AddQuestion(ctx, organizationID, workbookID, body); err != nil {
-			return fmt.Errorf("add question %q: %w", q.SeedKey, err)
+		if wasRejected {
+			rejected++
+		} else {
+			added++
 		}
-
-		s.logger.InfoContext(ctx, "question created",
-			slog.String("workbook_seed_key", sd.SeedKey),
-			slog.String("question_seed_key", q.SeedKey),
-		)
 	}
 
+	s.logger.InfoContext(ctx, "workbook questions seeded",
+		slog.String("workbook_seed_key", sd.SeedKey),
+		slog.Int("added", added),
+		slog.Int("skipped_existing", skippedExisting),
+		slog.Int("rejected", rejected),
+	)
 	return nil
+}
+
+// addQuestion adds one question. A 400 response means the question's content
+// is invalid and will be rejected on every run, so it is reported as rejected
+// instead of stopping the remaining questions.
+func (s *WorkbookSeeder) addQuestion(ctx context.Context, organizationID, workbookID, workbookSeedKey, tag string, q QuestionSeed) (bool, error) {
+	body := AddQuestionRequest{
+		QuestionType: q.QuestionType,
+		Content:      q.Content,
+		Tags:         append([]string{tag}, q.Tags...),
+		OrderIndex:   q.OrderIndex,
+	}
+	err := s.client.AddQuestion(ctx, organizationID, workbookID, body)
+	if statusErr, ok := errors.AsType[*HTTPStatusError](err); ok && statusErr.StatusCode == http.StatusBadRequest {
+		s.logger.WarnContext(ctx, "question rejected",
+			slog.String("workbook_seed_key", workbookSeedKey),
+			slog.String("question_seed_key", q.SeedKey),
+			slog.Int("status", statusErr.StatusCode),
+		)
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("add question %q: %w", q.SeedKey, err)
+	}
+
+	s.logger.DebugContext(ctx, "question created",
+		slog.String("workbook_seed_key", workbookSeedKey),
+		slog.String("question_seed_key", q.SeedKey),
+	)
+	return false, nil
 }
 
 // indexWorkbooksBySeedKey extracts the seedKey marker from each workbook's
