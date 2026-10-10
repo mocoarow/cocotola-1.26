@@ -61,9 +61,6 @@ func LoadCSVWorkbookSeeds(ctx context.Context, reader GCSObjectReader, manifest 
 			return nil, fmt.Errorf("convert csv for workbook %q: %w", entry.SeedKey, err)
 		}
 		logSkippedRows(ctx, entry.SeedKey, conv.skipped)
-		if conv.tooManyInvalidRows() {
-			return nil, fmt.Errorf("workbook %q: %d of %d rows are invalid: %w", entry.SeedKey, len(conv.skipped), conv.totalRows, ErrTooManyInvalidCSVRows)
-		}
 
 		seeds = append(seeds, CSVWorkbookSeed{
 			Seed: PublicWorkbookSeed{

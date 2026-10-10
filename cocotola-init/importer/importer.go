@@ -16,9 +16,13 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
 
+// maxInvalidNewRowPercent is the share of newly appended rows that may be
+// invalid or rejected before an import fails.
+const maxInvalidNewRowPercent = 5
+
 var (
 	// ErrTooManyInvalidNewRows is returned when more than
-	// seed.MaxInvalidRowPercent of the rows appended since the last import are
+	// maxInvalidNewRowPercent of the rows appended since the last import are
 	// invalid or rejected.
 	ErrTooManyInvalidNewRows = errors.New("too many invalid new rows")
 	// ErrWorkbookOutputMismatch is returned when the seeder does not return one
@@ -133,7 +137,7 @@ func (im *Importer) checkNewRows(ctx context.Context, span trace.Span, invalidRo
 		slog.Int("rejected", rejected),
 	)
 
-	if bad*100 > newRows*seed.MaxInvalidRowPercent {
+	if bad*100 > newRows*maxInvalidNewRowPercent {
 		return fmt.Errorf("workbook %q: %d of %d new rows are invalid or rejected: %w", output.SeedKey, bad, newRows, ErrTooManyInvalidNewRows)
 	}
 	return nil

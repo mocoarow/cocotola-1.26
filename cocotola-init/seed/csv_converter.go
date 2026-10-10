@@ -41,10 +41,6 @@ const (
 	tatoebaLicenseURL  = "https://creativecommons.org/licenses/by/2.0/fr/"
 )
 
-// MaxInvalidRowPercent is the share of rows that may be invalid before an
-// import is rejected.
-const MaxInvalidRowPercent = 5
-
 // CSV converter errors. They are sentinels so callers (and tests) can match
 // them with errors.Is regardless of the surrounding context message.
 var (
@@ -56,9 +52,6 @@ var (
 	// ErrInvalidCSVRow marks a data row that cannot be converted, or a CSV
 	// without any data row.
 	ErrInvalidCSVRow = errors.New("invalid csv row")
-	// ErrTooManyInvalidCSVRows is returned when more than MaxInvalidRowPercent
-	// of the data rows are invalid.
-	ErrTooManyInvalidCSVRows = errors.New("too many invalid csv rows")
 )
 
 // tagValuePattern is the part of cocotola-question's tag pattern on each side
@@ -87,10 +80,9 @@ type textWithLangJSON struct {
 }
 
 // csvConversion is the result of converting one CSV: the questions from valid
-// rows, the number of data rows, and the rows skipped as invalid.
+// rows and the rows skipped as invalid.
 type csvConversion struct {
 	questions []QuestionSeed
-	totalRows int
 	skipped   []skippedCSVRow
 }
 
@@ -99,12 +91,6 @@ type csvConversion struct {
 type skippedCSVRow struct {
 	index  int32
 	reason error
-}
-
-// tooManyInvalidRows reports whether more than MaxInvalidRowPercent of the
-// data rows were skipped.
-func (c csvConversion) tooManyInvalidRows() bool {
-	return len(c.skipped)*100 > c.totalRows*MaxInvalidRowPercent
 }
 
 // convertCSV converts raw CSV bytes into question seeds according to format.
@@ -147,7 +133,7 @@ func convertWordFillCSV(sourceLang, targetLang string, data []byte) (csvConversi
 		seen[q.SeedKey] = true
 		questions = append(questions, q)
 	}
-	return csvConversion{questions: questions, totalRows: len(rows), skipped: skipped}, nil
+	return csvConversion{questions: questions, skipped: skipped}, nil
 }
 
 // readWordFillRows parses data and returns the header and the data rows. Rows

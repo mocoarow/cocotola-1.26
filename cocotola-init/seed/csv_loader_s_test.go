@@ -244,7 +244,6 @@ func loadSingleWordFillSeed(ctx context.Context, t *testing.T, csv string) (seed
 func Test_LoadCSVWorkbookSeeds_shouldSkipRow_whenInvalid(t *testing.T) {
 	t.Parallel()
 
-	// 19 valid rows plus one invalid row keeps the skip ratio at the 5% limit.
 	tests := []struct {
 		name       string
 		invalidRow string
@@ -348,20 +347,20 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnErrInvalidCSVRow_whenNoDataRow(t *tes
 	require.ErrorIs(t, err, seed.ErrInvalidCSVRow)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnErrTooManyInvalidCSVRows_whenSkipRatioExceedsLimit(t *testing.T) {
+func Test_LoadCSVWorkbookSeeds_shouldLoadValidRows_whenHalfOfRowsAreInvalid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: 2 invalid rows out of 20 (10%)
-	csv := wordFillHeader + validWordFillRows(1, 18) +
-		",3,日本語,English.,English ___.,B1,ability,1,CK,2,KK,tatoeba\n" +
-		",3,日本語,English.,English ___.,B1,ability,1,CK,2,KK,tatoeba\n"
+	// given: 10 invalid rows out of 20
+	csv := wordFillHeader + validWordFillRows(1, 10) +
+		strings.Repeat(",3,日本語,English.,English ___.,B1,ability,1,CK,2,KK,tatoeba\n", 10)
 
 	// when
-	_, err := loadSingleWordFillSeed(ctx, t, csv)
+	got, err := loadSingleWordFillSeed(ctx, t, csv)
 
 	// then
-	require.ErrorIs(t, err, seed.ErrTooManyInvalidCSVRows)
+	require.NoError(t, err)
+	assert.Len(t, got.Seed.Questions, 10)
 }
 
 func Test_LoadCSVWorkbookSeeds_shouldKeepRowPositionAsOrderIndex_whenRowSkipped(t *testing.T) {
