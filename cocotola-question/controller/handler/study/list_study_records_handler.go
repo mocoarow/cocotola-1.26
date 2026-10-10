@@ -64,8 +64,7 @@ func (h *ListStudyRecordsHandler) ListStudyRecords(c *gin.Context) {
 		WorkbookID:     workbookID,
 	})
 	if err != nil {
-		h.logger.WarnContext(ctx, "invalid list study records input", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))
+		handleStudyError(ctx, h.logger, c, "new list study records input", err)
 		return
 	}
 

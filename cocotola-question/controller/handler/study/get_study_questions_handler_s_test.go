@@ -97,6 +97,40 @@ func Test_GetStudyQuestionsHandler_shouldReturn400_whenLimitIsNotInteger(t *test
 	validateErrorResponse(t, respBytes, "invalid_request", "limit must be an integer")
 }
 
+func Test_GetStudyQuestionsHandler_shouldReturn400WithGenericMessage_whenLimitIsOutOfRange(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		limit string
+	}{
+		{name: "below min", limit: "0"},
+		{name: "above max", limit: "101"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			getUsecase := NewMockGetStudyQuestionsUsecase(t)
+			recordUsecase := NewMockRecordAnswerUsecase(t)
+			r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+			w := httptest.NewRecorder()
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/api/v1/workbook/"+fixtureWorkbookID+"/study?limit="+tt.limit, nil)
+			require.NoError(t, err)
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorResponse(t, respBytes, "invalid_request", http.StatusText(http.StatusBadRequest))
+		})
+	}
+}
+
 func Test_GetStudyQuestionsHandler_shouldReturn403_whenForbidden(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
