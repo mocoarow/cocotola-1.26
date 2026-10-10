@@ -69,7 +69,7 @@ func NewGetStudyQuestionsInput(p GetStudyQuestionsInputParams) (*GetStudyQuestio
 		Practice:       p.Practice,
 		ExcludeIDs:     p.ExcludeIDs,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate get study questions input: %w", err)
 	}
 	return m, nil
@@ -103,7 +103,7 @@ func NewGetStudySummaryInput(p GetStudySummaryInputParams) (*GetStudySummaryInpu
 		WorkbookID:     p.WorkbookID,
 		Practice:       p.Practice,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate get study summary input: %w", err)
 	}
 	return m, nil
@@ -209,7 +209,7 @@ func NewRecordAnswerInputForWordFill(p RecordAnswerInputForWordFillParams) (*Rec
 		LocalDateKey:      p.LocalDateKey,
 		Timezone:          p.Timezone,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
 	}
 	return m, nil
@@ -247,7 +247,7 @@ func NewRecordAnswerInputForMultipleChoice(p RecordAnswerInputForMultipleChoiceP
 		LocalDateKey:      p.LocalDateKey,
 		Timezone:          p.Timezone,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate record answer input: %w", err)
 	}
 	return m, nil
@@ -283,7 +283,7 @@ func NewDeleteStudyHistoryInput(p DeleteStudyHistoryInputParams) (*DeleteStudyHi
 		OrganizationID: p.OrganizationID,
 		WorkbookID:     p.WorkbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate delete study history input: %w", err)
 	}
 	return m, nil
@@ -311,7 +311,7 @@ func NewListStudyRecordsInput(p ListStudyRecordsInputParams) (*ListStudyRecordsI
 		OrganizationID: p.OrganizationID,
 		WorkbookID:     p.WorkbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate list study records input: %w", err)
 	}
 	return m, nil
@@ -372,7 +372,7 @@ func NewGetDashboardInput(p GetDashboardInputParams) (*GetDashboardInput, error)
 		Days:           p.Days,
 		TodayDateKey:   p.TodayDateKey,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate get dashboard input: %w", err)
 	}
 	return m, nil

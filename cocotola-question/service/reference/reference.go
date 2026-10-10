@@ -22,7 +22,7 @@ func NewShareWorkbookInput(operatorID string, organizationID string, workbookID 
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate share workbook input: %w", err)
 	}
 	return m, nil
@@ -47,7 +47,7 @@ func NewListSharedInput(operatorID string, organizationID string) (*ListSharedIn
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate list shared input: %w", err)
 	}
 	return m, nil
@@ -79,7 +79,7 @@ func NewUnshareInput(operatorID string, organizationID string, referenceID strin
 		OrganizationID: organizationID,
 		ReferenceID:    referenceID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate unshare input: %w", err)
 	}
 	return m, nil
@@ -99,7 +99,7 @@ func NewListPublicInput(operatorID string, organizationID string, language strin
 		OrganizationID: organizationID,
 		Language:       language,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate list public input: %w", err)
 	}
 	return m, nil
