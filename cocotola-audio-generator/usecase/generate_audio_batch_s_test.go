@@ -173,3 +173,170 @@ func Test_GenerateAudioBatch_shouldContinueProcessing_whenReclaimStaleFails(t *t
 	require.NoError(t, err)
 	assert.Equal(t, 0, processed)
 }
+
+func Test_truncate_shouldReturnInputUnchanged_whenWithinLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		maxRunes int
+	}{
+		{name: "empty string", input: "", maxRunes: 3},
+		{name: "ascii shorter than limit", input: "ab", maxRunes: 3},
+		{name: "ascii exactly at limit", input: "abc", maxRunes: 3},
+		{name: "multibyte exactly at limit", input: "りんご", maxRunes: 3},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: input whose rune count does not exceed maxRunes
+
+			// when
+			got := usecase.Truncate(tt.input, tt.maxRunes)
+
+			// then
+			assert.Equal(t, tt.input, got)
+		})
+	}
+}
+
+func Test_truncate_shouldCutAtRuneBoundary_whenExceedingLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		input    string
+		maxRunes int
+		want     string
+	}{
+		{name: "ascii", input: "hello world", maxRunes: 5, want: "hello"},
+		{name: "ascii one over limit", input: "abcd", maxRunes: 3, want: "abc"},
+		{name: "multibyte", input: "りんごを食べる", maxRunes: 3, want: "りんご"},
+		{name: "multibyte one over limit", input: "りんごを", maxRunes: 3, want: "りんご"},
+		{name: "mixed ascii and multibyte", input: "aりbん", maxRunes: 2, want: "aり"},
+		{name: "zero limit", input: "abc", maxRunes: 0, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: input whose rune count exceeds maxRunes
+
+			// when
+			got := usecase.Truncate(tt.input, tt.maxRunes)
+
+			// then
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_pickVoice_shouldReturnConfiguredVoice_whenLangIsSupported(t *testing.T) {
+	t.Parallel()
+
+	voices := defaultBatchConfig().Voices
+	tests := []struct {
+		lang string
+		want string
+	}{
+		{lang: "ja", want: voices.JaVoice},
+		{lang: "en", want: voices.EnVoice},
+	}
+	for _, tt := range tests {
+		t.Run(tt.lang, func(t *testing.T) {
+			t.Parallel()
+
+			// given: a supported short language code
+
+			// when
+			got := usecase.PickVoice(voices, tt.lang)
+
+			// then
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_pickVoice_shouldReturnEmpty_whenLangIsUnsupported(t *testing.T) {
+	t.Parallel()
+
+	voices := defaultBatchConfig().Voices
+	tests := []struct {
+		name string
+		lang string
+	}{
+		{name: "unknown code", lang: "fr"},
+		{name: "empty code", lang: ""},
+		{name: "uppercase code", lang: "JA"},
+		{name: "full locale", lang: "ja-JP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: a language code that is not a supported short code
+
+			// when
+			got := usecase.PickVoice(voices, tt.lang)
+
+			// then
+			assert.Empty(t, got)
+		})
+	}
+}
+
+func Test_pickFullLang_shouldReturnConfiguredLocale_whenLangIsSupported(t *testing.T) {
+	t.Parallel()
+
+	voices := defaultBatchConfig().Voices
+	tests := []struct {
+		lang string
+		want string
+	}{
+		{lang: "ja", want: voices.JaLang},
+		{lang: "en", want: voices.EnLang},
+	}
+	for _, tt := range tests {
+		t.Run(tt.lang, func(t *testing.T) {
+			t.Parallel()
+
+			// given: a supported short language code
+
+			// when
+			got := usecase.PickFullLang(voices, tt.lang)
+
+			// then
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_pickFullLang_shouldReturnEmpty_whenLangIsUnsupported(t *testing.T) {
+	t.Parallel()
+
+	voices := defaultBatchConfig().Voices
+	tests := []struct {
+		name string
+		lang string
+	}{
+		{name: "unknown code", lang: "fr"},
+		{name: "empty code", lang: ""},
+		{name: "uppercase code", lang: "JA"},
+		{name: "full locale", lang: "ja-JP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: a language code that is not a supported short code
+
+			// when
+			got := usecase.PickFullLang(voices, tt.lang)
+
+			// then
+			assert.Empty(t, got)
+		})
+	}
+}
