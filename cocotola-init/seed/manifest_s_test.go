@@ -31,3 +31,18 @@ func Test_DefaultCSVManifest_shouldParseEmbeddedFile_withUniqueAndCompleteEntrie
 		keys[e.SeedKey] = true
 	}
 }
+
+func Test_DefaultCSVManifest_shouldMapCEFRB1WorkbookToGeneratedCSV(t *testing.T) {
+	t.Parallel()
+
+	// when
+	manifest, err := seed.DefaultCSVManifest()
+
+	// then
+	require.NoError(t, err)
+	gcsObjects := make(map[string]string, len(manifest.Workbooks))
+	for _, e := range manifest.Workbooks {
+		gcsObjects[e.SeedKey] = e.GCSObject
+	}
+	assert.Equal(t, "cefr_b1_questions.csv", gcsObjects["cefr-b1-wordfill-v1"])
+}

@@ -61,14 +61,14 @@ func DefaultCSVManifest() (CSVWorkbookManifest, error) {
 	return manifest, nil
 }
 
-// validate enforces that seedKeys are present and unique, that the required
+// validate enforces that seedKeys are unique and usable in question tags, that the required
 // metadata fields are set, and that source and target languages differ.
 func (m CSVWorkbookManifest) validate() error {
 	seen := make(map[string]bool, len(m.Workbooks))
 	for i := range m.Workbooks {
 		entry := m.Workbooks[i]
-		if entry.SeedKey == "" {
-			return fmt.Errorf("csvWorkbook[%d] %q: seedKey must not be empty: %w", i, entry.Title, ErrInvalidManifest)
+		if !tagValuePattern.MatchString(entry.SeedKey) {
+			return fmt.Errorf("csvWorkbook[%d] %q: seedKey must match %s: %w", i, entry.Title, tagValuePattern, ErrInvalidManifest)
 		}
 		if seen[entry.SeedKey] {
 			return fmt.Errorf("csvWorkbook[%d]: duplicate seedKey %q: %w", i, entry.SeedKey, ErrInvalidManifest)

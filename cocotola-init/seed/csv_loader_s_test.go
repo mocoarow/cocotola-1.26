@@ -454,3 +454,22 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestHasDuplicateSeedKey
 	// then
 	require.ErrorIs(t, err, seed.ErrInvalidManifest)
 }
+
+func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestSeedKeyOutsideTagPattern(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the seedKey becomes part of every question tag
+	manifest := seed.CSVWorkbookManifest{
+		Workbooks: []seed.CSVWorkbookEntry{
+			{SeedKey: "cefr.b1", Title: "A", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
+		},
+	}
+	reader := NewMockGCSObjectReader(t)
+
+	// when
+	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+}
