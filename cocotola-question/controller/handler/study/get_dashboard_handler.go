@@ -70,12 +70,12 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 
 	// Field-level pre-checks so the 400 body tells the client exactly
 	// which input failed. The downstream NewGetDashboardInput validator
-	// would otherwise funnel every cause through the same generic
-	// "invalid request parameters" string. X-Local-Timezone is read by
-	// /workbook/.../answer (the write side persists it on each bucket)
-	// but is intentionally not consumed here: the dashboard window is
-	// computed purely from the user-local YYYY-MM-DD that the frontend
-	// already resolved before sending X-Local-Date.
+	// would otherwise funnel every cause through the same generic message.
+	// X-Local-Timezone is read by /workbook/.../answer (the write side
+	// persists it on each bucket) but is intentionally not consumed here:
+	// the dashboard window is computed purely from the user-local
+	// YYYY-MM-DD that the frontend already resolved before sending
+	// X-Local-Date.
 	todayKey := c.GetHeader("X-Local-Date")
 	if todayKey == "" {
 		h.logger.WarnContext(ctx, "missing X-Local-Date header")
@@ -90,8 +90,7 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 		TodayDateKey:   todayKey,
 	})
 	if err != nil {
-		h.logger.WarnContext(ctx, "invalid dashboard input", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "invalid request parameters"))
+		handleStudyError(ctx, h.logger, c, "new get dashboard input", err)
 		return
 	}
 
