@@ -272,11 +272,14 @@ export default function WorkbookDetail() {
           <span>{t("workbooks.detail.clearStudyHistory")}</span>
         </Button>
         {import.meta.env.DEV && (
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={`/workbooks/${workbook.workbookId}/debug-study`}>
-              <BugIcon data-icon="inline-start" className="size-3.5" />
-              <span>{t("workbooks.debugStudy.title")}</span>
-            </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            nativeButton={false}
+            render={<Link to={`/workbooks/${workbook.workbookId}/debug-study`} />}
+          >
+            <BugIcon data-icon="inline-start" className="size-3.5" />
+            <span>{t("workbooks.debugStudy.title")}</span>
           </Button>
         )}
         {showCleared && (
