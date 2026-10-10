@@ -30,7 +30,7 @@ func NewAddQuestionInput(operatorID string, organizationID string, workbookID st
 		Tags:           tags,
 		OrderIndex:     orderIndex,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate add question input: %w", err)
 	}
 	return m, nil
@@ -86,7 +86,7 @@ func NewGetQuestionInput(operatorID string, organizationID string, workbookID st
 		WorkbookID:     workbookID,
 		QuestionID:     questionID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate get question input: %w", err)
 	}
 	return m, nil
@@ -111,7 +111,7 @@ func NewListQuestionsInput(operatorID string, organizationID string, workbookID 
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate list questions input: %w", err)
 	}
 	return m, nil
@@ -144,7 +144,7 @@ func NewUpdateQuestionInput(operatorID string, organizationID string, workbookID
 		Tags:           tags,
 		OrderIndex:     orderIndex,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate update question input: %w", err)
 	}
 	return m, nil
@@ -171,7 +171,7 @@ func NewDeleteQuestionInput(operatorID string, organizationID string, workbookID
 		WorkbookID:     workbookID,
 		QuestionID:     questionID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate delete question input: %w", err)
 	}
 	return m, nil

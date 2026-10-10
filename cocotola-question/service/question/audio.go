@@ -29,8 +29,8 @@ type ListPendingAudioInput struct {
 // NewListPendingAudioInput creates a validated ListPendingAudioInput.
 func NewListPendingAudioInput(limit int) (*ListPendingAudioInput, error) {
 	m := &ListPendingAudioInput{Limit: limit}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate list pending audio input: %w: %w", domain.ErrInvalidArgument, err)
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate list pending audio input: %w", err)
 	}
 	return m, nil
 }
@@ -57,8 +57,8 @@ func NewClaimAudioInput(workbookID, questionID, inputHash string) (*ClaimAudioIn
 		QuestionID: questionID,
 		InputHash:  inputHash,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate claim audio input: %w: %w", domain.ErrInvalidArgument, err)
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate claim audio input: %w", err)
 	}
 	return m, nil
 }
@@ -89,8 +89,8 @@ func NewCompleteAudioInput(workbookID, questionID, inputHash string, refs map[st
 		InputHash:  inputHash,
 		Refs:       refs,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate complete audio input: %w: %w", domain.ErrInvalidArgument, err)
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate complete audio input: %w", err)
 	}
 	return m, nil
 }
@@ -114,8 +114,8 @@ func NewFailAudioInput(workbookID, questionID, inputHash, reason string) (*FailA
 		InputHash:  inputHash,
 		Reason:     reason,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate fail audio input: %w: %w", domain.ErrInvalidArgument, err)
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate fail audio input: %w", err)
 	}
 	return m, nil
 }
@@ -133,8 +133,8 @@ func NewReclaimStaleAudioInput(staleAfter time.Duration, limit int) (*ReclaimSta
 		StaleAfter: staleAfter,
 		Limit:      limit,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
-		return nil, fmt.Errorf("validate reclaim stale audio input: %w: %w", domain.ErrInvalidArgument, err)
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate reclaim stale audio input: %w", err)
 	}
 	return m, nil
 }

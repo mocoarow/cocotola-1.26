@@ -69,8 +69,7 @@ func (h *AddQuestionHandler) AddQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewAddQuestionInput(userID, organizationID, workbookID, req.QuestionType, req.Content, req.Tags, int(req.OrderIndex))
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid add question input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		handleQuestionError(ctx, h.logger, c, "new add question input", err)
 		return
 	}
 

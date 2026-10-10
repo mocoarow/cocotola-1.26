@@ -68,8 +68,7 @@ func (h *GetQuestionHandler) GetQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewGetQuestionInput(userID, organizationID, workbookID, questionID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid get question input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		handleQuestionError(ctx, h.logger, c, "new get question input", err)
 		return
 	}
 

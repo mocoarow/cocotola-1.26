@@ -26,9 +26,11 @@ smart_go_test(
     srcs = [
         "owned_workbook_list_s_test.go",
         "rbac_s_test.go",
+        "validator_s_test.go",
     ],
     deps = [
         ":domain",
+        "@com_github_go_playground_validator_v10//:validator",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

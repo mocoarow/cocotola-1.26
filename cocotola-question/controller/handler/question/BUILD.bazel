@@ -32,11 +32,13 @@ smart_go_test(
         "audio_handler_s_test.go",
         "helper_test.go",
         "mocks_test.go",
+        "question_handler_s_test.go",
     ],
     deps = [
         ":question",
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
+        "//cocotola-question/controller",
         "//cocotola-question/domain",
         "//cocotola-question/service/question",
         "@com_github_gin_gonic_gin//:gin",

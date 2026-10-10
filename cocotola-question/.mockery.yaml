@@ -31,5 +31,5 @@ packages:
     config:
       all: true
   github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question:
-    interfaces:
-      AudioBatchUsecase:
+    config:
+      all: true

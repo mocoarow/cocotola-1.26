@@ -30,7 +30,7 @@ func NewCreateWorkbookInput(operatorID string, organizationID string, spaceID st
 		Visibility:     visibility,
 		Language:       language,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate create workbook input: %w", err)
 	}
 	return m, nil
@@ -84,7 +84,7 @@ func NewGetWorkbookInput(operatorID string, organizationID string, workbookID st
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate get workbook input: %w", err)
 	}
 	return m, nil
@@ -123,7 +123,7 @@ func NewListWorkbooksInput(operatorID string, organizationID string, spaceID str
 		OrganizationID: organizationID,
 		SpaceID:        spaceID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate list workbooks input: %w", err)
 	}
 	return m, nil
@@ -156,7 +156,7 @@ func NewUpdateWorkbookInput(operatorID string, organizationID string, workbookID
 		Visibility:     visibility,
 		Language:       language,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate update workbook input: %w", err)
 	}
 	return m, nil
@@ -181,7 +181,7 @@ func NewDeleteWorkbookInput(operatorID string, organizationID string, workbookID
 		OrganizationID: organizationID,
 		WorkbookID:     workbookID,
 	}
-	if err := domain.ValidateStruct(m); err != nil {
+	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate delete workbook input: %w", err)
 	}
 	return m, nil

@@ -16,13 +16,16 @@ import (
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	questionhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 const (
-	fixtureWorkbookID = "wb-1"
-	fixtureQuestionID = "q-1"
+	fixtureWorkbookID     = "wb-1"
+	fixtureQuestionID     = "q-1"
+	fixtureUserID         = "user-1"
+	fixtureOrganizationID = "org-1"
 	// fixtureAudioInputHash is a 64-char hex sha256 used by the audio batch.
 	fixtureAudioInputHash = "a1b2c3d4e5f60718293a4b5c6d7e8f9001020304050607080910111213141516"
 )
@@ -65,6 +68,34 @@ func initInternalAudioRouter(ctx context.Context, t *testing.T, usecase *MockAud
 	return router
 }
 
+func initInternalQuestionRouter(ctx context.Context, t *testing.T, addUsecase *MockAddQuestionUsecase, updateUsecase *MockUpdateQuestionUsecase) *gin.Engine {
+	t.Helper()
+
+	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
+	require.NoError(t, err)
+	internal := router.Group("api").Group("v1").Group("internal")
+	internal.Use(fakeOperatorMiddleware(fixtureUserID, fixtureOrganizationID))
+
+	response := questionhandler.NewResponseBuilder("")
+	questionhandler.InitInternalQuestionRouter(
+		questionhandler.NewAddQuestionHandler(addUsecase, response),
+		questionhandler.NewListQuestionsHandler(NewMockListQuestionsUsecase(t), response),
+		questionhandler.NewUpdateQuestionHandler(updateUsecase, response),
+		questionhandler.NewDeleteQuestionHandler(NewMockDeleteQuestionUsecase(t)),
+		internal,
+	)
+
+	return router
+}
+
+func fakeOperatorMiddleware(userID string, organizationID string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set(controller.ContextFieldUserID{}, userID)
+		c.Set(controller.ContextFieldOrganizationID{}, organizationID)
+		c.Next()
+	}
+}
+
 func readBytes(t *testing.T, b *bytes.Buffer) []byte {
 	t.Helper()
 	respBytes, err := io.ReadAll(b)
@@ -93,4 +124,14 @@ func validateErrorCode(t *testing.T, respBytes []byte, expectedCode string) {
 	code := codeExpr.Get(jsonObj)
 	require.Len(t, code, 1, "response should have one code: %+v", jsonObj)
 	assert.Equal(t, expectedCode, code[0])
+}
+
+func validateErrorResponse(t *testing.T, respBytes []byte, expectedCode string, expectedMessage string) {
+	t.Helper()
+	validateErrorCode(t, respBytes, expectedCode)
+	jsonObj := parseJSON(t, respBytes)
+	messageExpr := parseExpr(t, "$.message")
+	message := messageExpr.Get(jsonObj)
+	require.Len(t, message, 1, "response should have one message: %+v", jsonObj)
+	assert.Equal(t, expectedMessage, message[0])
 }

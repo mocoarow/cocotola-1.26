@@ -66,8 +66,7 @@ func (h *DeleteQuestionHandler) DeleteQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewDeleteQuestionInput(userID, organizationID, workbookID, questionID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid delete question input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		handleQuestionError(ctx, h.logger, c, "new delete question input", err)
 		return
 	}
 
