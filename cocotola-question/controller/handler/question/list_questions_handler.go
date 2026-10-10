@@ -62,8 +62,7 @@ func (h *ListQuestionsHandler) ListQuestions(c *gin.Context) {
 
 	input, err := questionservice.NewListQuestionsInput(userID, organizationID, workbookID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid list questions input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		handleQuestionError(ctx, h.logger, c, "new list questions input", err)
 		return
 	}
 

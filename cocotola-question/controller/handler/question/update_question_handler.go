@@ -76,8 +76,7 @@ func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewUpdateQuestionInput(userID, organizationID, workbookID, questionID, req.Content, req.Tags, int(req.OrderIndex))
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid update question input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		handleQuestionError(ctx, h.logger, c, "new update question input", err)
 		return
 	}
 
