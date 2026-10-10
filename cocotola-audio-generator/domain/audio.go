@@ -32,9 +32,6 @@ const SlotSource = "source"
 // SlotTarget is the map key for the audio rendered from the blank-filled target text.
 const SlotTarget = "target"
 
-// ErrNoPendingItems indicates a batch tick with no work to do.
-var ErrNoPendingItems = errors.New("no pending audio items")
-
 // ErrClaimRace indicates another batch instance won the race to claim the
 // item. The caller should skip this item and continue with the next one.
 var ErrClaimRace = errors.New("audio claim lost race")
