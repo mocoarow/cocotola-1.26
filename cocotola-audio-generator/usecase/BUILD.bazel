@@ -12,11 +12,12 @@ go_library(
 smart_go_test(
     name = "usecase_test",
     srcs = [
+        "export_test.go",
         "generate_audio_batch_s_test.go",
         "mocks_test.go",
     ],
+    embed = [":usecase"],
     deps = [
-        ":usecase",
         "//cocotola-audio-generator/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
