@@ -12,6 +12,9 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
+  github.com/mocoarow/cocotola-1.26/cocotola-init/importer:
+    config:
+      all: true
   github.com/mocoarow/cocotola-1.26/cocotola-init/seed:
     interfaces:
       WorkbookAPIClient:

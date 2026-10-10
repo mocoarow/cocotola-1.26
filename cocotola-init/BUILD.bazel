@@ -4,15 +4,21 @@ load("@rules_pkg//:pkg.bzl", "pkg_tar")
 
 go_library(
     name = "cocotola-init_lib",
-    srcs = ["main.go"],
+    srcs = [
+        "main.go",
+        "run_import.go",
+        "run_init.go",
+    ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init",
     visibility = ["//visibility:private"],
     deps = [
         "//cocotola-init/config",
         "//cocotola-init/gateway",
+        "//cocotola-init/importer",
         "//cocotola-init/initialize",
         "//cocotola-init/seed",
         "//cocotola-lib/gateway",
+        "@io_gorm_gorm//:gorm",
     ],
 )
 

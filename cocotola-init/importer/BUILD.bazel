@@ -1,0 +1,35 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "importer",
+    srcs = [
+        "doc.go",
+        "importer.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/importer",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-init/seed",
+        "@io_opentelemetry_go_otel//:otel",
+        "@io_opentelemetry_go_otel//attribute",
+        "@io_opentelemetry_go_otel//codes",
+        "@io_opentelemetry_go_otel_trace//:trace",
+    ],
+)
+
+smart_go_test(
+    name = "importer_test",
+    srcs = [
+        "importer_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":importer",
+        "//cocotola-auth/domain",
+        "//cocotola-init/seed",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,11 +16,12 @@ const (
 	// serviceAuthHeader names the inbound authentication header used by the
 	// internal cocotola-question endpoints. It is intentionally not called
 	// "ApiKey" to avoid gosec G101 false positives on the constant name.
-	serviceAuthHeader    = "X-Service-Api-Key"
-	organizationIDHeader = "X-Organization-Id"
-	contentTypeJSON      = "application/json"
-	maxBodyBytes         = 1 << 20
-	maxErrorBodyBytes    = 512
+	serviceAuthHeader         = "X-Service-Api-Key"
+	organizationIDHeader      = "X-Organization-Id"
+	contentTypeJSON           = "application/json"
+	maxBodyBytes              = 1 << 20
+	maxListQuestionsBodyBytes = 32 << 20
+	maxErrorBodyBytes         = 512
 )
 
 // QuestionAPIClient is a minimal HTTP client for cocotola-question's
@@ -58,7 +60,7 @@ func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, s
 	reqURL := c.baseURL + "/api/v1/internal/workbook?" + q.Encode()
 
 	var resp listWorkbooksResponse
-	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxBodyBytes); err != nil {
 		return nil, fmt.Errorf("list workbooks (space %s): %w", spaceID, err)
 	}
 	return resp.Workbooks, nil
@@ -84,7 +86,7 @@ type WorkbookResponse struct {
 func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, body CreateWorkbookRequest) (string, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook"
 	var resp WorkbookResponse
-	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp); err != nil {
+	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
 		return "", fmt.Errorf("create workbook: %w", err)
 	}
 	return resp.WorkbookID, nil
@@ -105,7 +107,7 @@ func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, w
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
 
 	var resp listQuestionsResponse
-	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp); err != nil {
+	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxListQuestionsBodyBytes); err != nil {
 		return nil, fmt.Errorf("list questions (workbook %s): %w", workbookID, err)
 	}
 	return resp.Questions, nil
@@ -122,7 +124,7 @@ type AddQuestionRequest struct {
 // AddQuestion calls POST /api/v1/internal/workbook/{workbookId}/question.
 func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error {
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
-	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil); err != nil {
+	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil, maxBodyBytes); err != nil {
 		return fmt.Errorf("add question (workbook %s): %w", workbookID, err)
 	}
 	return nil
@@ -130,7 +132,7 @@ func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, wor
 
 // do issues an authenticated HTTP request and decodes the JSON response into out
 // (when out is non-nil). Non-2xx responses are surfaced as wrapped errors.
-func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any) error {
+func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any, maxDecodeBytes int64) error {
 	req, err := c.newRequest(ctx, method, reqURL, organizationID, body)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
@@ -155,7 +157,10 @@ func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organization
 		return nil
 	}
 
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxBodyBytes)).Decode(out); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(nil, resp.Body, maxDecodeBytes)).Decode(out); err != nil {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			return fmt.Errorf("decode response: response body exceeds %d bytes: %w", maxDecodeBytes, err)
+		}
 		return fmt.Errorf("decode response: %w", err)
 	}
 	return nil
@@ -192,12 +197,24 @@ func drainBody(ctx context.Context, body io.Reader) {
 	}
 }
 
-// statusError formats a non-2xx response into a single error, including a
-// truncated body snippet to aid debugging.
+// HTTPStatusError is returned when cocotola-question answers with a non-2xx
+// status. Body is a truncated snippet of the response body.
+type HTTPStatusError struct {
+	StatusCode int
+	Body       string
+}
+
+func (e *HTTPStatusError) Error() string {
+	if e.Body == "" {
+		return fmt.Sprintf("status %d", e.StatusCode)
+	}
+	return fmt.Sprintf("status %d: %s", e.StatusCode, e.Body)
+}
+
 func statusError(resp *http.Response) error {
 	errBody, readErr := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodyBytes))
 	if readErr != nil {
-		return fmt.Errorf("status %d: read error body: %w", resp.StatusCode, readErr)
+		return fmt.Errorf("%w: read error body: %w", &HTTPStatusError{StatusCode: resp.StatusCode, Body: ""}, readErr)
 	}
-	return fmt.Errorf("status %d: %s", resp.StatusCode, string(errBody))
+	return &HTTPStatusError{StatusCode: resp.StatusCode, Body: string(errBody)}
 }

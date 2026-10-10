@@ -17,9 +17,13 @@ go_library(
 smart_go_test(
     name = "config_test",
     srcs = [
-        "config_test.go",
+        "config_s_test.go",
         "export_test.go",
     ],
     embed = [":config"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "@com_github_go_playground_validator_v10//:validator",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )

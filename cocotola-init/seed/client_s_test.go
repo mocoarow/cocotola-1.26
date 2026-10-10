@@ -5,9 +5,11 @@ package seed_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 
@@ -20,6 +22,8 @@ import (
 const (
 	testAPIKey       = "test-api-key"
 	testRequestOrgID = "org-1"
+	// listQuestionsLimitBytes mirrors the unexported limit in client.go.
+	listQuestionsLimitBytes = 32 << 20
 )
 
 // recordedCall captures one inbound HTTP request the client makes during a test.
@@ -165,7 +169,99 @@ func Test_QuestionAPIClient_AddQuestion_shouldHitWorkbookScopedPath(t *testing.T
 	assert.Equal(t, "/api/v1/internal/workbook/wb-1/question", c.Path)
 }
 
-func Test_QuestionAPIClient_shouldReturnError_whenServerReturnsNon2xx(t *testing.T) {
+func Test_QuestionAPIClient_ListQuestions_shouldDecodeAllQuestions_whenResponseExceedsOneMiB(t *testing.T) {
+	t.Parallel()
+
+	// given: enough questions that the JSON body is larger than 1 MiB
+	const questionCount = 20000
+	questions := make([]seed.QuestionListItem, questionCount)
+	for i := range questions {
+		questions[i] = seed.QuestionListItem{
+			QuestionID: fmt.Sprintf("01900000-0000-7000-8000-%012d", i),
+			Tags:       []string{fmt.Sprintf("seed-cefr-b1-wordfill-v1:%d", i), "level:b1", "source:tatoeba"},
+		}
+	}
+	body, err := json.Marshal(map[string]any{"questions": questions})
+	require.NoError(t, err)
+	require.Greater(t, len(body), 1<<20)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	got, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.NoError(t, err)
+	assert.Len(t, got, questionCount)
+}
+
+// newOversizedListQuestionsServer returns a server whose ListQuestions body is
+// larger than listQuestionsLimitBytes: a single question whose ID alone fills it.
+func newOversizedListQuestionsServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	body := `{"questions":[{"questionId":"` + strings.Repeat("a", listQuestionsLimitBytes) + `","tags":[]}]}`
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, body)
+	}))
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReturnMaxBytesError_whenResponseExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newOversizedListQuestionsServer(t)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	var maxErr *http.MaxBytesError
+	require.ErrorAs(t, err, &maxErr)
+	assert.Equal(t, int64(listQuestionsLimitBytes), maxErr.Limit)
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReportLimitInMessage_whenResponseExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newOversizedListQuestionsServer(t)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.ErrorContains(t, err, fmt.Sprintf("response body exceeds %d bytes", listQuestionsLimitBytes))
+}
+
+func Test_QuestionAPIClient_shouldReturnHTTPStatusError_whenServerReturnsNon2xx(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+
+	// then
+	var statusErr *seed.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusBadRequest, statusErr.StatusCode)
+}
+
+func Test_QuestionAPIClient_shouldIncludeStatusInMessage_whenServerReturnsNon2xx(t *testing.T) {
 	t.Parallel()
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
