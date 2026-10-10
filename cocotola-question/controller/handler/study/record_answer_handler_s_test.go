@@ -1,7 +1,9 @@
 package study_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -197,6 +199,47 @@ func Test_RecordAnswerHandler_shouldReturn200_whenMultipleChoiceSelectedChoiceId
 	totalCorrect := totalCorrectExpr.Get(jsonObj)
 	require.Len(t, totalCorrect, 1)
 	assert.EqualValues(t, 1, totalCorrect[0])
+}
+
+func Test_RecordAnswerHandler_shouldReturn400WithGenericMessage_whenSelectedChoiceIDsExceedLimit(t *testing.T) {
+	t.Parallel()
+
+	tooMany := make([]string, studyservice.MaxSelectedChoiceIDsCount+1)
+	for i := range tooMany {
+		tooMany[i] = "c"
+	}
+	tests := []struct {
+		name string
+		ids  []string
+	}{
+		{name: "too many ids", ids: tooMany},
+		{name: "too long id", ids: []string{strings.Repeat("c", studyservice.MaxChoiceIDLength+1)}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			getUsecase := NewMockGetStudyQuestionsUsecase(t)
+			recordUsecase := NewMockRecordAnswerUsecase(t)
+			r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+			w := httptest.NewRecorder()
+			body, err := json.Marshal(map[string][]string{"selectedChoiceIds": tt.ids})
+			require.NoError(t, err)
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", bytes.NewReader(body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorResponse(t, respBytes, "invalid_request", http.StatusText(http.StatusBadRequest))
+		})
+	}
 }
 
 func Test_RecordAnswerHandler_shouldReturn400_whenUsecaseReturnsInvalidArgument(t *testing.T) {

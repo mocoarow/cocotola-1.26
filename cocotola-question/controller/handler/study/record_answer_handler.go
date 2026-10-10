@@ -149,8 +149,7 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 			Timezone:       timezone,
 		})
 		if err != nil {
-			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
-			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			handleStudyError(ctx, h.logger, c, "new record answer input", err)
 			return nil, false
 		}
 		return in, true
@@ -165,8 +164,7 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 			Timezone:          timezone,
 		})
 		if err != nil {
-			h.logger.WarnContext(ctx, "invalid record answer input", slog.Any("error", err))
-			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
+			handleStudyError(ctx, h.logger, c, "new record answer input", err)
 			return nil, false
 		}
 		return in, true
