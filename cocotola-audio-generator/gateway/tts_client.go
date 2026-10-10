@@ -24,7 +24,7 @@ func NewTTSClient(ctx context.Context, encoding string, sampleRateHz int) (*TTSC
 	}
 	enc, err := ParseAudioEncoding(encoding)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse audio encoding: %w", err)
 	}
 	return &TTSClient{
 		client:       client,
