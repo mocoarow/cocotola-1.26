@@ -3,6 +3,7 @@ package config
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -20,32 +21,87 @@ type InitConfig struct {
 }
 
 // QuestionClientConfig holds connection settings for the cocotola-question
-// internal API used to seed public workbooks. When BaseURL is empty the
-// seeding step is skipped (useful for infra bootstrap or tests).
-//
-// TimeoutSec accepts 0 as a sentinel meaning "use the built-in default"
-// (see buildSeeder in main.go). Negative values are rejected by validation.
+// internal API. TimeoutSec 0 means the built-in default.
 type QuestionClientConfig struct {
 	BaseURL    string `yaml:"baseUrl"`
 	APIKey     string `yaml:"apiKey" validate:"required_with=BaseURL"`
 	TimeoutSec int    `yaml:"timeoutSec" validate:"gte=0"`
 }
 
-// CSVSeedConfig holds settings for seeding public workbooks from CSV objects
-// stored in Google Cloud Storage. When BucketName is empty, CSV seeding is
-// skipped entirely and only the embedded YAML seeds are applied.
+// CSVSeedConfig holds the GCS bucket that the import mode reads CSV objects from.
 type CSVSeedConfig struct {
 	BucketName string `yaml:"bucketName"`
 }
 
-// Config holds all configuration for the cocotola-init application.
+// Config holds all configuration for the cocotola-init application. Settings
+// required by only one mode are checked by ValidateForMode.
 type Config struct {
-	AppEnv   string               `yaml:"appEnv" validate:"required"`
-	App      InitConfig           `yaml:"app" validate:"required"`
-	DB       libgateway.DBConfig  `yaml:"db" validate:"required"`
-	Question QuestionClientConfig `yaml:"question"`
-	CSVSeed  CSVSeedConfig        `yaml:"csvSeed"`
-	Log      libgateway.LogConfig `yaml:"log" validate:"required"`
+	AppEnv   string                 `yaml:"appEnv" validate:"required"`
+	App      InitConfig             `yaml:"app" validate:"-"`
+	DB       libgateway.DBConfig    `yaml:"db" validate:"required"`
+	Question QuestionClientConfig   `yaml:"question"`
+	CSVSeed  CSVSeedConfig          `yaml:"csvSeed"`
+	Log      libgateway.LogConfig   `yaml:"log" validate:"required"`
+	Trace    libgateway.TraceConfig `yaml:"trace" validate:"required"`
+}
+
+// Mode selects what cocotola-init does.
+type Mode int
+
+const (
+	_ Mode = iota
+	// ModeInit bootstraps the organization, users and embedded public workbooks.
+	ModeInit
+	// ModeImport adds the rows appended to the CSV workbooks.
+	ModeImport
+)
+
+var (
+	// ErrUnknownMode is returned for a command-line mode other than init or import.
+	ErrUnknownMode = errors.New("unknown mode")
+	// ErrInvalidModeConfig is returned when a setting the mode needs is missing.
+	ErrInvalidModeConfig = errors.New("invalid config for mode")
+)
+
+// ParseMode returns the mode named by the first command-line argument; no
+// argument means ModeInit.
+func ParseMode(args []string) (Mode, error) {
+	if len(args) == 0 {
+		return ModeInit, nil
+	}
+	if len(args) > 1 {
+		return 0, fmt.Errorf("args %q: %w", args, ErrUnknownMode)
+	}
+
+	switch args[0] {
+	case "init":
+		return ModeInit, nil
+	case "import":
+		return ModeImport, nil
+	default:
+		return 0, fmt.Errorf("mode %q: %w", args[0], ErrUnknownMode)
+	}
+}
+
+// ValidateForMode checks the settings that LoadConfig leaves to the mode.
+func (c *Config) ValidateForMode(mode Mode) error {
+	if mode != ModeInit && mode != ModeImport {
+		return fmt.Errorf("mode %d: %w", mode, ErrUnknownMode)
+	}
+	if c.Question.BaseURL == "" {
+		return fmt.Errorf("question.baseUrl: %w", ErrInvalidModeConfig)
+	}
+
+	if mode == ModeInit {
+		if err := libdomain.ValidateStruct(&c.App); err != nil {
+			return fmt.Errorf("app: %w: %w", ErrInvalidModeConfig, err)
+		}
+		return nil
+	}
+	if c.CSVSeed.BucketName == "" {
+		return fmt.Errorf("csvSeed.bucketName: %w", ErrInvalidModeConfig)
+	}
+	return nil
 }
 
 //go:embed config.yml
@@ -84,9 +140,20 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("yaml.Unmarshal. filename: %s, err: %w", filename, err)
 	}
 
-	if err := libdomain.ValidateStruct(&conf); err != nil {
+	validated := withoutUnusedGoogleTrace(conf)
+	if err := libdomain.ValidateStruct(&validated); err != nil {
 		return nil, fmt.Errorf("validate struct. filename: %s, err: %w", filename, err)
 	}
 
-	return &conf, nil
+	return &validated, nil
+}
+
+func withoutUnusedGoogleTrace(conf Config) Config {
+	if conf.Trace.Exporter == "google" {
+		return conf
+	}
+	trace := conf.Trace
+	trace.Google = nil
+	conf.Trace = trace
+	return conf
 }

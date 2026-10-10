@@ -32,7 +32,6 @@ smart_go_test(
         "csv_loader_s_test.go",
         "loader_s_test.go",
         "manifest_s_test.go",
-        "merge_s_test.go",
         "mocks_test.go",
         "workbook_seeder_s_test.go",
     ],

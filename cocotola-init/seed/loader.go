@@ -51,24 +51,6 @@ func loadSeedFile(path string) ([]PublicWorkbookSeed, error) {
 	return f.Workbooks, nil
 }
 
-// MergeSeeds concatenates the given seed groups (e.g. the embedded defaults and
-// the CSV-sourced seeds) and enforces global seedKey uniqueness, since the
-// seeder indexes existing workbooks by seedKey across the whole set.
-func MergeSeeds(groups ...[]PublicWorkbookSeed) ([]PublicWorkbookSeed, error) {
-	total := 0
-	for _, g := range groups {
-		total += len(g)
-	}
-	all := make([]PublicWorkbookSeed, 0, total)
-	for _, g := range groups {
-		all = append(all, g...)
-	}
-	if err := validateSeeds(all); err != nil {
-		return nil, fmt.Errorf("merge seeds: %w", err)
-	}
-	return all, nil
-}
-
 // validateSeeds enforces the invariants the seeder relies on:
 //   - workbook seedKeys are non-empty and unique across the file
 //   - question seedKeys are non-empty and unique within a workbook

@@ -34,7 +34,8 @@ const (
 	maxActiveGroups              = 100
 )
 
-func cocotolaOrganizationID() domain.OrganizationID {
+// CocotolaOrganizationID returns CocotolaOrganizationIDString as an ID.
+func CocotolaOrganizationID() domain.OrganizationID {
 	return domain.MustParseOrganizationID(CocotolaOrganizationIDString)
 }
 
@@ -157,7 +158,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 		return nil, fmt.Errorf("find organization by name: %w", err)
 	}
 
-	org, err = domain.NewOrganization(cocotolaOrganizationID(), organizationName, maxActiveUsers, maxActiveGroups)
+	org, err = domain.NewOrganization(CocotolaOrganizationID(), organizationName, maxActiveUsers, maxActiveGroups)
 	if err != nil {
 		return nil, fmt.Errorf("new organization: %w", err)
 	}

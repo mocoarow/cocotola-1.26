@@ -1,9 +1,10 @@
 // Package main is the entry point for the cocotola-init bootstrap application.
+// Run without arguments (or with "init") it bootstraps the organization; run
+// with "import" it imports the rows appended to the CSV workbooks.
 package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -12,141 +13,73 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/config"
-	"github.com/mocoarow/cocotola-1.26/cocotola-init/gateway"
-	"github.com/mocoarow/cocotola-1.26/cocotola-init/initialize"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
 
 const appName = "cocotola-init"
 
 func main() {
-	exitCode, err := run()
+	exitCode, err := run(os.Args[1:])
 	if err != nil {
 		slog.Error("run", slog.Any("error", err))
 	}
 	os.Exit(exitCode)
 }
 
-func run() (int, error) {
+func run(args []string) (int, error) {
 	ctx := context.Background()
+	mode, err := config.ParseMode(args)
+	if err != nil {
+		return 1, fmt.Errorf("parse mode: %w", err)
+	}
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		return 1, fmt.Errorf("load config: %w", err)
 	}
+	if err := cfg.ValidateForMode(mode); err != nil {
+		return 1, fmt.Errorf("validate config: %w", err)
+	}
 
-	// init log
 	shutdownLog, err := libgateway.InitLog(ctx, cfg.Log, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init log: %w", err)
 	}
 	defer shutdownLog()
 
-	// init db
+	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, appName)
+	if err != nil {
+		return 1, fmt.Errorf("init trace: %w", err)
+	}
+	defer shutdownTrace()
+
 	dbConn, shutdownDB, err := libgateway.InitDB(ctx, cfg.DB, cfg.Log, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init db: %w", err)
 	}
 	defer shutdownDB()
 
-	policyEnsurer, err := initialize.NewWorkbookPolicyEnsurer(dbConn.DB)
-	if err != nil {
-		return 1, fmt.Errorf("new workbook policy ensurer: %w", err)
+	if mode == config.ModeImport {
+		if err := runImport(ctx, cfg, dbConn.DB); err != nil {
+			return 1, fmt.Errorf("run import mode: %w", err)
+		}
+		return 0, nil
 	}
-
-	seeder, err := buildSeeder(ctx, cfg.AppEnv, cfg.Question, cfg.CSVSeed, policyEnsurer)
-	if err != nil {
-		return 1, fmt.Errorf("build seeder: %w", err)
+	if err := runInit(ctx, cfg, dbConn.DB); err != nil {
+		return 1, fmt.Errorf("run init mode: %w", err)
 	}
-
-	slog.InfoContext(ctx, "starting initialization", slog.String("app", appName))
-
-	if err := initialize.Initialize(ctx, dbConn.DB, seeder, cfg.App.OwnerLoginID, cfg.App.OwnerPassword); err != nil {
-		return 1, fmt.Errorf("initialize: %w", err)
-	}
-
-	slog.InfoContext(ctx, "initialization completed successfully")
 	return 0, nil
 }
 
-// ErrQuestionBaseURLRequired is returned by buildSeeder when the question
-// client is not configured. cocotola-init refuses to start in that case
-// because seeding the public space is part of its mandatory bootstrap.
-var ErrQuestionBaseURLRequired = errors.New("question.baseUrl is required")
-
-// buildSeeder constructs the public workbook seeder from the validated config.
-// An empty BaseURL is treated as a configuration error rather than a silent
-// skip, so misconfigured deployments fail loudly instead of leaving the
-// public space empty.
-func buildSeeder(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig, csvCfg config.CSVSeedConfig, policyEnsurer seed.WorkbookPolicyEnsurer) (*seed.WorkbookSeeder, error) {
-	if qcfg.BaseURL == "" {
-		return nil, ErrQuestionBaseURLRequired
-	}
-
+func newQuestionAPIClient(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig) (*seed.QuestionAPIClient, error) {
 	// TimeoutSec == 0 means "use the default" (see config.QuestionClientConfig).
 	const defaultTimeoutSec = 10
 	timeoutSec := qcfg.TimeoutSec
 	if timeoutSec <= 0 {
 		timeoutSec = defaultTimeoutSec
 	}
-	timeout := time.Duration(timeoutSec) * time.Second
-	httpClient, err := libgateway.NewHTTPClient(ctx, appEnv, qcfg.BaseURL, timeout)
+	httpClient, err := libgateway.NewHTTPClient(ctx, appEnv, qcfg.BaseURL, time.Duration(timeoutSec)*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("new http client: %w", err)
 	}
-
-	defaultSeeds, err := seed.DefaultSeeds()
-	if err != nil {
-		return nil, fmt.Errorf("load default seeds: %w", err)
-	}
-
-	csvSeeds, err := loadCSVSeeds(ctx, csvCfg)
-	if err != nil {
-		return nil, fmt.Errorf("load csv seeds: %w", err)
-	}
-
-	seeds, err := seed.MergeSeeds(defaultSeeds, csvSeeds)
-	if err != nil {
-		return nil, fmt.Errorf("merge seeds: %w", err)
-	}
-
-	client := seed.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient)
-	return seed.NewWorkbookSeeder(client, policyEnsurer, seeds), nil
-}
-
-// loadCSVSeeds downloads and converts the CSV-sourced public workbooks declared
-// in the embedded manifest. When the GCS bucket is not configured, CSV seeding
-// is skipped.
-func loadCSVSeeds(ctx context.Context, csvCfg config.CSVSeedConfig) ([]seed.PublicWorkbookSeed, error) {
-	if csvCfg.BucketName == "" {
-		slog.InfoContext(ctx, "csv seed bucket not configured; skipping csv workbook seeding")
-		return []seed.PublicWorkbookSeed{}, nil
-	}
-
-	manifest, err := seed.DefaultCSVManifest()
-	if err != nil {
-		return nil, fmt.Errorf("load csv manifest: %w", err)
-	}
-	if len(manifest.Workbooks) == 0 {
-		return []seed.PublicWorkbookSeed{}, nil
-	}
-
-	reader, err := gateway.NewGCSReader(ctx, csvCfg.BucketName)
-	if err != nil {
-		return nil, fmt.Errorf("new gcs reader: %w", err)
-	}
-	defer func() {
-		if closeErr := reader.Close(); closeErr != nil {
-			slog.WarnContext(ctx, "close gcs reader", slog.Any("error", closeErr))
-		}
-	}()
-
-	csvSeeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
-	if err != nil {
-		return nil, fmt.Errorf("load csv workbook seeds: %w", err)
-	}
-	seeds := make([]seed.PublicWorkbookSeed, 0, len(csvSeeds))
-	for _, s := range csvSeeds {
-		seeds = append(seeds, s.Seed)
-	}
-	return seeds, nil
+	return seed.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient), nil
 }

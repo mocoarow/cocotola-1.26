@@ -32,6 +32,31 @@ func Test_DefaultCSVManifest_shouldParseEmbeddedFile_withUniqueAndCompleteEntrie
 	}
 }
 
+func Test_DefaultCSVManifest_shouldNotShareSeedKeyWithDefaultSeeds_whenBothEmbedded(t *testing.T) {
+	t.Parallel()
+
+	// given: both kinds of workbooks live in the same public space, keyed by seedKey
+	seeds, err := seed.DefaultSeeds()
+	require.NoError(t, err)
+	yamlKeys := make(map[string]bool, len(seeds))
+	for _, s := range seeds {
+		yamlKeys[s.SeedKey] = true
+	}
+
+	// when
+	manifest, err := seed.DefaultCSVManifest()
+
+	// then
+	require.NoError(t, err)
+	var shared []string
+	for _, e := range manifest.Workbooks {
+		if yamlKeys[e.SeedKey] {
+			shared = append(shared, e.SeedKey)
+		}
+	}
+	assert.Empty(t, shared)
+}
+
 func Test_DefaultCSVManifest_shouldMapCEFRB1WorkbookToGeneratedCSV(t *testing.T) {
 	t.Parallel()
 

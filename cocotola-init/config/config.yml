@@ -23,3 +23,11 @@ db:
 log:
   level: ${LOG_LEVEL:-info}
   exporter: ${LOG_EXPORTER:-none}
+trace:
+  exporter: ${TRACE_EXPORTER:-none}
+  samplingPercentage: ${TRACE_SAMPLING_PERCENTAGE:-100}
+  otlp:
+    endpoint: ${TRACE_OTLP_ENDPOINT:-localhost:4317}
+    insecure: ${TRACE_OTLP_INSECURE:-true}
+  google:
+    projectId: ${TRACE_GOOGLE_PROJECT_ID:-}
