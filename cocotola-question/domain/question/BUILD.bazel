@@ -26,6 +26,7 @@ smart_go_test(
     ],
     deps = [
         ":question",
+        "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
@@ -45,7 +46,7 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 	}
 
 	now := time.Now()
-	if err := q.Edit(input.Content, input.Tags, input.OrderIndex, now); err != nil {
+	if err := q.Edit(contentjson.Parser{}, input.Content, input.Tags, input.OrderIndex, now); err != nil {
 		return nil, fmt.Errorf("edit question: %w", err)
 	}
 

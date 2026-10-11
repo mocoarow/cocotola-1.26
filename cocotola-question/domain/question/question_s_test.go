@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
@@ -49,7 +50,7 @@ func Test_NewQuestion_shouldReturnQuestion_whenAllFieldsAreValid(t *testing.T) {
 	a := validQuestionArgs()
 
 	// when
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.NoError(t, err)
@@ -63,6 +64,126 @@ func Test_NewQuestion_shouldReturnQuestion_whenAllFieldsAreValid(t *testing.T) {
 	assert.Equal(t, a.updatedAt, q.UpdatedAt())
 }
 
+func Test_NewQuestion_shouldCacheParsedWordFill_whenTypeIsWordFill(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+
+	// when
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, &question.WordFillContent{
+		Source: question.TextWithLang{Text: "りんご", Lang: "ja"},
+		Target: question.TextWithLang{Text: "{{apple}}", Lang: "en"},
+	}, q.WordFillContentParsed())
+}
+
+func Test_NewQuestion_shouldReturnError_whenContentCannotBeParsed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		qt   question.Type
+	}{
+		{name: "word_fill", qt: question.TypeWordFill()},
+		{name: "multiple_choice", qt: question.TypeMultipleChoice()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+
+			// when
+			_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, tt.qt, "not json", a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
+}
+
+func Test_NewQuestion_shouldReturnError_whenContentFailsValidation(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		qt      question.Type
+		content string
+	}{
+		{name: "word_fill without blanks", qt: question.TypeWordFill(), content: `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"apple","lang":"en"}}`},
+		{name: "multiple_choice without correct choice", qt: question.TypeMultipleChoice(), content: `{"questionText":"Q","choices":[{"id":"c1","text":"A","isCorrect":false}],"displayCount":1}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+
+			// when
+			_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, tt.qt, tt.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
+}
+
+func Test_NewQuestion_shouldReturnQuestion_whenMultipleChoiceContentIsValid(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	content := `{"questionText":"Q","choices":[{"id":"c1","text":"A","isCorrect":true}],"displayCount":1}`
+
+	// when
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, question.TypeMultipleChoice(), content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, content, q.Content())
+}
+
+func Test_NewQuestion_shouldNotCacheParsedWordFill_whenTypeIsMultipleChoice(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	content := `{"questionText":"Q","choices":[{"id":"c1","text":"A","isCorrect":true}],"displayCount":1}`
+
+	// when
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, question.TypeMultipleChoice(), content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Nil(t, q.WordFillContentParsed())
+}
+
+func Test_Edit_shouldRefreshParsedWordFill_whenContentChanges(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	newContent := `{"source":{"text":"バナナ","lang":"ja"},"target":{"text":"{{banana}}","lang":"en"}}`
+
+	// when
+	err = q.Edit(contentjson.Parser{}, newContent, a.tags, a.orderIndex, a.updatedAt.Add(time.Hour))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, &question.WordFillContent{
+		Source: question.TextWithLang{Text: "バナナ", Lang: "ja"},
+		Target: question.TextWithLang{Text: "{{banana}}", Lang: "en"},
+	}, q.WordFillContentParsed())
+}
+
 func Test_NewQuestion_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
@@ -70,7 +191,7 @@ func Test_NewQuestion_shouldReturnError_whenIDIsEmpty(t *testing.T) {
 	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion("", a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, "", a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -83,7 +204,7 @@ func Test_NewQuestion_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
 	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(a.id, "", a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, "", a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -96,7 +217,7 @@ func Test_NewQuestion_shouldReturnError_whenQuestionTypeIsZeroValue(t *testing.T
 	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, question.Type{}, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, question.Type{}, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -109,7 +230,7 @@ func Test_NewQuestion_shouldReturnError_whenContentIsEmpty(t *testing.T) {
 	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, "", a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, "", a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -123,7 +244,7 @@ func Test_NewQuestion_shouldReturnError_whenContentExceedsMaxLength(t *testing.T
 	longContent := strings.Repeat("a", 10001)
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, longContent, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, longContent, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -136,7 +257,7 @@ func Test_NewQuestion_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
 	a := validQuestionArgs()
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, -1, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, -1, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -150,7 +271,7 @@ func Test_NewQuestion_shouldReturnQuestion_whenTagsAreValid(t *testing.T) {
 	tags := []string{"level:beginner", "topic:grammar"}
 
 	// when
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.NoError(t, err)
@@ -168,7 +289,7 @@ func Test_NewQuestion_shouldReturnError_whenTagsExceedMax(t *testing.T) {
 	}
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -197,7 +318,7 @@ func Test_NewQuestion_shouldReturnError_whenTagFormatIsInvalid(t *testing.T) {
 			a := validQuestionArgs()
 
 			// when
-			_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{tt.tag}, a.orderIndex, a.createdAt, a.updatedAt)
+			_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, []string{tt.tag}, a.orderIndex, a.createdAt, a.updatedAt)
 
 			// then
 			require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -213,7 +334,7 @@ func Test_NewQuestion_shouldReturnError_whenTagIsDuplicated(t *testing.T) {
 	tags := []string{"level:beginner", "level:beginner"}
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -227,7 +348,7 @@ func Test_NewQuestion_shouldReturnError_whenTagExceedsMaxLength(t *testing.T) {
 	longTag := strings.Repeat("a", 50) + ":" + strings.Repeat("b", 50)
 
 	// when
-	_, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{longTag}, a.orderIndex, a.createdAt, a.updatedAt)
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, []string{longTag}, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -239,7 +360,7 @@ func Test_Tags_shouldReturnDefensiveCopy(t *testing.T) {
 	// given
 	a := validQuestionArgs()
 	tags := []string{"level:beginner"}
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
@@ -280,7 +401,7 @@ func Test_SetVersion_shouldUpdateVersion(t *testing.T) {
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
@@ -303,7 +424,7 @@ func Test_Edit_shouldUpdateFields_whenInputIsValid(t *testing.T) {
 	newUpdatedAt := originalUpdatedAt.Add(time.Hour)
 
 	// when
-	err := q.Edit(newContent, newTags, 5, newUpdatedAt)
+	err := q.Edit(contentjson.Parser{}, newContent, newTags, 5, newUpdatedAt)
 
 	// then
 	require.NoError(t, err)
@@ -318,7 +439,7 @@ func Test_Edit_shouldNotMutateState_whenContentIsInvalid(t *testing.T) {
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, []string{"level:beginner"}, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, []string{"level:beginner"}, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	originalContent := q.Content()
 	originalTags := q.Tags()
@@ -326,7 +447,7 @@ func Test_Edit_shouldNotMutateState_whenContentIsInvalid(t *testing.T) {
 	originalUpdatedAt := q.UpdatedAt()
 
 	// when
-	err = q.Edit("", []string{"level:advanced"}, 5, originalUpdatedAt.Add(time.Hour))
+	err = q.Edit(contentjson.Parser{}, "", []string{"level:advanced"}, 5, originalUpdatedAt.Add(time.Hour))
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -341,11 +462,11 @@ func Test_Edit_shouldReturnError_whenOrderIndexIsNegative(t *testing.T) {
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, nil, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, nil, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
-	err = q.Edit(a.content, nil, -1, a.updatedAt.Add(time.Hour))
+	err = q.Edit(contentjson.Parser{}, a.content, nil, -1, a.updatedAt.Add(time.Hour))
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -356,7 +477,7 @@ func Test_Question_AudioGeneration_shouldReturnNil_whenUnset(t *testing.T) {
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// then
@@ -368,7 +489,7 @@ func Test_Question_MarkAudioPending_shouldSetPending_whenInitiallyNil(t *testing
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	now := time.Now()
 
@@ -391,7 +512,7 @@ func Test_Question_MarkAudioPending_shouldBeNoOp_whenInputHashUnchanged(t *testi
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	first := time.Now()
 	q.MarkAudioPending("hash-v1", first)
@@ -410,7 +531,7 @@ func Test_Question_MarkAudioPending_shouldResetState_whenInputHashChanges(t *tes
 
 	// given: a question already in ready state
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	ref, err := question.NewAudioRef("audio/questions/x/source.opus", 1.0, 100)
 	require.NoError(t, err)
@@ -451,7 +572,7 @@ func Test_Question_ClaimAudio_shouldTransitionToGenerating_whenPending(t *testin
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	queuedAt := time.Now()
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusPending(), "hash-v1", queuedAt, 0))
@@ -475,7 +596,7 @@ func Test_Question_ClaimAudio_shouldReturnError_whenAudioGenerationIsNil(t *test
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
@@ -502,7 +623,7 @@ func Test_Question_ClaimAudio_shouldReturnError_whenStatusIsNotPending(t *testin
 
 			// given
 			a := validQuestionArgs()
-			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 			require.NoError(t, err)
 			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
 
@@ -520,7 +641,7 @@ func Test_Question_ClaimAudio_shouldReturnError_whenInputHashDoesNotMatch(t *tes
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusPending(), "hash-v1", time.Now(), 0))
 
@@ -536,7 +657,7 @@ func Test_Question_CompleteAudio_shouldTransitionToReady_whenGenerating(t *testi
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 1))
 	srcRef, err := question.NewAudioRef("audio/questions/q1/source.opus", 2.5, 1234)
@@ -581,7 +702,7 @@ func Test_Question_CompleteAudio_shouldReturnError_whenStatusIsNotGenerating(t *
 
 			// given
 			a := validQuestionArgs()
-			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 			require.NoError(t, err)
 			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
 
@@ -599,7 +720,7 @@ func Test_Question_CompleteAudio_shouldReturnError_whenInputHashDoesNotMatch(t *
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
 
@@ -615,7 +736,7 @@ func Test_Question_FailAudio_shouldTransitionToFailed_whenGenerating(t *testing.
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 2))
 	failedAt := time.Now().Add(time.Minute)
@@ -639,7 +760,7 @@ func Test_Question_FailAudio_shouldTruncateReason_whenReasonExceedsMaxRunes(t *t
 
 	// given: 600 multi-byte runes (Japanese hiragana 'あ' is 3 bytes each).
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
 	reason := strings.Repeat("あ", 600)
@@ -673,7 +794,7 @@ func Test_Question_FailAudio_shouldReturnError_whenStatusIsNotGenerating(t *test
 
 			// given
 			a := validQuestionArgs()
-			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 			require.NoError(t, err)
 			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now(), 0))
 
@@ -691,7 +812,7 @@ func Test_Question_FailAudio_shouldReturnError_whenInputHashDoesNotMatch(t *test
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", time.Now(), 0))
 
@@ -707,7 +828,7 @@ func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenAudioGenerationIsNil(
 
 	// given
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 
 	// when
@@ -735,7 +856,7 @@ func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenStatusIsNotGenerating
 
 			// given: stale by clock but wrong status
 			a := validQuestionArgs()
-			q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 			require.NoError(t, err)
 			old := time.Now().Add(-time.Hour)
 			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", old, 0))
@@ -755,7 +876,7 @@ func Test_Question_ReclaimStaleAudio_shouldReturnFalse_whenNotStale(t *testing.T
 
 	// given: generating but updated only 10s ago
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	now := time.Now()
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", now.Add(-10*time.Second), 0))
@@ -773,7 +894,7 @@ func Test_Question_ReclaimStaleAudio_shouldReturnTrueAndResetToPending_whenStale
 
 	// given: generating updated 10 minutes ago, staleAfter 1 minute
 	a := validQuestionArgs()
-	q, err := question.NewQuestion(a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 	require.NoError(t, err)
 	now := time.Now()
 	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusGenerating(), "hash-v1", now.Add(-10*time.Minute), 4))

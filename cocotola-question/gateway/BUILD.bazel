@@ -56,6 +56,7 @@ smart_go_test(
     embed = [":gateway"],
     deps = [
         "//cocotola-lib/domain/versioned",
+        "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/reference",

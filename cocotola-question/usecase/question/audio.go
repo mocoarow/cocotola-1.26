@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
@@ -25,7 +26,7 @@ func markAudioPendingIfWordFill(q *domainquestion.Question, now time.Time) error
 	}
 	c := q.WordFillContentParsed()
 	if c == nil {
-		parsed, err := domainquestion.ParseWordFillContent(q.Content())
+		parsed, err := contentjson.Parser{}.ParseWordFill(q.Content())
 		if err != nil {
 			return fmt.Errorf("parse word_fill content: %w", err)
 		}
