@@ -17,10 +17,8 @@ const (
 	// human-readable Title is later changed in the seed file.
 	seedKeyMarker = "[seedKey:"
 	seedKeyEnd    = "]"
-	// questionTagPrefix is added to each question's Tags slice for the same
-	// idempotency purpose. Format: seed-<workbookSeedKey>:<questionSeedKey>.
-	// The hyphen (not a second colon) is required so the resulting tag still
-	// matches cocotola-question's single-colon tag validation pattern.
+	// questionTagPrefix forms seed-<workbookSeedKey>:<questionSeedKey>; a hyphen,
+	// not a colon, because cocotola-question tags allow only one colon.
 	questionTagPrefix = "seed-"
 )
 
@@ -33,12 +31,9 @@ type WorkbookAPIClient interface {
 	AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error
 }
 
-// WorkbookPolicyEnsurer idempotently grants the bootstrap system-owner identity
-// the per-workbook RBAC policies (create_question etc.) it needs to seed
-// questions. The seeder calls it for every workbook it ensures -- before adding
-// any question -- so that workbooks left without policies by a previously
-// failed run (e.g. when cocotola-auth's policy route was not yet registered)
-// are repaired in place instead of permanently returning 403 Forbidden.
+// WorkbookPolicyEnsurer idempotently grants the system owner per-workbook RBAC
+// policies. It runs for every workbook, existing ones included, so workbooks
+// left without policies by a failed run are repaired instead of staying 403.
 type WorkbookPolicyEnsurer interface {
 	EnsureSystemOwnerWorkbookPolicies(ctx context.Context, organizationID, workbookID string) error
 }

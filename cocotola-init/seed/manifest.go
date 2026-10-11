@@ -26,10 +26,7 @@ type CSVWorkbookManifest struct {
 }
 
 // CSVWorkbookEntry describes a single CSV-sourced public workbook.
-//
-// Format determines how the CSV rows are parsed and which question type they
-// produce. SourceLang/TargetLang are the languages of the prompt and the blank
-// sentence respectively (they must differ, as word_fill requires).
+// SourceLang and TargetLang must differ, as word_fill requires.
 type CSVWorkbookEntry struct {
 	SeedKey     string `yaml:"seedKey"`
 	Title       string `yaml:"title"`

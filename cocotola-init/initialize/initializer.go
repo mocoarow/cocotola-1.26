@@ -17,9 +17,7 @@ import (
 )
 
 // PublicWorkbookSeeder seeds public workbooks (and their questions) into
-// cocotola-question via its internal HTTP API. The interface keeps the
-// cocotola-init flow decoupled from the concrete HTTP client and lets the
-// seeding step be swapped out or mocked in tests.
+// cocotola-question via its internal HTTP API.
 type PublicWorkbookSeeder interface {
 	SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error
 }
@@ -106,17 +104,9 @@ func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, o
 	return nil
 }
 
-// setupSystemOwnerAndSpace binds the cocotola tenant's system_owner RBAC group
-// to the well-known SystemAppUserID rather than creating a separate per-tenant
-// system_owner app_user row.
-//
-// The internal API-key middleware on cocotola-question stamps every internal
-// service-to-service call with operator = SystemAppUserID (a global identity
-// pre-seeded by the SQL migration in the "system" organization). RBAC bindings
-// are scoped per-organization in Casbin, so granting the system_owner group
-// to that UUID inside the cocotola org is what lets cocotola-init's seed
-// requests pass authorization. Creating a fresh per-tenant system user instead
-// would diverge from the impersonated UUID and fail authz.
+// setupSystemOwnerAndSpace binds the system_owner group to the global
+// SystemAppUserID instead of a per-tenant user: cocotola-question's API-key
+// middleware stamps internal calls with that ID, so any other user fails authz.
 func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, rbacRepo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	systemOwnerID := domain.SystemAppUserID()
 

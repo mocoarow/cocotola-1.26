@@ -1,9 +1,7 @@
 package seed
 
-// PublicWorkbookSeed describes one workbook (and its questions) to be created
-// in the public space. SeedKey is the durable, machine-readable identifier
-// used for idempotency checks; it must remain stable across releases even if
-// Title or Description change.
+// PublicWorkbookSeed describes one workbook to be created in the public space.
+// SeedKey is the idempotency key and must stay stable across releases.
 type PublicWorkbookSeed struct {
 	SeedKey     string         `yaml:"seedKey"`
 	Title       string         `yaml:"title"`
@@ -13,9 +11,7 @@ type PublicWorkbookSeed struct {
 }
 
 // QuestionSeed describes a single question seed within a workbook seed.
-// SeedKey is unique within the parent workbook and is encoded into the tag
-// `seed:<workbookSeedKey>:<questionSeedKey>` so the seeder can detect
-// existing questions on subsequent runs.
+// SeedKey must be unique within the parent workbook.
 type QuestionSeed struct {
 	SeedKey      string   `yaml:"seedKey"`
 	QuestionType string   `yaml:"questionType"`

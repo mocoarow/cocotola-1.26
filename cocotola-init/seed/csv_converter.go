@@ -59,13 +59,8 @@ var (
 // up in question tags.
 var tagValuePattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
-// wordFillContentJSON is the on-the-wire shape of a word_fill question's
-// content. It mirrors the word_fill JSON of cocotola-question/contentjson without
-// importing it, keeping the seed package free of a cocotola-question dependency.
-//
-// Explanation1 is shown while the question is presented; Explanation2 when the
-// answer is revealed. For Tatoeba-sourced data both carry the same source
-// attribution / licensing text.
+// wordFillContentJSON mirrors the word_fill JSON of cocotola-question/contentjson
+// without importing it, so the seed package has no cocotola-question dependency.
 type wordFillContentJSON struct {
 	Source             textWithLangJSON `json:"source"`
 	Target             textWithLangJSON `json:"target"`
