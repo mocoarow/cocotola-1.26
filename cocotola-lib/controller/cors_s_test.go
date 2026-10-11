@@ -53,6 +53,42 @@ func Test_InitCORS_shouldReturnError_whenWildcardWithCredentials(t *testing.T) {
 	}
 }
 
+func Test_InitCORS_shouldReturnError_whenWildcardMixedWithOtherOrigins(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		allowOrigins     string
+		allowCredentials bool
+	}{
+		{name: "wildcard first", allowOrigins: "*,https://example.com", allowCredentials: false},
+		{name: "wildcard last", allowOrigins: "https://example.com, *", allowCredentials: false},
+		{name: "duplicated wildcard", allowOrigins: "*,*", allowCredentials: false},
+		{name: "wildcard first with credentials", allowOrigins: "*,https://example.com", allowCredentials: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			cfg := &controller.CORSConfig{
+				AllowOrigins:     tt.allowOrigins,
+				AllowMethods:     "GET",
+				AllowHeaders:     "Content-Type",
+				AllowCredentials: tt.allowCredentials,
+			}
+
+			// when
+			_, err := controller.InitCORS(cfg)
+
+			// then
+			if !errors.Is(err, controller.ErrCORSWildcardMixedWithOrigins) {
+				t.Fatalf("expected ErrCORSWildcardMixedWithOrigins, got %v", err)
+			}
+		})
+	}
+}
+
 func Test_InitCORS_shouldReturnSpecificOrigins_whenNotWildcard(t *testing.T) {
 	t.Parallel()
 
