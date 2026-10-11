@@ -11,60 +11,24 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
-// DecodeVersion extracts the persisted version from a Firestore document
-// snapshot. Implementations typically decode the snapshot into a record
-// struct and return the value of its version field.
+// DecodeVersion extracts the persisted version from a Firestore document snapshot.
 type DecodeVersion func(*firestore.DocumentSnapshot) (int, error)
 
-// SaveArgs bundles the arguments to SaveVersioned. R is the persistence record
-// type (typically a pointer to a Firestore-tagged struct) constrained by
-// versioned.Record so the helper can verify the record's version without
-// reflection.
+// SaveArgs bundles the arguments to SaveVersioned.
 type SaveArgs[R versioned.Record] struct {
-	// Client is the Firestore client used for the transaction.
 	Client *firestore.Client
-	// Entity is the aggregate whose version drives the CAS.
 	Entity versioned.Entity
-	// DocRef is the document to write.
 	DocRef *firestore.DocumentRef
-	// NewRecord is the document body to set. The caller must set
-	// NewRecord.GetVersion() to Entity.Version()+1 before calling
-	// SaveVersioned.
+	// NewRecord must already carry version Entity.Version()+1.
 	NewRecord R
-	// Decode reads the version from an existing document snapshot for the
-	// CAS comparison.
-	Decode DecodeVersion
-	// EntityName is interpolated into error messages (e.g. "question").
+	Decode    DecodeVersion
+	// EntityName is used only in error messages.
 	EntityName string
 }
 
-// SaveVersioned runs a Firestore transaction that performs an optimistic-lock
-// check and persists NewRecord at DocRef.
-//
-// The transaction reads the current document, decodes its version via Decode,
-// and writes NewRecord only if the persisted version matches Entity.Version().
-// On a CAS miss the helper distinguishes:
-//
-//   - If Entity.Version() == 0 and the document does not exist, it inserts
-//     NewRecord (the expected fresh-aggregate path).
-//   - If Entity.Version() == 0 and the document exists, it returns
-//     versioned.ErrConcurrentModification (someone else inserted first).
-//     The helper refuses to overwrite an existing document on the insert path
-//     even if its stored version is 0; a fresh aggregate must never replace
-//     a record it did not load.
-//   - If Entity.Version() > 0 and the document does not exist, it returns
-//     versioned.ErrNotFound (the document was deleted; reload will not help).
-//     Callers should translate this into their domain-specific not-found error.
-//   - If the document exists but its version differs from Entity.Version(),
-//     it returns versioned.ErrConcurrentModification (caller should reload
-//     and retry).
-//
-// The caller MUST set the record's version to Entity.Version()+1 before
-// calling this helper. The helper verifies this via the Record interface and
-// returns an error if it does not match; this guards against a forgotten
-// version assignment silently writing a stale version. The helper does not
-// mutate fields on NewRecord. On success the helper calls Entity.SetVersion
-// with Entity.Version()+1.
+// SaveVersioned writes NewRecord in a transaction only if the stored version
+// equals Entity.Version(). A fresh entity (version 0) never overwrites an
+// existing document, even one whose stored version is 0.
 func SaveVersioned[R versioned.Record](ctx context.Context, args SaveArgs[R]) error {
 	nextVersion := args.Entity.Version() + 1
 	if got := args.NewRecord.GetVersion(); got != nextVersion {
@@ -93,9 +57,6 @@ func saveInTx[R versioned.Record](tx *firestore.Transaction, args SaveArgs[R]) e
 		return fmt.Errorf("get %s doc in tx: %w", args.EntityName, err)
 	}
 
-	// Doc exists. A fresh aggregate (Version()==0) must never overwrite an
-	// existing document, regardless of its stored version, so we surface the
-	// collision before consulting the version.
 	if args.Entity.Version() == 0 {
 		return versioned.ErrConcurrentModification
 	}

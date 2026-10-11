@@ -12,11 +12,8 @@ import (
 	"google.golang.org/api/idtoken"
 )
 
-// serverlessAuthTransport is an http.RoundTripper that attaches
-// a Google Cloud ID token via the X-Serverless-Authorization header
-// instead of the standard Authorization header.
-// This allows the caller to use the Authorization header for
-// application-level tokens (e.g. user access tokens).
+// serverlessAuthTransport sends the Google Cloud ID token in
+// X-Serverless-Authorization so Authorization stays free for app-level tokens.
 type serverlessAuthTransport struct {
 	base     http.RoundTripper
 	tokenSrc oauth2.TokenSource
@@ -50,13 +47,8 @@ func (t *serverlessAuthTransport) RoundTrip(req *http.Request) (*http.Response, 
 	return resp, nil
 }
 
-// NewHTTPClient creates an *http.Client suitable for service-to-service calls.
-// The returned client wraps its transport with otelhttp so that OpenTelemetry
-// trace context is propagated to downstream services.
-// When appEnv is "local" or "test", it returns a plain client.
-// Otherwise, it returns a client that attaches a Google Cloud ID token
-// via the X-Serverless-Authorization header, leaving the Authorization header
-// available for application-level tokens.
+// NewHTTPClient creates an otelhttp-instrumented client for service-to-service
+// calls. Outside "local"/"test" it attaches a Google Cloud ID token.
 func NewHTTPClient(ctx context.Context, appEnv string, audience string, timeout time.Duration) (*http.Client, error) {
 	if appEnv == "local" || appEnv == "test" {
 		return &http.Client{

@@ -47,7 +47,6 @@ func Test_MetricsServerProcess_shouldServeHealthcheck_whenStarted(t *testing.T) 
 		errCh <- controller.MetricsServerProcess(ctx, port, time.Second, time.Second)
 	}()
 
-	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
 
 	// when
@@ -84,7 +83,6 @@ func Test_MetricsServerProcess_shouldShutdownGracefully_whenContextCanceled(t *t
 		errCh <- controller.MetricsServerProcess(ctx, port, time.Second, time.Second)
 	}()
 
-	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
 
 	// when

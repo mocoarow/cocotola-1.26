@@ -219,10 +219,7 @@ func Test_SaveVersioned_shouldReturnConcurrentModification_whenInsertAttemptedAn
 
 func Test_SaveVersioned_shouldReturnConcurrentModification_whenInsertAttemptedAndDocExistsWithStoredVersionZero(t *testing.T) {
 	t.Parallel()
-	// given: a doc exists at the target ref but its stored version is 0
-	// (a corrupt/legacy record), and a fresh aggregate (entity.Version()==0)
-	// attempts to insert. The helper must refuse to overwrite, regardless of
-	// the stored version, since both sides claim "fresh".
+	// given
 	ctx := context.Background()
 	client := setupFirestoreClient(t)
 	docRef := uniqueDocRef(client)
