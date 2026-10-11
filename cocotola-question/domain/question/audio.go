@@ -7,6 +7,7 @@ import (
 	"maps"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -22,7 +23,8 @@ const (
 	// AudioLangTarget is the map key for the audio rendered from the blank-filled target text.
 	AudioLangTarget = "target"
 
-	maxAudioLastErrorLength = 500
+	// MaxAudioLastErrorLength is the rune limit of an audio failure reason.
+	MaxAudioLastErrorLength = 500
 )
 
 // AudioGenerationStatus represents the lifecycle state of audio generation
@@ -138,8 +140,8 @@ func NewAudioGeneration(
 	if failedAttempts < 0 {
 		return nil, fmt.Errorf("audio generation failed attempts must not be negative: %w", domain.ErrInvalidArgument)
 	}
-	if len(lastError) > maxAudioLastErrorLength {
-		return nil, fmt.Errorf("audio generation last error must not exceed %d characters: %w", maxAudioLastErrorLength, domain.ErrInvalidArgument)
+	if utf8.RuneCountInString(lastError) > MaxAudioLastErrorLength {
+		return nil, fmt.Errorf("audio generation last error must not exceed %d characters: %w", MaxAudioLastErrorLength, domain.ErrInvalidArgument)
 	}
 	return &AudioGeneration{
 		status:         status,

@@ -294,7 +294,7 @@ func (q *Question) FailAudio(inputHash string, reason string, now time.Time) err
 		refs:           q.audioGeneration.Refs(),
 		updatedAt:      now,
 		failedAttempts: q.audioGeneration.failedAttempts + 1,
-		lastError:      truncateRunes(reason, maxAudioLastErrorLength),
+		lastError:      truncateRunes(reason, MaxAudioLastErrorLength),
 	}
 	return nil
 }
