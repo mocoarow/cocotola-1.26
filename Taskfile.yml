@@ -228,9 +228,17 @@ tasks:
   test-go:
     desc: "Run Go tests with coverage"
     cmds:
-      - docker compose -f compose.test.yml up -d --wait
+      # Port 0 lets Docker pick a free host port, so worktrees can test in parallel.
+      - TEST_POSTGRES_PORT="${TEST_POSTGRES_PORT:-0}" docker compose -f compose.test.yml up -d --wait
       - rm -f ./coverage.lcov
-      - bazelisk coverage //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no
+      - |
+        ADDR=$(docker compose -f compose.test.yml port test-postgres 5432)
+        PORT=${ADDR##*:}
+        if [ -z "${PORT}" ]; then
+          echo "could not resolve test-postgres host port" >&2
+          exit 1
+        fi
+        bazelisk coverage //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no --test_env=TEST_POSTGRES_PORT="${PORT}"
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
