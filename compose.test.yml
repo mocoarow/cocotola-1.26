@@ -26,3 +26,31 @@ services:
       - NET_RAW
       - SETFCAP
       - SYS_CHROOT
+
+  test-firestore:
+    image: google/cloud-sdk:emulators
+    command:
+      - gcloud
+      - emulators
+      - firestore
+      - start
+      - --host-port=0.0.0.0:8681
+      - --project=test-project
+    environment:
+      TZ: Etc/GMT
+    ports:
+      - 127.0.0.1:${TEST_FIRESTORE_PORT:-8682}:8681
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8681/"]
+      interval: 5s
+      timeout: 30s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - AUDIT_WRITE
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SYS_CHROOT
