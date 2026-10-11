@@ -242,7 +242,9 @@ tasks:
     desc: "Run Go tests with coverage"
     cmds:
       # Port 0 lets Docker pick a free host port, so worktrees can test in parallel.
-      - TEST_POSTGRES_PORT="${TEST_POSTGRES_PORT:-0}" docker compose -f compose.test.yml up -d --wait
+      - TEST_POSTGRES_PORT="${TEST_POSTGRES_PORT:-0}" docker compose -f compose.test.yml up -d --wait test-postgres
+      # The emulator keeps documents in memory; recreate it so reruns start empty.
+      - TEST_FIRESTORE_PORT="${TEST_FIRESTORE_PORT:-0}" docker compose -f compose.test.yml up -d --wait --force-recreate test-firestore
       - rm -f ./coverage.lcov
       - |
         ADDR=$(docker compose -f compose.test.yml port test-postgres 5432)
@@ -251,7 +253,13 @@ tasks:
           echo "could not resolve test-postgres host port" >&2
           exit 1
         fi
-        bazelisk coverage //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no --test_env=TEST_POSTGRES_PORT="${PORT}"
+        FIRESTORE_ADDR=$(docker compose -f compose.test.yml port test-firestore 8681)
+        FIRESTORE_PORT=${FIRESTORE_ADDR##*:}
+        if [ -z "${FIRESTORE_PORT}" ]; then
+          echo "could not resolve test-firestore host port" >&2
+          exit 1
+        fi
+        bazelisk coverage //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium --cache_test_results=no --test_env=TEST_POSTGRES_PORT="${PORT}" --test_env=FIRESTORE_EMULATOR_HOST="127.0.0.1:${FIRESTORE_PORT}"
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
@@ -264,9 +272,17 @@ tasks:
 
   test-go-remote:
     cmds:
-      - docker compose -f compose.test.yml up -d --wait
+      - docker compose -f compose.test.yml up -d --wait test-postgres
+      - docker compose -f compose.test.yml up -d --wait --force-recreate test-firestore
       - rm -f ./coverage.lcov
-      - bazelisk coverage --config=remote //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium
+      - |
+        FIRESTORE_ADDR=$(docker compose -f compose.test.yml port test-firestore 8681)
+        FIRESTORE_PORT=${FIRESTORE_ADDR##*:}
+        if [ -z "${FIRESTORE_PORT}" ]; then
+          echo "could not resolve test-firestore host port" >&2
+          exit 1
+        fi
+        bazelisk coverage --config=remote //... --combined_report=lcov --test_output=errors --test_timeout=60 --test_size_filters=small,medium --test_env=FIRESTORE_EMULATOR_HOST="127.0.0.1:${FIRESTORE_PORT}"
       - |
         OUTPUT_PATH=$(bazelisk info output_path)
         cp "${OUTPUT_PATH}/_coverage/_coverage_report.dat" ./coverage.lcov
