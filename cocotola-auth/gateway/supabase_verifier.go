@@ -10,10 +10,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
-// allowedSupabaseAlgs returns the set of JWT signing algorithms accepted from
-// Supabase. Asymmetric algorithms only — HS* family is explicitly rejected so a
-// compromised HS key cannot be used to forge tokens, and "none" is rejected so
-// unsigned tokens are never accepted.
+// allowedSupabaseAlgs is asymmetric-only: HS* and "none" must never be accepted.
 func allowedSupabaseAlgs() []string {
 	return []string{"RS256", "RS384", "RS512", "ES256", "ES384", "ES512"}
 }
@@ -37,13 +34,9 @@ func NewSupabaseVerifier(ctx context.Context, jwksURL string) (*SupabaseVerifier
 	return &SupabaseVerifier{jwks: jwks, cancel: cancel}, nil
 }
 
-// Verify parses and validates a Supabase JWT against the pinned allow-list of
-// signing algorithms, and returns the verified sub (UUID) and email.
-//
-// Verify returns domain.ErrSupabaseEmailNotVerified when the token is
-// cryptographically valid but email_verified is missing or false. Callers MUST
-// NOT treat such a token as trustworthy: an unverified email can be spoofed
-// and would enable account takeover via the auto-linking path.
+// Verify validates a Supabase JWT and returns its sub and email.
+// A valid token without email_verified=true yields ErrSupabaseEmailNotVerified;
+// callers MUST NOT trust it (spoofed email enables takeover via auto-linking).
 func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (string, string, error) {
 	token, err := jwt.Parse(
 		tokenString,
@@ -76,10 +69,7 @@ func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (stri
 	return sub, email, nil
 }
 
-// readEmailVerified extracts the email_verified claim, checking both the
-// top-level claim (Supabase projects surface it at top-level when the user is
-// confirmed) and user_metadata.email_verified (some SDKs place it there).
-// Any value that is not exactly the boolean true results in false.
+// readEmailVerified checks email_verified at top level and in user_metadata (SDKs differ).
 func readEmailVerified(claims jwt.MapClaims) bool {
 	if v, ok := claims["email_verified"].(bool); ok && v {
 		return true

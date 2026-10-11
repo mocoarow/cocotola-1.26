@@ -87,10 +87,8 @@ func (q *SupabaseExchangeQuery) SupabaseExchange(ctx context.Context, input *aut
 func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, orgID domain.OrganizationID, email string, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
 	loginID := domain.LoginID(email)
 
-	// Try to create a new user (without provider — provider is now separate).
 	newUser, createErr := domainuser.Provision(ctx, q.appUserSaver, orgID, loginID, "", true)
 	if createErr == nil {
-		// User created — now create the provider link.
 		_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, newUser.ID(), orgID, provider, providerID)
 		if linkErr != nil {
 			return nil, fmt.Errorf("create provider link for new user: %w", linkErr)
@@ -130,7 +128,6 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 		return nil, fmt.Errorf("app user %s login=%s: %w", existing.ID().String(), email, domain.ErrAppUserAutoLinkRejected)
 	}
 
-	// Create the provider link for the existing user.
 	_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, existing.ID(), orgID, provider, providerID)
 	if linkErr != nil {
 		return nil, fmt.Errorf("link provider to app user %s: %w", existing.ID().String(), linkErr)

@@ -22,9 +22,7 @@ const maxAllowedDailyGoal = 500
 const defaultTimezone = "Asia/Tokyo"
 
 // DefaultLanguage returns the default ISO 639-1 language code applied to users
-// without an explicit user-setting entry. Exposed so HTTP handlers can answer
-// `language` queries without constructing a full UserSetting just for the
-// default fallback.
+// without an explicit user-setting entry.
 func DefaultLanguage() string { return defaultLanguage }
 
 // DefaultDailyGoal returns the default number of problems per day used as the

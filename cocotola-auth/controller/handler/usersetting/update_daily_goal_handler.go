@@ -9,11 +9,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 )
 
-// UpdateDailyGoalHandler exposes the authenticated user's daily problem
-// count goal as a mutable resource. The struct owns the persistence
-// dependency and a slog logger tagged with its handler name; the actual
-// bind / load / validate / save flow is delegated to updateRunner so this
-// type only declares the field-specific request type and Change call.
+// UpdateDailyGoalHandler updates the authenticated user's daily goal.
 type UpdateDailyGoalHandler struct {
 	updateRunner
 }
@@ -23,13 +19,7 @@ func NewUpdateDailyGoalHandler(settingSaver userSettingFinderSaver) *UpdateDaily
 	return &UpdateDailyGoalHandler{newUpdateRunner("UpdateDailyGoalHandler", settingSaver)}
 }
 
-// UpdateDailyGoal handles PUT /auth/user-setting/daily-goal. The
-// authenticated user's daily problem goal is replaced with the value in
-// the request body. If no UserSetting row exists for the user, a default
-// one is created with the requested goal applied. Responses: 204 on
-// success, 400 for an invalid request body (malformed JSON or
-// out-of-range goal), 401 if the caller is not authenticated, 409 on a
-// concurrent modification, 500 on persistence failure.
+// UpdateDailyGoal handles PUT /auth/user-setting/daily-goal.
 func (h *UpdateDailyGoalHandler) UpdateDailyGoal(c *gin.Context) {
 	h.run(c, updateConfig{
 		bindRequest: func(c *gin.Context) (changeFn, error) {

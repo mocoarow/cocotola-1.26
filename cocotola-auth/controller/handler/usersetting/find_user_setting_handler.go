@@ -87,13 +87,8 @@ func InitUserSettingRouter(
 	settingGroup.GET("", handlers...)
 }
 
-// WireExternalUserSettingHandlers constructs every external user-setting
-// update handler from the supplied saver and mounts them under the parent
-// router group. Single entry point so main.go (standalone deployment) and
-// initialize/ (cocotola-app composite deployment) do not have to keep the
-// per-endpoint constructor list synchronized; adding a new update endpoint
-// only requires touching this function (plus its handler file and the
-// router setup below).
+// WireExternalUserSettingHandlers mounts every external user-setting update handler.
+// Shared by main.go and initialize so their endpoint lists cannot drift.
 func WireExternalUserSettingHandlers(
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,

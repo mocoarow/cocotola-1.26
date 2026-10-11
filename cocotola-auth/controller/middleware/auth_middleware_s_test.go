@@ -211,7 +211,6 @@ func Test_AuthMiddleware_shouldPreferBearerOverCookie(t *testing.T) {
 
 	mockUsecase := NewMockAuthUsecase(t)
 	mockUsecase.On("ValidateAccessToken", mock.Anything, mock.Anything).Return(output, nil).Once()
-	// No ValidateSessionToken or ExtendSessionToken calls expected because Bearer takes priority
 	r := setupRouter(t, mockUsecase)
 	w := httptest.NewRecorder()
 
@@ -225,7 +224,6 @@ func Test_AuthMiddleware_shouldPreferBearerOverCookie(t *testing.T) {
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// verify no cookie refresh happened (no Set-Cookie header)
 	cookies := w.Result().Cookies()
 	for _, c := range cookies {
 		assert.NotEqual(t, "session_token", c.Name)

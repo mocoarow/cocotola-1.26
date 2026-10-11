@@ -16,23 +16,13 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// changeFn applies an update to a UserSetting in place. It exists so the
-// generic runUpdate pipeline can plug in any field-specific mutation
-// (ChangeDailyGoal, ChangeTimezone, ...) without each handler having to
-// repeat the bind / load / validate / save scaffolding.
+// changeFn applies a field-specific update to a UserSetting in place.
 type changeFn func(*domain.UserSetting) error
 
-// bindFn parses and validates the per-endpoint request payload. The
-// returned error is surfaced via the structured logger so a malformed
-// payload still produces an actionable diagnostic — the legacy bool
-// signaling discarded validator details (`required`, `oneof`, `max`,
-// etc.) and reduced server logs to "invalid update <field> request"
-// with no context.
+// bindFn parses the per-endpoint request payload into a changeFn.
 type bindFn func(c *gin.Context) (changeFn, error)
 
-// updateConfig collapses the per-handler pieces (request binder, mutator,
-// invalid-mutation message) so updateRunner.run is the only place the HTTP
-// response shape lives.
+// updateConfig holds the per-handler pieces plugged into updateRunner.run.
 type updateConfig struct {
 	bindRequest      bindFn
 	invalidBindLog   string
@@ -40,17 +30,13 @@ type updateConfig struct {
 	invalidChangeMsg string
 }
 
-// updateRunner is the shared scaffold every user-setting update handler
-// composes via struct embedding. It owns the userSettingFinderSaver
-// dependency and the slog logger so each concrete handler file only
-// declares the field-specific request type and Change* call.
+// updateRunner is the shared bind / load / mutate / save scaffold embedded by every update handler.
 type updateRunner struct {
 	settingSaver userSettingFinderSaver
 	logger       *slog.Logger
 }
 
-// newUpdateRunner returns an updateRunner whose logger is tagged with the
-// supplied handler name (used as the slog logger-name key).
+// newUpdateRunner returns an updateRunner whose logger is named handlerName.
 func newUpdateRunner(handlerName string, saver userSettingFinderSaver) updateRunner {
 	return updateRunner{
 		settingSaver: saver,
@@ -58,9 +44,7 @@ func newUpdateRunner(handlerName string, saver userSettingFinderSaver) updateRun
 	}
 }
 
-// run executes the canonical bind / load / mutate / save flow used by
-// every user-setting update endpoint. Each handler supplies the differing
-// pieces via updateConfig.
+// run executes the bind / load / mutate / save flow.
 func (r updateRunner) run(c *gin.Context, cfg updateConfig) {
 	ctx := c.Request.Context()
 
@@ -102,10 +86,7 @@ func (r updateRunner) run(c *gin.Context, cfg updateConfig) {
 	c.Status(http.StatusNoContent)
 }
 
-// writeSaveError maps the gateway error returned by userSettingFinderSaver.Save
-// onto the canonical HTTP response set used by every user-setting update
-// handler. Returns true when an error response was written (handler should
-// return immediately), false when no error to handle.
+// writeSaveError writes the HTTP response for a Save error and reports whether it wrote one.
 func writeSaveError(ctx context.Context, logger *slog.Logger, c *gin.Context, err error) bool {
 	if err == nil {
 		return false

@@ -90,10 +90,6 @@ func Test_GetMeHandler_GetMe_shouldReturnDefaults_whenSettingNotFound(t *testing
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Pin every defaulted field here so the "/auth/me returns sensible
-	// defaults when no UserSetting row exists" contract has a single
-	// canonical assertion. Any drift between domain defaults and the
-	// values surfaced to the client breaks this test.
 	jsonObj := parseJSON(t, respBytes)
 
 	languageExpr := parseExpr(t, "$.language")
