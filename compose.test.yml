@@ -2,7 +2,6 @@
 services:
   test-postgres:
     image: postgres:17
-    container_name: test-postgres
     environment:
       POSTGRES_USER: username
       # kics-scan ignore-line
