@@ -65,7 +65,7 @@ jobs:
       - name: Align GOROOT with go on PATH
         if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: |
-          goroot="$(GOROOT= go env GOROOT)"
+          goroot="$(env -u GOROOT go env GOROOT)"
           echo "GOROOT=${goroot}" >> "$GITHUB_ENV"
 
       - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
