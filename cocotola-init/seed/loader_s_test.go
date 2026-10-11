@@ -29,3 +29,44 @@ func Test_DefaultSeeds_shouldReturnNonEmpty_andHaveUniqueSeedKeys(t *testing.T) 
 		keys[s.SeedKey] = true
 	}
 }
+
+func Test_validateSeeds_shouldReturnNil_whenLanguageIsISO6391(t *testing.T) {
+	t.Parallel()
+
+	// given
+	workbooks := []seed.PublicWorkbookSeed{{SeedKey: "wb-1", Language: "ja"}}
+
+	// when
+	err := seed.ValidateSeeds(workbooks)
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_validateSeeds_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		language string
+	}{
+		{name: "empty", language: ""},
+		{name: "uppercase", language: "EN"},
+		{name: "english name", language: "Japanese"},
+		{name: "region subtag", language: "ja-JP"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			workbooks := []seed.PublicWorkbookSeed{{SeedKey: "wb-1", Language: tt.language}}
+
+			// when
+			err := seed.ValidateSeeds(workbooks)
+
+			// then
+			require.ErrorIs(t, err, seed.ErrInvalidSeed)
+		})
+	}
+}
