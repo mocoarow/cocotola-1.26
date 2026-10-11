@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -22,6 +23,7 @@ const fixtureAudioInputHash = "a1b2c3d4e5f60718293a4b5c6d7e8f9001020304050607080
 func newWordFillQuestionWithAudio(t *testing.T, id, workbookID string, status domainquestion.AudioGenerationStatus, inputHash string, updatedAt time.Time, failedAttempts int) domainquestion.Question {
 	t.Helper()
 	q, err := domainquestion.NewQuestion(
+		contentjson.Parser{},
 		id,
 		workbookID,
 		domainquestion.TypeWordFill(),
@@ -42,6 +44,7 @@ func newMultipleChoiceQuestionWithAudio(t *testing.T, id, workbookID string, sta
 	t.Helper()
 	content := `{"questionText":"Q?","choices":[{"id":"a","text":"A","isCorrect":true}],"displayCount":1}`
 	q, err := domainquestion.NewQuestion(
+		contentjson.Parser{},
 		id,
 		workbookID,
 		domainquestion.TypeMultipleChoice(),
@@ -114,7 +117,7 @@ func Test_AudioBatchCommand_ListPendingAudio_shouldSkipItem_whenAudioGenerationI
 	ctx := context.Background()
 
 	// given: a question that somehow has no audio generation hydrated
-	q, err := domainquestion.NewQuestion("q-1", fixtureWorkbookID, domainquestion.TypeWordFill(), fixtureWordFillContent, nil, 0, time.Now(), time.Now())
+	q, err := domainquestion.NewQuestion(contentjson.Parser{}, "q-1", fixtureWorkbookID, domainquestion.TypeWordFill(), fixtureWordFillContent, nil, 0, time.Now(), time.Now())
 	require.NoError(t, err)
 	pending := newMockpendingAudioFinder(t)
 	pending.On("FindPendingAudio", mock.Anything, 10).Return([]domainquestion.Question{*q}, nil)

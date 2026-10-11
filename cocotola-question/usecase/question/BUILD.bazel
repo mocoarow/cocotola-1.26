@@ -18,6 +18,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-lib/domain/versioned",
+        "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/workbook",
@@ -40,6 +41,7 @@ smart_go_test(
     deps = [
         ":question",
         "//cocotola-lib/domain/versioned",
+        "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/workbook",

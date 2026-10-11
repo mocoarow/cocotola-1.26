@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 )
@@ -25,7 +26,7 @@ func newQuestionWithAudio(t *testing.T, repo *gateway.QuestionRepository, workbo
 	id, err := uuid.NewV7()
 	require.NoError(t, err)
 	now := time.Now()
-	q, err := domainquestion.NewQuestion(id.String(), workbookID, domainquestion.TypeWordFill(), fixtureWordFillContentForGateway, []string{"lang:en"}, 0, now, now)
+	q, err := domainquestion.NewQuestion(contentjson.Parser{}, id.String(), workbookID, domainquestion.TypeWordFill(), fixtureWordFillContentForGateway, []string{"lang:en"}, 0, now, now)
 	require.NoError(t, err)
 
 	ag, err := domainquestion.NewAudioGeneration(status, inputHash, nil, audioUpdatedAt, 0, "")

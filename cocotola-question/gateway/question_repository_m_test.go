@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
@@ -22,7 +23,7 @@ func newQuestion(t *testing.T, workbookID string, orderIndex int) *domainquestio
 	id, err := uuid.NewV7()
 	require.NoError(t, err)
 	now := time.Now()
-	q, err := domainquestion.NewQuestion(id.String(), workbookID, domainquestion.TypeWordFill(), fixtureWordFillContentForGateway, []string{"lang:en"}, orderIndex, now, now)
+	q, err := domainquestion.NewQuestion(contentjson.Parser{}, id.String(), workbookID, domainquestion.TypeWordFill(), fixtureWordFillContentForGateway, []string{"lang:en"}, orderIndex, now, now)
 	require.NoError(t, err)
 	return q
 }
@@ -82,7 +83,7 @@ func Test_QuestionRepository_Save_shouldUpdateAndBumpVersion_whenVersionMatches(
 	require.NoError(t, repo.Save(ctx, q))
 
 	updatedContent := `{"source":{"text":"banana","lang":"en"},"target":{"text":"{{バナナ}}","lang":"ja"}}`
-	require.NoError(t, q.Edit(updatedContent, []string{"lang:ja"}, 5, time.Now()))
+	require.NoError(t, q.Edit(contentjson.Parser{}, updatedContent, []string{"lang:ja"}, 5, time.Now()))
 
 	// when
 	err := repo.Save(ctx, q)
@@ -113,10 +114,10 @@ func Test_QuestionRepository_Save_shouldReturnConcurrentModification_whenVersion
 	// Reload, then a stale aggregate (still version 1) tries to save after another update.
 	stale, err := repo.FindByID(ctx, workbookID, q.ID())
 	require.NoError(t, err)
-	require.NoError(t, q.Edit(fixtureWordFillContentForGateway, nil, 9, time.Now()))
+	require.NoError(t, q.Edit(contentjson.Parser{}, fixtureWordFillContentForGateway, nil, 9, time.Now()))
 	require.NoError(t, repo.Save(ctx, q)) // q is now version 2; stale still at 1
 
-	require.NoError(t, stale.Edit(fixtureWordFillContentForGateway, nil, 99, time.Now()))
+	require.NoError(t, stale.Edit(contentjson.Parser{}, fixtureWordFillContentForGateway, nil, 99, time.Now()))
 
 	// when
 	err = repo.Save(ctx, stale)
@@ -178,7 +179,7 @@ func Test_QuestionRepository_Save_shouldReturnErrQuestionNotFound_whenDocWasDele
 	require.NoError(t, repo.Delete(ctx, workbookID, q.ID()))
 
 	// when: the stale loaded aggregate tries to save
-	require.NoError(t, loaded.Edit(fixtureWordFillContentForGateway, nil, 7, time.Now()))
+	require.NoError(t, loaded.Edit(contentjson.Parser{}, fixtureWordFillContentForGateway, nil, 7, time.Now()))
 	err = repo.Save(ctx, loaded)
 
 	// then: callers see a domain not-found, not a generic error

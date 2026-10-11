@@ -190,9 +190,9 @@ func sortedKeys(m map[string]json.RawMessage) []string {
 
 // Test_LoadCSVWorkbookSeeds_shouldEmitContentMatchingQuestionWireContract pins
 // the JSON shape of the generated word_fill content. This package deliberately
-// does not import cocotola-question's domain (the content structs are mirrored
-// in csv_converter.go), so this test guards against that mirror silently
-// drifting from the keys cocotola-question's WordFillContent accepts.
+// does not import cocotola-question (the content structs are mirrored in
+// csv_converter.go), so this test guards against that mirror silently drifting
+// from the keys cocotola-question/contentjson accepts.
 func Test_LoadCSVWorkbookSeeds_shouldEmitContentMatchingQuestionWireContract(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

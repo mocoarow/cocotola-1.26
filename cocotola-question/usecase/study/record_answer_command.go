@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
@@ -85,7 +86,7 @@ func evaluateAnswer(q *domainquestion.Question, input *studyservice.RecordAnswer
 		if input.SelectedChoiceIDs == nil || input.Correct != nil {
 			return false, fmt.Errorf("multiple_choice requires selectedChoiceIds only: %w", domain.ErrInvalidArgument)
 		}
-		mc, err := domainquestion.ParseMultipleChoiceContent(q.Content())
+		mc, err := contentjson.Parser{}.ParseMultipleChoice(q.Content())
 		if err != nil {
 			return false, fmt.Errorf("parse multiple_choice content: %w", err)
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -55,7 +56,7 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("generate question id: %w", err)
 	}
 	now := time.Now()
-	q, err := domainquestion.NewQuestion(id.String(), input.WorkbookID, qt, input.Content, input.Tags, input.OrderIndex, now, now)
+	q, err := domainquestion.NewQuestion(contentjson.Parser{}, id.String(), input.WorkbookID, qt, input.Content, input.Tags, input.OrderIndex, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("new question: %w", err)
 	}

@@ -19,10 +19,8 @@ var tagPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$`)
 // Question is the aggregate root persisted by QuestionRepository.
 // It references the parent Workbook by workbookID.
 //
-// parsedWordFill is a cache of the JSON-decoded word_fill content populated by
-// validate() so callers that need the parsed structure (e.g. the audio batch
-// hash) do not have to re-unmarshal. nil for non-word_fill questions or for
-// aggregates produced via ReconstructQuestion (which skips validation).
+// parsedWordFill caches the word_fill content parsed by validate(). nil for
+// non-word_fill questions or for aggregates produced via ReconstructQuestion.
 type Question struct {
 	id              string
 	workbookID      string
@@ -39,7 +37,7 @@ type Question struct {
 
 // NewQuestion creates a validated Question with version=0 (a new aggregate not yet saved).
 // Callers (usecase layer) must supply the ID and timestamps.
-func NewQuestion(id string, workbookID string, questionType Type, content string, tags []string, orderIndex int, createdAt time.Time, updatedAt time.Time) (*Question, error) {
+func NewQuestion(parser ContentParser, id string, workbookID string, questionType Type, content string, tags []string, orderIndex int, createdAt time.Time, updatedAt time.Time) (*Question, error) {
 	q := &Question{
 		id:              id,
 		workbookID:      workbookID,
@@ -53,7 +51,7 @@ func NewQuestion(id string, workbookID string, questionType Type, content string
 		audioGeneration: nil,
 		parsedWordFill:  nil,
 	}
-	if err := q.validate(); err != nil {
+	if err := q.validate(parser); err != nil {
 		return nil, fmt.Errorf("new question: %w", err)
 	}
 	return q, nil
@@ -78,7 +76,7 @@ func ReconstructQuestion(id string, workbookID string, questionType Type, conten
 
 // Edit updates content, tags, and orderIndex with validation.
 // Callers (usecase layer) must supply the new updatedAt timestamp.
-func (q *Question) Edit(content string, tags []string, orderIndex int, updatedAt time.Time) error {
+func (q *Question) Edit(parser ContentParser, content string, tags []string, orderIndex int, updatedAt time.Time) error {
 	cp := copyTags(tags)
 	candidate := &Question{
 		id:              q.id,
@@ -93,7 +91,7 @@ func (q *Question) Edit(content string, tags []string, orderIndex int, updatedAt
 		audioGeneration: q.audioGeneration,
 		parsedWordFill:  nil,
 	}
-	if err := candidate.validate(); err != nil {
+	if err := candidate.validate(parser); err != nil {
 		return fmt.Errorf("edit question: %w", err)
 	}
 	q.content = content
@@ -104,7 +102,7 @@ func (q *Question) Edit(content string, tags []string, orderIndex int, updatedAt
 	return nil
 }
 
-func (q *Question) validate() error {
+func (q *Question) validate(parser ContentParser) error {
 	if q.id == "" {
 		return fmt.Errorf("question id is required: %w", domain.ErrInvalidArgument)
 	}
@@ -126,17 +124,33 @@ func (q *Question) validate() error {
 	if err := validateTags(q.tags); err != nil {
 		return fmt.Errorf("validate tags: %w", err)
 	}
-	if err := ValidateContent(q.questionType, q.content); err != nil {
-		return fmt.Errorf("validate content: %w", err)
-	}
-	if q.questionType.Value() == questionTypeWordFill {
-		parsed, err := ParseWordFillContent(q.content)
+	return q.validateContent(parser)
+}
+
+func (q *Question) validateContent(parser ContentParser) error {
+	switch q.questionType.Value() {
+	case questionTypeWordFill:
+		c, err := parser.ParseWordFill(q.content)
 		if err != nil {
 			return fmt.Errorf("parse word_fill content: %w", err)
 		}
-		q.parsedWordFill = parsed
+		if err := c.Validate(); err != nil {
+			return fmt.Errorf("validate word_fill content: %w", err)
+		}
+		q.parsedWordFill = c
+		return nil
+	case questionTypeMultipleChoice:
+		c, err := parser.ParseMultipleChoice(q.content)
+		if err != nil {
+			return fmt.Errorf("parse multiple_choice content: %w", err)
+		}
+		if err := c.Validate(); err != nil {
+			return fmt.Errorf("validate multiple_choice content: %w", err)
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown question type for content validation: %w", domain.ErrInvalidArgument)
 	}
-	return nil
 }
 
 // WordFillContentParsed returns the cached parsed word_fill content populated

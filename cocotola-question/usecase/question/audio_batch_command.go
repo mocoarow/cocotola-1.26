@@ -8,6 +8,7 @@ import (
 	"time"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -63,7 +64,7 @@ func (c *AudioBatchCommand) ListPendingAudio(ctx context.Context, input *questio
 			logSkippedNonWordFill(ctx, q)
 			continue
 		}
-		content, err := domainquestion.ParseWordFillContent(q.Content())
+		content, err := contentjson.Parser{}.ParseWordFill(q.Content())
 		if err != nil {
 			return nil, fmt.Errorf("parse word_fill content for question %s: %w", q.ID(), err)
 		}

@@ -1,7 +1,6 @@
 package question
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -24,76 +23,53 @@ var (
 	htmlTagPattern = regexp.MustCompile(`<[^>]+>`)
 )
 
-// --- Shared ---
-
-// ScoringModeJSON represents the scoring mode in content JSON.
-type ScoringModeJSON struct {
-	AllowPartialCredit bool `json:"allowPartialCredit"`
+// ContentParser parses the raw content of a question. Parsing does not validate.
+type ContentParser interface {
+	ParseWordFill(raw string) (*WordFillContent, error)
+	ParseMultipleChoice(raw string) (*MultipleChoiceContent, error)
 }
 
 // --- word_fill ---
 
-// WordFillContent represents the JSON content for a word_fill question.
+// WordFillContent is the content of a word_fill question.
 //
 // Explanation is the legacy single explanation (kept for backward
 // compatibility). Explanation1 is shown while the question is presented and
 // Explanation2 when the answer is revealed; both are used to carry source
 // attribution / licensing for imported sentence data.
 type WordFillContent struct {
-	Source             TextWithLang `json:"source"`
-	Target             TextWithLang `json:"target"`
-	Explanation        string       `json:"explanation"`
-	Explanation1       string       `json:"explanation1"`
-	Explanation2       string       `json:"explanation2"`
-	AllowPartialCredit bool         `json:"allowPartialCredit"`
+	Source             TextWithLang
+	Target             TextWithLang
+	Explanation        string
+	Explanation1       string
+	Explanation2       string
+	AllowPartialCredit bool
 }
 
 // TextWithLang represents a text string with its language code.
 type TextWithLang struct {
-	Text string `json:"text"`
-	Lang string `json:"lang"`
+	Text string
+	Lang string
 }
 
 // --- multiple_choice ---
 
-// MultipleChoiceContent represents the JSON content for a multiple_choice question.
+// MultipleChoiceContent is the content of a multiple_choice question.
 type MultipleChoiceContent struct {
-	QuestionText       string       `json:"questionText"`
-	Explanation        string       `json:"explanation"`
-	Choices            []ChoiceJSON `json:"choices"`
-	DisplayCount       int          `json:"displayCount"`
-	ShowCorrectCount   bool         `json:"showCorrectCount"`
-	ShuffleChoices     bool         `json:"shuffleChoices"`
-	AllowPartialCredit bool         `json:"allowPartialCredit"`
+	QuestionText       string
+	Explanation        string
+	Choices            []Choice
+	DisplayCount       int
+	ShowCorrectCount   bool
+	ShuffleChoices     bool
+	AllowPartialCredit bool
 }
 
-// ChoiceJSON represents a single choice in a multiple_choice question.
-type ChoiceJSON struct {
-	ID        string `json:"id"`
-	Text      string `json:"text"`
-	IsCorrect bool   `json:"isCorrect"`
-}
-
-// ParseMultipleChoiceContent unmarshals MultipleChoiceContent JSON without re-running
-// the structural validation in validateMultipleChoiceContent. Use only on content
-// that has already been validated at write time.
-func ParseMultipleChoiceContent(raw string) (*MultipleChoiceContent, error) {
-	var c MultipleChoiceContent
-	if err := json.Unmarshal([]byte(raw), &c); err != nil {
-		return nil, fmt.Errorf("invalid multiple_choice content JSON: %w", domain.ErrInvalidArgument)
-	}
-	return &c, nil
-}
-
-// ParseWordFillContent unmarshals WordFillContent JSON without re-running the
-// structural validation in validateWordFillContent. Use only on content that
-// has already been validated at write time.
-func ParseWordFillContent(raw string) (*WordFillContent, error) {
-	var c WordFillContent
-	if err := json.Unmarshal([]byte(raw), &c); err != nil {
-		return nil, fmt.Errorf("invalid word_fill content JSON: %w", domain.ErrInvalidArgument)
-	}
-	return &c, nil
+// Choice represents a single choice in a multiple_choice question.
+type Choice struct {
+	ID        string
+	Text      string
+	IsCorrect bool
 }
 
 // EvaluateAnswer reports whether the given choice IDs exactly match the set of
@@ -127,24 +103,8 @@ func (c *MultipleChoiceContent) EvaluateAnswer(selectedChoiceIDs []string) (bool
 	return true, nil
 }
 
-// ValidateContent validates the content JSON based on question type.
-func ValidateContent(questionType Type, content string) error {
-	switch questionType.Value() {
-	case questionTypeWordFill:
-		return validateWordFillContent(content)
-	case questionTypeMultipleChoice:
-		return validateMultipleChoiceContent(content)
-	default:
-		return fmt.Errorf("unknown question type for content validation: %w", domain.ErrInvalidArgument)
-	}
-}
-
-func validateWordFillContent(content string) error {
-	var c WordFillContent
-	if err := json.Unmarshal([]byte(content), &c); err != nil {
-		return fmt.Errorf("invalid word_fill content JSON: %w", domain.ErrInvalidArgument)
-	}
-
+// Validate checks the word_fill content rules.
+func (c *WordFillContent) Validate() error {
 	if err := validateTextWithLang(c.Source, "source"); err != nil {
 		return fmt.Errorf("validate word_fill source: %w", err)
 	}
@@ -208,12 +168,8 @@ func validateTextWithLang(twl TextWithLang, fieldName string) error {
 	return nil
 }
 
-func validateMultipleChoiceContent(content string) error {
-	var c MultipleChoiceContent
-	if err := json.Unmarshal([]byte(content), &c); err != nil {
-		return fmt.Errorf("invalid multiple_choice content JSON: %w", domain.ErrInvalidArgument)
-	}
-
+// Validate checks the multiple_choice content rules.
+func (c *MultipleChoiceContent) Validate() error {
 	if err := validateQuestionText(c.QuestionText); err != nil {
 		return fmt.Errorf("validate multiple_choice question text: %w", err)
 	}
@@ -243,7 +199,7 @@ func validateQuestionText(text string) error {
 	return nil
 }
 
-func validateChoices(choices []ChoiceJSON) error {
+func validateChoices(choices []Choice) error {
 	if len(choices) < minChoices {
 		return fmt.Errorf("at least %d choice is required: %w", minChoices, domain.ErrInvalidArgument)
 	}
@@ -277,7 +233,7 @@ func validateChoices(choices []ChoiceJSON) error {
 	return nil
 }
 
-func validateDisplayCount(displayCount int, choices []ChoiceJSON) error {
+func validateDisplayCount(displayCount int, choices []Choice) error {
 	if displayCount < minDisplayCount || displayCount > maxDisplayCount {
 		return fmt.Errorf("displayCount must be between %d and %d: %w", minDisplayCount, maxDisplayCount, domain.ErrInvalidArgument)
 	}
@@ -291,7 +247,7 @@ func validateDisplayCount(displayCount int, choices []ChoiceJSON) error {
 	return nil
 }
 
-func countCorrectChoices(choices []ChoiceJSON) int {
+func countCorrectChoices(choices []Choice) int {
 	count := 0
 	for _, c := range choices {
 		if c.IsCorrect {

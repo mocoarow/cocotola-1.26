@@ -4,6 +4,7 @@ forbidden:
   auth-domain: &auth-domain
     - net/http
     - net/url
+    - encoding/json
     - database/sql
     - gorm.io/gorm
     - gorm.io/gorm/clause
@@ -20,6 +21,10 @@ forbidden:
     - go.opentelemetry.io/otel
     - go.opentelemetry.io/otel/trace
     - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/config
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller
     - github.com/mocoarow/cocotola-1.26/cocotola-question/domain
@@ -58,6 +63,7 @@ forbidden:
   question-domain: &question-domain
     - net/http
     - net/url
+    - encoding/json
     - database/sql
     - gorm.io/gorm
     - gorm.io/gorm/clause
@@ -74,6 +80,10 @@ forbidden:
     - go.opentelemetry.io/otel
     - go.opentelemetry.io/otel/trace
     - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/config
     - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain
@@ -113,6 +123,7 @@ forbidden:
   audio-domain: &audio-domain
     - net/http
     - net/url
+    - encoding/json
     - database/sql
     - gorm.io/gorm
     - gorm.io/gorm/clause
@@ -129,6 +140,10 @@ forbidden:
     - go.opentelemetry.io/otel
     - go.opentelemetry.io/otel/trace
     - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/config
     - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase
   audio-usecase: &audio-usecase
@@ -150,6 +165,7 @@ forbidden:
   lib-domain: &lib-domain
     - net/http
     - net/url
+    - encoding/json
     - database/sql
     - gorm.io/gorm
     - gorm.io/gorm/clause
@@ -166,6 +182,9 @@ forbidden:
     - go.opentelemetry.io/otel
     - go.opentelemetry.io/otel/trace
     - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
 
 packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain": {forbiddenPackages: *auth-domain}
@@ -198,6 +217,7 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}

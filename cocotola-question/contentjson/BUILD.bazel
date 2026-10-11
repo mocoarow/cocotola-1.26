@@ -1,0 +1,28 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "contentjson",
+    srcs = [
+        "doc.go",
+        "parser.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+    ],
+)
+
+smart_go_test(
+    name = "contentjson_test",
+    srcs = ["parser_s_test.go"],
+    deps = [
+        ":contentjson",
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
