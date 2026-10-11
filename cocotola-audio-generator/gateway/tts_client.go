@@ -41,16 +41,9 @@ func (c *TTSClient) Close() error {
 	return nil
 }
 
-// Synthesize renders the given text as an audio buffer.
-//
-// `voice` follows the Cloud TTS naming convention (e.g. "en-US-Neural2-C"),
-// `lang` is the BCP-47 language code matching the voice (e.g. "en-US").
-//
-// Each protobuf message is allocated via new() and then populated via field
-// setters so we don't have to enumerate every optional/generated field that
-// exhaustruct would otherwise demand. The zero-valued fields (advanced voice
-// options, prompt, pitch, speaking rate, etc.) tell Cloud TTS to use server
-// defaults.
+// Synthesize renders text as audio; voice is a Cloud TTS voice name (e.g. "en-US-Neural2-C"), lang its BCP-47 code.
+// Messages are built via new() plus field assignment to avoid exhaustruct;
+// zero-valued fields mean Cloud TTS server defaults.
 func (c *TTSClient) Synthesize(ctx context.Context, text, voice, lang string) ([]byte, error) {
 	input := new(texttospeechpb.SynthesisInput)
 	input.InputSource = &texttospeechpb.SynthesisInput_Text{Text: text}

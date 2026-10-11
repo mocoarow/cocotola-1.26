@@ -39,10 +39,7 @@ type VoiceConfig struct {
 	EnLang  string
 }
 
-// maxFailReasonRunes caps the failure reason sent to the question API so a
-// long Cloud TTS error stack-trace does not blow past the server's stored
-// LastError limit. The server applies the same cap; truncating client-side
-// keeps the request body small.
+// maxFailReasonRunes mirrors the question API's LastError cap.
 const maxFailReasonRunes = 500
 
 // BatchConfig collects runtime knobs for one batch run.
@@ -218,10 +215,7 @@ func pickFullLang(v VoiceConfig, lang string) string {
 	}
 }
 
-// truncate returns at most maxRunes runes of s. The argument is rune count,
-// not byte count, so multi-byte UTF-8 characters are not split mid-codepoint
-// when the failure reason carries non-ASCII text (e.g. error messages from a
-// Japanese-language Cloud API response).
+// truncate returns at most maxRunes runes of s.
 func truncate(s string, maxRunes int) string {
 	r := []rune(s)
 	if len(r) <= maxRunes {

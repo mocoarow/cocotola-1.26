@@ -208,13 +208,7 @@ func readErrorBody(resp *http.Response) string {
 // ErrNotFound surfaces when an item endpoint returns 404.
 var ErrNotFound = errors.New("question not found")
 
-// closeBodyAndLog drains/closes an HTTP response body and logs any close
-// error. Centralized so each call site does not have to re-implement the
-// defer block (and so we satisfy errcheck without silent suppressions).
-//
-// ctx is used purely to propagate request-scoped attributes (trace IDs, etc.)
-// to the structured logger; it is not consulted for cancellation since Close
-// is non-blocking.
+// closeBodyAndLog closes an HTTP response body and logs any close error.
 func closeBodyAndLog(ctx context.Context, body io.Closer) {
 	if err := body.Close(); err != nil {
 		slog.WarnContext(ctx, "close response body", slog.Any("error", err))
