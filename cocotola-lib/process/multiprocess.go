@@ -9,19 +9,22 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// ErrGracefulShutdown signals that a process stopped because shutdown was requested (e.g. an OS signal).
+var ErrGracefulShutdown = errors.New("graceful shutdown")
+
 // RunProcess is a function that executes a process and returns an error on failure.
 type RunProcess func() error
 
 // RunProcessFunc creates a RunProcess bound to the given context.
 type RunProcessFunc func(ctx context.Context) RunProcess
 
-// Run executes all RunProcessFuncs concurrently and returns 0 on success or 1 on non-canceled error.
+// Run executes all RunProcessFuncs concurrently and returns 0 on success or shutdown, or 1 on any other error.
 func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 	var eg *errgroup.Group
 	eg, ctx = errgroup.WithContext(ctx)
 
 	errMu := &sync.Mutex{}
-	var nonCanceledErr error
+	var nonShutdownErr error
 
 	for _, rf := range runFuncs {
 		eg.Go(func() error {
@@ -29,10 +32,10 @@ func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 			if err == nil {
 				return nil
 			}
-			if !errors.Is(err, context.Canceled) {
+			if !isShutdown(err) {
 				errMu.Lock()
-				if nonCanceledErr == nil {
-					nonCanceledErr = err
+				if nonShutdownErr == nil {
+					nonShutdownErr = err
 				}
 				errMu.Unlock()
 			}
@@ -42,7 +45,7 @@ func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 	}
 
 	if err := eg.Wait(); err != nil {
-		if nonCanceledErr == nil && errors.Is(err, context.Canceled) {
+		if nonShutdownErr == nil && isShutdown(err) {
 			return 0
 		}
 
@@ -50,4 +53,8 @@ func Run(ctx context.Context, runFuncs ...RunProcessFunc) int {
 	}
 
 	return 0
+}
+
+func isShutdown(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, ErrGracefulShutdown)
 }

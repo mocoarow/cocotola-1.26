@@ -3,6 +3,7 @@ package process_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -40,6 +41,50 @@ func Test_Run_shouldReturnZero_whenProcessReturnsCanceled(t *testing.T) {
 
 	// when
 	code := process.Run(context.Background(), cancelFunc)
+
+	// then
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+}
+
+func Test_Run_shouldReturnZero_whenProcessReturnsGracefulShutdown(t *testing.T) {
+	t.Parallel()
+
+	// given
+	shutdownFunc := func(_ context.Context) process.RunProcess {
+		return func() error {
+			return fmt.Errorf("signal received: %w", process.ErrGracefulShutdown)
+		}
+	}
+
+	// when
+	code := process.Run(context.Background(), shutdownFunc)
+
+	// then
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+}
+
+func Test_Run_shouldReturnZero_whenGracefulShutdownCancelsOtherProcesses(t *testing.T) {
+	t.Parallel()
+
+	// given
+	shutdownFunc := func(_ context.Context) process.RunProcess {
+		return func() error {
+			return fmt.Errorf("signal received: %w", process.ErrGracefulShutdown)
+		}
+	}
+	waitCancelFunc := func(ctx context.Context) process.RunProcess {
+		return func() error {
+			<-ctx.Done()
+			return fmt.Errorf("server stopped: %w", ctx.Err())
+		}
+	}
+
+	// when
+	code := process.Run(context.Background(), waitCancelFunc, shutdownFunc)
 
 	// then
 	if code != 0 {
@@ -106,7 +151,7 @@ func Test_Run_shouldReturnOne_whenCanceledAndRealErrorAreMixed(t *testing.T) {
 func Test_Run_shouldReturnOne_whenMultipleGoroutinesReturnErrorsConcurrently(t *testing.T) {
 	t.Parallel()
 
-	// given: start all three goroutines simultaneously to stress nonCanceledErr locking
+	// given: start all three goroutines simultaneously to stress nonShutdownErr locking
 	const numFuncs = 3
 	startCh := make(chan struct{})
 	var readyWg sync.WaitGroup
