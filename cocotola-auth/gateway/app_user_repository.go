@@ -116,6 +116,9 @@ func (r *AppUserRepository) Save(ctx context.Context, user *domainuser.AppUser) 
 	if errors.Is(err, libversioned.ErrNotFound) {
 		return domain.ErrAppUserNotFound
 	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return fmt.Errorf("save app user: %w", domain.ErrDuplicateEntry)
+	}
 	if err != nil {
 		return fmt.Errorf("save app user: %w", err)
 	}

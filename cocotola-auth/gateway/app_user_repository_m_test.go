@@ -32,6 +32,28 @@ func Test_AppUserRepository_Save_shouldInsertAppUser_whenNewRecord(t *testing.T)
 	require.NoError(t, err)
 }
 
+func Test_AppUserRepository_Save_shouldReturnErrDuplicateEntry_whenLoginIDAlreadyExists(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "appuser-duplicate-org")
+	repo := gateway.NewAppUserRepository(tx)
+	firstID, err := domain.NewAppUserIDV7()
+	require.NoError(t, err)
+	secondID, err := domain.NewAppUserIDV7()
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, domainuser.ReconstructAppUser(firstID, orgID, "duplicate@example.com", "", true)))
+	duplicate := domainuser.ReconstructAppUser(secondID, orgID, "duplicate@example.com", "", true)
+
+	// when
+	err = repo.Save(ctx, duplicate)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
+}
+
 func Test_AppUserRepository_FindByID_shouldReturnAppUser_whenUserExists(t *testing.T) {
 	t.Parallel()
 	// given

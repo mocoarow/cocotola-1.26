@@ -1,0 +1,207 @@
+---
+# Keys and forbidden entries match package paths exactly; list every sub package.
+forbidden:
+  auth-domain: &auth-domain
+    - net/http
+    - net/url
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - go.opentelemetry.io/otel
+    - go.opentelemetry.io/otel/trace
+    - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user
+  auth-usecase: &auth-usecase
+    - net/http
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook
+  question-domain: &question-domain
+    - net/http
+    - net/url
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - go.opentelemetry.io/otel
+    - go.opentelemetry.io/otel/trace
+    - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook
+  question-usecase: &question-usecase
+    - net/http
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user
+  audio-domain: &audio-domain
+    - net/http
+    - net/url
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - go.opentelemetry.io/otel
+    - go.opentelemetry.io/otel/trace
+    - go.opentelemetry.io/otel/attribute
+    - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase
+  audio-usecase: &audio-usecase
+    - net/http
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway
+  lib-domain: &lib-domain
+    - net/http
+    - net/url
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - go.opentelemetry.io/otel
+    - go.opentelemetry.io/otel/trace
+    - go.opentelemetry.io/otel/attribute
+
+packageConfigs:
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/domain": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook": {forbiddenPackages: *question-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset": {forbiddenPackages: *lib-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned": {forbiddenPackages: *lib-domain}
+
+debug: false

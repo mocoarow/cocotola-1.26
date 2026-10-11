@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"gorm.io/gorm"
-
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
@@ -114,7 +112,7 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 
 	// Only attempt to link an existing local account when the create failed
 	// because of a duplicate login_id.
-	if !errors.Is(createErr, gorm.ErrDuplicatedKey) {
+	if !errors.Is(createErr, domain.ErrDuplicateEntry) {
 		return nil, fmt.Errorf("save new app user: %w: %w", createErr, domain.ErrInternal)
 	}
 

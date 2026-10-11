@@ -19,6 +19,7 @@ vars:
     - cocotola-init
     - cocotola-question
     - cocotola-audio-generator
+  PKGFORBID: github.com/mocoarow/pkgforbid/cmd/pkgforbid@v0.0.0-20250827153920-225ba0cfa5ed
 
 tasks:
   init:
@@ -44,6 +45,16 @@ tasks:
       - |
         cd {{ .GO_PROJECT }}
         golangci-lint run --config ../.golangci.yml --timeout=5m
+      - task: pkgforbid-go-project
+        vars:
+          GO_PROJECT: "{{ .GO_PROJECT }}"
+    requires:
+      vars: [GO_PROJECT]
+
+  pkgforbid-go-project:
+    dir: "{{ .GO_PROJECT }}"
+    cmds:
+      - go run {{ .PKGFORBID }} -config=../pkgforbid.yml ./...
     requires:
       vars: [GO_PROJECT]
 
