@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
@@ -195,7 +194,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRetryFind_whenCreateRaceC
 	loginIDFinderMock := NewMockAppUserByLoginIDFinder(t)
 
 	saverMock := NewMockAppUserSaver(t)
-	saverMock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrDuplicatedKey)
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(domain.ErrDuplicateEntry)
 
 	orgFinderMock := NewMockOrganizationFinder(t)
 	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
@@ -242,7 +241,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldLinkProvider_whenUserExis
 
 	saverMock := NewMockAppUserSaver(t)
 	// First Save attempt for the new aggregate fails (duplicate login_id).
-	saverMock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrDuplicatedKey).Once()
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(domain.ErrDuplicateEntry).Once()
 
 	orgFinderMock := NewMockOrganizationFinder(t)
 	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
@@ -285,7 +284,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAc
 	loginIDFinderMock.On("FindByLoginID", mock.Anything, fixtureOrgID, domain.LoginID("human@example.com")).Return(passwordAccount, nil)
 
 	saverMock := NewMockAppUserSaver(t)
-	saverMock.On("Save", mock.Anything, mock.Anything).Return(gorm.ErrDuplicatedKey).Once()
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(domain.ErrDuplicateEntry).Once()
 
 	orgFinderMock := NewMockOrganizationFinder(t)
 	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
