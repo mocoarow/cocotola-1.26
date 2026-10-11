@@ -20,6 +20,7 @@ vars:
     - cocotola-question
     - cocotola-audio-generator
   PKGFORBID: github.com/mocoarow/pkgforbid/cmd/pkgforbid@v0.0.0-20250827153920-225ba0cfa5ed
+  COMMENTRATIO: github.com/mocoarow/commentratio/cmd/commentratio@v0.1.2
 
 tasks:
   init:
@@ -48,6 +49,9 @@ tasks:
       - task: pkgforbid-go-project
         vars:
           GO_PROJECT: "{{ .GO_PROJECT }}"
+      - task: commentratio-go-project
+        vars:
+          GO_PROJECT: "{{ .GO_PROJECT }}"
     requires:
       vars: [GO_PROJECT]
 
@@ -55,6 +59,15 @@ tasks:
     dir: "{{ .GO_PROJECT }}"
     cmds:
       - go run {{ .PKGFORBID }} -config=../pkgforbid.yml ./...
+    requires:
+      vars: [GO_PROJECT]
+
+  commentratio-go-project:
+    dir: "{{ .GO_PROJECT }}"
+    env:
+      GOFLAGS: -tags=small,medium,large
+    cmds:
+      - go run {{ .COMMENTRATIO }} -ignore-patterns '^(given|when|then)(, (when|then))*$' ./...
     requires:
       vars: [GO_PROJECT]
 

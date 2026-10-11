@@ -76,3 +76,7 @@ jobs:
       - name: pkgforbid
         if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: task pkgforbid-go-project GO_PROJECT=${{ matrix.workdir }}
+
+      - name: commentratio
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
+        run: task commentratio-go-project GO_PROJECT=${{ matrix.workdir }}
