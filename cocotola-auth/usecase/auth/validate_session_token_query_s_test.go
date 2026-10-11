@@ -255,8 +255,6 @@ func Test_ValidateSessionTokenQuery_ValidateSessionToken_shouldReturnErrSessionE
 	// given
 	raw := "raw-session"
 	hash := domaintoken.HashToken(raw)
-	// Created 9 hours ago — SessionMaxTTLMin is 8 hours, so the token has exceeded its absolute lifetime
-	// even though the sliding ExpiresAt is still in the future.
 	token := reconstructValidSessionToken(now.Add(-9*time.Hour), now.Add(30*time.Minute), hash, nil)
 
 	cacheMock := NewMockTokenCache(t)

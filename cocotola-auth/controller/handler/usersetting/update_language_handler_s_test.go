@@ -35,7 +35,7 @@ func Test_UpdateLanguageHandler_shouldReturn204_whenSettingExists(t *testing.T) 
 	// given
 	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
 	require.NoError(t, err)
-	existing.SetVersion(7) // simulate a row already persisted with version=7
+	existing.SetVersion(7)
 	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
@@ -60,7 +60,6 @@ func Test_UpdateLanguageHandler_shouldCreateDefault_whenSettingNotFound(t *testi
 	saver := newMockuserSettingFinderSaver(t)
 	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, domain.ErrUserSettingNotFound)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		// version==0 confirms the handler took the INSERT path (default-init).
 		return s.AppUserID() == fixtureAppUserID && s.Language() == "ja" && s.Version() == 0
 	})).Return(nil)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
@@ -153,8 +152,7 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageOutsideWhitelist(t *
 	t.Parallel()
 	ctx := context.Background()
 
-	// given (binding accepts only en/ja/ko; valid ISO 639-1 codes outside the
-	// whitelist must be rejected at the API boundary before reaching the repo)
+	// given
 	saver := newMockuserSettingFinderSaver(t)
 	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()

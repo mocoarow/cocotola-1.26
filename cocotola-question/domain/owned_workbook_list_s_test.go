@@ -12,9 +12,7 @@ import (
 func Test_NewOwnedWorkbookList_shouldReturnList_whenValid(t *testing.T) {
 	t.Parallel()
 
-	// given
-
-	// when
+	// given, when
 	list, err := domain.NewOwnedWorkbookList("user-1", []string{"wb-1", "wb-2"})
 
 	// then
@@ -28,9 +26,7 @@ func Test_NewOwnedWorkbookList_shouldReturnList_whenValid(t *testing.T) {
 func Test_NewOwnedWorkbookList_shouldReturnError_whenOwnerIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given
-
-	// when
+	// given, when
 	_, err := domain.NewOwnedWorkbookList("", nil)
 
 	// then
@@ -40,9 +36,7 @@ func Test_NewOwnedWorkbookList_shouldReturnError_whenOwnerIDIsEmpty(t *testing.T
 func Test_NewOwnedWorkbookList_shouldDeduplicateIDs(t *testing.T) {
 	t.Parallel()
 
-	// given
-
-	// when
+	// given, when
 	list, err := domain.NewOwnedWorkbookList("user-1", []string{"wb-1", "wb-1", "wb-2"})
 
 	// then
@@ -53,9 +47,7 @@ func Test_NewOwnedWorkbookList_shouldDeduplicateIDs(t *testing.T) {
 func Test_NewOwnedWorkbookList_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given
-
-	// when
+	// given, when
 	_, err := domain.NewOwnedWorkbookList("user-1", []string{"wb-1", ""})
 
 	// then
@@ -182,7 +174,6 @@ func Test_OwnedWorkbookList_Entries_shouldReturnSortedCopy(t *testing.T) {
 	// then
 	assert.Equal(t, []string{"wb-a", "wb-b", "wb-c"}, entries)
 
-	// Mutating the returned slice must not affect the aggregate.
 	entries[0] = "mutated"
 	assert.True(t, list.Contains("wb-a"))
 }
@@ -190,9 +181,7 @@ func Test_OwnedWorkbookList_Entries_shouldReturnSortedCopy(t *testing.T) {
 func Test_OwnedWorkbookList_Version_shouldDefaultToZero(t *testing.T) {
 	t.Parallel()
 
-	// given
-
-	// when
+	// given, when
 	list, _ := domain.NewOwnedWorkbookList("user-1", nil)
 
 	// then

@@ -29,7 +29,6 @@ func Test_WebServerProcess_shouldServeRequests_whenStarted(t *testing.T) {
 		errCh <- controller.WebServerProcess(ctx, mux, port, time.Second, time.Second)
 	}()
 
-	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
 
 	// when
@@ -68,7 +67,6 @@ func Test_WebServerProcess_shouldShutdownGracefully_whenContextCanceled(t *testi
 		errCh <- controller.WebServerProcess(ctx, mux, port, time.Second, time.Second)
 	}()
 
-	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
 
 	// when

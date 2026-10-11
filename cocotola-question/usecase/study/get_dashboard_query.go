@@ -12,11 +12,7 @@ import (
 
 const dateLayout = "2006-01-02"
 
-// GetDashboardQuery returns the user-scoped study dashboard data:
-// contribution graph buckets, current/longest streak (calendar days), and
-// today's progress towards the daily goal. The query is user-scoped (not
-// workbook-scoped) so the streak is meaningful across the user's whole
-// learning practice.
+// GetDashboardQuery returns the user-scoped (not workbook-scoped) study dashboard data.
 type GetDashboardQuery struct {
 	dailyStatsFinder dailyStatsFinder
 }
@@ -50,14 +46,8 @@ func (q *GetDashboardQuery) GetDashboard(ctx context.Context, input *studyservic
 	return buildDashboardOutput(input.TodayDateKey, todayDate, fromDate, input.Days, stats), nil
 }
 
-// buildDashboardOutput aggregates a flat list of daily stats into the
-// dashboard's derived metrics. Extracted so the streak/totals logic is unit
-// testable without a Firestore client.
-//
-// The caller is contracted to supply already-parsed today / fromDate
-// values so this layer never re-parses (and thus never has to swallow a
-// time.Parse error that would otherwise default to a zero-valued
-// time.Time and silently produce wrong aggregations).
+// buildDashboardOutput takes pre-parsed dates so it never swallows a
+// time.Parse error into a zero time.
 func buildDashboardOutput(todayKey string, today, fromDate time.Time, days int, stats []domainstudy.DailyStat) *studyservice.GetDashboardOutput {
 	byDate := indexByDate(stats)
 	items, totals := buildDailyItems(fromDate, days, byDate)
@@ -131,15 +121,7 @@ func buildDailyItems(fromDate time.Time, days int, byDate map[string]domainstudy
 	return items, totals
 }
 
-// computeStreaks scans every day the user has touched and returns the
-// current calendar-day streak (anchored at today, with a one-day grace for
-// "haven't answered yet today") and the longest contiguous span ever
-// recorded within the supplied buckets.
-//
-// A bucket with AnsweredCount == 0 does not contribute (gaps in older data
-// can therefore exist without breaking the longest streak from before the
-// gap). Both metrics ignore CorrectCount so consistency, not accuracy,
-// powers the visualization.
+// computeStreaks returns the current and longest calendar-day streaks.
 func computeStreaks(byDate map[string]domainstudy.DailyStat, today time.Time) (int, int) {
 	answered := answeredDates(byDate)
 	if len(answered) == 0 {

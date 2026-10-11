@@ -361,7 +361,6 @@ func Test_AudioHandler_ReclaimStaleAudio_shouldUseDefaults_whenBodyIsEmpty(t *te
 	// given
 	usecase := NewMockAudioBatchUsecase(t)
 	usecase.On("ReclaimStaleAudio", mock.Anything, mock.MatchedBy(func(in *questionservice.ReclaimStaleAudioInput) bool {
-		// default StaleAfter = 15 min, default Limit = 50
 		return in.StaleAfter.Minutes() == 15 && in.Limit == 50
 	})).Return(&questionservice.ReclaimStaleAudioOutput{Reclaimed: 0}, nil).Once()
 	r := initInternalAudioRouter(ctx, t, usecase)

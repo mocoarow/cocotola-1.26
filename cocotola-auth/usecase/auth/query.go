@@ -74,10 +74,8 @@ func (c UsecaseConfig) Now() time.Time {
 	return time.Now()
 }
 
-// SupabaseVerifier verifies Supabase JWT tokens and returns the user's sub
-// (UUID) and email. Implementations MUST reject tokens whose email has not
-// been verified by Supabase so the exchange flow can trust the returned email
-// as a stable identifier for account linking.
+// SupabaseVerifier verifies Supabase JWTs and returns sub and email.
+// Implementations MUST reject unverified emails; account linking trusts the email.
 type SupabaseVerifier interface {
 	Verify(ctx context.Context, tokenString string) (sub string, email string, err error)
 }

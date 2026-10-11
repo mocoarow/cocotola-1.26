@@ -192,11 +192,9 @@ type AuthorizationChecker interface {
 
 // PolicyRepository manages RBAC policies and group assignments.
 type PolicyRepository interface {
-	// Group assignment: assign/revoke a group for a user within an organization.
 	AssignGroupToUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, group Group) error
 	RevokeGroupFromUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, group Group) error
 
-	// Policy management: define what actions a group can perform on resources.
 	AddPolicy(ctx context.Context, organizationID domain.OrganizationID, group Group, action Action, resource Resource, effect Effect) error
 	RemovePolicy(ctx context.Context, organizationID domain.OrganizationID, group Group, action Action, resource Resource, effect Effect) error
 }

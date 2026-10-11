@@ -22,12 +22,9 @@ func Test_expandEnvWithDefaults_shouldReturnEnvValue_whenVarIsSet(t *testing.T) 
 func Test_expandEnvWithDefaults_shouldReturnDefault_whenVarIsUnset(t *testing.T) {
 	t.Parallel()
 
-	// given: TEST_EXPAND_UNSET is not set in environment
-
-	// when
+	// given, when, then
 	got := config.ExpandEnvWithDefaults("TEST_EXPAND_UNSET:-defaultval")
 
-	// then
 	assert.Equal(t, "defaultval", got)
 }
 
@@ -45,12 +42,9 @@ func Test_expandEnvWithDefaults_shouldReturnDefault_whenVarIsEmpty(t *testing.T)
 func Test_expandEnvWithDefaults_shouldReturnFirstDefault_whenMultipleSeparators(t *testing.T) {
 	t.Parallel()
 
-	// given: strings.Cut stops at the first ":-", so the default itself may contain ":-"
-
-	// when
+	// given, when, then
 	got := config.ExpandEnvWithDefaults("TEST_EXPAND_MULTI_UNSET:-first:-second")
 
-	// then: default value is everything after the first ":-"
 	assert.Equal(t, "first:-second", got)
 }
 
@@ -68,11 +62,8 @@ func Test_expandEnvWithDefaults_shouldReturnEnvValue_whenNoSeparator(t *testing.
 func Test_expandEnvWithDefaults_shouldReturnEmpty_whenNoSeparatorAndVarUnset(t *testing.T) {
 	t.Parallel()
 
-	// given: TEST_EXPAND_NODEFAULT_UNSET is not set in environment
-
-	// when
+	// given, when, then
 	got := config.ExpandEnvWithDefaults("TEST_EXPAND_NODEFAULT_UNSET")
 
-	// then
 	assert.Empty(t, got)
 }

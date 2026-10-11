@@ -26,9 +26,7 @@ type studyRecordIter interface {
 }
 
 // studyRecordBulkDeleter is the subset of *firestore.BulkWriter used for deletion.
-// Delete enqueues an item and Wait flushes/drains, returning per-job errors.
-// Returning only error/[]error (not the firestore job interface) keeps ireturn
-// satisfied while preserving testability.
+// It returns only error/[]error (not the firestore job type) to satisfy ireturn.
 type studyRecordBulkDeleter interface {
 	Delete(dr *firestore.DocumentRef) error
 	Wait() []error
@@ -158,11 +156,7 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 }
 
 // DeleteByWorkbookID removes every study record the user has for the given
-// workbook. Idempotent: succeeds with zero deletions when there are no records.
-// Deletions are issued in parallel via Firestore's BulkWriter. Because the
-// operation is not transactional, any iterator/enqueue failure as well as
-// per-delete failures are drained and aggregated via errors.Join so partial
-// failures are fully reported to the caller.
+// workbook. It is not transactional; partial failures are joined and returned.
 func (r *StudyRecordRepository) DeleteByWorkbookID(ctx context.Context, userID string, workbookID string) error {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
 	bw := &bulkWriterAdapter{bw: r.client.BulkWriter(ctx), jobs: nil}

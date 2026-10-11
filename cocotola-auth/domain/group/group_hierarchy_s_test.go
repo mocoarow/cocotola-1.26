@@ -114,7 +114,6 @@ func Test_GroupHierarchy_AddEdge_shouldReturnError_whenIndirectCycle(t *testing.
 	t.Parallel()
 
 	// given
-	// A -> B -> C, then try C -> A
 	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(fixtureHierGroupID1, fixtureHierGroupID2),
 		newEdge(fixtureHierGroupID2, fixtureHierGroupID3),
@@ -146,7 +145,6 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenMultipleBranches(t *testing.T
 	t.Parallel()
 
 	// given
-	// A -> B, A -> C
 	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(fixtureHierGroupID1, fixtureHierGroupID2),
 	})
@@ -163,7 +161,6 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_whenDiamondShape(t *testing.T) {
 	t.Parallel()
 
 	// given
-	// A -> B, A -> C, B -> D
 	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(fixtureHierGroupID1, fixtureHierGroupID2),
 		newEdge(fixtureHierGroupID1, fixtureHierGroupID3),
@@ -232,13 +229,12 @@ func Test_GroupHierarchy_AddEdge_shouldSucceed_afterCycleEdgeRemoved(t *testing.
 	t.Parallel()
 
 	// given
-	// A -> B -> C
 	h, _ := group.NewHierarchy(fixtureOrgID, []group.HierarchyEdge{
 		newEdge(fixtureHierGroupID1, fixtureHierGroupID2),
 		newEdge(fixtureHierGroupID2, fixtureHierGroupID3),
 	})
 
-	// when - remove A -> B, then C -> A should succeed
+	// when
 	h.RemoveEdge(fixtureHierGroupID1, fixtureHierGroupID2)
 	err := h.AddEdge(fixtureHierGroupID3, fixtureHierGroupID1)
 

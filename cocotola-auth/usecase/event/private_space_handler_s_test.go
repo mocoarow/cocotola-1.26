@@ -117,10 +117,8 @@ func Test_PrivateSpaceHandler_Handle_shouldNotGrantPublicSpacePolicies_whenEvent
 
 	// then
 	require.NoError(t, err)
-	// Verify that AddPolicyForUser was called exactly 7 times (list_spaces, view_space,
-	// create_workbook, view_workbook, update_workbook, delete_workbook, import_workbook).
-	// Public space policies must not be granted to regular users.
-	policyRepoMock.AssertNumberOfCalls(t, "AddPolicyForUser", 7)
+	const privateSpacePolicyCount = 7
+	policyRepoMock.AssertNumberOfCalls(t, "AddPolicyForUser", privateSpacePolicyCount)
 }
 
 func Test_PrivateSpaceHandler_Handle_shouldReturnError_whenSpaceCreationFails(t *testing.T) {

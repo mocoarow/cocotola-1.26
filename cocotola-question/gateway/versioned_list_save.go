@@ -11,24 +11,15 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave"
 )
 
-// versionedListEntity is the minimal contract every list-style aggregate
-// (ActiveQuestionList, OwnedWorkbookList, ...) implements: it holds a
-// monotonic version and exposes its current entries so the gateway can
-// build the persistence record.
+// versionedListEntity is the contract shared by list-style aggregates.
 type versionedListEntity[E any] interface {
 	Entries() []E
 	Version() int
 	SetVersion(int)
 }
 
-// saveVersionedList centralizes the optimistic-locking save flow shared by
-// active_question_list and owned_workbook_list. It converts the aggregate's
-// version-bumped entries into a record, hands it to firestoresave, and maps
-// the generic "not found" error onto the caller-specified domain error.
-//
-// The two list repositories used to inline this almost identical block; this
-// helper exists so adding a new versioned-list aggregate is a one-liner and
-// the lint check stays happy.
+// saveVersionedList is the optimistic-locking save shared by list repositories;
+// it maps libversioned.ErrNotFound to notFoundErr.
 func saveVersionedList[Entity versionedListEntity[E], E any, Record libversioned.Record](
 	ctx context.Context,
 	client *firestore.Client,

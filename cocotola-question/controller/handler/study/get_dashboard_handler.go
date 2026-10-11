@@ -16,11 +16,7 @@ import (
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// defaultDashboardDays is the contribution-graph window applied when the
-// caller does not supply a `days` query parameter. It is a handler-level
-// convention (HTTP default) rather than a domain invariant, so it lives
-// here instead of in studyservice — unlike the min/max bounds which come
-// from the service-layer constants below.
+// defaultDashboardDays is an HTTP default, not a domain invariant, so it lives here.
 const defaultDashboardDays = 365
 
 // GetDashboardUsecase defines the use case method required by the

@@ -32,11 +32,8 @@ type ContentParser interface {
 // --- word_fill ---
 
 // WordFillContent is the content of a word_fill question.
-//
-// Explanation is the legacy single explanation (kept for backward
-// compatibility). Explanation1 is shown while the question is presented and
-// Explanation2 when the answer is revealed; both are used to carry source
-// attribution / licensing for imported sentence data.
+// Explanation is legacy; Explanation1 is shown with the question and Explanation2 with the answer
+// (both carry attribution/licensing for imported sentences).
 type WordFillContent struct {
 	Source             TextWithLang
 	Target             TextWithLang

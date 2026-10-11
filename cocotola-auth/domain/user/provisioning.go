@@ -12,11 +12,8 @@ type Saver interface {
 	Save(ctx context.Context, user *AppUser) error
 }
 
-// Provision generates a fresh UUIDv7 ID, constructs an AppUser via the domain
-// factory (which enforces invariants), and persists it via Saver. This is the
-// single provisioning path shared by all callers (create-user command, supabase
-// exchange linking, cocotola-init bootstrap) so that no code path can bypass
-// aggregate invariants.
+// Provision creates and persists a new AppUser.
+// It is the single provisioning path so no caller can bypass aggregate invariants.
 func Provision(
 	ctx context.Context,
 	saver Saver,

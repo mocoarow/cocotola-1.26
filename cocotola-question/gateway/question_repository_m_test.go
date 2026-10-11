@@ -111,11 +111,10 @@ func Test_QuestionRepository_Save_shouldReturnConcurrentModification_whenVersion
 	q := newQuestion(t, workbookID, 0)
 	require.NoError(t, repo.Save(ctx, q))
 
-	// Reload, then a stale aggregate (still version 1) tries to save after another update.
 	stale, err := repo.FindByID(ctx, workbookID, q.ID())
 	require.NoError(t, err)
 	require.NoError(t, q.Edit(contentjson.Parser{}, fixtureWordFillContentForGateway, nil, 9, time.Now()))
-	require.NoError(t, repo.Save(ctx, q)) // q is now version 2; stale still at 1
+	require.NoError(t, repo.Save(ctx, q))
 
 	require.NoError(t, stale.Edit(contentjson.Parser{}, fixtureWordFillContentForGateway, nil, 99, time.Now()))
 

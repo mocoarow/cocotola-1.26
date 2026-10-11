@@ -94,9 +94,7 @@ func Test_OwnedWorkbookListRepository_Save_shouldReturnConcurrentModification_wh
 	list1, _ := domain.NewOwnedWorkbookList(ownerID, []string{"wb-1"})
 	require.NoError(t, repo.Save(ctx, list1))
 
-	// Simulate stale version: create a list with version 0 (stale).
 	staleList, _ := domain.NewOwnedWorkbookList(ownerID, []string{"wb-1", "wb-2"})
-	// staleList has version 0, but DB has version 1.
 
 	// when
 	err := repo.Save(ctx, staleList)
@@ -121,7 +119,6 @@ func Test_OwnedWorkbookListRepository_Save_shouldReturnErrOwnedWorkbookListNotFo
 	loaded, err := repo.FindByOwnerID(ctx, ownerID)
 	require.NoError(t, err)
 
-	// delete the underlying document directly via the firestore client
 	_, err = client.Collection("users").Doc(ownerID).Delete(ctx)
 	require.NoError(t, err)
 

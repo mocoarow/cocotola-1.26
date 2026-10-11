@@ -12,22 +12,9 @@ import (
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
-// replaceRecords deletes existing records matching the where clause and inserts
-// new records, all within a single transaction.
-//
-// Concurrency:
-//   - The SELECT acquires `FOR UPDATE` locks so concurrent transactions modifying
-//     the same key set are serialized; the second transaction blocks until the
-//     first commits, then sees the committed state.
-//   - The INSERT uses `ON CONFLICT DO NOTHING` so that any leftover duplicate
-//     primary keys (e.g. created by a concurrent re-insert that committed
-//     between this transaction's DELETE and INSERT) do not cause a unique-key
-//     violation; the existing row is kept and the next save will reconcile.
-//
-// Without these, the delete-then-insert pattern races under concurrent same-key
-// writes: two transactions can both read the same snapshot, both delete the
-// same rows, and then collide on INSERT once one of them commits before the
-// other reaches its INSERT statement.
+// replaceRecords deletes matching records and inserts newRecords in one transaction.
+// FOR UPDATE serializes concurrent same-key writers; ON CONFLICT DO NOTHING absorbs
+// a row re-inserted concurrently between DELETE and INSERT (the next save reconciles).
 func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string, whereArg any, newRecords []R, label string) error {
 	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		lockClause := clause.Locking{

@@ -11,16 +11,12 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
-// studyWorkbookAction is the cocotola-question action string for studying a
-// workbook. cocotola-auth's domain has no constructor for it (the action lives
-// in cocotola-question), but Casbin stores actions as opaque strings, so the
-// seeded bootstrap policy uses the same literal that cocotola-question grants.
+// studyWorkbookAction must match the literal cocotola-question grants;
+// cocotola-auth's domain has no constructor for it.
 const studyWorkbookAction = "study_workbook"
 
-// WorkbookPolicyEnsurer grants the bootstrap SystemAppUserID the per-workbook
-// RBAC policies required to manage a workbook's questions. It writes Casbin
-// policies directly to the shared auth database, mirroring the per-user grants
-// cocotola-question performs when it creates a workbook.
+// WorkbookPolicyEnsurer writes SystemAppUserID's per-workbook Casbin policies
+// directly to the auth database, mirroring cocotola-question's grants.
 type WorkbookPolicyEnsurer struct {
 	rbacRepo *gateway.RBACRepository
 }

@@ -105,7 +105,6 @@ func Test_WorkbookRepository_Save_shouldReturnConcurrentModification_whenVersion
 	wb := newWorkbook(t, id, "space-4", "owner-4", "org-4")
 	require.NoError(t, repo.Save(ctx, wb))
 
-	// stale aggregate still at version 0
 	stale := newWorkbook(t, id, "space-4", "owner-4", "org-4")
 
 	// when
@@ -129,7 +128,6 @@ func Test_WorkbookRepository_Save_shouldReturnErrWorkbookNotFound_whenDocWasDele
 	loaded, err := repo.FindByID(ctx, id)
 	require.NoError(t, err)
 
-	// delete the underlying document directly
 	_, err = client.Collection("workbooks").Doc(id).Delete(ctx)
 	require.NoError(t, err)
 

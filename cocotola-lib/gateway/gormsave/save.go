@@ -12,16 +12,11 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
-// VersionColumn is the database column name used by SaveVersioned to perform
-// the optimistic-lock compare-and-swap. All tables managed by this helper must
-// use the same column name for the version field.
+// VersionColumn is the version column name every table saved by SaveVersioned must use.
 const VersionColumn = "version"
 
-// columnNamePattern validates SQL identifier names that callers pass through
-// pk and updates. Keys are concatenated into raw SQL ("col = ?") and used as
-// GORM Updates map keys; allowing arbitrary strings would expose SQL injection
-// when callers forward untrusted input. We accept the canonical unquoted
-// identifier form (letter or underscore, then letters/digits/underscores).
+// columnNamePattern guards against SQL injection: PK/Updates keys are
+// concatenated into raw SQL.
 var columnNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func validateColumnNames(entityName string, m map[string]any) error {
@@ -42,66 +37,24 @@ func hasNonVersionColumn(m map[string]any) bool {
 	return false
 }
 
-// SaveArgs bundles the arguments to SaveVersioned. R is the persistence record
-// type (typically a pointer to a GORM-mapped struct) constrained by
-// versioned.Record so the helper can verify the record's version without
-// reflection.
+// SaveArgs bundles the arguments to SaveVersioned.
 type SaveArgs[R versioned.Record] struct {
-	// DB is the GORM session used for the insert/update.
-	DB *gorm.DB
-	// Entity is the aggregate whose version drives the CAS.
+	DB     *gorm.DB
 	Entity versioned.Entity
-	// Record is the row to insert (entity.Version()==0) or whose values to set
-	// on update (entity.Version()>0). The caller must set Record.GetVersion()
-	// to Entity.Version()+1 before calling SaveVersioned.
+	// Record must already carry version Entity.Version()+1.
 	Record R
-	// PK is the primary-key columns used in the WHERE clause on update. Must
-	// be non-empty; keys must match [A-Za-z_][A-Za-z0-9_]*.
-	PK map[string]any
-	// Updates is the column set to write on update. Must contain at least one
-	// column other than VersionColumn on the update path (ignored on insert);
-	// keys must match [A-Za-z_][A-Za-z0-9_]*.
-	// The helper appends VersionColumn=next-version, overriding any version
-	// key the caller may have included.
+	PK     map[string]any
+	// Updates is used only on update; the version column is always overridden.
 	Updates map[string]any
-	// EntityName is interpolated into error messages (e.g. "app user").
+	// EntityName is used only in error messages.
 	EntityName string
-	// OmitOnInsert lists columns to exclude on the insert path (forwarded to
-	// GORM .Omit). Ignored on the update path.
+	// OmitOnInsert is forwarded to GORM Omit on insert only.
 	OmitOnInsert []string
 }
 
-// SaveVersioned persists a versioned aggregate using GORM with optimistic
-// concurrency control.
-//
-// When Entity.Version() == 0 the record is inserted. When Entity.Version() > 0
-// the row identified by PK is updated, with WHERE clauses on each PK column
-// AND the current version. Updates contains the columns to set and must
-// include a column other than VersionColumn, so a forgotten column set cannot
-// silently bump only the version; the helper adds VersionColumn =
-// Entity.Version()+1 to the update set, overriding any version key the caller
-// may have included.
-//
-// On a successful update with zero affected rows the helper distinguishes
-// between two cases by re-querying with the PK only: if no row exists it
-// returns versioned.ErrNotFound; otherwise the row's version no longer
-// matches and it returns versioned.ErrConcurrentModification. Callers should
-// translate ErrNotFound into their domain-specific not-found error and treat
-// ErrConcurrentModification as a CAS miss to reload and retry.
-//
-// The caller MUST set the record's version to Entity.Version()+1 before
-// calling this helper. The helper verifies this via the Record interface and
-// returns an error if it does not match; this guards against a forgotten
-// version assignment silently writing a stale version on the insert path. The
-// helper does not mutate fields on the supplied record. On any successful
-// save the helper calls Entity.SetVersion with the new version.
-//
-// PK and Updates keys must be SQL identifiers matching [A-Za-z_][A-Za-z0-9_]*.
-// They are concatenated into raw SQL fragments and used as GORM Updates map
-// keys; the helper rejects keys that do not match this pattern to prevent
-// injection. Values are always passed as bound parameters. WHERE clauses are
-// emitted in lexicographic order of PK keys so generated SQL is stable across
-// runs.
+// SaveVersioned inserts when Entity.Version() is 0, otherwise updates the row
+// matching PK and the current version (optimistic lock). Updates must contain
+// a non-version column so a forgotten column set cannot bump only the version.
 func SaveVersioned[R versioned.Record](ctx context.Context, args SaveArgs[R]) error {
 	if len(args.PK) == 0 {
 		return fmt.Errorf("save %s: pk must not be empty", args.EntityName)
@@ -163,10 +116,8 @@ func update[R versioned.Record](ctx context.Context, args SaveArgs[R], nextVersi
 	return nil
 }
 
-// classifyCasMiss disambiguates a 0-RowsAffected update by re-querying with
-// the primary key only. If no row exists it returns versioned.ErrNotFound;
-// otherwise the version column did not match and it returns
-// versioned.ErrConcurrentModification.
+// classifyCasMiss tells a deleted row from a version mismatch after a
+// 0-RowsAffected update.
 func classifyCasMiss[R versioned.Record](ctx context.Context, args SaveArgs[R], pkCols []string) error {
 	var count int64
 	session := args.DB.WithContext(ctx).Model(args.Record)

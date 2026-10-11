@@ -205,8 +205,7 @@ func Test_AppUserRepository_Save_shouldReturnErrAppUserNotFound_whenRowWasDelete
 
 func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionMismatches(t *testing.T) {
 	t.Parallel()
-	// given: persist a user and load two independent in-memory copies of the same
-	// aggregate, simulating two concurrent transactions each holding its own snapshot.
+	// given
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
@@ -226,18 +225,16 @@ func Test_AppUserRepository_Save_shouldReturnConcurrentModification_whenVersionM
 	secondCopy, err := repo.FindByID(ctx, insertedID)
 	require.NoError(t, err)
 
-	// when: the first transaction commits its update (bumping the stored version),
-	// then the second transaction — still holding the stale version — tries to save.
+	// when
 	firstCopy.Disable()
 	require.NoError(t, repo.Save(ctx, firstCopy))
 
 	secondCopy.Enable()
 	err = repo.Save(ctx, secondCopy)
 
-	// then: the CAS must fail and the caller must be told to reload.
+	// then
 	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
 
-	// And the row must reflect the first commit, not the stale second save.
 	var afterUpdate gateway.AppUserRecordForTest
 	require.NoError(t, tx.Where("id = ?", inserted.ID).First(&afterUpdate).Error)
 	assert.False(t, afterUpdate.Enabled)

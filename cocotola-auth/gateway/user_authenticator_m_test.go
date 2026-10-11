@@ -133,7 +133,6 @@ func Test_UserAuthenticator_Authenticate_shouldReturnErrUnauthenticated_whenUser
 
 	rbacRepo, err := gateway.NewRBACRepository(testDB)
 	require.NoError(t, err)
-	// "system_admin" is matched bare by IsLoginDenied — no org prefix.
 	loginDeniedGroup := mustGroup(t, "system_admin")
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, loginDeniedGroup))
 
@@ -186,7 +185,6 @@ func Test_UserAuthenticator_Authenticate_shouldReturnErrUnauthenticated_whenUser
 
 	rbacRepo, err := gateway.NewRBACRepository(testDB)
 	require.NoError(t, err)
-	// "system_owner" is matched bare by IsLoginDenied — no org prefix.
 	ownerGroup := mustGroup(t, "system_owner")
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, ownerGroup))
 

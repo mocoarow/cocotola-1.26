@@ -14,10 +14,7 @@ type WhitelistEntry struct {
 	CreatedAt time.Time
 }
 
-// Whitelist is an aggregate that manages a set of token IDs for a single user,
-// enforcing the "keep at most maxSize tokens per user" invariant.
-// It is used by SessionTokenWhitelist, RefreshTokenWhitelist, and AccessTokenWhitelist
-// which share the same eviction logic.
+// Whitelist is an aggregate keeping at most maxSize token IDs for a single user.
 type Whitelist struct {
 	userID  domain.AppUserID
 	entries []WhitelistEntry

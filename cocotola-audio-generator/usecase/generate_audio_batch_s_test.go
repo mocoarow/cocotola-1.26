@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -138,7 +139,7 @@ func Test_GenerateAudioBatch_shouldCallReclaimStale_whenStaleAfterIsConfigured(t
 
 	// given
 	cfg := defaultBatchConfig()
-	cfg.StaleAfter = 15 * 60 * 1_000_000_000 // 15 minutes in nanoseconds
+	cfg.StaleAfter = 15 * time.Minute
 	api := NewMockQuestionAPI(t)
 	api.EXPECT().ReclaimStale(ctx, cfg.StaleAfter, cfg.MaxPerRun).Return(2, nil)
 	api.EXPECT().ListPending(ctx, mock.Anything).Return(nil, nil)
@@ -159,7 +160,7 @@ func Test_GenerateAudioBatch_shouldContinueProcessing_whenReclaimStaleFails(t *t
 
 	// given
 	cfg := defaultBatchConfig()
-	cfg.StaleAfter = 15 * 60 * 1_000_000_000
+	cfg.StaleAfter = 15 * time.Minute
 	api := NewMockQuestionAPI(t)
 	api.EXPECT().ReclaimStale(ctx, cfg.StaleAfter, cfg.MaxPerRun).Return(0, errors.New("network down"))
 	api.EXPECT().ListPending(ctx, mock.Anything).Return(nil, nil)

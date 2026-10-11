@@ -34,12 +34,7 @@ type reclaimStaleResponse struct {
 	Reclaimed int `json:"reclaimed"`
 }
 
-// writeJSON is invoked from the test-server handler, i.e. a goroutine
-// other than the one running the test function. t.Fatal/Fatalf would only
-// call runtime.Goexit on the handler goroutine and leave the test body
-// blocked on an empty HTTP response; t.Errorf is goroutine-safe and the
-// early return prevents the encoder from writing partial output after
-// the failure is recorded.
+// writeJSON runs on the handler goroutine, so it must use t.Errorf, not t.Fatal.
 func writeJSON(t *testing.T, w http.ResponseWriter, body any) {
 	t.Helper()
 	w.Header().Set("Content-Type", "application/json")

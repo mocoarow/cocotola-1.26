@@ -39,21 +39,18 @@ func run() (int, error) {
 
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-main"))
 
-	// init log
 	shutdownLog, err := libgateway.InitLog(ctx, cfg.Log, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init log: %w", err)
 	}
 	defer shutdownLog()
 
-	// init tracer
 	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init trace: %w", err)
 	}
 	defer shutdownTrace()
 
-	// init gin
 	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init router: %w", err)
@@ -98,7 +95,6 @@ func run() (int, error) {
 	}
 	defer questionCleanup()
 
-	// run
 	readHeaderTimeout := time.Duration(cfg.Server.ReadHeaderTimeoutSec) * time.Second
 	shutdownTime := time.Duration(cfg.Server.Shutdown.ShutdownTimeSec) * time.Second
 	result := libprocess.Run(ctx,

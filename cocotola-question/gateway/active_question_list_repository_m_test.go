@@ -73,7 +73,6 @@ func Test_ActiveQuestionListRepository_Save_shouldReturnConcurrentModification_w
 	require.NoError(t, err)
 	require.NoError(t, repo.Save(ctx, first))
 
-	// stale aggregate that still believes the doc is at version 0
 	stale, err := domain.NewActiveQuestionList(workbookID, []string{"q-1", "q-2"})
 	require.NoError(t, err)
 
@@ -100,7 +99,6 @@ func Test_ActiveQuestionListRepository_Save_shouldReturnErrActiveQuestionListNot
 	loaded, err := repo.FindByWorkbookID(ctx, workbookID)
 	require.NoError(t, err)
 
-	// delete the underlying document directly via the firestore client
 	_, err = client.Collection(activeQuestionListsCollectionForTest).Doc(workbookID).Delete(ctx)
 	require.NoError(t, err)
 

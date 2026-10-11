@@ -36,12 +36,7 @@ func InitWorkbookRouter(
 }
 
 // InitInternalWorkbookRouter mounts workbook CRUD endpoints on the internal
-// parent router (which is expected to be protected by X-Service-Api-Key).
-// The handler funcs are shared with the public router; the only difference is
-// that operatorID/organizationID are populated from the API-key middleware.
-//
-// The list endpoint is included so that batch jobs (e.g. cocotola-init seeding)
-// can perform idempotency checks before creating workbooks.
+// parent router (protected by X-Service-Api-Key).
 func InitInternalWorkbookRouter(
 	createHandler *CreateWorkbookHandler,
 	listHandler *ListWorkbooksHandler,

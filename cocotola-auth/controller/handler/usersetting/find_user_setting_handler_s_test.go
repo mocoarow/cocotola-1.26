@@ -82,10 +82,6 @@ func Test_FindUserSettingHandler_shouldReturnDefaults_whenSettingNotFound(t *tes
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 
-	// Pin every defaulted field here so the "internal user-setting GET
-	// returns sensible defaults when no row exists" contract has a single
-	// canonical assertion. Any drift between domain defaults and the
-	// values surfaced to the internal caller breaks this test.
 	jsonObj := parseJSON(t, respBytes)
 
 	maxWbExpr := parseExpr(t, "$.maxWorkbooks")

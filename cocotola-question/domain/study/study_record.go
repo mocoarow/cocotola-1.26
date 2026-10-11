@@ -69,11 +69,8 @@ func (r *Record) RecordCorrect(now time.Time) {
 	r.totalCorrect++
 }
 
-// IncorrectRetryDelay is how long the SRS waits before re-presenting a
-// question the user just got wrong. It's intentionally short — wrong answers
-// are "not yet mastered" and should resurface in the same study session (or
-// the next time the user re-opens the workbook), unlike correctly-answered
-// questions whose next-due grows on the standard SRS curve.
+// IncorrectRetryDelay is short on purpose so a wrong answer resurfaces in the
+// same study session.
 const IncorrectRetryDelay = 5 * time.Minute
 
 // RecordIncorrect records an incorrect answer, resets consecutive correct count,

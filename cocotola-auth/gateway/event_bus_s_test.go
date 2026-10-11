@@ -121,18 +121,17 @@ func Test_EventBus_shouldDrainEvents_whenContextCanceled(t *testing.T) {
 		return nil
 	})
 
-	// publish events before starting
 	bus.Publish(domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "a", time.Now()))
 	bus.Publish(domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "b", time.Now()))
 
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // cancel immediately
+	cancel()
 
 	// when
 	runProcess := bus.Start(ctx)
 	_ = runProcess()
 
-	// then - events in buffer should be drained
+	// then
 	mu.Lock()
 	assert.Equal(t, 2, count)
 	mu.Unlock()

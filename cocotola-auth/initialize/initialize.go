@@ -51,7 +51,6 @@ type InitResult struct {
 // It registers all auth-related routes under the given parent router group and returns
 // an InitResult containing shared resources for use by other modules.
 func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig config.AuthConfig) (*InitResult, error) {
-	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(authConfig.SigningKey),
 		jwt.SigningMethodHS256,
@@ -126,11 +125,9 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 		eventBus,
 	)
 
-	// controller layer
 	api := parent.Group("api")
 	v1 := api.Group("v1")
 
-	// health check
 	healthRepo := gateway.NewHealthRepository(db)
 	checkHandler := healthhandler.NewCheckHandler(healthRepo)
 	healthhandler.InitRouter(checkHandler, v1)
@@ -150,7 +147,6 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	supabaseExchangeHandler := authhandler.NewSupabaseExchangeHandler(authUsecase)
 	authhandler.InitInternalAuthRouter(supabaseExchangeHandler, internalV1)
 
-	// shared handlers
 	authzChecker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
 	findOrgHandler := orghandler.NewFindOrganizationHandler(orgRepo)
 	authzCheckHandler := authzhandler.NewCheckHandler(authzChecker)
@@ -163,19 +159,14 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	authzhandler.InitInternalAuthzRouter(authzCheckHandler, addPolicyHandler, internalAuthV1)
 	usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
 
-	// external auth routes
 	authV1 := v1.Group("auth")
 
-	// external user-setting routes (authenticated).
-	// NOTE: also wired in cocotola-auth/main.go for the standalone-deployment path.
 	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
 
-	// group usecase + controller
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
 	grouphandler.InitGroupRouter(createGroupHandler, authV1, authMiddleware)
 
-	// space usecase + controller
 	spaceCommand := spaceusecase.NewCommand(spaceRepo, spaceRepo, orgRepo, eventBus, authzChecker)
 	createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
 	listSpacesHandler := spacehandler.NewListSpacesHandler(spaceCommand)
@@ -185,7 +176,6 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	findSpaceHandler := spacehandler.NewFindSpaceHandler(spaceCommand)
 	spacehandler.InitInternalSpaceRouter(findSpaceHandler, internalAuthV1)
 
-	// user usecase + controller
 	userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
 	createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 	userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)

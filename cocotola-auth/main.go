@@ -53,21 +53,18 @@ func run() (int, error) {
 	}
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-main"))
 
-	// init log
 	shutdownlog, err := libgateway.InitLog(ctx, cfg.Log, domain.AppName)
 	if err != nil {
 		return 0, fmt.Errorf("init log: %w", err)
 	}
 	defer shutdownlog()
 
-	// init tracer
 	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, domain.AppName)
 	if err != nil {
 		return 0, fmt.Errorf("init trace: %w", err)
 	}
 	defer shutdownTrace()
 
-	// init db
 	dbConn, shutdownDB, err := libgateway.InitDB(ctx, cfg.DB, cfg.Log, domain.AppName)
 	if err != nil {
 		return 1, fmt.Errorf("init db: %w", err)
@@ -79,7 +76,6 @@ func run() (int, error) {
 		return 1, fmt.Errorf("init router: %w", err)
 	}
 
-	// gateway layer
 	jwtManager := gateway.NewJWTManager(
 		[]byte(cfg.Auth.SigningKey),
 		jwt.SigningMethodHS256,
@@ -156,13 +152,10 @@ func run() (int, error) {
 		eventBus,
 	)
 
-	// api
 	api := router.Group("api")
 
-	// v1
 	v1 := api.Group("v1")
 
-	// health check
 	{
 		healthRepo := gateway.NewHealthRepository(dbConn.DB)
 		checkHandler := healthhandler.NewCheckHandler(healthRepo)
@@ -203,8 +196,6 @@ func run() (int, error) {
 
 	authV1 := v1.Group("auth")
 
-	// user-setting (external, auth-protected).
-	// NOTE: also wired in cocotola-auth/initialize/initialize.go for the cocotola-app path.
 	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
 
 	// organization lookup (external, auth-protected)
@@ -217,14 +208,12 @@ func run() (int, error) {
 		authzhandler.InitAuthzRouter(authzCheckHandler, authV1, authMiddleware)
 	}
 
-	// group
 	{
 		groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 		createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)
 		grouphandler.InitGroupRouter(createGroupHandler, authV1, authMiddleware)
 	}
 
-	// space
 	{
 		spaceCommand := spaceusecase.NewCommand(spaceRepo, spaceRepo, orgRepo, eventBus, authzChecker)
 		createSpaceHandler := spacehandler.NewCreateSpaceHandler(spaceCommand)
@@ -235,14 +224,12 @@ func run() (int, error) {
 		spacehandler.InitInternalSpaceRouter(findSpaceHandler, internalAuthV1)
 	}
 
-	// user
 	{
 		userCommand := userusecase.NewCommand(appUserRepo, orgRepo, eventBus, appUserRepo, bcryptHasher, authzChecker)
 		createUserHandler := userhandler.NewCreateUserHandler(userCommand)
 		userhandler.InitUserRouter(createUserHandler, authV1, authMiddleware)
 	}
 
-	// run
 	readHeaderTimeout := time.Duration(cfg.Server.ReadHeaderTimeoutSec) * time.Second
 	shutdownTime := time.Duration(cfg.Server.Shutdown.ShutdownTimeSec) * time.Second
 	result := libprocess.Run(ctx,
