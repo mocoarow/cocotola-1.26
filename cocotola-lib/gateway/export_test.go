@@ -27,6 +27,9 @@ func NewLevelFilterHandlerForTest(handler slog.Handler, minLevel slog.Level) slo
 	}
 }
 
+// WatchSignal exports watchSignal for testing.
+var WatchSignal = watchSignal
+
 // NewShutdownCtxForTest exports newShutdownCtx for testing.
 func NewShutdownCtxForTest(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	return newShutdownCtx(ctx, timeout)
