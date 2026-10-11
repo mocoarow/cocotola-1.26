@@ -5,7 +5,6 @@ go_library(
     name = "question",
     srcs = [
         "audio.go",
-        "choice_selector.go",
         "content.go",
         "lang.go",
         "question.go",
@@ -20,7 +19,6 @@ smart_go_test(
     name = "question_test",
     srcs = [
         "audio_s_test.go",
-        "choice_selector_s_test.go",
         "content_s_test.go",
         "lang_s_test.go",
         "question_s_test.go",
