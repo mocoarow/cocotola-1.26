@@ -214,6 +214,27 @@ func Test_NewAudioGeneration_shouldReturnError_whenLastErrorTooLong(t *testing.T
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
+func Test_NewAudioGeneration_shouldReturnAudioGeneration_whenMultibyteLastErrorIsAtMaxRunes(t *testing.T) {
+	t.Parallel()
+
+	// given
+	lastError := strings.Repeat("あ", 500)
+
+	// when
+	a, err := question.NewAudioGeneration(
+		question.AudioGenerationStatusFailed(),
+		"hash",
+		nil,
+		time.Now(),
+		1,
+		lastError,
+	)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, lastError, a.LastError())
+}
+
 func Test_AudioGeneration_Refs_shouldReturnDefensiveCopy(t *testing.T) {
 	t.Parallel()
 

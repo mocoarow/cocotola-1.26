@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -221,4 +222,24 @@ func Test_QuestionRepository_FindStaleGenerating_shouldReturnNil_whenLimitIsZero
 	// then
 	require.NoError(t, err)
 	assert.Nil(t, got)
+}
+
+func Test_QuestionRepository_FindByID_shouldReturnTruncatedLastError_whenFailedWithLongMultibyteReason(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	workbookID := "test-wb-fail-" + uuid.NewString()
+	q := newQuestionWithAudio(t, repo, workbookID, domainquestion.AudioGenerationStatusGenerating(), fixtureAudioInputHashA, time.Now())
+	require.NoError(t, q.FailAudio(fixtureAudioInputHashA, strings.Repeat("あ", 600), time.Now()))
+	require.NoError(t, repo.Save(ctx, q))
+
+	// when
+	loaded, err := repo.FindByID(ctx, workbookID, q.ID())
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, strings.Repeat("あ", 500), loaded.AudioGeneration().LastError())
 }
