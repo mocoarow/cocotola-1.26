@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+// MySQL defaults exported for testing.
+const (
+	MySQLMaxAllowedPacket = mysqlMaxAllowedPacket
+	MySQLDefaultCharset   = mysqlDefaultCharset
+	MySQLDefaultCollation = mysqlDefaultCollation
+)
+
 // StringToLogLevel exports stringToLogLevel for testing.
 var StringToLogLevel = stringToLogLevel
 

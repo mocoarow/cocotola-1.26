@@ -58,6 +58,7 @@ go_library(
 smart_go_test(
     name = "gateway_test",
     srcs = [
+        "db_mysql_s_test.go",
         "db_postgres_s_test.go",
         "db_s_test.go",
         "export_test.go",
@@ -69,6 +70,7 @@ smart_go_test(
     ],
     embed = [":gateway"],
     deps = [
+        "@com_github_go_sql_driver_mysql//:mysql",
         "@com_github_jackc_pgx_v5//pgconn",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
