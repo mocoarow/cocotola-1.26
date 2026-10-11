@@ -33,6 +33,15 @@ func validateColumnNames(entityName string, m map[string]any) error {
 	return nil
 }
 
+func hasNonVersionColumn(m map[string]any) bool {
+	for col := range m {
+		if col != VersionColumn {
+			return true
+		}
+	}
+	return false
+}
+
 // SaveArgs bundles the arguments to SaveVersioned. R is the persistence record
 // type (typically a pointer to a GORM-mapped struct) constrained by
 // versioned.Record so the helper can verify the record's version without
@@ -49,9 +58,11 @@ type SaveArgs[R versioned.Record] struct {
 	// PK is the primary-key columns used in the WHERE clause on update. Must
 	// be non-empty; keys must match [A-Za-z_][A-Za-z0-9_]*.
 	PK map[string]any
-	// Updates is the column set to write on update. Keys must match
-	// [A-Za-z_][A-Za-z0-9_]*. The helper appends VersionColumn=next-version,
-	// overriding any version key the caller may have included.
+	// Updates is the column set to write on update. Must contain at least one
+	// column other than VersionColumn on the update path (ignored on insert);
+	// keys must match [A-Za-z_][A-Za-z0-9_]*.
+	// The helper appends VersionColumn=next-version, overriding any version
+	// key the caller may have included.
 	Updates map[string]any
 	// EntityName is interpolated into error messages (e.g. "app user").
 	EntityName string
@@ -65,9 +76,11 @@ type SaveArgs[R versioned.Record] struct {
 //
 // When Entity.Version() == 0 the record is inserted. When Entity.Version() > 0
 // the row identified by PK is updated, with WHERE clauses on each PK column
-// AND the current version. Updates contains the columns to set; the helper
-// adds VersionColumn = Entity.Version()+1 to the update set, overriding any
-// version key the caller may have included.
+// AND the current version. Updates contains the columns to set and must
+// include a column other than VersionColumn, so a forgotten column set cannot
+// silently bump only the version; the helper adds VersionColumn =
+// Entity.Version()+1 to the update set, overriding any version key the caller
+// may have included.
 //
 // On a successful update with zero affected rows the helper distinguishes
 // between two cases by re-querying with the PK only: if no row exists it
@@ -107,6 +120,9 @@ func SaveVersioned[R versioned.Record](ctx context.Context, args SaveArgs[R]) er
 
 	if args.Entity.Version() == 0 {
 		return insert(ctx, args, nextVersion)
+	}
+	if !hasNonVersionColumn(args.Updates) {
+		return fmt.Errorf("save %s: updates must contain a non-version column on update path", args.EntityName)
 	}
 	return update(ctx, args, nextVersion)
 }

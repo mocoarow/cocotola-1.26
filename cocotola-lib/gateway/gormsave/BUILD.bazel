@@ -24,5 +24,7 @@ smart_go_test(
         ":gormsave",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@io_gorm_gorm//:gorm",
+        "@io_gorm_gorm//utils/tests",
     ],
 )
