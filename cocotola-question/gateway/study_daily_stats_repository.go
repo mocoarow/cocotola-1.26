@@ -23,11 +23,8 @@ type studyDailyStatRecord struct {
 	LastUpdatedAt time.Time `firestore:"lastUpdatedAt"`
 }
 
-// StudyDailyStatsRepository persists per-day study activity buckets in
-// Firestore for the dashboard contribution graph, streak, and daily goal
-// features. Each document is keyed by the user-local YYYY-MM-DD date so a
-// user has at most ~365 docs/year, and IncrementToday relies on Firestore's
-// atomic Increment transform so concurrent answers don't lose writes.
+// StudyDailyStatsRepository persists per-day study activity buckets keyed by
+// the user-local YYYY-MM-DD date.
 type StudyDailyStatsRepository struct {
 	client *firestore.Client
 }
@@ -53,12 +50,7 @@ func (r *StudyDailyStatsRepository) IncrementToday(ctx context.Context, userID s
 	if !study.IsValidDateKey(dateKey) {
 		return fmt.Errorf("date key %q must be YYYY-MM-DD: %w", dateKey, domain.ErrInvalidArgument)
 	}
-	// The timezone arrives via the X-Local-Timezone HTTP header (user-controlled),
-	// so the boundary check below is mandatory: time.LoadLocation("") returns UTC
-	// silently, hence the explicit empty-check first; LoadLocation then rejects
-	// anything that is not a real IANA Time Zone Database entry ("foo",
-	// "Not/AZone", control bytes, ...). Without this guard arbitrary strings
-	// would be persisted to Firestore alongside legitimate counts.
+	// timezone is user-controlled; LoadLocation("") silently returns UTC.
 	if timezone == "" {
 		return fmt.Errorf("timezone is required: %w", domain.ErrInvalidArgument)
 	}

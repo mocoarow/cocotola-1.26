@@ -9,9 +9,7 @@ import (
 )
 
 // GetStudySummaryQuery returns the available review/new question counts for a
-// workbook without loading the question payloads themselves. This powers the
-// pre-study size picker so clients can render an informed dialog without
-// downloading every question.
+// workbook without loading the question payloads.
 type GetStudySummaryQuery struct {
 	studyRecordRepo studyRecordFinder
 	activeListRepo  activeQuestionListFinder

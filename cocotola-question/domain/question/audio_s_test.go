@@ -279,7 +279,7 @@ func Test_ComputeWordFillAudioInputHash_shouldBeDeterministic(t *testing.T) {
 
 	// then
 	assert.Equal(t, got1, got2)
-	assert.Len(t, got1, 64) // sha256 hex
+	assert.Len(t, got1, 64)
 }
 
 func Test_ComputeWordFillAudioInputHash_shouldChange_whenAnyFieldChanges(t *testing.T) {

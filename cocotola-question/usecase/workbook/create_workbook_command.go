@@ -161,10 +161,7 @@ func (c *CreateWorkbookCommand) loadOwnedListWithLimit(ctx context.Context, oper
 }
 
 // saveOwnedList adds the workbook to the owned list and persists it.
-// NOTE: eventual consistency -- if Save fails, the workbook exists but is not tracked
-// in the owned list. This is by design: OwnedWorkbookList and Workbook are separate
-// aggregates, so cross-aggregate consistency is eventual. A periodic reconciliation
-// process can detect and resolve orphaned workbooks.
+// A failure leaves an orphaned workbook by design (cross-aggregate eventual consistency).
 func (c *CreateWorkbookCommand) saveOwnedList(ctx context.Context, ownedList *domain.OwnedWorkbookList, workbookID, operatorID string, maxWorkbooks int) error {
 	if err := ownedList.Add(workbookID, maxWorkbooks); err != nil {
 		return fmt.Errorf("add to owned workbook list: %w", err)
@@ -181,10 +178,7 @@ func (c *CreateWorkbookCommand) saveOwnedList(ctx context.Context, ownedList *do
 }
 
 // grantWorkbookPolicies grants workbook-scoped permissions via RBAC.
-// NOTE: eventual consistency -- if a policy grant fails partway through, some policies
-// will exist and others will not. This is acceptable because cocotola-auth is a separate
-// service (cross-service consistency is eventual). A retry or reconciliation mechanism
-// can re-grant missing policies.
+// A partial failure leaves some policies granted (cross-service eventual consistency).
 func (c *CreateWorkbookCommand) grantWorkbookPolicies(ctx context.Context, organizationID, operatorID, workbookID string) error {
 	actions := []domain.Action{
 		domain.ActionViewWorkbook(),

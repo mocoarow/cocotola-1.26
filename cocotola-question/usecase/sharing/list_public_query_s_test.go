@@ -100,8 +100,7 @@ func Test_ListPublicQuery_shouldReturnError_whenLanguageFailsDomainValidation(t 
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: a value that passes service-layer len=2 but fails the domain
-	// regex (uppercase) — the query must reject it before hitting the finder.
+	// given: "JA" passes service-layer len=2 but fails the domain regex
 	finder := newMockpublicWorkbookFinder(t)
 	q := sharingusecase.NewListPublicQuery(finder)
 	input := &referenceservice.ListPublicInput{

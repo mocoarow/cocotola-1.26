@@ -38,9 +38,6 @@ func InitQuestionRouter(
 
 // InitInternalQuestionRouter mounts question CRUD endpoints on the internal
 // parent router (protected by X-Service-Api-Key).
-//
-// The list endpoint is included so that batch jobs (e.g. cocotola-init seeding)
-// can perform idempotency checks before adding questions.
 func InitInternalQuestionRouter(
 	addHandler *AddQuestionHandler,
 	listHandler *ListQuestionsHandler,

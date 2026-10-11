@@ -95,10 +95,7 @@ func (q *GetStudyQuestionsQuery) GetStudyQuestions(ctx context.Context, input *s
 	}, nil
 }
 
-// filterExcluded removes any entries in excludeIDs from activeIDs while
-// preserving order. Used for resume-session support: the client tracks
-// already-answered questions locally and sends them in excludeIds so the
-// server skips them on the next GetStudyQuestions call.
+// filterExcluded removes excludeIDs from activeIDs, preserving order.
 func filterExcluded(activeIDs, excludeIDs []string) []string {
 	if len(excludeIDs) == 0 {
 		return activeIDs
@@ -117,12 +114,7 @@ func filterExcluded(activeIDs, excludeIDs []string) []string {
 	return result
 }
 
-// classifyQuestionIDs splits the active question pool into "new" (no record)
-// and "due" (record exists and is past its NextDueAt) buckets. In practice
-// mode the schedule is ignored: every active question with a record is treated
-// as due so the user can keep solving even after the day's queue is exhausted,
-// regardless of whether the question was previously answered correctly or
-// incorrectly. Shared between GetStudyQuestionsQuery and GetStudySummaryQuery.
+// classifyQuestionIDs splits active IDs into due and new; practice ignores NextDueAt.
 func classifyQuestionIDs(activeIDs []string, studyRecords []domainstudy.Record, now time.Time, practice bool) (dueIDs, newIDs []string, reviewCount, newCount int) {
 	recordMap := make(map[string]int, len(studyRecords))
 	for i, r := range studyRecords {
@@ -196,10 +188,8 @@ func studyAudioFromQuestion(q *domainquestion.Question) *studyservice.QuestionIt
 	return out
 }
 
-// ReviewRatioNumerator and ReviewRatioDenominator define the fixed
-// review/new mix used by mixIDs when filling a study session. Exposed so
-// callers (e.g. the summary endpoint) can advertise the ratio to clients
-// without duplicating the constants.
+// ReviewRatioNumerator and ReviewRatioDenominator define the review/new mix
+// used by mixIDs; exported so the summary endpoint can advertise it.
 const (
 	ReviewRatioNumerator   = 9
 	ReviewRatioDenominator = 10

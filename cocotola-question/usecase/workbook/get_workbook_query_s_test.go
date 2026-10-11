@@ -34,7 +34,7 @@ func Test_GetWorkbookQuery_shouldReturnWorkbook_whenWorkbookIsPublic(t *testing.
 	// given
 	wbFinder := newMockworkbookFinder(t)
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newFixturePublicWorkbook(), nil)
-	authChecker := newMockauthorizationChecker(t) // no expectations: verifies IsAllowed is not called
+	authChecker := newMockauthorizationChecker(t)
 
 	q := workbookusecase.NewGetWorkbookQuery(wbFinder, authChecker)
 

@@ -52,7 +52,7 @@ func Test_GetQuestionQuery_shouldReturnQuestion_whenWorkbookIsPublic(t *testing.
 	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newPublicWorkbook(), nil)
 	questionFinder := newMockquestionFinder(t)
 	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(newFixtureQuestion(), nil)
-	authChecker := newMockauthorizationChecker(t) // no expectations: verifies IsAllowed is not called
+	authChecker := newMockauthorizationChecker(t)
 
 	q := questionusecase.NewGetQuestionQuery(questionFinder, wbFinder, authChecker)
 

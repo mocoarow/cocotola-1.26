@@ -17,10 +17,6 @@ const (
 var tagPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+:[a-zA-Z0-9_-]+$`)
 
 // Question is the aggregate root persisted by QuestionRepository.
-// It references the parent Workbook by workbookID.
-//
-// parsedWordFill caches the word_fill content parsed by validate(). nil for
-// non-word_fill questions or for aggregates produced via ReconstructQuestion.
 type Question struct {
 	id              string
 	workbookID      string
@@ -32,7 +28,8 @@ type Question struct {
 	createdAt       time.Time
 	updatedAt       time.Time
 	audioGeneration *AudioGeneration
-	parsedWordFill  *WordFillContent
+	// nil for non-word_fill types or aggregates from ReconstructQuestion.
+	parsedWordFill *WordFillContent
 }
 
 // NewQuestion creates a validated Question with version=0 (a new aggregate not yet saved).
@@ -219,10 +216,7 @@ func (q *Question) CreatedAt() time.Time { return q.createdAt }
 // UpdatedAt returns the last update timestamp.
 func (q *Question) UpdatedAt() time.Time { return q.updatedAt }
 
-// AudioGeneration returns the audio-generation aggregate (or nil when none is set).
-// The returned pointer references the same AudioGeneration as the aggregate; do
-// not mutate it (AudioGeneration's accessors return defensive copies of mutable
-// fields, so reads are safe).
+// AudioGeneration returns the shared audio-generation state (nil when unset); do not mutate it.
 func (q *Question) AudioGeneration() *AudioGeneration { return q.audioGeneration }
 
 // SetAudioGeneration replaces the audio-generation state.
@@ -230,12 +224,8 @@ func (q *Question) AudioGeneration() *AudioGeneration { return q.audioGeneration
 // question-edit usecase should use MarkAudioPending instead.
 func (q *Question) SetAudioGeneration(ag *AudioGeneration) { q.audioGeneration = ag }
 
-// MarkAudioPending sets the audio-generation state to pending for the given
-// inputHash. It is a no-op when the existing state already targets the same
-// inputHash so re-saves do not bump the queue position.
-//
-// Callers (usecase layer) are responsible for computing inputHash via
-// ComputeWordFillAudioInputHash on the question's current Content.
+// MarkAudioPending sets the audio-generation state to pending; a no-op for the
+// same inputHash so re-saves do not bump the queue position.
 func (q *Question) MarkAudioPending(inputHash string, now time.Time) {
 	if q.audioGeneration != nil && q.audioGeneration.inputHash == inputHash {
 		return
@@ -251,16 +241,7 @@ func (q *Question) MarkAudioPending(inputHash string, now time.Time) {
 }
 
 // ClaimAudio transitions the audio generation from pending to generating.
-//
-// Invariants enforced:
-//   - audioGeneration must exist and be in the pending state.
-//   - inputHash must match the queue entry's hash (the question may have been
-//     edited mid-flight, in which case a new pending entry was queued and the
-//     old hash no longer applies).
-//
-// Returns ErrAudioNotPending or ErrAudioInputHashMismatch on violation.
-// Callers persist the aggregate via Save which applies optimistic locking on
-// the question's version, providing the actual race protection.
+// Race protection comes from the optimistic lock in Save, not from this check.
 func (q *Question) ClaimAudio(inputHash string, now time.Time) error {
 	if q.audioGeneration == nil || !q.audioGeneration.status.IsPending() {
 		return domain.ErrAudioNotPending
@@ -279,14 +260,7 @@ func (q *Question) ClaimAudio(inputHash string, now time.Time) error {
 	return nil
 }
 
-// CompleteAudio transitions the audio generation from generating to ready and
-// stores the produced refs.
-//
-// Invariants enforced:
-//   - audioGeneration must exist and be in the generating state.
-//   - inputHash must match.
-//
-// Returns ErrAudioNotGenerating or ErrAudioInputHashMismatch on violation.
+// CompleteAudio transitions the audio generation from generating to ready.
 func (q *Question) CompleteAudio(inputHash string, refs map[string]AudioRef, now time.Time) error {
 	if q.audioGeneration == nil || q.audioGeneration.status.Value() != AudioGenerationStatusGenerating().Value() {
 		return domain.ErrAudioNotGenerating
@@ -306,12 +280,7 @@ func (q *Question) CompleteAudio(inputHash string, refs map[string]AudioRef, now
 }
 
 // FailAudio transitions the audio generation from generating to failed and
-// increments the failure counter so the next batch can apply backoff.
-//
-// reason is truncated to maxAudioLastErrorLength runes (not bytes) so
-// multi-byte UTF-8 characters are not split mid-codepoint.
-//
-// Invariants mirror CompleteAudio.
+// increments the failure counter used for backoff.
 func (q *Question) FailAudio(inputHash string, reason string, now time.Time) error {
 	if q.audioGeneration == nil || q.audioGeneration.status.Value() != AudioGenerationStatusGenerating().Value() {
 		return domain.ErrAudioNotGenerating
@@ -330,14 +299,8 @@ func (q *Question) FailAudio(inputHash string, reason string, now time.Time) err
 	return nil
 }
 
-// ReclaimStaleAudio transitions a stuck "generating" entry back to "pending"
-// when its updatedAt is older than now-staleAfter. Useful as a janitor sweep
-// before listing pending items so a crashed worker does not leave entries
-// frozen forever.
-//
-// Returns true when the state was reclaimed (the caller should persist the
-// aggregate). Returns false when the entry is not generating, not stale, or
-// audioGeneration is nil — the caller should skip persistence.
+// ReclaimStaleAudio moves a "generating" entry older than staleAfter back to
+// "pending" so a crashed worker does not freeze it; true means persist.
 func (q *Question) ReclaimStaleAudio(now time.Time, staleAfter time.Duration) bool {
 	if q.audioGeneration == nil {
 		return false

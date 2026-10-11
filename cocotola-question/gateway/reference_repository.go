@@ -43,12 +43,8 @@ func (r *ReferenceRepository) refsCol(userID string) *firestore.CollectionRef {
 	return r.client.Collection(usersCollection).Doc(userID).Collection(workbookRefsSubCol)
 }
 
-// Save persists a workbook reference. The document is keyed by the referenced
-// workbookID under the user's subcollection so the (userID, workbookID)
-// uniqueness invariant is enforced atomically by Firestore: a second Save for
-// the same pair fails with codes.AlreadyExists, which is mapped to
-// domain.ErrDuplicateReference. This avoids the read-then-write race that an
-// out-of-transaction duplicate-check query would have.
+// Save persists a workbook reference. Create on a workbookID-keyed doc enforces
+// uniqueness atomically, avoiding a read-then-write race.
 func (r *ReferenceRepository) Save(ctx context.Context, ref *domainreference.WorkbookReference) error {
 	docRef := r.refsCol(ref.UserID()).Doc(ref.WorkbookID())
 	record := referenceRecord{

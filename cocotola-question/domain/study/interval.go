@@ -10,10 +10,7 @@ func CalculateNextDue(consecutiveCorrect int, now time.Time) time.Time {
 	return now.AddDate(0, 0, days)
 }
 
-// intervalDays returns the number of days until the next review based on
-// consecutive correct answers. Uses a predefined table for counts 1-4
-// (1, 3, 7, 14 days), then doubles from the last table entry for higher
-// counts, capped at maxIntervalDays (180 days).
+// intervalDays uses the table for counts 1-4, then doubles, capped at maxIntervalDays.
 func intervalDays(consecutiveCorrect int) int {
 	// intervals maps consecutive correct count to next interval in days.
 	// For counts >= 5, the interval doubles from the previous one.

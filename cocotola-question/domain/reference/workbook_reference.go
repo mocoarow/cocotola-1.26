@@ -9,10 +9,7 @@ import (
 )
 
 // WorkbookReference represents a user's reference link to another workbook.
-// A reference is uniquely identified by (userID, workbookID); the persistence
-// layer keys the document by workbookID under the user's subcollection so the
-// uniqueness invariant is enforced by Firestore.Create rather than a TOCTOU
-// query.
+// Uniqueness of (userID, workbookID) is enforced by Firestore.Create on a doc keyed by workbookID.
 type WorkbookReference struct {
 	userID     string
 	workbookID string
@@ -51,10 +48,7 @@ func (r *WorkbookReference) validate() error {
 	return nil
 }
 
-// ID returns the reference identifier. Because a reference is uniquely
-// identified by (userID, workbookID) and persisted under a doc keyed by
-// workbookID, ID is the same value as WorkbookID and exists only to satisfy
-// callers that treat the reference as an opaque resource.
+// ID returns the reference identifier, which equals WorkbookID.
 func (r *WorkbookReference) ID() string { return r.workbookID }
 
 // UserID returns the referencing user ID.

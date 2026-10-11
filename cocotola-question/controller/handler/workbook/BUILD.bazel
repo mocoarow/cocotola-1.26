@@ -28,6 +28,7 @@ smart_go_test(
     srcs = [
         "create_workbook_handler_s_test.go",
         "helper_test.go",
+        "internal_router_s_test.go",
         "mocks_test.go",
     ],
     deps = [

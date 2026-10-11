@@ -25,15 +25,9 @@ type staleGeneratingAudioFinder interface {
 	FindStaleGenerating(ctx context.Context, staleBefore time.Time, limit int) ([]domainquestion.Question, error)
 }
 
-// AudioBatchCommand exposes the internal lifecycle operations driven by the
-// cocotola-audio-generator batch service: list pending, claim, complete, fail,
-// reclaim-stale.
-//
-// All transitions go through Question domain methods (which enforce state
-// invariants) and are persisted via Save (which applies optimistic locking on
-// the question's version). Concurrent batch instances racing for the same item
-// surface as ErrAudioConcurrentModification on the loser; callers should treat
-// it the same as ErrAudioNotPending — skip the item, retry next run.
+// AudioBatchCommand exposes the audio lifecycle operations driven by
+// cocotola-audio-generator. Racing batch instances lose with
+// ErrAudioConcurrentModification; callers skip and retry next run.
 type AudioBatchCommand struct {
 	finder  questionFinder
 	pending pendingAudioFinder
@@ -84,13 +78,6 @@ func (c *AudioBatchCommand) ListPendingAudio(ctx context.Context, input *questio
 }
 
 // ClaimAudio transitions a question's audio from pending to generating.
-//
-// Returns:
-//   - domain.ErrQuestionNotFound when the question does not exist.
-//   - domain.ErrAudioNotPending when the audio is not in pending state.
-//   - domain.ErrAudioInputHashMismatch when the input hash does not match.
-//   - domain.ErrAudioConcurrentModification when the optimistic-lock check
-//     fails (another writer modified the question between load and save).
 func (c *AudioBatchCommand) ClaimAudio(ctx context.Context, input *questionservice.ClaimAudioInput) error {
 	q, err := c.finder.FindByID(ctx, input.WorkbookID, input.QuestionID)
 	if err != nil {
@@ -146,13 +133,8 @@ func (c *AudioBatchCommand) FailAudio(ctx context.Context, input *questionservic
 	return nil
 }
 
-// ReclaimStaleAudio transitions questions stuck in generating beyond
-// staleAfter back to pending so they get re-queued. Concurrent reapers and
-// regular Claim calls are protected by optimistic locking — losers surface as
-// ErrAudioConcurrentModification and are silently skipped (the work is
-// idempotent).
-//
-// Returns the number of items successfully reclaimed.
+// ReclaimStaleAudio re-queues questions stuck in generating beyond staleAfter;
+// optimistic-lock losers are skipped because the work is idempotent.
 func (c *AudioBatchCommand) ReclaimStaleAudio(ctx context.Context, input *questionservice.ReclaimStaleAudioInput) (*questionservice.ReclaimStaleAudioOutput, error) {
 	now := c.config.Now()
 	staleBefore := now.Add(-input.StaleAfter)
@@ -187,13 +169,8 @@ func mapAudioSaveError(action string, err error) error {
 	return fmt.Errorf("%s: %w", action, err)
 }
 
-// logSkippedNonWordFill emits a structured warning for an item dropped from
-// the pending audio list because its question type does not drive TTS. Today
-// only word_fill drives TTS; the gateway's pending-status query is
-// type-agnostic, so a future "audio for multiple_choice" rollout could
-// backfill non-word_fill items here. Logging the skip surfaces that
-// backpressure to operators instead of letting the batch silently report
-// processed=0.
+// logSkippedNonWordFill warns because the pending query is type-agnostic and a
+// silent skip would hide non-word_fill backlog behind processed=0.
 func logSkippedNonWordFill(ctx context.Context, q *domainquestion.Question) {
 	slog.WarnContext(ctx, "skipping non-word_fill question in pending audio list",
 		slog.String("questionId", q.ID()),

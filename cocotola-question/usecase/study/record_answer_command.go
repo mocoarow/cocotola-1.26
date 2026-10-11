@@ -178,11 +178,7 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 	}, nil
 }
 
-// incrementDailyStat is best-effort: a missing user-local date/timezone
-// (e.g. an older client that doesn't send the headers) or a transient
-// Firestore error must not fail the answer record itself. The dashboard
-// tolerates an occasionally-missing tick more cheaply than the SRS
-// pipeline tolerates a duplicated or lost answer.
+// incrementDailyStat is best-effort: its failure must not fail the answer record.
 func (c *RecordAnswerCommand) incrementDailyStat(ctx context.Context, input *studyservice.RecordAnswerInput, correct bool, now time.Time) {
 	if input.LocalDateKey == "" || input.Timezone == "" {
 		return

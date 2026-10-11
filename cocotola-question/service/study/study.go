@@ -19,16 +19,8 @@ const MaxExcludeIDsCount = 1000
 const MaxExcludeIDLength = 100
 
 // GetStudyQuestionsInput is the validated input for getting study questions.
-//
-// Practice is an off-the-record mode: when true, the usecase ignores the
-// per-question NextDueAt schedule and returns every active question. Callers
-// using this mode are expected to skip the "record answer" endpoint so the
-// user's spaced-repetition records and counters stay untouched.
-//
-// ExcludeIDs lets the client resume an interrupted study session by skipping
-// questions it has already answered locally. The server is stateless; the
-// browser tracks the in-progress set and discards it at the next local 03:00
-// boundary.
+// Practice ignores NextDueAt and callers must not call "record answer"; ExcludeIDs is
+// client-tracked session state (the server is stateless).
 type GetStudyQuestionsInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
@@ -76,10 +68,6 @@ func NewGetStudyQuestionsInput(p GetStudyQuestionsInputParams) (*GetStudyQuestio
 }
 
 // GetStudySummaryInput is the validated input for getting study summary counts.
-//
-// Practice mirrors GetStudyQuestionsInput.Practice: when true the summary is
-// computed without applying the per-question NextDueAt schedule, so callers
-// rendering a "practice mode" picker see the unrestricted available pool.
 type GetStudySummaryInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
@@ -165,16 +153,8 @@ const (
 )
 
 // RecordAnswerInput is the validated input for recording an answer.
-// Exactly one of Correct or SelectedChoiceIDs must be set, matched to the
-// question's type. The usecase enforces the per-type rule once the question
-// is loaded (the handler also rejects "neither set" / "both set" earlier).
-//
-// LocalDateKey and Timezone are the client-supplied user-local "today" used
-// to bucket the answer into the dashboard's daily contribution graph. They
-// are optional: when empty, the daily-stats increment is skipped (the answer
-// itself is still recorded). The handler reads these from the X-Local-Date
-// and X-Local-Timezone headers respectively, which keeps server clocks and
-// user TZ preferences independent of the SRS write path.
+// Exactly one of Correct or SelectedChoiceIDs is set; empty LocalDateKey or
+// Timezone skips only the daily-stats increment.
 type RecordAnswerInput struct {
 	OperatorID        string `validate:"required"`
 	OrganizationID    string `validate:"required"`
@@ -334,21 +314,15 @@ type ListStudyRecordsOutput struct {
 	Records []RecordItem
 }
 
-// MinDashboardDays / MaxDashboardDays bound the requested contribution-graph
-// window. 7 supports a one-week mini-view; 730 supports the GitHub-style
-// "two-year" maximum, which is more than enough for the canonical 365-day
-// graph without leaving headroom for accidentally-unbounded ranges.
+// MinDashboardDays / MaxDashboardDays bound the contribution-graph window;
+// they must mirror the GetDashboardInput.Days validate tag.
 const (
 	MinDashboardDays = 7
 	MaxDashboardDays = 730
 )
 
 // GetDashboardInput is the validated input for the user-scoped study
-// dashboard. TodayDateKey is the client's "today" in YYYY-MM-DD form
-// (the frontend computes it in the user's local timezone before sending
-// X-Local-Date) so server clocks stay decoupled from the user's local
-// calendar; the usecase derives the [today - days + 1, today] window
-// purely from the date string and does not need the timezone here.
+// dashboard. TodayDateKey is the client's local "today", not the server clock.
 type GetDashboardInput struct {
 	OperatorID     string `validate:"required"`
 	OrganizationID string `validate:"required"`
@@ -385,10 +359,7 @@ type DashboardDailyItem struct {
 	CorrectCount  int
 }
 
-// GetDashboardOutput holds the data needed to render the dashboard: the
-// per-day contribution buckets within the requested window, the rolling
-// streak counters (calendar-day based, requiring at least one answer per
-// day), today's running total, and the all-window aggregates.
+// GetDashboardOutput holds the data needed to render the dashboard.
 type GetDashboardOutput struct {
 	From          string
 	To            string

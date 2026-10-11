@@ -59,10 +59,7 @@ func (b *ResponseBuilder) audioFor(audio *questionservice.AudioOutput) api.Quest
 	return out
 }
 
-// emptyAudioRef is the placeholder value used when no audio is available for a
-// slot. The empty `Url` is the documented "audio not generated" signal in the
-// OpenAPI schema — the wire shape always includes the field because codegen
-// uses value types (prefer-skip-optional-pointer).
+// emptyAudioRef signals "audio not generated" via an empty Url, per the OpenAPI schema.
 func emptyAudioRef() api.QuestionAudioRef {
 	return api.QuestionAudioRef{Url: "", DurationSec: 0}
 }

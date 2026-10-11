@@ -8,10 +8,8 @@ import (
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
 
-// DeleteStudyHistoryCommand clears the operator's spaced-repetition history for
-// a workbook. Questions themselves are kept; only the per-user study records
-// are removed, so authorization mirrors GetStudyQuestions (public workbooks are
-// open; private workbooks require explicit study permission).
+// DeleteStudyHistoryCommand clears the operator's study records for a workbook;
+// authorization mirrors GetStudyQuestions.
 type DeleteStudyHistoryCommand struct {
 	studyRecordDeleter studyRecordDeleter
 	workbookRepo       workbookFinder

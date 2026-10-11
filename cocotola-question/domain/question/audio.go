@@ -179,12 +179,8 @@ func copyAudioRefs(refs map[string]AudioRef) map[string]AudioRef {
 	return cp
 }
 
-// ComputeWordFillAudioInputHash returns a deterministic hash of the inputs that
-// drive audio generation for a word_fill question.
-//
-// The blank placeholders ({{...}}) in the target text are replaced with the
-// inner word so the hash matches what the TTS engine actually receives. Each
-// component is separated by a NUL byte to guarantee field boundaries.
+// ComputeWordFillAudioInputHash returns a deterministic hash of the word_fill audio inputs.
+// Blanks are filled first so the hash matches the text the TTS engine receives.
 func ComputeWordFillAudioInputHash(c WordFillContent) string {
 	targetFilled := FillWordFillBlanks(c.Target.Text)
 	h := sha256.New()

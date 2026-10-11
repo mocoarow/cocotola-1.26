@@ -100,12 +100,7 @@ func Test_NewGetStudyQuestionsInput_shouldReturnError_whenExcludeIDExceedsLength
 func Test_NewGetStudyQuestionsInput_shouldReturnError_whenExcludeIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given: an excludeIDs slice containing an empty string. Question IDs are
-	// never empty in this domain, so a client sending one is malformed and the
-	// server (the trust boundary) must reject it independently of any browser
-	// filtering.
-
-	// when
+	// given, when
 	_, err := studyservice.NewGetStudyQuestionsInput(studyservice.GetStudyQuestionsInputParams{
 		OperatorID:     "op",
 		OrganizationID: "org",

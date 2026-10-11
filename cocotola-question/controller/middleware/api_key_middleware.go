@@ -18,18 +18,9 @@ const (
 	organizationHeader = "X-Organization-Id"
 )
 
-// NewAPIKeyMiddleware returns a Gin middleware that authenticates internal
-// service-to-service callers via the X-Service-Api-Key header.
-//
-// On success it:
-//   - sets ContextFieldUserID to the well-known SystemAppUserID so downstream
-//     usecases see the operator as the bootstrap system user.
-//   - sets ContextFieldOrganizationID from the X-Organization-Id header so the
-//     caller can target a specific tenant without going through the public
-//     organization-name resolver.
-//
-// The header name is intentionally distinct from the public auth headers to
-// keep accidental impersonation paths impossible.
+// NewAPIKeyMiddleware authenticates internal service callers via X-Service-Api-Key.
+// The operator becomes SystemAppUserID and the tenant comes from X-Organization-Id.
+// The header is deliberately distinct from public auth headers to prevent impersonation.
 func NewAPIKeyMiddleware(expectedKey string) gin.HandlerFunc {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-APIKeyMiddleware"))
 

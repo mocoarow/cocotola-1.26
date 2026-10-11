@@ -8,10 +8,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
-// dateKeyPattern enforces the canonical YYYY-MM-DD bucket key used both as
-// document ID and as the on-the-wire date field. Anchored on both ends so any
-// malformed input (missing zero-padding, slashes, ISO timestamps) is rejected
-// at the boundary rather than producing silently-wrong aggregations downstream.
+// dateKeyPattern is the YYYY-MM-DD key used both as document ID and wire date.
 var dateKeyPattern = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 // IsValidDateKey reports whether the value is a canonical YYYY-MM-DD date key.

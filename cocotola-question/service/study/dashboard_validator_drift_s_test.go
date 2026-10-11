@@ -11,12 +11,6 @@ import (
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
 
-// Go struct tags cannot reference constants — the `validate:"gte=7,lte=730"`
-// string on GetDashboardInput.Days must duplicate the MinDashboardDays /
-// MaxDashboardDays values. This test fails fast when the two drift apart
-// (e.g. someone bumps MaxDashboardDays without remembering to also touch
-// the tag), so the bound stays the single source of truth at review time
-// even though the compiler cannot enforce it.
 func Test_GetDashboardInput_DaysValidatorTagMatchesConstants(t *testing.T) {
 	t.Parallel()
 

@@ -447,7 +447,6 @@ func Test_RecordAnswerCommand_shouldReturnError_whenQuestionNotInWorkbook(t *tes
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
 
-	// Active list does NOT contain fixtureQuestionID
 	activeListRepo := newMockactiveQuestionListFinder(t)
 	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, "other-q"), nil)
 
