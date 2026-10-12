@@ -54,3 +54,6 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group:
+    config:
+      all: true
