@@ -12,26 +12,39 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 )
 
-func freePort(t *testing.T) int {
+func listenTCP(t *testing.T, address string) (net.Listener, int) {
 	t.Helper()
 
 	lc := net.ListenConfig{}
-	l, err := lc.Listen(context.Background(), "tcp", net.JoinHostPort(loopbackHost, "0"))
+	l, err := lc.Listen(t.Context(), "tcp", address)
 	if err != nil {
-		t.Fatalf("get free port: %v", err)
+		t.Fatalf("listen %s: %v", address, err)
 	}
-	defer func() {
-		if err := l.Close(); err != nil {
-			t.Logf("close listener: %v", err)
-		}
-	}()
 
 	addr, ok := l.Addr().(*net.TCPAddr)
 	if !ok {
+		closeListener(t, l)
 		t.Fatal("expected *net.TCPAddr")
 	}
 
-	return addr.Port
+	return l, addr.Port
+}
+
+func closeListener(t *testing.T, l net.Listener) {
+	t.Helper()
+
+	if err := l.Close(); err != nil {
+		t.Logf("close listener: %v", err)
+	}
+}
+
+func freePort(t *testing.T) int {
+	t.Helper()
+
+	l, port := listenTCP(t, net.JoinHostPort(loopbackHost, "0"))
+	closeListener(t, l)
+
+	return port
 }
 
 const (
