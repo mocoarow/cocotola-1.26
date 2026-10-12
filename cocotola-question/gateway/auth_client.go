@@ -43,8 +43,8 @@ func newAuthServiceClient(authBaseURL string, apiKey string, httpClient *http.Cl
 	}
 }
 
-// request performs an HTTP request to the auth service and decodes the JSON response.
-func (c *authServiceClient) request(ctx context.Context, method string, reqURL string, body io.Reader, result any) error {
+// do sends a request to the auth service and passes the response to handle.
+func (c *authServiceClient) do(ctx context.Context, method string, reqURL string, body io.Reader, handle func(*http.Response) error) error {
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
@@ -66,11 +66,30 @@ func (c *authServiceClient) request(ctx context.Context, method string, reqURL s
 		}
 	}()
 
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
+	return handle(resp)
+}
+
+// request performs an HTTP request to the auth service and decodes the JSON response.
+func (c *authServiceClient) request(ctx context.Context, method string, reqURL string, body io.Reader, result any) error {
+	return c.do(ctx, method, reqURL, body, func(resp *http.Response) error {
+		if resp.StatusCode != http.StatusOK {
+			return statusError(resp)
+		}
+
+		return decodeJSON(resp, result)
+	})
+}
+
+func statusError(resp *http.Response) error {
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
+	if err != nil {
+		return fmt.Errorf("auth service returned status %d (read body: %w)", resp.StatusCode, err)
 	}
 
+	return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(body))
+}
+
+func decodeJSON(resp *http.Response, result any) error {
 	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(result); err != nil {
 		return fmt.Errorf("decode response: %w", err)
 	}
@@ -189,35 +208,21 @@ func (f *AuthServiceSpaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceI
 
 	reqURL := f.authBaseURL + "/api/v1/internal/auth/space/" + url.PathEscape(spaceID)
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
-	}
-	req.Header.Set("X-Service-Api-Key", f.apiKey)
-
-	resp, err := f.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("call auth service: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			f.logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
-		}
-	}()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return "", domain.ErrSpaceNotFound
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		return "", fmt.Errorf("auth service returned status %d for space %s: %s", resp.StatusCode, spaceID, string(body))
-	}
-
 	var result struct {
 		SpaceType string `json:"spaceType"`
 	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(&result); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+	err := f.do(ctx, http.MethodGet, reqURL, nil, func(resp *http.Response) error {
+		switch resp.StatusCode {
+		case http.StatusOK:
+			return decodeJSON(resp, &result)
+		case http.StatusNotFound:
+			return domain.ErrSpaceNotFound
+		default:
+			return statusError(resp)
+		}
+	})
+	if err != nil {
+		return "", fmt.Errorf("get auth space %s: %w", spaceID, err)
 	}
 
 	switch result.SpaceType {
@@ -313,28 +318,15 @@ func (c *AuthServicePolicyAdder) AddPolicyForUser(ctx context.Context, organizat
 		return fmt.Errorf("marshal add policy request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return fmt.Errorf("create request: %w", err)
-	}
-	if c.apiKey != "" {
-		req.Header.Set("X-Service-Api-Key", c.apiKey)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("call auth service: %w", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			c.logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
+	err = c.do(ctx, http.MethodPost, reqURL, bytes.NewReader(bodyBytes), func(resp *http.Response) error {
+		if resp.StatusCode != http.StatusNoContent {
+			return statusError(resp)
 		}
-	}()
 
-	if resp.StatusCode != http.StatusNoContent {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, maxErrorBodySize))
-		return fmt.Errorf("auth service returned status %d: %s", resp.StatusCode, string(respBody))
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("add policy for user %s: %w", userID, err)
 	}
 
 	return nil
