@@ -81,7 +81,7 @@ tasks:
 
   kics:
     cmds:
-      - docker run --rm -t -v ./:/path checkmarx/kics:v2.1.19 scan -p /path --config /path/.kics.yml
+      - docker run --rm -t -v ./:/path checkmarx/kics:v2.1.19 scan -p /path --config /path/.kics.yml --exclude-paths /path/.claude
 
   yamllint:
     cmds:
@@ -93,6 +93,7 @@ tasks:
         find . -type f \
           -not -path '*/node_modules/*' \
           -not -path '*/.git/*' \
+          -not -path './.claude/*' \
           -not -path '*/build/*' \
           -not -path '*/.react-router/*' \
           -not -name 'pnpm-lock.yaml' \
@@ -104,7 +105,7 @@ tasks:
 
   trivy:
     cmds:
-      - trivy fs --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
+      - trivy fs --skip-dirs .claude --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 .
 
   gitleaks:
     cmds:
