@@ -279,40 +279,12 @@ func (r *QuestionRepository) FindPendingAudio(ctx context.Context, limit int) ([
 		OrderBy("audioGeneration.updatedAt", firestore.Asc).
 		Limit(limit).
 		Documents(ctx)
-	defer iter.Stop()
-
-	var questions []domainquestion.Question
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate pending audio: %w", err)
-		}
-		workbookID, ok := workbookIDFromQuestionRef(doc.Ref)
-		if !ok {
-			return nil, fmt.Errorf("question doc %s has unexpected parent path", doc.Ref.Path)
-		}
-		var record questionRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode question: %w", err)
-		}
-		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
-		if err != nil {
-			return nil, fmt.Errorf("convert question domain: %w", err)
-		}
-		questions = append(questions, *q)
-	}
-	return questions, nil
+	return collectGroupQuestions(iter, "pending audio")
 }
 
-// FindStaleGenerating returns up to limit questions whose audio generation has
-// been stuck in the generating state with audioGeneration.updatedAt older than
-// staleBefore. Used by the reaper to reclaim entries left behind by crashed
-// workers (the previous batch claimed an item, then died before completing or
-// failing it).
+// FindStaleGenerating returns up to limit questions stuck in the generating
+// state with audioGeneration.updatedAt older than staleBefore, so the reaper
+// can reclaim entries left behind by crashed workers.
 func (r *QuestionRepository) FindStaleGenerating(ctx context.Context, staleBefore time.Time, limit int) ([]domainquestion.Question, error) {
 	if limit <= 0 {
 		return nil, nil
@@ -323,6 +295,12 @@ func (r *QuestionRepository) FindStaleGenerating(ctx context.Context, staleBefor
 		OrderBy("audioGeneration.updatedAt", firestore.Asc).
 		Limit(limit).
 		Documents(ctx)
+	return collectGroupQuestions(iter, "stale generating")
+}
+
+// collectGroupQuestions drains a collection-group query over question
+// documents, restoring each question's workbook ID from its parent path.
+func collectGroupQuestions(iter *firestore.DocumentIterator, label string) ([]domainquestion.Question, error) {
 	defer iter.Stop()
 
 	var questions []domainquestion.Question
@@ -333,7 +311,7 @@ func (r *QuestionRepository) FindStaleGenerating(ctx context.Context, staleBefor
 			if errors.Is(err, iterator.Done) {
 				break
 			}
-			return nil, fmt.Errorf("iterate stale generating: %w", err)
+			return nil, fmt.Errorf("iterate %s: %w", label, err)
 		}
 		workbookID, ok := workbookIDFromQuestionRef(doc.Ref)
 		if !ok {
