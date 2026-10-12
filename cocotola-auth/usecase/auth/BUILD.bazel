@@ -39,6 +39,7 @@ smart_go_test(
         "fixtures_test.go",
         "mocks_test.go",
         "revoke_session_token_command_s_test.go",
+        "revoke_token_command_s_test.go",
         "supabase_exchange_query_s_test.go",
         "validate_access_token_query_s_test.go",
         "validate_session_token_query_s_test.go",
