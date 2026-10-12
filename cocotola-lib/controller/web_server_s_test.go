@@ -91,3 +91,30 @@ func Test_WebServerProcess_shouldReturnError_whenPortInUse(t *testing.T) {
 		t.Fatalf("expected EADDRINUSE, got %v", err)
 	}
 }
+
+const canceledStartAttempts = 20
+
+func Test_WebServerProcess_shouldReturnError_whenPortInUseAndContextAlreadyCanceled(t *testing.T) {
+	t.Parallel()
+
+	// given
+	l, port := listenTCP(t, ":0")
+	defer closeListener(t, l)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	// when
+	// An implementation that races the startup error against ctx.Done passes a single attempt by chance.
+	errs := make([]error, 0, canceledStartAttempts)
+	for range canceledStartAttempts {
+		errs = append(errs, controller.WebServerProcess(ctx, http.NewServeMux(), port, time.Second, time.Second))
+	}
+
+	// then
+	for _, err := range errs {
+		if !errors.Is(err, syscall.EADDRINUSE) {
+			t.Fatalf("expected EADDRINUSE, got %v", err)
+		}
+	}
+}
