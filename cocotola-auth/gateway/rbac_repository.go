@@ -29,7 +29,7 @@ g2 = _, _, _
 e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = g(r.sub, p.sub, r.dom) && (keyMatch(r.obj, p.obj) || g2(r.obj, p.obj, r.dom)) && r.act == p.act
+m = g(r.sub, p.sub, r.dom) && r.dom == p.dom && (keyMatch(r.obj, p.obj) || g2(r.obj, p.obj, r.dom)) && r.act == p.act
 `
 
 // RBACRepository manages RBAC policies and group assignments using Casbin.
