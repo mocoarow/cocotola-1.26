@@ -44,6 +44,11 @@ func handleSpaceError(ctx context.Context, logger *slog.Logger, c *gin.Context, 
 		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))
 		return
 	}
+	if errors.Is(err, domain.ErrDuplicateEntry) {
+		logger.WarnContext(ctx, "conflict", slog.Any("error", err))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "space already exists"))
+		return
+	}
 	if errors.Is(err, domain.ErrOrganizationNotFound) {
 		logger.WarnContext(ctx, "organization not found", slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("organization_not_found", "organization not found"))

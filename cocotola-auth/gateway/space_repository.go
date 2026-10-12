@@ -108,6 +108,9 @@ func (r *SpaceRepository) Save(ctx context.Context, space *domainspace.Space) er
 	if errors.Is(err, libversioned.ErrNotFound) {
 		return domain.ErrSpaceNotFound
 	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return fmt.Errorf("save space: %w", domain.ErrDuplicateEntry)
+	}
 	if err != nil {
 		return fmt.Errorf("save space: %w", err)
 	}
