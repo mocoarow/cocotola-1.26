@@ -2,7 +2,9 @@ package controller_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"syscall"
 	"testing"
 	"time"
 
@@ -68,5 +70,24 @@ func Test_WebServerProcess_shouldShutdownGracefully_whenContextCanceled(t *testi
 	// then
 	if err != nil {
 		t.Fatalf("expected nil error after graceful shutdown, got %v", err)
+	}
+}
+
+func Test_WebServerProcess_shouldReturnError_whenPortInUse(t *testing.T) {
+	t.Parallel()
+
+	// given
+	l, port := listenTCP(t, ":0")
+	defer closeListener(t, l)
+
+	ctx, cancel := context.WithTimeout(t.Context(), serverStartTimeout)
+	defer cancel()
+
+	// when
+	err := controller.WebServerProcess(ctx, http.NewServeMux(), port, time.Second, time.Second)
+
+	// then
+	if !errors.Is(err, syscall.EADDRINUSE) {
+		t.Fatalf("expected EADDRINUSE, got %v", err)
 	}
 }
