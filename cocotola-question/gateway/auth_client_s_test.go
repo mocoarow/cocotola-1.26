@@ -69,11 +69,34 @@ func Test_AuthServicePolicyAdder_shouldReturnError_whenServerReturnsError(t *tes
 	require.ErrorContains(t, err, "status 500")
 }
 
+func Test_AuthServicePolicyAdder_shouldPostJSONToPolicyEndpointWithAPIKey_whenCalled(t *testing.T) {
+	t.Parallel()
+
+	// given
+	server, requests := newAuthServer(t, http.StatusNoContent, "")
+	adder := gateway.NewAuthServicePolicyAdder(server.URL, testAPIKey, server.Client())
+	resource, err := domain.ResourceWorkbook("wb-123")
+	require.NoError(t, err)
+
+	// when
+	err = adder.AddPolicyForUser(context.Background(), "org-1", "user-1", domain.ActionCreateQuestion(), resource, domain.EffectAllow())
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, requestTarget{
+		Method:      http.MethodPost,
+		Path:        "/api/v1/internal/auth/authz/policy",
+		APIKey:      testAPIKey,
+		ContentType: "application/json",
+	}, receivedRequest(t, requests).Target)
+}
+
 type requestTarget struct {
-	Method string
-	Path   string
-	Query  string
-	APIKey string
+	Method      string
+	Path        string
+	Query       string
+	APIKey      string
+	ContentType string
 }
 
 type capturedRequest struct {
@@ -91,10 +114,11 @@ func newAuthServer(t *testing.T, status int, body string) (*httptest.Server, <-c
 
 		requests <- capturedRequest{
 			Target: requestTarget{
-				Method: r.Method,
-				Path:   r.URL.EscapedPath(),
-				Query:  r.URL.RawQuery,
-				APIKey: r.Header.Get("X-Service-Api-Key"),
+				Method:      r.Method,
+				Path:        r.URL.EscapedPath(),
+				Query:       r.URL.RawQuery,
+				APIKey:      r.Header.Get("X-Service-Api-Key"),
+				ContentType: r.Header.Get("Content-Type"),
 			},
 			Body: string(reqBody),
 		}
@@ -358,7 +382,7 @@ func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldReturnAllowedFlag_when
 	}
 }
 
-func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldPostToCheckEndpointWithAPIKey_whenCalled(t *testing.T) {
+func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldPostJSONToCheckEndpointWithAPIKey_whenCalled(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -373,9 +397,10 @@ func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldPostToCheckEndpointWit
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, requestTarget{
-		Method: http.MethodPost,
-		Path:   "/api/v1/internal/auth/authz/check",
-		APIKey: testAPIKey,
+		Method:      http.MethodPost,
+		Path:        "/api/v1/internal/auth/authz/check",
+		APIKey:      testAPIKey,
+		ContentType: "application/json",
 	}, receivedRequest(t, requests).Target)
 }
 
@@ -412,4 +437,25 @@ func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldReturnStatusError_when
 
 	// then
 	require.ErrorContains(t, err, "status 500")
+}
+
+func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldReturnReadBodyError_whenErrorBodyIsTruncated(t *testing.T) {
+	t.Parallel()
+
+	// given
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error"`))
+	}))
+	t.Cleanup(server.Close)
+	checker := gateway.NewAuthServiceAuthorizationChecker(server.URL, testAPIKey, server.Client())
+	resource, err := domain.ResourceWorkbook("wb-123")
+	require.NoError(t, err)
+
+	// when
+	_, err = checker.IsAllowed(context.Background(), "org-1", "user-1", domain.ActionViewWorkbook(), resource)
+
+	// then
+	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
 }
