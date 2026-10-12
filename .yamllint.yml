@@ -22,3 +22,4 @@ ignore:
   - node_modules/
   - cocotola-web/node_modules/
   - .serena/
+  - .claude/
