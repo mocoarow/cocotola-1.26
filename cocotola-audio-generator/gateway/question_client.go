@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -204,9 +203,6 @@ func readErrorBody(resp *http.Response) string {
 	}
 	return fmt.Sprintf("status=%d, body=%s", resp.StatusCode, string(body))
 }
-
-// ErrNotFound surfaces when an item endpoint returns 404.
-var ErrNotFound = errors.New("question not found")
 
 // closeBodyAndLog closes an HTTP response body and logs any close error.
 func closeBodyAndLog(ctx context.Context, body io.Closer) {
