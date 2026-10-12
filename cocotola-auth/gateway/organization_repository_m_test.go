@@ -32,6 +32,25 @@ func Test_OrganizationRepository_Save_shouldInsertOrganization_whenNewRecord(t *
 	require.NoError(t, err)
 }
 
+func Test_OrganizationRepository_Save_shouldReturnErrDuplicateEntry_whenNameAlreadyExists(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	setupOrganization(ctx, t, tx, "org-duplicate-name")
+	repo := gateway.NewOrganizationRepository(tx)
+	orgID, err := domain.NewOrganizationIDV7()
+	require.NoError(t, err)
+	duplicate := domain.ReconstructOrganization(orgID, "org-duplicate-name", 100, 50)
+
+	// when
+	err = repo.Save(ctx, duplicate)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
+}
+
 func Test_OrganizationRepository_FindByID_shouldReturnOrganization_whenOrganizationExists(t *testing.T) {
 	t.Parallel()
 	// given
