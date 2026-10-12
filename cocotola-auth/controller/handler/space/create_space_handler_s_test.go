@@ -19,11 +19,9 @@ import (
 	spacehandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space"
 )
 
-func serveCreateSpace(t *testing.T, usecaseErr error) *httptest.ResponseRecorder {
+func postCreateSpace(t *testing.T, usecase *MockCreateSpaceUsecase, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
-	usecase := NewMockCreateSpaceUsecase(t)
-	usecase.On("CreateSpace", mock.Anything, mock.Anything).Return(nil, usecaseErr)
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set(controller.ContextFieldUserID{}, fixtureOwnerID.String())
@@ -32,12 +30,28 @@ func serveCreateSpace(t *testing.T, usecaseErr error) *httptest.ResponseRecorder
 	})
 	r.POST("/space", spacehandler.NewCreateSpaceHandler(usecase).CreateSpace)
 	w := httptest.NewRecorder()
-	body := bytes.NewBufferString(`{"name":"Public","spaceType":"public"}`)
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "/space", body)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "/space", bytes.NewBufferString(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
 	return w
+}
+
+func serveCreateSpace(t *testing.T, usecaseErr error) *httptest.ResponseRecorder {
+	t.Helper()
+	usecase := NewMockCreateSpaceUsecase(t)
+	usecase.On("CreateSpace", mock.Anything, mock.Anything).Return(nil, usecaseErr)
+	return postCreateSpace(t, usecase, `{"name":"Public","spaceType":"public"}`)
+}
+
+func Test_CreateSpaceHandler_shouldReturn400_whenSpaceTypeIsPrivate(t *testing.T) {
+	t.Parallel()
+
+	// given, when
+	w := postCreateSpace(t, NewMockCreateSpaceUsecase(t), `{"name":"Private","spaceType":"private"}`)
+
+	// then
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func Test_CreateSpaceHandler_shouldReturn409_whenSpaceAlreadyExists(t *testing.T) {

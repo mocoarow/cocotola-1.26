@@ -15,8 +15,7 @@ const (
 
 // Defines values for CreateSpaceRequestSpaceType.
 const (
-	CreateSpaceRequestSpaceTypePrivate CreateSpaceRequestSpaceType = "private"
-	CreateSpaceRequestSpaceTypePublic  CreateSpaceRequestSpaceType = "public"
+	CreateSpaceRequestSpaceTypePublic CreateSpaceRequestSpaceType = "public"
 )
 
 // Defines values for CreateSpaceResponseSpaceType.
@@ -80,7 +79,7 @@ type CreateGroupResponse struct {
 // CreateSpaceRequest defines model for CreateSpaceRequest.
 type CreateSpaceRequest struct {
 	Name      string                      `binding:"required,max=100" json:"name"`
-	SpaceType CreateSpaceRequestSpaceType `binding:"required,oneof=public private" json:"spaceType"`
+	SpaceType CreateSpaceRequestSpaceType `binding:"required,oneof=public" json:"spaceType"`
 }
 
 // CreateSpaceRequestSpaceType defines model for CreateSpaceRequest.SpaceType.
