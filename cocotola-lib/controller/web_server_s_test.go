@@ -2,7 +2,6 @@ package controller_test
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -29,23 +28,14 @@ func Test_WebServerProcess_shouldServeRequests_whenStarted(t *testing.T) {
 		errCh <- controller.WebServerProcess(ctx, mux, port, time.Second, time.Second)
 	}()
 
-	time.Sleep(100 * time.Millisecond)
+	waitForServer(t, port, errCh)
 
 	// when
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/ping", port)) //nolint:noctx
+	statusCode := getStatusCode(t, port, "/ping")
 
 	// then
-	if err != nil {
-		t.Fatalf("ping request: %v", err)
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			t.Logf("close response body: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", resp.StatusCode)
+	if statusCode != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", statusCode)
 	}
 
 	// cleanup
@@ -58,6 +48,8 @@ func Test_WebServerProcess_shouldShutdownGracefully_whenContextCanceled(t *testi
 
 	// given
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	port := freePort(t)
 	mux := http.NewServeMux()
 
@@ -67,7 +59,7 @@ func Test_WebServerProcess_shouldShutdownGracefully_whenContextCanceled(t *testi
 		errCh <- controller.WebServerProcess(ctx, mux, port, time.Second, time.Second)
 	}()
 
-	time.Sleep(100 * time.Millisecond)
+	waitForServer(t, port, errCh)
 
 	// when
 	cancel()
