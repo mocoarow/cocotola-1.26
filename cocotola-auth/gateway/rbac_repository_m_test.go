@@ -352,3 +352,71 @@ func Test_RBACRepository_GetGroupsForUser_shouldReturnEmpty_whenUserHasNoGroups(
 	require.NoError(t, err)
 	assert.Empty(t, groups)
 }
+
+func Test_RBACRepository_AddPolicy_shouldNotAllow_whenPolicyBelongsToSameGroupInAnotherOrg(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+
+	otherOrgID := randOrgID(t)
+	orgID := randOrgID(t)
+	userID := randAppUserID(t)
+	group := mustGroup(t, "shared:"+otherOrgID.String())
+
+	require.NoError(t, rbacRepo.AddPolicy(ctx, otherOrgID, group, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, group))
+
+	// when
+	ok, err := rbacRepo.Enforce(orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
+
+	// then
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
+func Test_RBACRepository_AddPolicy_shouldKeepAllow_whenDenyBelongsToSameGroupInAnotherOrg(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+
+	otherOrgID := randOrgID(t)
+	orgID := randOrgID(t)
+	userID := randAppUserID(t)
+	group := mustGroup(t, "shared:"+otherOrgID.String())
+
+	require.NoError(t, rbacRepo.AddPolicy(ctx, otherOrgID, group, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectDeny()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, group, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, group))
+
+	// when
+	ok, err := rbacRepo.Enforce(orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, ok)
+}
+
+func Test_RBACRepository_AddPolicyForUser_shouldNotAllow_whenPolicyBelongsToAnotherOrg(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+
+	otherOrgID := randOrgID(t)
+	orgID := randOrgID(t)
+	userID := randAppUserID(t)
+
+	require.NoError(t, rbacRepo.AddPolicyForUser(ctx, otherOrgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny(), domainrbac.EffectAllow()))
+
+	// when
+	ok, err := rbacRepo.Enforce(orgID, userID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
+
+	// then
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
