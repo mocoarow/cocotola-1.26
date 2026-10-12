@@ -49,8 +49,8 @@ func (h *FindSpaceHandler) FindSpace(c *gin.Context) {
 
 	input, err := spaceservice.NewFindSpaceInput(spaceID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid find space input", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", err.Error()))
+		h.logger.WarnContext(ctx, "invalid find space input", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "request is invalid"))
 		return
 	}
 
