@@ -377,10 +377,9 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenNewU
 	assert.True(t, fixtureSupaUserID2.Equal(output.UserID))
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAccountHasPassword(t *testing.T) {
-	t.Parallel()
+func newRejectLinkQuery(t *testing.T) (*authusecase.SupabaseExchangeQuery, *MockAppUserSaver, *mockeventPublisher) {
+	t.Helper()
 
-	// given
 	verifierMock := NewMockSupabaseVerifier(t)
 	verifierMock.On("Verify", mock.Anything, "supabase-jwt").Return("sub-new", "human@example.com", nil)
 
@@ -406,6 +405,15 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAc
 
 	publisherMock := newMockeventPublisher(t)
 	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+
+	return query, saverMock, publisherMock
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAccountHasPassword(t *testing.T) {
+	t.Parallel()
+
+	// given
+	query, saverMock, publisherMock := newRejectLinkQuery(t)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
@@ -417,6 +425,22 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAc
 	require.Nil(t, output)
 	saverMock.AssertNumberOfCalls(t, "Save", 1)
 	publisherMock.AssertNotCalled(t, "Publish")
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldNotIncludeEmailInError_whenExistingAccountHasPassword(t *testing.T) {
+	t.Parallel()
+
+	// given
+	query, _, _ := newRejectLinkQuery(t)
+	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+	require.NoError(t, err)
+
+	// when
+	_, err = query.SupabaseExchange(context.Background(), input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAppUserAutoLinkRejected)
+	assert.NotContains(t, err.Error(), "human@example.com")
 }
 
 func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPropagateSaveError_whenCreateFailsWithNonDuplicateError(t *testing.T) {
