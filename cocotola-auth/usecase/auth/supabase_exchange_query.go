@@ -88,8 +88,12 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 	}
 
 	// Race-condition: another request may have created the same provider mapping concurrently.
-	if providerLink, retryErr := q.providerFinder.FindByProviderID(ctx, orgID, provider, providerID); retryErr == nil {
+	providerLink, retryErr := q.providerFinder.FindByProviderID(ctx, orgID, provider, providerID)
+	if retryErr == nil {
 		return q.outputForProviderLink(ctx, providerLink, orgName)
+	}
+	if !errors.Is(retryErr, domain.ErrAppUserProviderNotFound) {
+		return nil, fmt.Errorf("save new app user: %w: find provider link after save: %w: %w", createErr, retryErr, domain.ErrInternal)
 	}
 
 	// Only attempt to link an existing local account when the create failed

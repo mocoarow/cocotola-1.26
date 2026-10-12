@@ -457,3 +457,101 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPropagateSaveError_whenCr
 	loginIDFinderMock.AssertNotCalled(t, "FindByLoginID")
 	publisherMock.AssertNotCalled(t, "Publish")
 }
+
+var (
+	errTestRetryFindProvider = errors.New("retry find provider failed")
+	errTestSaveAppUser       = errors.New("save app user failed")
+)
+
+func newSupabaseExchangeQueryWithRetryFailure(t *testing.T, saveErr error, retryErr error) *authusecase.SupabaseExchangeQuery {
+	t.Helper()
+
+	verifierMock := NewMockSupabaseVerifier(t)
+	verifierMock.On("Verify", mock.Anything, "supabase-jwt").Return("sub-retry", "retry@example.com", nil)
+
+	providerFinderMock := NewMockAppUserProviderFinder(t)
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-retry").
+		Return(nil, domain.ErrAppUserProviderNotFound).Once()
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-retry").
+		Return(nil, retryErr).Once()
+
+	saverMock := NewMockAppUserSaver(t)
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(saveErr)
+
+	orgFinderMock := NewMockOrganizationFinder(t)
+	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
+	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
+
+	return authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, NewMockAppUserProviderSaver(t), NewMockAppUserByIDFinder(t), NewMockAppUserByLoginIDFinder(t), saverMock, orgFinderMock, newMockeventPublisher(t))
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnRetryError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		saveErr error
+	}{
+		{name: "duplicate entry", saveErr: domain.ErrDuplicateEntry},
+		{name: "other save error", saveErr: errTestSaveAppUser},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			query := newSupabaseExchangeQueryWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
+			input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+			require.NoError(t, err)
+
+			// when
+			_, err = query.SupabaseExchange(context.Background(), input)
+
+			// then
+			require.ErrorIs(t, err, errTestRetryFindProvider)
+		})
+	}
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldKeepSaveError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+	t.Parallel()
+
+	// given
+	query := newSupabaseExchangeQueryWithRetryFailure(t, errTestSaveAppUser, errTestRetryFindProvider)
+	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+	require.NoError(t, err)
+
+	// when
+	_, err = query.SupabaseExchange(context.Background(), input)
+
+	// then
+	require.ErrorIs(t, err, errTestSaveAppUser)
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnInternalError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		saveErr error
+	}{
+		{name: "duplicate entry", saveErr: domain.ErrDuplicateEntry},
+		{name: "other save error", saveErr: errTestSaveAppUser},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			query := newSupabaseExchangeQueryWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
+			input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+			require.NoError(t, err)
+
+			// when
+			_, err = query.SupabaseExchange(context.Background(), input)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInternal)
+		})
+	}
+}
