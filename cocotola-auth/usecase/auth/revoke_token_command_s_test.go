@@ -30,6 +30,7 @@ const (
 var (
 	revokeFixtureNow       = time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	errRevokeFixtureNotJWT = errors.New("not a jwt")
+	errRevokeFixtureRepo   = errors.New("repository failure")
 )
 
 type revokeTokenMocks struct {
@@ -148,9 +149,13 @@ func expectAccessTokensSaved(t *testing.T, repo *MockAccessTokenRepository) *sav
 	return saved
 }
 
-func givenJWTAccessToken(m revokeTokenMocks) {
+func givenJWTAccessTokenFound(m revokeTokenMocks) {
 	m.jwt.On("ParseAccessToken", fixtureJWT).Return(nil, revokeFixtureJTI, nil)
 	m.accessRepo.On("FindByID", mock.Anything, revokeFixtureJTI).Return(newRevokeFixtureAccessToken(revokeFixtureJTI, nil), nil)
+}
+
+func givenJWTAccessTokenRevocable(m revokeTokenMocks) {
+	givenJWTAccessTokenFound(m)
 	m.cache.On("DeleteAccessToken", revokeFixtureJTI).Return()
 }
 
@@ -158,12 +163,16 @@ type savedRefreshToken struct {
 	token *domaintoken.RefreshToken
 }
 
-func givenOpaqueRefreshToken(t *testing.T, m revokeTokenMocks, linked []domaintoken.AccessToken) *savedRefreshToken {
-	t.Helper()
-	saved := &savedRefreshToken{}
+func givenOpaqueRefreshTokenFound(m revokeTokenMocks) {
 	m.jwt.On("ParseAccessToken", revokeFixtureOpaqueInput).Return(nil, "", errRevokeFixtureNotJWT)
 	m.refreshRepo.On("FindByTokenHash", mock.Anything, string(domaintoken.HashToken(revokeFixtureOpaqueInput))).
 		Return(newRevokeFixtureRefreshToken(), nil)
+}
+
+func givenOpaqueRefreshToken(t *testing.T, m revokeTokenMocks, linked []domaintoken.AccessToken) *savedRefreshToken {
+	t.Helper()
+	saved := &savedRefreshToken{}
+	givenOpaqueRefreshTokenFound(m)
 	m.accessRepo.On("FindByRefreshTokenID", mock.Anything, revokeFixtureRefreshID).Return(linked, nil)
 	m.refreshRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.RefreshToken")).
 		Run(func(args mock.Arguments) {
@@ -194,7 +203,7 @@ func Test_RevokeTokenCommand_RevokeToken_shouldSaveAccessTokenRevokedAtNow_whenT
 
 	// given
 	m := newRevokeTokenMocks(t)
-	givenJWTAccessToken(m)
+	givenJWTAccessTokenRevocable(m)
 	saved := expectAccessTokensSaved(t, m.accessRepo)
 	expectWhitelistSaved(t, m.accessWhitelist, newRevokeFixtureWhitelistEntries(revokeFixtureJTI))
 
@@ -213,7 +222,7 @@ func Test_RevokeTokenCommand_RevokeToken_shouldRemoveOnlyJTIFromAccessWhitelist_
 
 	// given
 	m := newRevokeTokenMocks(t)
-	givenJWTAccessToken(m)
+	givenJWTAccessTokenRevocable(m)
 	expectAccessTokensSaved(t, m.accessRepo)
 	saved := expectWhitelistSaved(t, m.accessWhitelist, newRevokeFixtureWhitelistEntries(revokeFixtureOtherTokenID, revokeFixtureJTI))
 
@@ -361,4 +370,133 @@ func Test_RevokeTokenCommand_RevokeToken_shouldReturnErrTokenNotFound_whenRefres
 
 	// then
 	require.ErrorIs(t, err, domain.ErrTokenNotFound)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenAccessTokenSaveFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenJWTAccessTokenFound(m)
+	m.accessRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.AccessToken")).Return(errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, fixtureJWT))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenLinkedAccessTokensFindFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenOpaqueRefreshTokenFound(m)
+	m.accessRepo.On("FindByRefreshTokenID", mock.Anything, revokeFixtureRefreshID).Return(nil, errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, revokeFixtureOpaqueInput))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenRefreshTokenSaveFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenOpaqueRefreshTokenFound(m)
+	m.accessRepo.On("FindByRefreshTokenID", mock.Anything, revokeFixtureRefreshID).Return(newRevokeFixtureLinkedAccessTokens(), nil)
+	m.refreshRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.RefreshToken")).Return(errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, revokeFixtureOpaqueInput))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenLinkedAccessTokenSaveFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenOpaqueRefreshToken(t, m, newRevokeFixtureLinkedAccessTokens())
+	m.accessRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.AccessToken")).Return(errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, revokeFixtureOpaqueInput))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenAccessWhitelistFindFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenJWTAccessTokenRevocable(m)
+	expectAccessTokensSaved(t, m.accessRepo)
+	m.accessWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(nil, errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, fixtureJWT))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenAccessWhitelistSaveFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenJWTAccessTokenRevocable(m)
+	expectAccessTokensSaved(t, m.accessRepo)
+	m.accessWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(newRevokeFixtureWhitelistEntries(revokeFixtureJTI), nil)
+	m.accessWhitelist.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, fixtureJWT))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenRefreshWhitelistFindFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenOpaqueRefreshToken(t, m, newRevokeFixtureLinkedAccessTokens())
+	givenLinkedAccessTokensRevocable(m)
+	expectAccessTokensSaved(t, m.accessRepo)
+	m.refreshWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(nil, errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, revokeFixtureOpaqueInput))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
+}
+
+func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenLinkedAccessWhitelistFindFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	m := newRevokeTokenMocks(t)
+	givenOpaqueRefreshToken(t, m, newRevokeFixtureLinkedAccessTokens())
+	givenLinkedAccessTokensRevocable(m)
+	expectAccessTokensSaved(t, m.accessRepo)
+	expectWhitelistSaved(t, m.refreshWhitelist, newRevokeFixtureWhitelistEntries(revokeFixtureRefreshID))
+	m.accessWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(nil, errRevokeFixtureRepo)
+
+	// when
+	err := m.newCommand().RevokeToken(context.Background(), newRevokeTokenInput(t, revokeFixtureOpaqueInput))
+
+	// then
+	require.ErrorIs(t, err, errRevokeFixtureRepo)
 }
