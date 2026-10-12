@@ -11,10 +11,9 @@ CreateSpaceRequest:
     spaceType:
       type: string
       x-oapi-codegen-extra-tags:
-        binding: required,oneof=public private
+        binding: required,oneof=public
       enum:
         - public
-        - private
   required:
     - name
     - spaceType
