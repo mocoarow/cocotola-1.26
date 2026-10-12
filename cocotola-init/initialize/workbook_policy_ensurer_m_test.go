@@ -123,3 +123,24 @@ func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldBeIdempo
 	require.NoError(t, err)
 	assert.True(t, allowed)
 }
+
+func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldSucceed_whenAnotherWriterGrantedAfterConstruction(t *testing.T) {
+	t.Parallel()
+	// given: the ensurer's enforcer is loaded first, then another writer
+	// (cocotola-question creating the workbook) persists the same grant.
+	ctx := context.Background()
+	ensurer, err := initialize.NewWorkbookPolicyEnsurer(testDB)
+	require.NoError(t, err)
+
+	orgID := randOrgID(t)
+	workbookID := "wb-" + orgID.String()
+	otherWriter, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+	require.NoError(t, otherWriter.AddPolicyForUser(ctx, orgID, domain.SystemAppUserID(), domainrbac.ActionViewWorkbook(), mustResourceWorkbook(t, workbookID), domainrbac.EffectAllow()))
+
+	// when
+	err = ensurer.EnsureSystemOwnerWorkbookPolicies(ctx, orgID.String(), workbookID)
+
+	// then
+	require.NoError(t, err)
+}

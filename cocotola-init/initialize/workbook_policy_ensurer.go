@@ -32,9 +32,8 @@ func NewWorkbookPolicyEnsurer(db *gorm.DB) (*WorkbookPolicyEnsurer, error) {
 }
 
 // EnsureSystemOwnerWorkbookPolicies idempotently grants SystemAppUserID the
-// workbook-scoped policies on the given workbook. Existing policies are skipped
-// (Casbin returns no error when a policy already exists), so repeated init runs
-// are safe and orphaned workbooks are repaired in place.
+// workbook-scoped policies on the given workbook, so repeated init runs are safe
+// and orphaned workbooks are repaired in place.
 func (e *WorkbookPolicyEnsurer) EnsureSystemOwnerWorkbookPolicies(ctx context.Context, organizationID, workbookID string) error {
 	orgID, err := domain.ParseOrganizationID(organizationID)
 	if err != nil {
@@ -59,13 +58,6 @@ func (e *WorkbookPolicyEnsurer) EnsureSystemOwnerWorkbookPolicies(ctx context.Co
 		domainrbac.ActionCreateQuestion(),
 		domainrbac.ActionUpdateQuestion(),
 		domainrbac.ActionDeleteQuestion(),
-	}
-
-	// Reload the latest policies so the in-memory enforcer reflects grants
-	// already written by cocotola-question during this run. Without this the
-	// enforcer's stale view would re-insert duplicate rows.
-	if err := e.rbacRepo.LoadPolicy(); err != nil {
-		return fmt.Errorf("load policy: %w", err)
 	}
 
 	systemOwnerID := domain.SystemAppUserID()
