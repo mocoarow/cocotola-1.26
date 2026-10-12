@@ -25,7 +25,7 @@ func WithSignalWatchProcess() process.RunProcessFunc {
 func SignalWatchProcess(ctx context.Context) error {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigs)
 
 	return watchSignal(ctx, sigs)
 }
