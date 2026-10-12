@@ -25,11 +25,13 @@ go_library(
 smart_go_test(
     name = "space_test",
     srcs = [
+        "create_space_handler_s_test.go",
         "find_space_handler_s_test.go",
         "mocks_test.go",
     ],
     deps = [
         ":space",
+        "//cocotola-auth/controller",
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/space",
         "//cocotola-auth/service/space",

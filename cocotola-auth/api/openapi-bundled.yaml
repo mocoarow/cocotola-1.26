@@ -597,6 +597,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           headers: {}
+        '409':
+          description: Public space already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers: {}
         '500':
           description: Internal server error
           content:
