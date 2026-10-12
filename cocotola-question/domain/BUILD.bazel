@@ -24,6 +24,7 @@ go_library(
 smart_go_test(
     name = "domain_test",
     srcs = [
+        "active_question_list_s_test.go",
         "owned_workbook_list_s_test.go",
         "rbac_s_test.go",
         "validator_s_test.go",
