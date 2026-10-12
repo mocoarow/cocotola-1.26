@@ -91,6 +91,9 @@ func (r *GroupRepository) Save(ctx context.Context, group *domaingroup.Group) er
 	if errors.Is(err, libversioned.ErrNotFound) {
 		return domain.ErrGroupNotFound
 	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return fmt.Errorf("save group: %w", domain.ErrDuplicateEntry)
+	}
 	if err != nil {
 		return fmt.Errorf("save group: %w", err)
 	}

@@ -33,6 +33,28 @@ func Test_GroupRepository_Save_shouldInsertGroup_whenNewRecord(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_GroupRepository_Save_shouldReturnErrDuplicateEntry_whenNameAlreadyExists(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "group-duplicate-org")
+	repo := gateway.NewGroupRepository(tx)
+	firstID, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	secondID, err := domain.NewGroupIDV7()
+	require.NoError(t, err)
+	require.NoError(t, repo.Save(ctx, domaingroup.ReconstructGroup(firstID, orgID, "duplicate-group", true)))
+	duplicate := domaingroup.ReconstructGroup(secondID, orgID, "duplicate-group", true)
+
+	// when
+	err = repo.Save(ctx, duplicate)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
+}
+
 func Test_GroupRepository_FindByID_shouldReturnGroup_whenGroupExists(t *testing.T) {
 	t.Parallel()
 	// given
