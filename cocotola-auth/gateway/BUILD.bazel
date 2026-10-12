@@ -59,6 +59,7 @@ smart_go_test(
     srcs = [
         "active_group_list_repository_m_test.go",
         "active_user_list_repository_m_test.go",
+        "app_user_provider_repository_m_test.go",
         "app_user_repository_m_test.go",
         "auth_test.go",
         "event_bus_s_test.go",

@@ -263,6 +263,120 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldLinkProvider_whenUserExis
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenLinkingExistingUserLosesRace(t *testing.T) {
+	t.Parallel()
+
+	// given
+	verifierMock := NewMockSupabaseVerifier(t)
+	verifierMock.On("Verify", mock.Anything, "supabase-jwt").Return("sub-race", "existing@example.com", nil)
+
+	providerLink := domainuser.ReconstructAppUserProvider(
+		domain.MustParseAppUserProviderID("00000000-0000-7000-8000-000000000061"),
+		fixtureSupaUserID3, fixtureOrgID, "supabase", "sub-race",
+	)
+	providerFinderMock := NewMockAppUserProviderFinder(t)
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-race").
+		Return(nil, domain.ErrAppUserProviderNotFound).Twice()
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-race").
+		Return(providerLink, nil).Once()
+
+	providerSaverMock := NewMockAppUserProviderSaver(t)
+	providerSaverMock.On("Save", mock.Anything, mock.Anything).Return(fmt.Errorf("save app user provider: %w", domain.ErrDuplicateEntry))
+
+	existingUser := domainuser.ReconstructAppUser(fixtureSupaUserID3, fixtureOrgID, "existing@example.com", "", true)
+	appUserByIDFinderMock := NewMockAppUserByIDFinder(t)
+	appUserByIDFinderMock.On("FindByID", mock.Anything, fixtureSupaUserID3).Return(existingUser, nil)
+	loginIDFinderMock := NewMockAppUserByLoginIDFinder(t)
+	loginIDFinderMock.On("FindByLoginID", mock.Anything, fixtureOrgID, domain.LoginID("existing@example.com")).Return(existingUser, nil)
+
+	saverMock := NewMockAppUserSaver(t)
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(domain.ErrDuplicateEntry).Once()
+
+	orgFinderMock := NewMockOrganizationFinder(t)
+	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50), nil)
+
+	publisherMock := newMockeventPublisher(t)
+	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+	require.NoError(t, err)
+
+	// when
+	output, err := query.SupabaseExchange(context.Background(), input)
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, fixtureSupaUserID3.Equal(output.UserID))
+}
+
+// newUserLinkRaceQuery builds a query where the new user is saved but another request linked the sub to fixtureSupaUserID2 first.
+func newUserLinkRaceQuery(t *testing.T, publisherMock *mockeventPublisher) (*authusecase.SupabaseExchangeQuery, *authservice.SupabaseExchangeInput) {
+	t.Helper()
+	verifierMock := NewMockSupabaseVerifier(t)
+	verifierMock.On("Verify", mock.Anything, "supabase-jwt").Return("sub-new-race", "new-race@example.com", nil)
+
+	providerLink := domainuser.ReconstructAppUserProvider(
+		domain.MustParseAppUserProviderID("00000000-0000-7000-8000-000000000062"),
+		fixtureSupaUserID2, fixtureOrgID, "supabase", "sub-new-race",
+	)
+	providerFinderMock := NewMockAppUserProviderFinder(t)
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-new-race").
+		Return(nil, domain.ErrAppUserProviderNotFound).Once()
+	providerFinderMock.On("FindByProviderID", mock.Anything, fixtureOrgID, "supabase", "sub-new-race").
+		Return(providerLink, nil).Once()
+
+	providerSaverMock := NewMockAppUserProviderSaver(t)
+	providerSaverMock.On("Save", mock.Anything, mock.Anything).Return(fmt.Errorf("save app user provider: %w", domain.ErrDuplicateEntry))
+
+	appUserByIDFinderMock := NewMockAppUserByIDFinder(t)
+	appUserByIDFinderMock.On("FindByID", mock.Anything, fixtureSupaUserID2).
+		Return(domainuser.ReconstructAppUser(fixtureSupaUserID2, fixtureOrgID, "new-race@example.com", "", true), nil)
+	loginIDFinderMock := NewMockAppUserByLoginIDFinder(t)
+
+	saverMock := NewMockAppUserSaver(t)
+	saverMock.On("Save", mock.Anything, mock.Anything).Return(nil)
+
+	orgFinderMock := NewMockOrganizationFinder(t)
+	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50), nil)
+
+	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
+	require.NoError(t, err)
+	return query, input
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPublishAppUserCreatedForNewUser_whenNewUserLinkLosesRace(t *testing.T) {
+	t.Parallel()
+
+	// given
+	publisherMock := newMockeventPublisher(t)
+	publisherMock.On("Publish", mock.MatchedBy(func(e domain.AppUserCreated) bool {
+		return e.LoginID() == "new-race@example.com" && !e.AppUserID().Equal(fixtureSupaUserID2)
+	})).Return().Once()
+	query, input := newUserLinkRaceQuery(t, publisherMock)
+
+	// when
+	_, err := query.SupabaseExchange(context.Background(), input)
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenNewUserLinkLosesRace(t *testing.T) {
+	t.Parallel()
+
+	// given
+	publisherMock := newMockeventPublisher(t)
+	publisherMock.On("Publish", mock.Anything).Return()
+	query, input := newUserLinkRaceQuery(t, publisherMock)
+
+	// when
+	output, err := query.SupabaseExchange(context.Background(), input)
+
+	// then
+	require.NoError(t, err)
+	assert.True(t, fixtureSupaUserID2.Equal(output.UserID))
+}
+
 func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAccountHasPassword(t *testing.T) {
 	t.Parallel()
 

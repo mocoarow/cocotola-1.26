@@ -68,12 +68,7 @@ func (q *SupabaseExchangeQuery) SupabaseExchange(ctx context.Context, input *aut
 	// Step 1: Check if a provider link already exists.
 	providerLink, err := q.providerFinder.FindByProviderID(ctx, org.ID(), providerName, sub)
 	if err == nil {
-		// Provider link found — load the app user and return.
-		appUser, findErr := q.appUserByIDFinder.FindByID(ctx, providerLink.AppUserID())
-		if findErr != nil {
-			return nil, fmt.Errorf("find app user by id: %w", findErr)
-		}
-		return q.buildOutput(appUser.ID(), string(appUser.LoginID()), input.OrganizationName)
+		return q.outputForProviderLink(ctx, providerLink, input.OrganizationName)
 	}
 
 	if !errors.Is(err, domain.ErrAppUserProviderNotFound) {
@@ -89,23 +84,12 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 
 	newUser, createErr := domainuser.Provision(ctx, q.appUserSaver, orgID, loginID, "", true)
 	if createErr == nil {
-		_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, newUser.ID(), orgID, provider, providerID)
-		if linkErr != nil {
-			return nil, fmt.Errorf("create provider link for new user: %w", linkErr)
-		}
-
-		q.publisher.Publish(domain.NewAppUserCreated(newUser.ID(), orgID, string(loginID), time.Now()))
-
-		return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
+		return q.linkNewUser(ctx, newUser, orgID, provider, providerID, orgName)
 	}
 
 	// Race-condition: another request may have created the same provider mapping concurrently.
 	if providerLink, retryErr := q.providerFinder.FindByProviderID(ctx, orgID, provider, providerID); retryErr == nil {
-		appUser, findErr := q.appUserByIDFinder.FindByID(ctx, providerLink.AppUserID())
-		if findErr != nil {
-			return nil, fmt.Errorf("find app user by id after retry: %w", findErr)
-		}
-		return q.buildOutput(appUser.ID(), string(appUser.LoginID()), orgName)
+		return q.outputForProviderLink(ctx, providerLink, orgName)
 	}
 
 	// Only attempt to link an existing local account when the create failed
@@ -129,11 +113,45 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 	}
 
 	_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, existing.ID(), orgID, provider, providerID)
+	if errors.Is(linkErr, domain.ErrDuplicateEntry) {
+		return q.outputForLinkedProvider(ctx, orgID, provider, providerID, orgName)
+	}
 	if linkErr != nil {
 		return nil, fmt.Errorf("link provider to app user %s: %w", existing.ID().String(), linkErr)
 	}
 
 	return q.buildOutput(existing.ID(), string(existing.LoginID()), orgName)
+}
+
+func (q *SupabaseExchangeQuery) linkNewUser(ctx context.Context, newUser *domainuser.AppUser, orgID domain.OrganizationID, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+	_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, newUser.ID(), orgID, provider, providerID)
+	if linkErr != nil && !errors.Is(linkErr, domain.ErrDuplicateEntry) {
+		return nil, fmt.Errorf("create provider link for new user: %w", linkErr)
+	}
+
+	q.publisher.Publish(domain.NewAppUserCreated(newUser.ID(), orgID, string(newUser.LoginID()), time.Now()))
+
+	if linkErr != nil {
+		return q.outputForLinkedProvider(ctx, orgID, provider, providerID, orgName)
+	}
+	return q.buildOutput(newUser.ID(), string(newUser.LoginID()), orgName)
+}
+
+// outputForLinkedProvider resolves the user of a provider link that a concurrent request created first.
+func (q *SupabaseExchangeQuery) outputForLinkedProvider(ctx context.Context, orgID domain.OrganizationID, provider string, providerID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+	providerLink, err := q.providerFinder.FindByProviderID(ctx, orgID, provider, providerID)
+	if err != nil {
+		return nil, fmt.Errorf("find provider link after duplicate: %w", err)
+	}
+	return q.outputForProviderLink(ctx, providerLink, orgName)
+}
+
+func (q *SupabaseExchangeQuery) outputForProviderLink(ctx context.Context, providerLink *domainuser.AppUserProvider, orgName string) (*authservice.SupabaseExchangeOutput, error) {
+	appUser, err := q.appUserByIDFinder.FindByID(ctx, providerLink.AppUserID())
+	if err != nil {
+		return nil, fmt.Errorf("find app user %s: %w", providerLink.AppUserID().String(), err)
+	}
+	return q.buildOutput(appUser.ID(), string(appUser.LoginID()), orgName)
 }
 
 func (q *SupabaseExchangeQuery) buildOutput(userID domain.AppUserID, loginID string, orgName string) (*authservice.SupabaseExchangeOutput, error) {

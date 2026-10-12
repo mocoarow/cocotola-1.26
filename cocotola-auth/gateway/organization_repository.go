@@ -86,6 +86,9 @@ func (r *OrganizationRepository) Save(ctx context.Context, org *domain.Organizat
 	if errors.Is(err, libversioned.ErrNotFound) {
 		return domain.ErrOrganizationNotFound
 	}
+	if errors.Is(err, gorm.ErrDuplicatedKey) {
+		return fmt.Errorf("save organization: %w", domain.ErrDuplicateEntry)
+	}
 	if err != nil {
 		return fmt.Errorf("save organization: %w", err)
 	}
