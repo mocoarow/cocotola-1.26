@@ -85,6 +85,24 @@ func Test_FindSpaceHandler_shouldReturn400_whenSpaceIDIsInvalidUUID(t *testing.T
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func Test_FindSpaceHandler_shouldReturnFixedMessage_whenSpaceIDIsZero(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	usecase := NewMockFindSpaceUsecase(t)
+	r := setupFindSpaceRouter(t, usecase)
+	w := httptest.NewRecorder()
+
+	// when
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/internal/auth/space/00000000-0000-0000-0000-000000000000", nil)
+	require.NoError(t, err)
+	r.ServeHTTP(w, req)
+
+	// then
+	assert.JSONEq(t, `{"code":"invalid_request","message":"request is invalid"}`, w.Body.String())
+}
+
 func Test_FindSpaceHandler_shouldReturn404_whenSpaceNotFound(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
