@@ -76,7 +76,7 @@ func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, o
 	}
 
 	// 5. Assign admin group to first owner
-	if err := assignAdminGroup(ctx, rbacRepo, org.ID(), ownerUserID, logger); err != nil {
+	if err := assignGroup(ctx, rbacRepo, org.ID(), ownerUserID, domainrbac.GroupAdmin(), logger); err != nil {
 		return fmt.Errorf("assign admin group: %w", err)
 	}
 
@@ -114,7 +114,7 @@ func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWor
 		return fmt.Errorf("setup system owner rbac policies: %w", err)
 	}
 
-	if err := assignSystemOwnerGroup(ctx, rbacRepo, orgID, systemOwnerID, logger); err != nil {
+	if err := assignGroup(ctx, rbacRepo, orgID, systemOwnerID, domainrbac.GroupSystemOwner(), logger); err != nil {
 		return fmt.Errorf("assign system owner group: %w", err)
 	}
 
@@ -244,11 +244,6 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 }
 
 func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
-	adminGroup, err := domainrbac.NewGroup("admin")
-	if err != nil {
-		return fmt.Errorf("new rbac group: %w", err)
-	}
-
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateUser(),
 		domainrbac.ActionListUsers(),
@@ -266,25 +261,10 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 		domainrbac.ActionViewSpace(),
 	}
 
-	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, adminGroup, action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
-			return fmt.Errorf("add policy %s: %w", action.Value(), err)
-		}
-	}
-
-	logger.InfoContext(ctx, "RBAC policies created",
-		slog.String("organization_id", orgID.String()),
-		slog.Int("policy_count", len(actions)),
-	)
-	return nil
+	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupAdmin(), domainrbac.ResourceAny(), actions, logger)
 }
 
 func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
-	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
-	if err != nil {
-		return fmt.Errorf("new rbac group: %w", err)
-	}
-
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateUser(),
 		domainrbac.ActionListUsers(),
@@ -303,31 +283,33 @@ func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACReposit
 		domainrbac.ActionViewSpace(),
 	}
 
+	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupSystemOwner(), domainrbac.ResourceAny(), actions, logger)
+}
+
+func addGroupPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, group domainrbac.Group, resource domainrbac.Resource, actions []domainrbac.Action, logger *slog.Logger) error {
 	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, domainrbac.ResourceAny(), domainrbac.EffectAllow()); err != nil {
-			return fmt.Errorf("add system owner policy %s: %w", action.Value(), err)
+		if err := repo.AddPolicy(ctx, orgID, group, action, resource, domainrbac.EffectAllow()); err != nil {
+			return fmt.Errorf("add %s policy %s on %s: %w", group.Value(), action.Value(), resource.Value(), err)
 		}
 	}
 
-	logger.InfoContext(ctx, "system owner RBAC policies created",
+	logger.InfoContext(ctx, "RBAC policies added",
 		slog.String("organization_id", orgID.String()),
+		slog.String("group", group.Value()),
+		slog.String("resource", resource.Value()),
 		slog.Int("policy_count", len(actions)),
 	)
 	return nil
 }
 
-func assignAdminGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, logger *slog.Logger) error {
-	adminGroup, err := domainrbac.NewGroup("admin")
-	if err != nil {
-		return fmt.Errorf("new rbac group: %w", err)
+func assignGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, group domainrbac.Group, logger *slog.Logger) error {
+	if err := repo.AssignGroupToUser(ctx, orgID, userID, group); err != nil {
+		return fmt.Errorf("user %s: %w", userID.String(), err)
 	}
 
-	if err := repo.AssignGroupToUser(ctx, orgID, userID, adminGroup); err != nil {
-		return fmt.Errorf("assign group to user: %w", err)
-	}
-
-	logger.InfoContext(ctx, "admin group assigned to user",
+	logger.InfoContext(ctx, "RBAC group assigned to user",
 		slog.String("organization_id", orgID.String()),
+		slog.String("group", group.Value()),
 		slog.String("user_id", userID.String()),
 	)
 	return nil
@@ -357,17 +339,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 	return s, nil
 }
 
-// grantPublicSpacePoliciesToSystemOwner grants workbook/question CRUD policies on the
-// public space to the system_owner group. This function is idempotent: Casbin's
-// AddNamedPolicy returns (false, nil) when the policy already exists, so repeated
-// calls during re-initialization are safe.
 func grantPublicSpacePoliciesToSystemOwner(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, publicSpaceID domain.SpaceID, logger *slog.Logger) error {
-	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
-	if err != nil {
-		return fmt.Errorf("new rbac group: %w", err)
-	}
-
-	resource := domainrbac.ResourceSpace(publicSpaceID)
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateWorkbook(),
 		domainrbac.ActionViewWorkbook(),
@@ -378,33 +350,5 @@ func grantPublicSpacePoliciesToSystemOwner(ctx context.Context, repo *gateway.RB
 		domainrbac.ActionDeleteQuestion(),
 	}
 
-	for _, action := range actions {
-		if err := repo.AddPolicy(ctx, orgID, systemOwnerGroup, action, resource, domainrbac.EffectAllow()); err != nil {
-			return fmt.Errorf("add system owner policy %s on public space: %w", action.Value(), err)
-		}
-	}
-
-	logger.InfoContext(ctx, "system owner policies granted on public space",
-		slog.String("organization_id", orgID.String()),
-		slog.String("public_space_id", publicSpaceID.String()),
-		slog.Int("policy_count", len(actions)),
-	)
-	return nil
-}
-
-func assignSystemOwnerGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, logger *slog.Logger) error {
-	systemOwnerGroup, err := domainrbac.NewGroup("system_owner")
-	if err != nil {
-		return fmt.Errorf("new rbac group: %w", err)
-	}
-
-	if err := repo.AssignGroupToUser(ctx, orgID, userID, systemOwnerGroup); err != nil {
-		return fmt.Errorf("assign system owner group to user: %w", err)
-	}
-
-	logger.InfoContext(ctx, "system owner group assigned to user",
-		slog.String("organization_id", orgID.String()),
-		slog.String("user_id", userID.String()),
-	)
-	return nil
+	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupSystemOwner(), domainrbac.ResourceSpace(publicSpaceID), actions, logger)
 }

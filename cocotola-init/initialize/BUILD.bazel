@@ -23,12 +23,14 @@ go_library(
 smart_go_test(
     name = "initialize_test",
     srcs = [
+        "export_test.go",
         "initialize_m_test.go",
         "public_space_finder_m_test.go",
+        "rbac_setup_m_test.go",
         "workbook_policy_ensurer_m_test.go",
     ],
+    embed = [":initialize"],
     deps = [
-        ":initialize",
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/rbac",
         "//cocotola-auth/domain/space",
