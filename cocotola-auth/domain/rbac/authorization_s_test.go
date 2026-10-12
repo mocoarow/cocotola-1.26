@@ -173,6 +173,60 @@ func Test_NewRBACGroup_shouldReturnError_whenValueIsEmpty(t *testing.T) {
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
+func Test_PredefinedGroups_shouldHaveCorrectValues(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		group rbac.Group
+		want  string
+	}{
+		{name: "GroupAdmin", group: rbac.GroupAdmin(), want: "admin"},
+		{name: "GroupSystemOwner", group: rbac.GroupSystemOwner(), want: "system_owner"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// then
+			assert.Equal(t, tt.want, tt.group.Value())
+		})
+	}
+}
+
+func Test_IsLoginDenied_shouldReturnTrue_whenGroupIsSystemGroup(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		group string
+	}{
+		{name: "system admin", group: "system_admin"},
+		{name: "system owner", group: "system_owner"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// when
+			denied := rbac.IsLoginDenied(tt.group)
+
+			// then
+			assert.True(t, denied)
+		})
+	}
+}
+
+func Test_IsLoginDenied_shouldReturnFalse_whenGroupIsAdmin(t *testing.T) {
+	t.Parallel()
+
+	// when
+	denied := rbac.IsLoginDenied("admin")
+
+	// then
+	assert.False(t, denied)
+}
+
 func Test_EffectAllow_shouldReturnAllow(t *testing.T) {
 	t.Parallel()
 

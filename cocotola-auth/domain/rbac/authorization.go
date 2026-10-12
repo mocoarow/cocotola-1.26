@@ -161,6 +161,12 @@ func NewGroup(value string) (Group, error) {
 // Value returns the string representation.
 func (g Group) Value() string { return g.value }
 
+// GroupAdmin returns the group of organization administrators.
+func GroupAdmin() Group { return Group{value: "admin"} }
+
+// GroupSystemOwner returns the group of the system owner.
+func GroupSystemOwner() Group { return Group{value: "system_owner"} }
+
 // Effect represents the effect of a policy (allow or deny).
 type Effect struct {
 	value string
@@ -212,7 +218,7 @@ type GroupFinder interface {
 // IsLoginDenied returns true if the given group denies login.
 func IsLoginDenied(group string) bool {
 	switch group {
-	case "system_admin", "system_owner":
+	case "system_admin", GroupSystemOwner().Value():
 		return true
 	default:
 		return false

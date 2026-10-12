@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
@@ -185,7 +186,7 @@ func Test_UserAuthenticator_Authenticate_shouldReturnErrUnauthenticated_whenUser
 
 	rbacRepo, err := gateway.NewRBACRepository(testDB)
 	require.NoError(t, err)
-	ownerGroup := mustGroup(t, "system_owner")
+	ownerGroup := domainrbac.GroupSystemOwner()
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, ownerGroup))
 
 	hasher := gateway.NewBcryptHasher()
