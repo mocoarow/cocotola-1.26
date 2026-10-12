@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"go.yaml.in/yaml/v4"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
 )
 
 // ErrInvalidSeed is returned when a seed set violates the invariants the seeder
@@ -53,6 +55,7 @@ func loadSeedFile(path string) ([]PublicWorkbookSeed, error) {
 
 // validateSeeds enforces the invariants the seeder relies on:
 //   - workbook seedKeys are non-empty and unique across the file
+//   - workbook languages are ISO 639-1 codes
 //   - question seedKeys are non-empty and unique within a workbook
 func validateSeeds(workbooks []PublicWorkbookSeed) error {
 	seenWorkbooks := make(map[string]bool, len(workbooks))
@@ -65,6 +68,9 @@ func validateSeeds(workbooks []PublicWorkbookSeed) error {
 			return fmt.Errorf("workbook[%d]: duplicate seedKey %q: %w", i, wb.SeedKey, ErrInvalidSeed)
 		}
 		seenWorkbooks[wb.SeedKey] = true
+		if !i18n.IsValidISO6391(wb.Language) {
+			return fmt.Errorf("workbook %q: language %q must be a lowercase ISO 639-1 code: %w", wb.SeedKey, wb.Language, ErrInvalidSeed)
+		}
 
 		seenQuestions := make(map[string]bool, len(wb.Questions))
 		for j, q := range wb.Questions {
