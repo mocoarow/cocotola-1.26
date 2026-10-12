@@ -28,6 +28,14 @@ func newQuestion(t *testing.T, workbookID string, orderIndex int) *domainquestio
 	return q
 }
 
+func questionIDs(questions []domainquestion.Question) []string {
+	ids := make([]string, len(questions))
+	for i := range questions {
+		ids[i] = questions[i].ID()
+	}
+	return ids
+}
+
 func Test_QuestionRepository_Save_shouldInsertAndIncrementVersion_whenVersionIsZero(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -161,6 +169,86 @@ func Test_QuestionRepository_FindByID_shouldReturnErrQuestionNotFound_whenMissin
 
 	// then
 	require.ErrorIs(t, err, domain.ErrQuestionNotFound)
+}
+
+func Test_QuestionRepository_FindByIDs_shouldReturnQuestionsInRequestedOrder_whenAllIDsExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	workbookID := "test-wb-findbyids-all-" + t.Name()
+	q0 := newQuestion(t, workbookID, 0)
+	q1 := newQuestion(t, workbookID, 1)
+	q2 := newQuestion(t, workbookID, 2)
+	for _, q := range []*domainquestion.Question{q0, q1, q2} {
+		require.NoError(t, repo.Save(ctx, q))
+	}
+	requested := []string{q2.ID(), q0.ID(), q1.ID()}
+
+	// when
+	got, err := repo.FindByIDs(ctx, workbookID, requested)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, requested, questionIDs(got))
+}
+
+func Test_QuestionRepository_FindByIDs_shouldSkipMissingIDs_whenSomeIDsDoNotExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	workbookID := "test-wb-findbyids-missing-" + t.Name()
+	q0 := newQuestion(t, workbookID, 0)
+	q1 := newQuestion(t, workbookID, 1)
+	require.NoError(t, repo.Save(ctx, q0))
+	require.NoError(t, repo.Save(ctx, q1))
+
+	// when
+	got, err := repo.FindByIDs(ctx, workbookID, []string{q0.ID(), "missing-q", q1.ID()})
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{q0.ID(), q1.ID()}, questionIDs(got))
+}
+
+func Test_QuestionRepository_FindByIDs_shouldNotReturnQuestion_whenIDBelongsToAnotherWorkbook(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	otherWorkbookID := "test-wb-findbyids-other-" + t.Name()
+	q := newQuestion(t, otherWorkbookID, 0)
+	require.NoError(t, repo.Save(ctx, q))
+
+	// when
+	got, err := repo.FindByIDs(ctx, "test-wb-findbyids-target-"+t.Name(), []string{q.ID()})
+
+	// then
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func Test_QuestionRepository_FindByIDs_shouldReturnEmpty_whenIDsAreEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+
+	// when
+	got, err := repo.FindByIDs(ctx, "test-wb-findbyids-empty-"+t.Name(), []string{})
+
+	// then
+	require.NoError(t, err)
+	assert.Empty(t, got)
 }
 
 func Test_QuestionRepository_Save_shouldReturnErrQuestionNotFound_whenDocWasDeletedAfterLoad(t *testing.T) {
