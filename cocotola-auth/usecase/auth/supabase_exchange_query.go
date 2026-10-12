@@ -113,7 +113,7 @@ func (q *SupabaseExchangeQuery) findOrCreateUserAndLink(ctx context.Context, org
 
 	// Refuse to auto-link an existing password-holding account.
 	if existing.HashedPassword() != "" {
-		return nil, fmt.Errorf("app user %s login=%s: %w", existing.ID().String(), email, domain.ErrAppUserAutoLinkRejected)
+		return nil, fmt.Errorf("app user %s: %w", existing.ID().String(), domain.ErrAppUserAutoLinkRejected)
 	}
 
 	_, linkErr := domainuser.ProvisionProvider(ctx, q.providerSaver, existing.ID(), orgID, provider, providerID)

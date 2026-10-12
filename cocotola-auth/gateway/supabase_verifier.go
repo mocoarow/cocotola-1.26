@@ -63,7 +63,7 @@ func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (stri
 	}
 
 	if !readEmailVerified(claims) {
-		return "", "", fmt.Errorf("supabase token email=%s: %w", email, domain.ErrSupabaseEmailNotVerified)
+		return "", "", fmt.Errorf("supabase token sub %s: %w", sub, domain.ErrSupabaseEmailNotVerified)
 	}
 
 	return sub, email, nil

@@ -203,6 +203,30 @@ func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailNotVerified(t *test
 	require.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
 }
 
+func Test_SupabaseVerifier_Verify_shouldNotIncludeEmailInError_whenEmailNotVerified(t *testing.T) {
+	t.Parallel()
+
+	// given
+	key := generateTestKey(t)
+	server := serveJWKS(t, key)
+	verifier, err := gateway.NewSupabaseVerifier(context.Background(), server.URL)
+	require.NoError(t, err)
+	defer verifier.Close()
+
+	tokenStr := makeRSAJWT(t, key, jwt.MapClaims{
+		"sub":   "user-uuid-123",
+		"email": "test@example.com",
+		"exp":   time.Now().Add(1 * time.Hour).Unix(),
+	})
+
+	// when
+	_, _, err = verifier.Verify(context.Background(), tokenStr)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrSupabaseEmailNotVerified)
+	assert.NotContains(t, err.Error(), "test@example.com")
+}
+
 func Test_SupabaseVerifier_Verify_shouldReturnError_whenEmailVerifiedIsFalse(t *testing.T) {
 	t.Parallel()
 
