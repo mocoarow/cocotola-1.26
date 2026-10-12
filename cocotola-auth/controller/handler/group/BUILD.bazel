@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "group",
@@ -17,5 +18,23 @@ go_library(
         "//cocotola-auth/service/group",
         "//cocotola-lib/logging",
         "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "group_test",
+    srcs = [
+        "create_group_handler_s_test.go",
+        "mocks_test.go",
+    ],
+    deps = [
+        ":group",
+        "//cocotola-auth/controller",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/group",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
     ],
 )

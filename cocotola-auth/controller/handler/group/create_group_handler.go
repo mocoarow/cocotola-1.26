@@ -88,9 +88,14 @@ func (h *CreateGroupHandler) handleError(ctx context.Context, c *gin.Context, er
 		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))
 		return
 	}
-	if errors.Is(err, domain.ErrActiveGroupLimitReached) || errors.Is(err, domain.ErrDuplicateEntry) {
+	if errors.Is(err, domain.ErrDuplicateEntry) {
 		h.logger.WarnContext(ctx, "conflict", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", err.Error()))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "group already exists"))
+		return
+	}
+	if errors.Is(err, domain.ErrActiveGroupLimitReached) {
+		h.logger.WarnContext(ctx, "conflict", slog.Any("error", err))
+		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "active group limit reached"))
 		return
 	}
 	if errors.Is(err, domain.ErrOrganizationNotFound) {
