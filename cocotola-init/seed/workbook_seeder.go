@@ -122,7 +122,7 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 	// to the offending seed entry. Reject anything outside the canonical
 	// lowercase ISO 639-1 form (e.g. "JA", "jpn", "ja-JP").
 	if !i18n.IsValidISO6391(sd.Language) {
-		return "", fmt.Errorf("seed %q: language %q must be a lowercase ISO 639-1 code", sd.SeedKey, sd.Language)
+		return "", fmt.Errorf("seed %q: language %q must be a lowercase ISO 639-1 code: %w", sd.SeedKey, sd.Language, ErrInvalidSeed)
 	}
 
 	body := CreateWorkbookRequest{
