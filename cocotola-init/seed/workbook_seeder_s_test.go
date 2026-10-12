@@ -289,6 +289,40 @@ func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T)
 	require.ErrorIs(t, err, createErr)
 }
 
+func Test_WorkbookSeeder_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		language string
+	}{
+		{name: "uppercase", language: "JA"},
+		{name: "three letters", language: "jpn"},
+		{name: "region subtag", language: "ja-JP"},
+		{name: "empty", language: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given: no workbook exists yet, so the seeder would create one
+			client := NewMockWorkbookAPIClient(t)
+			client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+				Return(nil, nil)
+			ensurer := NewMockWorkbookPolicyEnsurer(t)
+			seeds := []seed.PublicWorkbookSeed{{SeedKey: "vocab-v1", Title: "Vocabulary", Language: tt.language}}
+			seeder := seed.NewWorkbookSeeder(client, ensurer, seeds)
+
+			// when
+			err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+			// then
+			require.ErrorIs(t, err, seed.ErrInvalidSeed)
+		})
+	}
+}
+
 func Test_WorkbookSeeder_shouldReturnError_whenEnsurePoliciesFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
