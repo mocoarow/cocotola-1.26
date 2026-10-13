@@ -61,13 +61,7 @@ func (h *SupabaseExchangeHandler) Exchange(c *gin.Context) {
 
 	exchangeOutput, err := h.usecase.SupabaseExchange(ctx, input)
 	if err != nil {
-		if errors.Is(err, domain.ErrOrganizationNotFound) {
-			h.logger.WarnContext(ctx, "organization not found", slog.Any("error", err))
-			c.JSON(http.StatusBadRequest, controller.NewErrorResponse("organization_not_found", "organization not found"))
-			return
-		}
-		h.logger.WarnContext(ctx, "supabase exchange", slog.Any("error", err))
-		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthenticated", "invalid supabase token"))
+		h.writeExchangeError(c, err)
 		return
 	}
 
@@ -90,4 +84,22 @@ func (h *SupabaseExchangeHandler) Exchange(c *gin.Context) {
 		RefreshToken: &tokenOutput.RefreshToken,
 	}
 	c.JSON(http.StatusOK, resp)
+}
+
+func (h *SupabaseExchangeHandler) writeExchangeError(c *gin.Context, err error) {
+	ctx := c.Request.Context()
+
+	switch {
+	case errors.Is(err, domain.ErrOrganizationNotFound):
+		h.logger.WarnContext(ctx, "organization not found", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("organization_not_found", "organization not found"))
+	case errors.Is(err, domain.ErrUnauthenticated),
+		errors.Is(err, domain.ErrSupabaseEmailNotVerified),
+		errors.Is(err, domain.ErrAppUserAutoLinkRejected):
+		h.logger.WarnContext(ctx, "supabase exchange rejected", slog.Any("error", err))
+		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthenticated", "invalid supabase token"))
+	default:
+		h.logger.ErrorContext(ctx, "supabase exchange", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+	}
 }
