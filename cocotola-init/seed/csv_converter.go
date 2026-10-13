@@ -184,12 +184,13 @@ func convertWordFillRow(row []string, idx map[string]int, seen map[string]bool, 
 		{lang: targetLang, number: cell(row, idx, "srcSentenceNumber"), author: cell(row, idx, "srcAuthor")},
 	})
 
-	content, err := marshalWordFillContent(
-		cell(row, idx, "srcText"), sourceLang,
-		target, targetLang,
-		attribution, attribution,
-		len(answers) > 1,
-	)
+	content, err := marshalWordFillContent(wordFillContentJSON{
+		Source:             textWithLangJSON{Text: cell(row, idx, "srcText"), Lang: sourceLang},
+		Target:             textWithLangJSON{Text: target, Lang: targetLang},
+		Explanation1:       attribution,
+		Explanation2:       attribution,
+		AllowPartialCredit: len(answers) > 1,
+	})
 	if err != nil {
 		return QuestionSeed{}, fmt.Errorf("id %s: %w", id, err)
 	}
@@ -221,14 +222,7 @@ func buildWordFillTarget(blankText string, answers []string) (string, error) {
 	return result, nil
 }
 
-func marshalWordFillContent(sourceText, sourceLang, targetText, targetLang, explanation1, explanation2 string, allowPartialCredit bool) (string, error) {
-	content := wordFillContentJSON{
-		Source:             textWithLangJSON{Text: sourceText, Lang: sourceLang},
-		Target:             textWithLangJSON{Text: targetText, Lang: targetLang},
-		Explanation1:       explanation1,
-		Explanation2:       explanation2,
-		AllowPartialCredit: allowPartialCredit,
-	}
+func marshalWordFillContent(content wordFillContentJSON) (string, error) {
 	encoded, err := json.Marshal(content)
 	if err != nil {
 		return "", fmt.Errorf("marshal word_fill content: %w", err)
