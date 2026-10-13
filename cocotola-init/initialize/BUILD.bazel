@@ -24,6 +24,7 @@ smart_go_test(
     name = "initialize_test",
     srcs = [
         "export_test.go",
+        "find_or_create_user_m_test.go",
         "initialize_m_test.go",
         "public_space_finder_m_test.go",
         "rbac_setup_m_test.go",
@@ -34,6 +35,7 @@ smart_go_test(
         "//cocotola-auth/domain",
         "//cocotola-auth/domain/rbac",
         "//cocotola-auth/domain/space",
+        "//cocotola-auth/domain/user",
         "//cocotola-auth/gateway",
         "//cocotola-lib/gateway",
         "@com_github_stretchr_testify//assert",

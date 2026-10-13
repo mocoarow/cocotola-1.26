@@ -19,16 +19,23 @@ import (
 // within its 50-character limit while staying unique per test.
 const orgNameSuffixLength = 12
 
+// newOrganization saves an organization unique to the test and returns its ID and name.
+func newOrganization(ctx context.Context, t *testing.T, namePrefix string) (domain.OrganizationID, string) {
+	t.Helper()
+	orgID := randOrgID(t)
+	id := orgID.String()
+	name := namePrefix + id[len(id)-orgNameSuffixLength:]
+	org, err := domain.NewOrganization(orgID, name, 10, 10)
+	require.NoError(t, err)
+	require.NoError(t, gateway.NewOrganizationRepository(testDB).Save(ctx, org))
+	return orgID, name
+}
+
 // newOrganizationWithPublicSpace saves an organization unique to the test and
 // provisions its public space.
 func newOrganizationWithPublicSpace(ctx context.Context, t *testing.T) (domain.OrganizationID, *domainspace.Space) {
 	t.Helper()
-	orgID := randOrgID(t)
-	id := orgID.String()
-	name := "finder-" + id[len(id)-orgNameSuffixLength:]
-	org, err := domain.NewOrganization(orgID, name, 10, 10)
-	require.NoError(t, err)
-	require.NoError(t, gateway.NewOrganizationRepository(testDB).Save(ctx, org))
+	orgID, name := newOrganization(ctx, t, "finder-")
 
 	space, err := domainspace.Provision(ctx, gateway.NewSpaceRepository(testDB), orgID, domain.SystemAppUserID(),
 		domainspace.PublicSpaceKeyName(name), "Public", domainspace.TypePublic())

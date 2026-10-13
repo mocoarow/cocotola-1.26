@@ -169,7 +169,6 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
 			slog.String("user_id", user.ID().String()),
-			slog.String("login_id", string(user.LoginID())),
 		)
 		return user.ID(), nil
 	}
@@ -189,7 +188,6 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 
 	logger.InfoContext(ctx, "owner user created",
 		slog.String("user_id", user.ID().String()),
-		slog.String("login_id", loginID),
 	)
 	return user.ID(), nil
 }
@@ -201,7 +199,6 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 	if err == nil {
 		logger.InfoContext(ctx, "guest user already exists",
 			slog.String("user_id", user.ID().String()),
-			slog.String("login_id", string(user.LoginID())),
 		)
 		return user.ID(), nil
 	}
@@ -216,7 +213,6 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 
 	logger.InfoContext(ctx, "guest user created",
 		slog.String("user_id", user.ID().String()),
-		slog.String("login_id", guestLoginID),
 	)
 	return user.ID(), nil
 }
