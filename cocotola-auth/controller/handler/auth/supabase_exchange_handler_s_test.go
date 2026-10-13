@@ -79,28 +79,77 @@ func Test_SupabaseExchangeHandler_Exchange_shouldReturn400_whenRequestBodyIsInva
 	validateErrorResponse(t, respBytes, "invalid_supabase_exchange_request", "request body is invalid")
 }
 
-func Test_SupabaseExchangeHandler_Exchange_shouldReturn401_whenTokenIsInvalid(t *testing.T) {
+func Test_SupabaseExchangeHandler_Exchange_shouldReturn401_whenTokenIsRejected(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	tests := []struct {
+		name        string
+		exchangeErr error
+	}{
+		{name: "unauthenticated", exchangeErr: fmt.Errorf("verify supabase token: %w", domain.ErrUnauthenticated)},
+		{name: "email not verified", exchangeErr: fmt.Errorf("verify supabase token: %w", domain.ErrSupabaseEmailNotVerified)},
+		{name: "auto-link rejected", exchangeErr: fmt.Errorf("app user 1: %w", domain.ErrAppUserAutoLinkRejected)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
 
-	// given
-	authUsecase := NewMockAuthUsecase(t)
-	authUsecase.On("SupabaseExchange", mock.Anything, mock.Anything).Return(nil, errors.New("verify supabase token: invalid")).Once()
+			// given
+			authUsecase := NewMockAuthUsecase(t)
+			authUsecase.On("SupabaseExchange", mock.Anything, mock.Anything).Return(nil, tt.exchangeErr).Once()
 
-	r := initAuthRouter(ctx, t, authUsecase)
-	w := httptest.NewRecorder()
-	body := `{"supabaseJwt":"invalid-jwt","organizationName":"org1"}`
+			r := initAuthRouter(ctx, t, authUsecase)
+			w := httptest.NewRecorder()
+			body := `{"supabaseJwt":"invalid-jwt","organizationName":"org1"}`
 
-	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/internal/auth/supabase/exchange", strings.NewReader(body))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/json")
-	r.ServeHTTP(w, req)
-	respBytes := readBytes(t, w.Body)
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/internal/auth/supabase/exchange", strings.NewReader(body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
 
-	// then
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	validateErrorResponse(t, respBytes, "unauthenticated", "invalid supabase token")
+			// then
+			assert.Equal(t, http.StatusUnauthorized, w.Code)
+			validateErrorResponse(t, respBytes, "unauthenticated", "invalid supabase token")
+		})
+	}
+}
+
+func Test_SupabaseExchangeHandler_Exchange_shouldReturn500_whenExchangeFailsForOtherReasons(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name        string
+		exchangeErr error
+	}{
+		{name: "internal", exchangeErr: fmt.Errorf("save new app user: %w: %w", errors.New("connection refused"), domain.ErrInternal)},
+		{name: "unclassified", exchangeErr: fmt.Errorf("find organization org1: %w", errors.New("connection refused"))},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			authUsecase := NewMockAuthUsecase(t)
+			authUsecase.On("SupabaseExchange", mock.Anything, mock.Anything).Return(nil, tt.exchangeErr).Once()
+
+			r := initAuthRouter(ctx, t, authUsecase)
+			w := httptest.NewRecorder()
+			body := `{"supabaseJwt":"valid-jwt","organizationName":"org1"}`
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/internal/auth/supabase/exchange", strings.NewReader(body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusInternalServerError, w.Code)
+			validateErrorResponse(t, respBytes, "internal_server_error", http.StatusText(http.StatusInternalServerError))
+		})
+	}
 }
 
 func Test_SupabaseExchangeHandler_Exchange_shouldReturn400_whenOrganizationNotFound(t *testing.T) {
