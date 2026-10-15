@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "workbook",
@@ -6,4 +7,13 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook",
     visibility = ["//visibility:public"],
     deps = ["//cocotola-question/domain"],
+)
+
+smart_go_test(
+    name = "workbook_test",
+    srcs = ["workbook_s_test.go"],
+    deps = [
+        ":workbook",
+        "@com_github_stretchr_testify//require",
+    ],
 )
