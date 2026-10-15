@@ -2,6 +2,7 @@ import { CircleCheckIcon, CircleIcon, PencilIcon, Trash2Icon } from "lucide-reac
 import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
+import { MarkdownText } from "~/components/markdown-text";
 import { Button } from "~/components/ui/button";
 import type { Question } from "~/lib/api/question.server";
 import { parseMultipleChoiceContent, parseWordFillContent } from "./schemas";
@@ -93,9 +94,7 @@ export function QuestionCard({
                 ) as string[],
               ),
             ).map((text) => (
-              <p key={text} className="whitespace-pre-line text-xs text-muted-foreground">
-                {text}
-              </p>
+              <MarkdownText key={text} text={text} className="text-xs text-muted-foreground" />
             ))}
           </div>
         ) : (
@@ -140,7 +139,7 @@ export function QuestionCard({
               ))}
             </div>
             {parsed.explanation && (
-              <p className="text-xs text-muted-foreground">{parsed.explanation}</p>
+              <MarkdownText text={parsed.explanation} className="text-xs text-muted-foreground" />
             )}
           </div>
         ) : (

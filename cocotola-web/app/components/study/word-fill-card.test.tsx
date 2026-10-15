@@ -6,10 +6,15 @@ import "~/i18n/config";
 
 import { WordFillCard } from "./word-fill-card";
 
-function makeContent(target: string, source?: string) {
+function makeContent(
+  target: string,
+  source?: string,
+  options: { explanation?: string; explanation1?: string; explanation2?: string } = {},
+) {
   return JSON.stringify({
     source: source ? { text: source, lang: "ja" } : undefined,
     target: { text: target, lang: "en" },
+    ...options,
   });
 }
 
@@ -322,5 +327,51 @@ describe("WordFillCard", () => {
     // then
     expect(screen.getByLabelText("Blank 1")).toBeInTheDocument();
     expect(screen.getByLabelText("Blank 2")).toBeInTheDocument();
+  });
+
+  it("should render explanation1 link before the answer is revealed", () => {
+    // given
+    const content = makeContent("{{hello}}", undefined, {
+      explanation1: "Source: [#1](https://tatoeba.org/en/sentences/show/1)",
+    });
+    const onAnswer = vi.fn();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+
+    // then
+    expect(screen.getByRole("link", { name: "#1" })).toBeInTheDocument();
+  });
+
+  it("should render explanation2 link after the answer is revealed", async () => {
+    // given
+    const content = makeContent("{{hello}}", undefined, {
+      explanation2: "Source: [#2](https://tatoeba.org/en/sentences/show/2)",
+    });
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    await user.click(screen.getByText("Show answer"));
+
+    // then
+    expect(screen.getByRole("link", { name: "#2" })).toBeInTheDocument();
+  });
+
+  it("should render the legacy explanation link after reveal when explanation2 is missing", async () => {
+    // given
+    const content = makeContent("{{hello}}", undefined, {
+      explanation: "Source: [#3](https://tatoeba.org/en/sentences/show/3)",
+    });
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    await user.click(screen.getByText("Show answer"));
+
+    // then
+    expect(screen.getByRole("link", { name: "#3" })).toBeInTheDocument();
   });
 });
