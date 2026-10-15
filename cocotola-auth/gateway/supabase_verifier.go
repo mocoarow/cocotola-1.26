@@ -2,12 +2,17 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
+	"net/http"
+	"sync/atomic"
 
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
 // allowedSupabaseAlgs is asymmetric-only: HS* and "none" must never be accepted.
@@ -17,21 +22,66 @@ func allowedSupabaseAlgs() []string {
 
 // SupabaseVerifier verifies Supabase JWT tokens using JWKS.
 type SupabaseVerifier struct {
-	jwks   keyfunc.Keyfunc
-	cancel context.CancelFunc
+	jwks          keyfunc.Keyfunc
+	jwksAvailable *atomic.Bool
+	cancel        context.CancelFunc
 }
 
-// NewSupabaseVerifier fetches the JWKS from the given URL and returns a new SupabaseVerifier.
+// NewSupabaseVerifier returns a SupabaseVerifier that fetches the JWKS from the given URL.
 func NewSupabaseVerifier(ctx context.Context, jwksURL string) (*SupabaseVerifier, error) {
 	ctx, cancel := context.WithCancel(ctx)
+	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-SupabaseVerifier"))
+	jwksAvailable := &atomic.Bool{}
 
-	jwks, err := keyfunc.NewDefaultCtx(ctx, []string{jwksURL})
+	jwks, err := keyfunc.NewDefaultOverrideCtx(ctx, []string{jwksURL}, newJWKSOverride(jwksAvailable, logger))
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("fetch JWKS from %s: %w", jwksURL, err)
+		return nil, fmt.Errorf("create JWKS keyfunc for %s: %w", jwksURL, err)
 	}
 
-	return &SupabaseVerifier{jwks: jwks, cancel: cancel}, nil
+	return &SupabaseVerifier{jwks: jwks, jwksAvailable: jwksAvailable, cancel: cancel}, nil
+}
+
+func newJWKSOverride(available *atomic.Bool, logger *slog.Logger) keyfunc.Override {
+	return keyfunc.Override{
+		Client: &http.Client{
+			Transport:     &jwksTransport{base: http.DefaultTransport, available: available},
+			CheckRedirect: nil,
+			Jar:           nil,
+			Timeout:       0,
+		},
+		HTTPTimeout:               0,
+		NoErrorReturnFirstHTTPReq: nil,
+		RateLimitWaitMax:          0,
+		RefreshErrorHandlerFunc: func(u string) func(context.Context, error) {
+			return func(ctx context.Context, err error) {
+				if errors.Is(err, context.Canceled) {
+					return
+				}
+				available.Store(false)
+				logger.ErrorContext(ctx, "refresh JWKS", slog.String("url", u), slog.Any("error", err))
+			}
+		},
+		RefreshInterval:   0,
+		RefreshUnknownKID: nil,
+		ValidationSkipAll: false,
+	}
+}
+
+type jwksTransport struct {
+	base      http.RoundTripper
+	available *atomic.Bool
+}
+
+func (t *jwksTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, fmt.Errorf("JWKS round trip: %w", err)
+	}
+	if resp.StatusCode == http.StatusOK {
+		t.available.Store(true)
+	}
+	return resp, nil
 }
 
 // Verify validates a Supabase JWT and returns its sub and email.
@@ -44,6 +94,9 @@ func (v *SupabaseVerifier) Verify(ctx context.Context, tokenString string) (stri
 		jwt.WithValidMethods(allowedSupabaseAlgs()),
 	)
 	if err != nil {
+		if errors.Is(err, keyfunc.ErrKeyfunc) && !v.jwksAvailable.Load() {
+			return "", "", fmt.Errorf("parse supabase token: %w: %w", err, domain.ErrInternal)
+		}
 		return "", "", fmt.Errorf("parse supabase token: %w: %w", err, domain.ErrUnauthenticated)
 	}
 
