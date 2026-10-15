@@ -295,7 +295,7 @@ func Test_AuthServiceMaxWorkbooksFetcher_FetchMaxWorkbooks_shouldRequestUserSett
 	}, receivedRequest(t, requests).Target)
 }
 
-func Test_AuthServiceMaxWorkbooksFetcher_FetchMaxWorkbooks_shouldReturnError_whenValueIsNotPositive(t *testing.T) {
+func Test_AuthServiceMaxWorkbooksFetcher_FetchMaxWorkbooks_shouldReturnErrInvalidMaxWorkbooks_whenValueIsNotPositive(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -318,7 +318,7 @@ func Test_AuthServiceMaxWorkbooksFetcher_FetchMaxWorkbooks_shouldReturnError_whe
 			_, err := fetcher.FetchMaxWorkbooks(context.Background(), "user-1")
 
 			// then
-			require.ErrorContains(t, err, "invalid max workbooks value")
+			require.ErrorIs(t, err, domain.ErrInvalidMaxWorkbooks)
 		})
 	}
 }
