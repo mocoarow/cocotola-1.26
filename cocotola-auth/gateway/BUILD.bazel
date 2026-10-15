@@ -42,6 +42,7 @@ go_library(
         "//cocotola-auth/service/auth",
         "//cocotola-lib/domain/versioned",
         "//cocotola-lib/gateway/gormsave",
+        "//cocotola-lib/logging",
         "//cocotola-lib/process",
         "@com_github_casbin_casbin_v3//:casbin",
         "@com_github_casbin_casbin_v3//model",
