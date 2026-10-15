@@ -25,7 +25,7 @@ func postCreateSpace(t *testing.T, usecase *MockCreateSpaceUsecase, body string)
 	r := gin.New()
 	r.Use(func(c *gin.Context) {
 		c.Set(controller.ContextFieldUserID{}, fixtureOwnerID.String())
-		c.Set(controller.ContextFieldOrganizationName{}, "cocotola")
+		c.Set(controller.ContextFieldOrganizationName{}, fixtureOrganizationName)
 		c.Next()
 	})
 	r.POST("/space", spacehandler.NewCreateSpaceHandler(usecase).CreateSpace)

@@ -25,6 +25,8 @@ var (
 	fixtureOwnerID = domain.MustParseAppUserID("33333333-3333-7333-8333-333333333333")
 )
 
+const fixtureOrganizationName = "cocotola"
+
 func setupFindSpaceRouter(t *testing.T, usecase *MockFindSpaceUsecase) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
