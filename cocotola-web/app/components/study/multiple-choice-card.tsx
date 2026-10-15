@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MarkdownText } from "~/components/markdown-text";
 import { Button } from "~/components/ui/button";
 import { type Choice, parseMultipleChoiceContent } from "~/components/workbook/schemas";
 
@@ -120,7 +121,7 @@ export function MultipleChoiceCard({ content, onAnswer }: MultipleChoiceCardProp
       </div>
 
       {parsed.explanation && checked && (
-        <p className="text-sm text-muted-foreground">{parsed.explanation}</p>
+        <MarkdownText text={parsed.explanation} className="text-sm text-muted-foreground" />
       )}
 
       {!checked ? (

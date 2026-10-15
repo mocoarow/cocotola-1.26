@@ -275,6 +275,23 @@ describe("MultipleChoiceCard", () => {
     expect(screen.getByText("Because reasons")).toBeInTheDocument();
   });
 
+  it("should render explanation link after Check", async () => {
+    // given
+    const content = makeContent("Q?", [{ id: "1", text: "A", isCorrect: true }], {
+      explanation: "See [docs](https://example.test/docs)",
+    });
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    await user.click(screen.getByText("A"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+
+    // then
+    expect(screen.getByRole("link", { name: "docs" })).toBeInTheDocument();
+  });
+
   it("should show 'Select N' hint when showCorrectCount is true", () => {
     // given
     const content = makeContent(

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MarkdownText } from "~/components/markdown-text";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { parseWordFillContent } from "~/components/workbook/schemas";
@@ -115,6 +116,7 @@ export function WordFillCard({ content, audio, onAnswer }: WordFillCardProps) {
   const correct = answers.map((answer, i) => isCorrectAnswer(inputs[i] ?? "", answer));
   const allCorrect = correct.length > 0 && correct.every(Boolean);
   const isResult = phase === "result";
+  const revealedExplanation = parsed.explanation2 || parsed.explanation;
 
   function handleInputChange(index: number, value: string) {
     if (correct[index]) return;
@@ -210,12 +212,10 @@ export function WordFillCard({ content, audio, onAnswer }: WordFillCardProps) {
           the legacy explanation) is shown once the answer is revealed. These
           carry source attribution for imported sentences. */}
       {!isResult && parsed.explanation1 && (
-        <p className="whitespace-pre-line text-sm text-muted-foreground">{parsed.explanation1}</p>
+        <MarkdownText text={parsed.explanation1} className="text-sm text-muted-foreground" />
       )}
-      {isResult && (parsed.explanation2 || parsed.explanation) && (
-        <p className="whitespace-pre-line text-sm text-muted-foreground">
-          {parsed.explanation2 || parsed.explanation}
-        </p>
+      {isResult && revealedExplanation && (
+        <MarkdownText text={revealedExplanation} className="text-sm text-muted-foreground" />
       )}
 
       {!isResult ? (
