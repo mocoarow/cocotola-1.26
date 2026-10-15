@@ -263,7 +263,7 @@ func (f *AuthServiceMaxWorkbooksFetcher) FetchMaxWorkbooks(ctx context.Context, 
 	}
 
 	if result.MaxWorkbooks <= 0 {
-		return 0, fmt.Errorf("invalid max workbooks value %d from auth service", result.MaxWorkbooks)
+		return 0, fmt.Errorf("unexpected max workbooks %d for user %s from auth service: %w", result.MaxWorkbooks, userID, domain.ErrInvalidMaxWorkbooks)
 	}
 
 	return result.MaxWorkbooks, nil

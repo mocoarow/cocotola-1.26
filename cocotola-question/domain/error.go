@@ -41,6 +41,9 @@ var ErrSpaceNotFound = errors.New("space not found")
 // ErrInvalidSpaceType is returned when cocotola-auth returns an unknown SpaceType.
 var ErrInvalidSpaceType = errors.New("invalid space type")
 
+// ErrInvalidMaxWorkbooks is returned when cocotola-auth returns a non-positive MaxWorkbooks.
+var ErrInvalidMaxWorkbooks = errors.New("invalid max workbooks")
+
 // ErrAudioInputHashMismatch is returned when the question was edited after the audio job started.
 var ErrAudioInputHashMismatch = errors.New("audio input hash mismatch")
 
