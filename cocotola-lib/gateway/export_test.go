@@ -34,3 +34,6 @@ var WatchSignal = watchSignal
 func NewShutdownCtxForTest(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	return newShutdownCtx(ctx, timeout)
 }
+
+// OpenGormDBWithObservers exports openGormDBWithObservers for testing.
+var OpenGormDBWithObservers = openGormDBWithObservers

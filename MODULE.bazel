@@ -29,7 +29,6 @@ use_repo(
     "com_github_mocoarow_slogotel",
     "com_github_oapi_codegen_runtime",
     "com_github_ohler55_ojg",
-    "com_github_orandin_slog_gorm",
     "com_github_prometheus_client_golang",
     "com_github_samber_slog_gin",
     "com_github_stretchr_testify",
