@@ -7,8 +7,10 @@ import (
 	"log/slog"
 	"time"
 
-	sloggorm "github.com/orandin/slog-gorm"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -73,15 +75,13 @@ type DialectRDBMS interface {
 
 // openGormDB opens a GORM connection with the given dialector and common configuration.
 func openGormDB(dialector gorm.Dialector, logLevel slog.Level, appName string) (*gorm.DB, error) {
-	options := []sloggorm.Option{
-		sloggorm.WithHandler(slog.Default().With(slog.String(logging.LoggerNameKey, appName+"-gorm")).Handler()),
-	}
-	if logLevel == slog.LevelDebug {
-		options = append(options, sloggorm.WithTraceAll()) // trace all messages
-	}
+	handler := slog.Default().With(slog.String(logging.LoggerNameKey, appName+"-gorm")).Handler()
+	return openGormDBWithObservers(dialector, handler, logLevel, otel.GetTracerProvider())
+}
 
+func openGormDBWithObservers(dialector gorm.Dialector, logHandler slog.Handler, logLevel slog.Level, tracerProvider trace.TracerProvider) (*gorm.DB, error) {
 	gormConfig := gorm.Config{ //nolint:exhaustruct
-		Logger:         sloggorm.New(options...),
+		Logger:         gormlogger.NewSlogLogger(slog.New(logHandler), newGormLoggerConfig(logLevel)),
 		NowFunc:        func() time.Time { return time.Now().UTC() },
 		TranslateError: true,
 	}
@@ -91,11 +91,26 @@ func openGormDB(dialector gorm.Dialector, logLevel slog.Level, appName string) (
 		return nil, fmt.Errorf("gorm open: %w", err)
 	}
 
-	if err := db.Use(tracing.NewPlugin()); err != nil {
+	plugin := tracing.NewPlugin(tracing.WithTracerProvider(tracerProvider), tracing.WithoutQueryVariables())
+	if err := db.Use(plugin); err != nil {
 		return nil, fmt.Errorf("use tracing plugin: %w", err)
 	}
 
 	return db, nil
+}
+
+func newGormLoggerConfig(logLevel slog.Level) gormlogger.Config {
+	gormLogLevel := gormlogger.Warn
+	if logLevel == slog.LevelDebug {
+		gormLogLevel = gormlogger.Info
+	}
+	return gormlogger.Config{
+		SlowThreshold:             0,
+		Colorful:                  false,
+		IgnoreRecordNotFoundError: true,
+		ParameterizedQueries:      true,
+		LogLevel:                  gormLogLevel,
+	}
 }
 
 // initDBDriver opens a GORM connection, pings it, and wraps it in a DBConnection.
