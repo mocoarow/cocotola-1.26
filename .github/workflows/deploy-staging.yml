@@ -1,0 +1,28 @@
+---
+name: Deploy Staging
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit to deploy (defaults to the selected branch)
+        type: string
+        required: false
+        default: ""
+permissions: {}
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/deploy-reusable.yml
+    with:
+      environment: staging
+      expected_project_id: mocoarow-cocotola-stg
+      ref: ${{ inputs.ref }}
+    secrets: inherit
