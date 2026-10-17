@@ -1,16 +1,61 @@
 ---
-name: Deploy
+name: Deploy (reusable)
 on:
-  push:
-    tags:
-      - "[0-9][0-9].[0-9][0-9].*"
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+      expected_project_id:
+        type: string
+        required: true
+      ref:
+        type: string
+        required: false
+        default: ""
 permissions: {}
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: false
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    environment: ${{ inputs.environment }}
+    outputs:
+      image_tag: ${{ steps.ref.outputs.image_tag }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ inputs.ref }}
+
+      - id: ref
+        run: echo "image_tag=$(git rev-parse HEAD)" >> "${GITHUB_OUTPUT}"
+
+      # An environment secret missing from the target environment silently
+      # falls back to the repository secret of the same name.
+      - name: Verify target project
+        env:
+          EXPECTED_PROJECT_ID: ${{ inputs.expected_project_id }}
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
+          REGISTRY_SERVICE_ACCOUNT_EMAIL: ${{ secrets.REGISTRY_SERVICE_ACCOUNT_EMAIL }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [[ -z "${VITE_SUPABASE_URL}" || -z "${VITE_SUPABASE_ANON_KEY}" ]]; then
+            echo "::error::VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set"
+            exit 1
+          fi
+          if [[ "${GOOGLE_PROJECT_ID}" != "${EXPECTED_PROJECT_ID}" ]]; then
+            echo "::error::GOOGLE_PROJECT_ID does not match ${EXPECTED_PROJECT_ID}"
+            exit 1
+          fi
+          if [[ "${REGISTRY_SERVICE_ACCOUNT_EMAIL}" != *"@${EXPECTED_PROJECT_ID}.iam.gserviceaccount.com" ]]; then
+            echo "::error::REGISTRY_SERVICE_ACCOUNT_EMAIL does not belong to ${EXPECTED_PROJECT_ID}"
+            exit 1
+          fi
+
   deploy:
+    needs: preflight
     strategy:
       matrix:
         service:
@@ -22,9 +67,11 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    environment: production
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.preflight.outputs.image_tag }}
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -43,21 +90,27 @@ jobs:
 
       - name: Push image to Artifact Registry
         env:
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
           SERVICE: ${{ matrix.service }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: bazelisk run //"${SERVICE}":push -- --tag "${IMAGE_TAG}" --tag latest
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
+        run: |
+          bazelisk run //"${SERVICE}":push -- \
+            --repository "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${SERVICE}/${SERVICE}" \
+            --tag "${IMAGE_TAG}" --tag latest
 
       - name: Deploy to Cloud Run
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
           SERVICE: ${{ matrix.service }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
         run: |
           gcloud run services update "${SERVICE}" \
             --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${SERVICE}/${SERVICE}:${IMAGE_TAG}" \
-            --region us-central1
+            --region us-central1 \
+            --project "${GOOGLE_PROJECT_ID}"
 
   deploy-job:
+    needs: preflight
     strategy:
       fail-fast: false
       matrix:
@@ -71,9 +124,11 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    environment: production
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.preflight.outputs.image_tag }}
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -92,33 +147,41 @@ jobs:
 
       - name: Push image to Artifact Registry
         env:
+          GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
           IMAGE: ${{ matrix.image }}
-          IMAGE_TAG: ${{ github.sha }}
-        run: bazelisk run //"${IMAGE}":push -- --tag "${IMAGE_TAG}" --tag latest
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
+        run: |
+          bazelisk run //"${IMAGE}":push -- \
+            --repository "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${IMAGE}/${IMAGE}" \
+            --tag "${IMAGE_TAG}" --tag latest
 
       - name: Deploy to Cloud Run Jobs
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
           IMAGE: ${{ matrix.image }}
           RUN_JOBS: ${{ matrix.run_jobs }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
         run: |
           read -ra run_jobs <<< "${RUN_JOBS}"
           for run_job in "${run_jobs[@]}"; do
             gcloud run jobs update "${run_job}" \
               --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/${IMAGE}/${IMAGE}:${IMAGE_TAG}" \
-              --region us-central1
+              --region us-central1 \
+              --project "${GOOGLE_PROJECT_ID}"
           done
 
   deploy-web:
+    needs: preflight
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       id-token: write
       contents: read
-    environment: production
+    environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.preflight.outputs.image_tag }}
 
       - id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -134,7 +197,7 @@ jobs:
       - name: Build and push image
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
@@ -149,8 +212,9 @@ jobs:
       - name: Deploy to Cloud Run
         env:
           GOOGLE_PROJECT_ID: ${{ secrets.GOOGLE_PROJECT_ID }}
-          IMAGE_TAG: ${{ github.sha }}
+          IMAGE_TAG: ${{ needs.preflight.outputs.image_tag }}
         run: |
           gcloud run services update cocotola-web \
             --image "us-central1-docker.pkg.dev/${GOOGLE_PROJECT_ID}/cocotola-web/cocotola-web:${IMAGE_TAG}" \
-            --region us-central1
+            --region us-central1 \
+            --project "${GOOGLE_PROJECT_ID}"
