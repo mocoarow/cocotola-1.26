@@ -2,7 +2,6 @@ package domain
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -29,11 +28,11 @@ func NewOrganizationIDV7() (OrganizationID, error) {
 // ParseOrganizationID parses a string into an OrganizationID.
 func ParseOrganizationID(s string) (OrganizationID, error) {
 	if s == "" {
-		return OrganizationID{}, errors.New("organization id must not be empty")
+		return OrganizationID{}, fmt.Errorf("organization id must not be empty: %w", ErrInvalidArgument)
 	}
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return OrganizationID{}, fmt.Errorf("parse organization id: %w", err)
+		return OrganizationID{}, fmt.Errorf("parse organization id: %w: %w", err, ErrInvalidArgument)
 	}
 	return OrganizationID{value: u}, nil
 }
@@ -52,7 +51,7 @@ func MustParseOrganizationID(s string) OrganizationID {
 // input is the zero UUID.
 func NewOrganizationIDFromUUID(u uuid.UUID) (OrganizationID, error) {
 	if u == uuid.Nil {
-		return OrganizationID{}, errors.New("organization id must not be zero")
+		return OrganizationID{}, fmt.Errorf("organization id must not be zero: %w", ErrInvalidArgument)
 	}
 	return OrganizationID{value: u}, nil
 }
@@ -122,7 +121,7 @@ func (id *OrganizationID) Scan(src any) error {
 		*id = parsed
 		return nil
 	default:
-		return fmt.Errorf("scan organization id: unsupported type %T", src)
+		return fmt.Errorf("scan organization id: unsupported type %T: %w", src, ErrInvalidArgument)
 	}
 }
 
@@ -143,11 +142,11 @@ func NewAppUserIDV7() (AppUserID, error) {
 // ParseAppUserID parses a string into an AppUserID.
 func ParseAppUserID(s string) (AppUserID, error) {
 	if s == "" {
-		return AppUserID{}, errors.New("app user id must not be empty")
+		return AppUserID{}, fmt.Errorf("app user id must not be empty: %w", ErrInvalidArgument)
 	}
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return AppUserID{}, fmt.Errorf("parse app user id: %w", err)
+		return AppUserID{}, fmt.Errorf("parse app user id: %w: %w", err, ErrInvalidArgument)
 	}
 	return AppUserID{value: u}, nil
 }
@@ -166,7 +165,7 @@ func MustParseAppUserID(s string) AppUserID {
 // input is the zero UUID.
 func NewAppUserIDFromUUID(u uuid.UUID) (AppUserID, error) {
 	if u == uuid.Nil {
-		return AppUserID{}, errors.New("app user id must not be zero")
+		return AppUserID{}, fmt.Errorf("app user id must not be zero: %w", ErrInvalidArgument)
 	}
 	return AppUserID{value: u}, nil
 }
@@ -236,7 +235,7 @@ func (id *AppUserID) Scan(src any) error {
 		*id = parsed
 		return nil
 	default:
-		return fmt.Errorf("scan app user id: unsupported type %T", src)
+		return fmt.Errorf("scan app user id: unsupported type %T: %w", src, ErrInvalidArgument)
 	}
 }
 
@@ -258,12 +257,12 @@ func NewGroupIDV7() (GroupID, error) {
 // ParseGroupID parses a string into a GroupID.
 func ParseGroupID(s string) (GroupID, error) {
 	if s == "" {
-		return GroupID{}, errors.New("group id must not be empty")
+		return GroupID{}, fmt.Errorf("group id must not be empty: %w", ErrInvalidArgument)
 	}
 
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return GroupID{}, fmt.Errorf("parse group id: %w", err)
+		return GroupID{}, fmt.Errorf("parse group id: %w: %w", err, ErrInvalidArgument)
 	}
 
 	return GroupID{value: u}, nil
@@ -349,7 +348,7 @@ func (id *GroupID) Scan(src any) error {
 
 		return nil
 	default:
-		return fmt.Errorf("scan group id: unsupported type %T", src)
+		return fmt.Errorf("scan group id: unsupported type %T: %w", src, ErrInvalidArgument)
 	}
 }
 
@@ -371,12 +370,12 @@ func NewSpaceIDV7() (SpaceID, error) {
 // ParseSpaceID parses a string into a SpaceID.
 func ParseSpaceID(s string) (SpaceID, error) {
 	if s == "" {
-		return SpaceID{}, errors.New("space id must not be empty")
+		return SpaceID{}, fmt.Errorf("space id must not be empty: %w", ErrInvalidArgument)
 	}
 
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return SpaceID{}, fmt.Errorf("parse space id: %w", err)
+		return SpaceID{}, fmt.Errorf("parse space id: %w: %w", err, ErrInvalidArgument)
 	}
 
 	return SpaceID{value: u}, nil
@@ -462,7 +461,7 @@ func (id *SpaceID) Scan(src any) error {
 
 		return nil
 	default:
-		return fmt.Errorf("scan space id: unsupported type %T", src)
+		return fmt.Errorf("scan space id: unsupported type %T: %w", src, ErrInvalidArgument)
 	}
 }
 
@@ -483,11 +482,11 @@ func NewAppUserProviderIDV7() (AppUserProviderID, error) {
 // ParseAppUserProviderID parses a string into an AppUserProviderID.
 func ParseAppUserProviderID(s string) (AppUserProviderID, error) {
 	if s == "" {
-		return AppUserProviderID{}, errors.New("app user provider id must not be empty")
+		return AppUserProviderID{}, fmt.Errorf("app user provider id must not be empty: %w", ErrInvalidArgument)
 	}
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return AppUserProviderID{}, fmt.Errorf("parse app user provider id: %w", err)
+		return AppUserProviderID{}, fmt.Errorf("parse app user provider id: %w: %w", err, ErrInvalidArgument)
 	}
 	return AppUserProviderID{value: u}, nil
 }
@@ -567,7 +566,7 @@ func (id *AppUserProviderID) Scan(src any) error {
 		*id = parsed
 		return nil
 	default:
-		return fmt.Errorf("scan app user provider id: unsupported type %T", src)
+		return fmt.Errorf("scan app user provider id: unsupported type %T: %w", src, ErrInvalidArgument)
 	}
 }
 
