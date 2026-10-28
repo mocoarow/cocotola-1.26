@@ -22,13 +22,6 @@ func randOrgID(t *testing.T) domain.OrganizationID {
 	return id
 }
 
-func mustAction(t *testing.T, value string) domainrbac.Action {
-	t.Helper()
-	action, err := domainrbac.NewAction(value)
-	require.NoError(t, err)
-	return action
-}
-
 func mustResourceWorkbook(t *testing.T, workbookID string) domainrbac.Resource {
 	t.Helper()
 	resource, err := domainrbac.ResourceWorkbook(workbookID)
@@ -64,7 +57,7 @@ func Test_WorkbookPolicyEnsurer_EnsureSystemOwnerWorkbookPolicies_shouldGrantAll
 		{action: domainrbac.ActionViewWorkbook()},
 		{action: domainrbac.ActionUpdateWorkbook()},
 		{action: domainrbac.ActionDeleteWorkbook()},
-		{action: mustAction(t, "study_workbook")},
+		{action: domainrbac.ActionStudyWorkbook()},
 		{action: domainrbac.ActionCreateQuestion()},
 		{action: domainrbac.ActionUpdateQuestion()},
 		{action: domainrbac.ActionDeleteQuestion()},
