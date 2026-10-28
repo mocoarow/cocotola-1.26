@@ -239,8 +239,8 @@ func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListReposi
 	return nil
 }
 
-func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
-	actions := []domainrbac.Action{
+func adminActions() []domainrbac.Action {
+	return []domainrbac.Action{
 		domainrbac.ActionCreateUser(),
 		domainrbac.ActionListUsers(),
 		domainrbac.ActionViewUser(),
@@ -256,28 +256,14 @@ func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID 
 		domainrbac.ActionListSpaces(),
 		domainrbac.ActionViewSpace(),
 	}
+}
 
-	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupAdmin(), domainrbac.ResourceAny(), actions, logger)
+func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
+	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupAdmin(), domainrbac.ResourceAny(), adminActions(), logger)
 }
 
 func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
-	actions := []domainrbac.Action{
-		domainrbac.ActionCreateUser(),
-		domainrbac.ActionListUsers(),
-		domainrbac.ActionViewUser(),
-		domainrbac.ActionDisableUser(),
-		domainrbac.ActionChangePassword(),
-		domainrbac.ActionCreateGroup(),
-		domainrbac.ActionListGroups(),
-		domainrbac.ActionViewGroup(),
-		domainrbac.ActionDisableGroup(),
-		domainrbac.ActionAddUserToGroup(),
-		domainrbac.ActionRemoveUserFromGroup(),
-		domainrbac.ActionCreateOrganization(),
-		domainrbac.ActionCreateSpace(),
-		domainrbac.ActionListSpaces(),
-		domainrbac.ActionViewSpace(),
-	}
+	actions := append(adminActions(), domainrbac.ActionCreateOrganization())
 
 	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupSystemOwner(), domainrbac.ResourceAny(), actions, logger)
 }
