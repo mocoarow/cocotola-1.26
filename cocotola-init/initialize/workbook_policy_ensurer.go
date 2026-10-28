@@ -11,10 +11,6 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 )
 
-// studyWorkbookAction must match the literal cocotola-question grants;
-// cocotola-auth's domain has no constructor for it.
-const studyWorkbookAction = "study_workbook"
-
 // WorkbookPolicyEnsurer writes SystemAppUserID's per-workbook Casbin policies
 // directly to the auth database, mirroring cocotola-question's grants.
 type WorkbookPolicyEnsurer struct {
@@ -45,16 +41,11 @@ func (e *WorkbookPolicyEnsurer) EnsureSystemOwnerWorkbookPolicies(ctx context.Co
 		return fmt.Errorf("resource workbook %q: %w", workbookID, err)
 	}
 
-	studyWorkbook, err := domainrbac.NewAction(studyWorkbookAction)
-	if err != nil {
-		return fmt.Errorf("new study_workbook action: %w", err)
-	}
-
 	actions := []domainrbac.Action{
 		domainrbac.ActionViewWorkbook(),
 		domainrbac.ActionUpdateWorkbook(),
 		domainrbac.ActionDeleteWorkbook(),
-		studyWorkbook,
+		domainrbac.ActionStudyWorkbook(),
 		domainrbac.ActionCreateQuestion(),
 		domainrbac.ActionUpdateQuestion(),
 		domainrbac.ActionDeleteQuestion(),

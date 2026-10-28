@@ -271,6 +271,7 @@ func Test_PredefinedActions_shouldHaveCorrectValues(t *testing.T) {
 		{name: "ActionCreateQuestion", action: rbac.ActionCreateQuestion(), want: "create_question"},
 		{name: "ActionUpdateQuestion", action: rbac.ActionUpdateQuestion(), want: "update_question"},
 		{name: "ActionDeleteQuestion", action: rbac.ActionDeleteQuestion(), want: "delete_question"},
+		{name: "ActionStudyWorkbook", action: rbac.ActionStudyWorkbook(), want: "study_workbook"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
