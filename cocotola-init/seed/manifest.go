@@ -4,9 +4,10 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"strings"
 
 	"go.yaml.in/yaml/v4"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
 )
 
 //go:embed manifest/csv_workbooks.yaml
@@ -59,7 +60,8 @@ func DefaultCSVManifest() (CSVWorkbookManifest, error) {
 }
 
 // validate enforces that seedKeys are unique and usable in question tags, that the required
-// metadata fields are set, and that source and target languages differ.
+// metadata fields are set, that languages are ISO 639-1 codes, and that source and target
+// languages differ.
 func (m CSVWorkbookManifest) validate() error {
 	seen := make(map[string]bool, len(m.Workbooks))
 	for i := range m.Workbooks {
@@ -81,11 +83,28 @@ func (m CSVWorkbookManifest) validate() error {
 		if entry.GCSObject == "" {
 			return fmt.Errorf("csvWorkbook %q: gcsObject must not be empty: %w", entry.SeedKey, ErrInvalidManifest)
 		}
-		if strings.TrimSpace(entry.SourceLang) == "" || strings.TrimSpace(entry.TargetLang) == "" {
-			return fmt.Errorf("csvWorkbook %q: sourceLang and targetLang are required: %w", entry.SeedKey, ErrInvalidManifest)
+		if err := validateLanguageCodes(entry); err != nil {
+			return err
 		}
 		if entry.SourceLang == entry.TargetLang {
 			return fmt.Errorf("csvWorkbook %q: sourceLang and targetLang must differ: %w", entry.SeedKey, ErrInvalidManifest)
+		}
+	}
+	return nil
+}
+
+func validateLanguageCodes(entry CSVWorkbookEntry) error {
+	fields := []struct {
+		name  string
+		value string
+	}{
+		{name: "language", value: entry.Language},
+		{name: "sourceLang", value: entry.SourceLang},
+		{name: "targetLang", value: entry.TargetLang},
+	}
+	for _, f := range fields {
+		if !i18n.IsValidISO6391(f.value) {
+			return fmt.Errorf("csvWorkbook %q: %s %q must be a lowercase ISO 639-1 code: %w", entry.SeedKey, f.name, f.value, ErrInvalidManifest)
 		}
 	}
 	return nil
