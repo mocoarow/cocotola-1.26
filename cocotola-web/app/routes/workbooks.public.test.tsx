@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
-import type { PublicWorkbook, SharedReference } from "~/lib/api/sharing.server";
+import type { PublicWorkbook, SharedWorkbook } from "~/lib/api/sharing.server";
 
 import "~/i18n/config";
 
@@ -92,10 +92,13 @@ function buildWorkbook(overrides: Partial<PublicWorkbook> = {}): PublicWorkbook 
   };
 }
 
-function buildReference(overrides: Partial<SharedReference> = {}): SharedReference {
+function buildReference(overrides: Partial<SharedWorkbook> = {}): SharedWorkbook {
   return {
     referenceId: "ref-1",
     workbookId: "wb-1",
+    title: "English Vocabulary",
+    description: "Basic words",
+    language: "en",
     addedAt: "2026-04-10T00:00:00Z",
     ...overrides,
   };
