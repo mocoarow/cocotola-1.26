@@ -35,10 +35,9 @@ type UptraceLogConfig struct {
 	DSN      string `yaml:"dsn" validate:"required"`
 }
 
-// LogConfig holds log level, platform, and exporter settings.
+// LogConfig holds log level and exporter settings.
 type LogConfig struct {
 	Level    string            `yaml:"level"`
-	Platform string            `yaml:"platform"`
 	Levels   map[string]string `yaml:"levels"`
 	Exporter string            `yaml:"exporter" validate:"oneof=none otlphttp uptracehttp"`
 	OTLP     *OTLPLogConfig    `yaml:"otlp"`

@@ -93,7 +93,6 @@ func newServerConfig() libcontroller.ServerConfig {
 func newLogConfig() libgateway.LogConfig {
 	return libgateway.LogConfig{
 		Level:    getEnvOrDefault("LOG_LEVEL", "info"),
-		Platform: "",
 		Levels:   nil,
 		Exporter: getEnvOrDefault("LOG_EXPORTER", "none"),
 		OTLP:     nil,
