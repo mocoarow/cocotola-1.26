@@ -29,12 +29,24 @@ SharedItemResponse:
       type: string
       x-go-name: WorkbookID
       pattern: ^.*$
+    title:
+      type: string
+      pattern: ^.*$
+    description:
+      type: string
+      pattern: ^.*$
+    language:
+      type: string
+      pattern: ^[a-z]{2}$
     addedAt:
       type: string
       format: date-time
   required:
     - referenceId
     - workbookId
+    - title
+    - description
+    - language
     - addedAt
 
 ListSharedResponse:

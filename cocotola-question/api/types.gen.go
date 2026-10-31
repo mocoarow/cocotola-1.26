@@ -198,7 +198,10 @@ type ShareWorkbookResponse struct {
 // SharedItemResponse defines model for SharedItemResponse.
 type SharedItemResponse struct {
 	AddedAt     time.Time `json:"addedAt"`
+	Description string    `json:"description"`
+	Language    string    `json:"language"`
 	ReferenceID string    `json:"referenceId"`
+	Title       string    `json:"title"`
 	WorkbookID  string    `json:"workbookId"`
 }
 

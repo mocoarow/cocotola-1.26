@@ -55,6 +55,19 @@
       "edit": "Edit",
       "deleteConfirmTitle": "Delete Workbook",
       "deleteConfirm": "Delete \"{{title}}\"?",
+      "tabsLabel": "Filter workbooks",
+      "tabs": {
+        "all": "All",
+        "created": "Created",
+        "added": "Added"
+      },
+      "addedBadge": "Added",
+      "addedAt": "Added:",
+      "emptyAdded": {
+        "title": "No added workbooks",
+        "description": "Add workbooks you want to study from public workbooks.",
+        "browse": "Browse public workbooks"
+      },
       "errors": {
         "titleRequired": "Title is required",
         "titleTooLong": "Title must be 200 characters or less",
@@ -63,7 +76,7 @@
     },
     "public": {
       "title": "Public Workbooks",
-      "description": "Browse public workbooks shared by other users and add them to your library.",
+      "description": "Browse public workbooks shared by other users and add them to My Workbooks.",
       "empty": {
         "title": "No public workbooks",
         "description": "There are no public workbooks available in your language yet."
@@ -72,11 +85,11 @@
       "study": "Study",
       "add": "Add",
       "added": "Added",
-      "remove": "Remove from library",
-      "addAriaLabel": "Add \"{{title}}\" to my library",
-      "removeAriaLabel": "Remove \"{{title}}\" from my library",
-      "removeConfirmTitle": "Remove from library",
-      "removeConfirm": "Remove \"{{title}}\" from your library?"
+      "remove": "Remove from My Workbooks",
+      "addAriaLabel": "Add \"{{title}}\" to My Workbooks",
+      "removeAriaLabel": "Remove \"{{title}}\" from My Workbooks",
+      "removeConfirmTitle": "Remove from My Workbooks",
+      "removeConfirm": "Remove \"{{title}}\" from My Workbooks?"
     },
     "detail": {
       "backToWorkbooks": "Back to Workbooks",

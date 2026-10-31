@@ -95,6 +95,9 @@ describe("listSharedWorkbooks", () => {
       {
         referenceId: "ref-1",
         workbookId: "wb-1",
+        title: "TOEIC 600",
+        description: "Vocabulary for TOEIC 600",
+        language: "en",
         addedAt: "2026-04-10T00:00:00Z",
       },
     ];

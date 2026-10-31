@@ -15,12 +15,13 @@ func NewCommand(
 	referenceFinderRepo referenceFinder,
 	referenceDeleterRepo referenceDeleter,
 	workbookFinderRepo workbookFinder,
+	workbookBatchFinderRepo workbookBatchFinder,
 	publicWorkbookFinderRepo publicWorkbookFinder,
 	authChecker authorizationChecker,
 ) *Command {
 	return &Command{
 		ShareWorkbookCommand: NewShareWorkbookCommand(referenceSaverRepo, workbookFinderRepo, authChecker),
-		ListSharedQuery:      NewListSharedQuery(referenceFinderRepo),
+		ListSharedQuery:      NewListSharedQuery(referenceFinderRepo, workbookBatchFinderRepo),
 		UnshareCommand:       NewUnshareCommand(referenceDeleterRepo),
 		ListPublicQuery:      NewListPublicQuery(publicWorkbookFinderRepo),
 	}

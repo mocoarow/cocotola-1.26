@@ -15,12 +15,18 @@ export type SharedReference = {
   addedAt: string;
 };
 
+export type SharedWorkbook = SharedReference & {
+  title: string;
+  description: string;
+  language: string;
+};
+
 type ListPublicResponse = {
   workbooks: PublicWorkbook[];
 };
 
 type ListSharedResponse = {
-  references: SharedReference[];
+  references: SharedWorkbook[];
 };
 
 export async function listPublicWorkbooks(accessToken: string): Promise<PublicWorkbook[]> {
@@ -45,7 +51,7 @@ export async function listPublicWorkbooks(accessToken: string): Promise<PublicWo
   return workbooks;
 }
 
-export async function listSharedWorkbooks(accessToken: string): Promise<SharedReference[]> {
+export async function listSharedWorkbooks(accessToken: string): Promise<SharedWorkbook[]> {
   console.info("[sharing] listSharedWorkbooks called");
 
   const baseUrl = getQuestionUrl();
