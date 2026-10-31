@@ -32,6 +32,69 @@ func Test_DefaultCSVManifest_shouldParseEmbeddedFile_withUniqueAndCompleteEntrie
 	}
 }
 
+func Test_CSVWorkbookManifest_validate_shouldReturnNil_whenLanguagesAreISO6391(t *testing.T) {
+	t.Parallel()
+
+	// given
+	manifest := wordFillManifest()
+
+	// when
+	err := seed.ValidateCSVManifest(manifest)
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenLanguageCodeIsNotISO6391(t *testing.T) {
+	t.Parallel()
+
+	withLanguage := func(v string) seed.CSVWorkbookEntry {
+		e := wordFillManifest().Workbooks[0]
+		e.Language = v
+		return e
+	}
+	withSourceLang := func(v string) seed.CSVWorkbookEntry {
+		e := wordFillManifest().Workbooks[0]
+		e.SourceLang = v
+		return e
+	}
+	withTargetLang := func(v string) seed.CSVWorkbookEntry {
+		e := wordFillManifest().Workbooks[0]
+		e.TargetLang = v
+		return e
+	}
+
+	tests := []struct {
+		name  string
+		entry seed.CSVWorkbookEntry
+	}{
+		{name: "language empty", entry: withLanguage("")},
+		{name: "language uppercase", entry: withLanguage("JA")},
+		{name: "language three letters", entry: withLanguage("jpn")},
+		{name: "sourceLang empty", entry: withSourceLang("")},
+		{name: "sourceLang whitespace", entry: withSourceLang("  ")},
+		{name: "sourceLang uppercase", entry: withSourceLang("JA")},
+		{name: "sourceLang region subtag", entry: withSourceLang("ja-JP")},
+		{name: "targetLang empty", entry: withTargetLang("")},
+		{name: "targetLang uppercase", entry: withTargetLang("EN")},
+		{name: "targetLang three letters", entry: withTargetLang("eng")},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			manifest := seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{tt.entry}}
+
+			// when
+			err := seed.ValidateCSVManifest(manifest)
+
+			// then
+			require.ErrorIs(t, err, seed.ErrInvalidManifest)
+		})
+	}
+}
+
 func Test_DefaultCSVManifest_shouldNotShareSeedKeyWithDefaultSeeds_whenBothEmbedded(t *testing.T) {
 	t.Parallel()
 

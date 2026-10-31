@@ -439,8 +439,8 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestHasDuplicateSeedKey
 	// given: two entries share a seedKey
 	manifest := seed.CSVWorkbookManifest{
 		Workbooks: []seed.CSVWorkbookEntry{
-			{SeedKey: "dup", Title: "A", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
-			{SeedKey: "dup", Title: "B", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "b.csv"},
+			{SeedKey: "dup", Title: "A", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
+			{SeedKey: "dup", Title: "B", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "b.csv"},
 		},
 	}
 	reader := NewMockGCSObjectReader(t)
@@ -459,7 +459,7 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestSeedKeyOutsideTagPa
 	// given: the seedKey becomes part of every question tag
 	manifest := seed.CSVWorkbookManifest{
 		Workbooks: []seed.CSVWorkbookEntry{
-			{SeedKey: "cefr.b1", Title: "A", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
+			{SeedKey: "cefr.b1", Title: "A", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
 		},
 	}
 	reader := NewMockGCSObjectReader(t)
