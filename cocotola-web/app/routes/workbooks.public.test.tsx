@@ -142,7 +142,7 @@ describe("WorkbooksPublic component", () => {
     expect(screen.getByText("Public Workbooks")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Browse public workbooks shared by other users and add them to your library.",
+        "Browse public workbooks shared by other users and add them to My Workbooks.",
       ),
     ).toBeInTheDocument();
   });
@@ -257,8 +257,8 @@ describe("WorkbooksPublic component", () => {
 
     // when
     await user.click(screen.getByRole("button", { name: /remove "Sample Book"/i }));
-    expect(screen.getByText('Remove "Sample Book" from your library?')).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Remove from library" }));
+    expect(screen.getByText('Remove "Sample Book" from My Workbooks?')).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Remove from My Workbooks" }));
 
     // then
     expect(submitMock).toHaveBeenCalledWith(
