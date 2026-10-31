@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { redirect } from "react-router";
 import { Button } from "~/components/ui/button";
+import { writeLoginProbe } from "~/lib/auth/login-probe";
 import { getSession } from "~/lib/auth/session.server";
 import { createSupabaseBrowserClient } from "~/lib/supabase/client";
 import type { Route } from "./+types/login";
@@ -19,6 +20,10 @@ export default function LoginPage() {
   const { t } = useTranslation();
 
   async function handleGoogleLogin() {
+    await writeLoginProbe({
+      pageLoadedAtMs: Math.round(performance.timeOrigin),
+      clickedAtMs: Date.now(),
+    });
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",

@@ -2,6 +2,10 @@ import { redirect } from "react-router";
 import { detectLanguageFromRequest } from "~/i18n/config";
 import { exchangeSupabaseToken } from "~/lib/api/auth.server";
 import { getUserPreferences, updateUserLanguage } from "~/lib/api/user-setting.server";
+import {
+  diagnoseCallbackCookies,
+  supabaseAuthStorageKey,
+} from "~/lib/auth/callback-diagnostics.server";
 import { commitSession, getSession } from "~/lib/auth/session.server";
 import { createSupabaseServerClient } from "~/lib/supabase/server";
 import type { Route } from "./+types/auth.callback";
@@ -22,7 +26,16 @@ export async function loader({ request }: Route.LoaderArgs) {
   console.info("[auth.callback] exchanging code for session");
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.session) {
-    console.error("[auth.callback] exchangeCodeForSession failed:", error);
+    const diagnostics = diagnoseCallbackCookies(
+      request.headers.get("Cookie") ?? "",
+      supabaseAuthStorageKey(import.meta.env.VITE_SUPABASE_URL),
+      Date.now(),
+    );
+    console.error(
+      "[auth.callback] exchangeCodeForSession failed:",
+      error,
+      `cookies=${JSON.stringify(diagnostics)}`,
+    );
     return redirect("/login");
   }
   console.info(
