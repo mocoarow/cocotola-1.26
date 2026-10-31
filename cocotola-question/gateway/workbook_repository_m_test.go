@@ -156,6 +156,65 @@ func Test_WorkbookRepository_FindByID_shouldReturnErrWorkbookNotFound_whenMissin
 	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
 }
 
+func Test_WorkbookRepository_FindByIDs_shouldReturnWorkbooks_whenAllIDsExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	wb1 := newWorkbook(t, "wb-ids-1-"+t.Name(), "space-ids", "owner-1", "org-1")
+	wb2 := newWorkbook(t, "wb-ids-2-"+t.Name(), "space-ids", "owner-2", "org-1")
+	require.NoError(t, repo.Save(ctx, wb1))
+	require.NoError(t, repo.Save(ctx, wb2))
+
+	// when
+	got, err := repo.FindByIDs(ctx, []string{wb1.ID(), wb2.ID()})
+
+	// then
+	require.NoError(t, err)
+	ids := make([]string, len(got))
+	for i, wb := range got {
+		ids[i] = wb.ID()
+	}
+	assert.ElementsMatch(t, []string{wb1.ID(), wb2.ID()}, ids)
+}
+
+func Test_WorkbookRepository_FindByIDs_shouldSkipMissingIDs_whenSomeIDsDoNotExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	wb := newWorkbook(t, "wb-ids-exist-"+t.Name(), "space-ids", "owner-1", "org-1")
+	require.NoError(t, repo.Save(ctx, wb))
+
+	// when
+	got, err := repo.FindByIDs(ctx, []string{wb.ID(), "wb-ids-missing-" + t.Name()})
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Equal(t, wb.ID(), got[0].ID())
+}
+
+func Test_WorkbookRepository_FindByIDs_shouldReturnEmpty_whenIDsAreEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+
+	// when
+	got, err := repo.FindByIDs(ctx, nil)
+
+	// then
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
 func Test_WorkbookRepository_FindBySpaceID_shouldReturnMatchingWorkbooks(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

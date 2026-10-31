@@ -123,6 +123,40 @@ func (r *WorkbookRepository) FindByID(ctx context.Context, id string) (*domainwo
 	return wb, nil
 }
 
+// FindByIDs returns the workbooks for the given IDs. Missing IDs are skipped.
+func (r *WorkbookRepository) FindByIDs(ctx context.Context, ids []string) ([]domainworkbook.Workbook, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	refs := make([]*firestore.DocumentRef, len(ids))
+	for i, id := range ids {
+		refs[i] = r.client.Collection(workbooksCollection).Doc(id)
+	}
+
+	docs, err := r.client.GetAll(ctx, refs)
+	if err != nil {
+		return nil, fmt.Errorf("get workbooks by ids: %w", err)
+	}
+
+	workbooks := make([]domainworkbook.Workbook, 0, len(docs))
+	for _, doc := range docs {
+		if !doc.Exists() {
+			continue
+		}
+		var record workbookRecord
+		if err := doc.DataTo(&record); err != nil {
+			return nil, fmt.Errorf("decode workbook: %w", err)
+		}
+		wb, err := toWorkbookDomain(doc.Ref.ID, &record)
+		if err != nil {
+			return nil, fmt.Errorf("convert workbook domain: %w", err)
+		}
+		workbooks = append(workbooks, *wb)
+	}
+	return workbooks, nil
+}
+
 // FindBySpaceID returns all workbooks for the given space.
 func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).Where("spaceID", "==", spaceID).Documents(ctx)
