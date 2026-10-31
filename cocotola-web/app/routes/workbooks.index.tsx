@@ -1,7 +1,7 @@
-import { BookOpenIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { BookOpenIcon, GlobeIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { Link, useFetcher, useLoaderData, useSearchParams } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
 import { StartStudyDialog } from "~/components/study/start-study-dialog";
 import { Button } from "~/components/ui/button";
@@ -15,6 +15,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "~/components/ui/sheet";
+import { AddedWorkbookCard } from "~/components/workbook/added-workbook-card";
+import { listSharedWorkbooks, unshareWorkbook } from "~/lib/api/sharing.server";
 import { findPrivateSpace } from "~/lib/api/space.server";
 import {
   createWorkbook,
@@ -24,18 +26,33 @@ import {
 } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { formatDate } from "~/lib/format/date";
+import {
+  MY_WORKBOOKS_TABS,
+  type MyWorkbooksTab,
+  parseMyWorkbooksTab,
+  selectMyWorkbooks,
+} from "~/lib/workbook/my-workbooks-filter";
 import type { Route } from "./+types/workbooks.index";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
-
+async function listPrivateWorkbooks(
+  accessToken: string,
+): Promise<{ workbooks: Workbook[]; spaceId: string | null }> {
   const privateSpace = await findPrivateSpace(accessToken);
   if (!privateSpace) {
     return { workbooks: [], spaceId: null };
   }
-
   const workbooks = await listWorkbooks(accessToken, privateSpace.spaceId);
   return { workbooks, spaceId: privateSpace.spaceId };
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const { accessToken } = await requireAuth(request);
+
+  const [{ workbooks, spaceId }, addedWorkbooks] = await Promise.all([
+    listPrivateWorkbooks(accessToken),
+    listSharedWorkbooks(accessToken),
+  ]);
+  return { workbooks, addedWorkbooks, spaceId };
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -74,6 +91,14 @@ export async function action({ request }: Route.ActionArgs) {
     if (typeof workbookId === "string") {
       await deleteWorkbook(accessToken, workbookId);
     }
+  }
+
+  if (intent === "unshare") {
+    const referenceId = formData.get("referenceId");
+    if (typeof referenceId !== "string" || !referenceId) {
+      throw new Response("referenceId is required", { status: 400 });
+    }
+    await unshareWorkbook(accessToken, referenceId);
   }
 
   return { ok: true };
@@ -220,9 +245,68 @@ function CreateWorkbookButton() {
   );
 }
 
-export default function WorkbooksIndex() {
-  const { workbooks } = useLoaderData<typeof loader>();
+function MyWorkbooksTabs({ current }: { current: MyWorkbooksTab }) {
   const { t } = useTranslation();
+
+  return (
+    <nav aria-label={t("workbooks.index.tabsLabel")} className="mb-4 flex gap-1 border-b">
+      {MY_WORKBOOKS_TABS.map((tab) => (
+        <Link
+          key={tab}
+          to={`?tab=${tab}`}
+          aria-current={tab === current ? "page" : undefined}
+          className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium ${
+            tab === current
+              ? "border-primary text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {t(`workbooks.index.tabs.${tab}`)}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+function EmptyState({ tab }: { tab: MyWorkbooksTab }) {
+  const { t } = useTranslation();
+
+  if (tab === "added") {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+        <GlobeIcon className="mb-4 size-12 text-muted-foreground/50" />
+        <p className="text-lg font-medium text-muted-foreground">
+          {t("workbooks.index.emptyAdded.title")}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground/70">
+          {t("workbooks.index.emptyAdded.description")}
+        </p>
+        <Link to="/workbooks/public" className="mt-4 text-sm font-medium text-primary underline">
+          {t("workbooks.index.emptyAdded.browse")}
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
+      <BookOpenIcon className="mb-4 size-12 text-muted-foreground/50" />
+      <p className="text-lg font-medium text-muted-foreground">
+        {t("workbooks.index.empty.title")}
+      </p>
+      <p className="mt-1 text-sm text-muted-foreground/70">
+        {t("workbooks.index.empty.description")}
+      </p>
+    </div>
+  );
+}
+
+export default function WorkbooksIndex() {
+  const { workbooks, addedWorkbooks } = useLoaderData<typeof loader>();
+  const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const tab = parseMyWorkbooksTab(searchParams.get("tab"));
+  const entries = selectMyWorkbooks(tab, workbooks, addedWorkbooks);
 
   return (
     <div>
@@ -234,21 +318,25 @@ export default function WorkbooksIndex() {
         <CreateWorkbookButton />
       </div>
 
-      {workbooks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-          <BookOpenIcon className="mb-4 size-12 text-muted-foreground/50" />
-          <p className="text-lg font-medium text-muted-foreground">
-            {t("workbooks.index.empty.title")}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            {t("workbooks.index.empty.description")}
-          </p>
-        </div>
+      <MyWorkbooksTabs current={tab} />
+
+      {entries.length === 0 ? (
+        <EmptyState tab={tab} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {workbooks.map((workbook) => (
-            <WorkbookCard key={workbook.workbookId} workbook={workbook} />
-          ))}
+          {entries.map((entry) =>
+            entry.kind === "created" ? (
+              <WorkbookCard
+                key={`created-${entry.workbook.workbookId}`}
+                workbook={entry.workbook}
+              />
+            ) : (
+              <AddedWorkbookCard
+                key={`added-${entry.workbook.referenceId}`}
+                workbook={entry.workbook}
+              />
+            ),
+          )}
         </div>
       )}
     </div>
