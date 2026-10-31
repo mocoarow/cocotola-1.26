@@ -25,6 +25,10 @@ type workbookFinder interface {
 	FindByID(ctx context.Context, id string) (*domainworkbook.Workbook, error)
 }
 
+type workbookBatchFinder interface {
+	FindByIDs(ctx context.Context, ids []string) ([]domainworkbook.Workbook, error)
+}
+
 type publicWorkbookFinder interface {
 	FindPublicByOrganizationIDAndLanguage(ctx context.Context, organizationID string, language string) ([]domainworkbook.Workbook, error)
 }

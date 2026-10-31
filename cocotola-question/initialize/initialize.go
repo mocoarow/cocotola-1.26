@@ -88,7 +88,7 @@ func Initialize(
 	// usecase layer
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
 	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
-	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, authzChecker)
+	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, workbookRepo, authzChecker)
 	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, studyusecase.UsecaseConfig{
 		ClockFunc:   nil,
 		ShuffleFunc: nil,
