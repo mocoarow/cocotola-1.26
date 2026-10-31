@@ -57,6 +57,9 @@ func NewListSharedInput(operatorID string, organizationID string) (*ListSharedIn
 type SharedItem struct {
 	ReferenceID string
 	WorkbookID  string
+	Title       string
+	Description string
+	Language    string
 	AddedAt     time.Time
 }
 

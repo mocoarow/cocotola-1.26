@@ -69,6 +69,9 @@ func (h *ListSharedHandler) ListShared(c *gin.Context) {
 		items[i] = api.SharedItemResponse{
 			ReferenceID: ref.ReferenceID,
 			WorkbookID:  ref.WorkbookID,
+			Title:       ref.Title,
+			Description: ref.Description,
+			Language:    ref.Language,
 			AddedAt:     ref.AddedAt,
 		}
 	}
