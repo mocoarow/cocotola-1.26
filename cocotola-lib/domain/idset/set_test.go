@@ -34,6 +34,16 @@ func Test_New_shouldCreateSetWithEntries_whenIDsProvided(t *testing.T) {
 	assert.True(t, s.Contains(30))
 }
 
+func Test_New_shouldDeduplicateIDs_whenDuplicateIDsProvided(t *testing.T) {
+	t.Parallel()
+
+	// given / when
+	s := idset.New[int, int](1, []int{10, 10, 20})
+
+	// then
+	assert.ElementsMatch(t, []int{10, 20}, s.IDs())
+}
+
 func Test_Set_Contains_shouldReturnFalse_whenIDNotPresent(t *testing.T) {
 	t.Parallel()
 
