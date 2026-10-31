@@ -6,264 +6,289 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 )
 
-// NewCreateWorkbookInput tests
-
-func Test_NewCreateWorkbookInput_shouldSucceed_whenAllFieldsAreValid(t *testing.T) {
-	t.Parallel()
-
-	// given: all required fields are present and within limits.
-
-	// when
-	input, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", "My Workbook", "A description", "private", "en")
-
-	// then
-	require.NoError(t, err)
-	require.NotNil(t, input)
-	require.Equal(t, "My Workbook", input.Title)
-	require.Equal(t, "private", input.Visibility)
-	require.Equal(t, "en", input.Language)
+type workbookFields struct {
+	operatorID     string
+	organizationID string
+	targetID       string
+	title          string
+	description    string
+	visibility     string
+	language       string
 }
 
-func Test_NewCreateWorkbookInput_shouldReturnError_whenTitleIsEmpty(t *testing.T) {
-	t.Parallel()
-
-	// given: an empty title, which violates the required constraint.
-
-	// when
-	_, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", "", "desc", "private", "en")
-
-	// then
-	require.Error(t, err)
+func validWorkbookFields() workbookFields {
+	return workbookFields{
+		operatorID:     "op1",
+		organizationID: "org1",
+		targetID:       "target1",
+		title:          "My Workbook",
+		description:    "A description",
+		visibility:     "private",
+		language:       "en",
+	}
 }
 
-func Test_NewCreateWorkbookInput_shouldSucceed_whenTitleLengthIsAtMaximum(t *testing.T) {
-	t.Parallel()
+func validWorkbookFieldVariants() []struct {
+	name   string
+	fields workbookFields
+} {
+	titleAtMax := validWorkbookFields()
+	titleAtMax.title = strings.Repeat("a", 200)
+	descriptionAtMax := validWorkbookFields()
+	descriptionAtMax.description = strings.Repeat("d", 1000)
+	emptyDescription := validWorkbookFields()
+	emptyDescription.description = ""
+	public := validWorkbookFields()
+	public.visibility = "public"
 
-	// given: a title exactly at the 200-character boundary.
-	title := strings.Repeat("a", 200)
-
-	// when
-	input, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", title, "", "public", "ja")
-
-	// then
-	require.NoError(t, err)
-	require.NotNil(t, input)
-	require.Len(t, input.Title, 200)
+	return []struct {
+		name   string
+		fields workbookFields
+	}{
+		{name: "all fields valid", fields: validWorkbookFields()},
+		{name: "title at max length", fields: titleAtMax},
+		{name: "description at max length", fields: descriptionAtMax},
+		{name: "description empty", fields: emptyDescription},
+		{name: "visibility public", fields: public},
+	}
 }
 
-func Test_NewCreateWorkbookInput_shouldReturnError_whenTitleExceedsMaximumLength(t *testing.T) {
-	t.Parallel()
+func invalidWorkbookFieldVariants() []struct {
+	name   string
+	fields workbookFields
+} {
+	with := func(set func(f *workbookFields)) workbookFields {
+		f := validWorkbookFields()
+		set(&f)
+		return f
+	}
 
-	// given: a title one character past the 200-character maximum.
-	title := strings.Repeat("a", 201)
-
-	// when
-	_, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", title, "", "public", "ja")
-
-	// then
-	require.Error(t, err)
+	return []struct {
+		name   string
+		fields workbookFields
+	}{
+		{name: "operatorID empty", fields: with(func(f *workbookFields) { f.operatorID = "" })},
+		{name: "organizationID empty", fields: with(func(f *workbookFields) { f.organizationID = "" })},
+		{name: "targetID empty", fields: with(func(f *workbookFields) { f.targetID = "" })},
+		{name: "title empty", fields: with(func(f *workbookFields) { f.title = "" })},
+		{name: "title over max length", fields: with(func(f *workbookFields) { f.title = strings.Repeat("a", 201) })},
+		{name: "description over max length", fields: with(func(f *workbookFields) { f.description = strings.Repeat("d", 1001) })},
+		{name: "visibility empty", fields: with(func(f *workbookFields) { f.visibility = "" })},
+		{name: "visibility unknown", fields: with(func(f *workbookFields) { f.visibility = "restricted" })},
+		{name: "language empty", fields: with(func(f *workbookFields) { f.language = "" })},
+		{name: "language one letter", fields: with(func(f *workbookFields) { f.language = "e" })},
+		{name: "language three letters", fields: with(func(f *workbookFields) { f.language = "eng" })},
+	}
 }
 
-func Test_NewCreateWorkbookInput_shouldReturnError_whenVisibilityIsInvalid(t *testing.T) {
+func Test_NewCreateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing.T) {
 	t.Parallel()
 
-	// given: a visibility value that is not one of the allowed enums (private, public).
+	for _, tt := range validWorkbookFieldVariants() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	_, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", "Title", "", "restricted", "en")
+			// given
+			f := tt.fields
 
-	// then
-	require.Error(t, err)
+			// when
+			input, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, workbookservice.CreateWorkbookInput{
+				OperatorID:     f.operatorID,
+				OrganizationID: f.organizationID,
+				SpaceID:        f.targetID,
+				Title:          f.title,
+				Description:    f.description,
+				Visibility:     f.visibility,
+				Language:       f.language,
+			}, *input)
+		})
+	}
 }
 
-func Test_NewCreateWorkbookInput_shouldReturnError_whenLanguageCodeIsInvalid(t *testing.T) {
+func Test_NewCreateWorkbookInput_shouldReturnErrInvalidArgument_whenFieldIsInvalid(t *testing.T) {
 	t.Parallel()
 
-	// given: a language code of length 1 instead of the required 2 characters.
+	for _, tt := range invalidWorkbookFieldVariants() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	_, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", "Title", "", "private", "e")
+			// given
+			f := tt.fields
 
-	// then
-	require.Error(t, err)
+			// when
+			_, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }
 
-func Test_NewCreateWorkbookInput_shouldSucceed_whenVisibilityIsPublic(t *testing.T) {
+func Test_NewUpdateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing.T) {
 	t.Parallel()
 
-	// given: visibility set to the other allowed enum value.
+	for _, tt := range validWorkbookFieldVariants() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	input, err := workbookservice.NewCreateWorkbookInput("op1", "org1", "space1", "Title", "", "public", "en")
+			// given
+			f := tt.fields
 
-	// then
-	require.NoError(t, err)
-	require.NotNil(t, input)
-	require.Equal(t, "public", input.Visibility)
+			// when
+			input, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, workbookservice.UpdateWorkbookInput{
+				OperatorID:     f.operatorID,
+				OrganizationID: f.organizationID,
+				WorkbookID:     f.targetID,
+				Title:          f.title,
+				Description:    f.description,
+				Visibility:     f.visibility,
+				Language:       f.language,
+			}, *input)
+		})
+	}
 }
 
-// NewUpdateWorkbookInput tests
-
-func Test_NewUpdateWorkbookInput_shouldSucceed_whenAllFieldsAreValid(t *testing.T) {
+func Test_NewUpdateWorkbookInput_shouldReturnErrInvalidArgument_whenFieldIsInvalid(t *testing.T) {
 	t.Parallel()
 
-	// given: all required fields are present and within limits.
+	for _, tt := range invalidWorkbookFieldVariants() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	input, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", "Updated Title", "Updated desc", "public", "fr")
+			// given
+			f := tt.fields
 
-	// then
-	require.NoError(t, err)
-	require.NotNil(t, input)
-	require.Equal(t, "Updated Title", input.Title)
+			// when
+			_, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }
 
-func Test_NewUpdateWorkbookInput_shouldReturnError_whenTitleIsEmpty(t *testing.T) {
+func Test_NewGetWorkbookInput_shouldReturnInput_whenIDsAreSet(t *testing.T) {
 	t.Parallel()
 
-	// given: an empty title.
-
-	// when
-	_, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", "", "desc", "private", "en")
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewUpdateWorkbookInput_shouldSucceed_whenTitleLengthIsAtMaximum(t *testing.T) {
-	t.Parallel()
-
-	// given: a title exactly at the 200-character boundary.
-	title := strings.Repeat("b", 200)
-
-	// when
-	input, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", title, "", "private", "en")
-
-	// then
-	require.NoError(t, err)
-	require.NotNil(t, input)
-	require.Len(t, input.Title, 200)
-}
-
-func Test_NewUpdateWorkbookInput_shouldReturnError_whenTitleExceedsMaximumLength(t *testing.T) {
-	t.Parallel()
-
-	// given: a title one character past the 200-character maximum.
-	title := strings.Repeat("b", 201)
-
-	// when
-	_, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", title, "", "private", "en")
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewUpdateWorkbookInput_shouldReturnError_whenVisibilityIsInvalid(t *testing.T) {
-	t.Parallel()
-
-	// given: an unrecognised visibility value.
-
-	// when
-	_, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", "Title", "", "secret", "en")
-
-	// then
-	require.Error(t, err)
-}
-
-func Test_NewUpdateWorkbookInput_shouldReturnError_whenLanguageCodeIsInvalid(t *testing.T) {
-	t.Parallel()
-
-	// given: a three-character language code (the constraint is exactly 2).
-
-	// when
-	_, err := workbookservice.NewUpdateWorkbookInput("op1", "org1", "wb1", "Title", "", "public", "eng")
-
-	// then
-	require.Error(t, err)
-}
-
-// NewGetWorkbookInput tests
-
-func Test_NewGetWorkbookInput_shouldSucceed_whenAllFieldsAreValid(t *testing.T) {
-	t.Parallel()
-
-	// given: all required fields provided.
-
-	// when
+	// given, when
 	input, err := workbookservice.NewGetWorkbookInput("op1", "org1", "wb1")
 
 	// then
 	require.NoError(t, err)
-	require.NotNil(t, input)
+	assert.Equal(t, workbookservice.GetWorkbookInput{OperatorID: "op1", OrganizationID: "org1", WorkbookID: "wb1"}, *input)
 }
 
-func Test_NewGetWorkbookInput_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
+func Test_NewGetWorkbookInput_shouldReturnErrInvalidArgument_whenIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given: an empty workbook ID.
+	tests := []struct {
+		name           string
+		operatorID     string
+		organizationID string
+		workbookID     string
+	}{
+		{name: "operatorID empty", operatorID: "", organizationID: "org1", workbookID: "wb1"},
+		{name: "organizationID empty", operatorID: "op1", organizationID: "", workbookID: "wb1"},
+		{name: "workbookID empty", operatorID: "op1", organizationID: "org1", workbookID: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	_, err := workbookservice.NewGetWorkbookInput("op1", "org1", "")
+			// given, when
+			_, err := workbookservice.NewGetWorkbookInput(tt.operatorID, tt.organizationID, tt.workbookID)
 
-	// then
-	require.Error(t, err)
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }
 
-// NewListWorkbooksInput tests
-
-func Test_NewListWorkbooksInput_shouldSucceed_whenAllFieldsAreValid(t *testing.T) {
+func Test_NewListWorkbooksInput_shouldReturnInput_whenIDsAreSet(t *testing.T) {
 	t.Parallel()
 
-	// given: all required fields provided.
-
-	// when
+	// given, when
 	input, err := workbookservice.NewListWorkbooksInput("op1", "org1", "space1")
 
 	// then
 	require.NoError(t, err)
-	require.NotNil(t, input)
+	assert.Equal(t, workbookservice.ListWorkbooksInput{OperatorID: "op1", OrganizationID: "org1", SpaceID: "space1"}, *input)
 }
 
-func Test_NewListWorkbooksInput_shouldReturnError_whenSpaceIDIsEmpty(t *testing.T) {
+func Test_NewListWorkbooksInput_shouldReturnErrInvalidArgument_whenIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given: an empty space ID.
+	tests := []struct {
+		name           string
+		operatorID     string
+		organizationID string
+		spaceID        string
+	}{
+		{name: "operatorID empty", operatorID: "", organizationID: "org1", spaceID: "space1"},
+		{name: "organizationID empty", operatorID: "op1", organizationID: "", spaceID: "space1"},
+		{name: "spaceID empty", operatorID: "op1", organizationID: "org1", spaceID: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	_, err := workbookservice.NewListWorkbooksInput("op1", "org1", "")
+			// given, when
+			_, err := workbookservice.NewListWorkbooksInput(tt.operatorID, tt.organizationID, tt.spaceID)
 
-	// then
-	require.Error(t, err)
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }
 
-// NewDeleteWorkbookInput tests
-
-func Test_NewDeleteWorkbookInput_shouldSucceed_whenAllFieldsAreValid(t *testing.T) {
+func Test_NewDeleteWorkbookInput_shouldReturnInput_whenIDsAreSet(t *testing.T) {
 	t.Parallel()
 
-	// given: all required fields provided.
-
-	// when
+	// given, when
 	input, err := workbookservice.NewDeleteWorkbookInput("op1", "org1", "wb1")
 
 	// then
 	require.NoError(t, err)
-	require.NotNil(t, input)
+	assert.Equal(t, workbookservice.DeleteWorkbookInput{OperatorID: "op1", OrganizationID: "org1", WorkbookID: "wb1"}, *input)
 }
 
-func Test_NewDeleteWorkbookInput_shouldReturnError_whenWorkbookIDIsEmpty(t *testing.T) {
+func Test_NewDeleteWorkbookInput_shouldReturnErrInvalidArgument_whenIDIsEmpty(t *testing.T) {
 	t.Parallel()
 
-	// given: an empty workbook ID.
+	tests := []struct {
+		name           string
+		operatorID     string
+		organizationID string
+		workbookID     string
+	}{
+		{name: "operatorID empty", operatorID: "", organizationID: "org1", workbookID: "wb1"},
+		{name: "organizationID empty", operatorID: "op1", organizationID: "", workbookID: "wb1"},
+		{name: "workbookID empty", operatorID: "op1", organizationID: "org1", workbookID: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	// when
-	_, err := workbookservice.NewDeleteWorkbookInput("op1", "org1", "")
+			// given, when
+			_, err := workbookservice.NewDeleteWorkbookInput(tt.operatorID, tt.organizationID, tt.workbookID)
 
-	// then
-	require.Error(t, err)
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }

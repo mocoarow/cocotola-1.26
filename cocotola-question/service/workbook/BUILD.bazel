@@ -14,6 +14,8 @@ smart_go_test(
     srcs = ["workbook_s_test.go"],
     deps = [
         ":workbook",
+        "//cocotola-question/domain",
+        "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
 )
