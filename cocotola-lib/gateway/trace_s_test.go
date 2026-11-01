@@ -2,10 +2,34 @@ package gateway_test
 
 import (
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
+
+func Test_traceBatchSpanProcessorOptions_shouldConfigureQueueBatchIntervalAndTimeout(t *testing.T) {
+	t.Parallel()
+
+	// given
+	var opts sdktrace.BatchSpanProcessorOptions
+
+	// when
+	for _, apply := range gateway.TraceBatchSpanProcessorOptions() {
+		apply(&opts)
+	}
+
+	// then
+	expected := sdktrace.BatchSpanProcessorOptions{
+		MaxQueueSize:       10_000,
+		BatchTimeout:       10 * time.Second,
+		ExportTimeout:      10 * time.Second,
+		MaxExportBatchSize: 10_000,
+	}
+	assert.Equal(t, expected, opts)
+}
 
 func Test_initTraceSampler_shouldReturnExpectedSampler(t *testing.T) {
 	t.Parallel()

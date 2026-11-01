@@ -16,6 +16,8 @@ import (
 
 const (
 	traceMaxQueueSize      = 10_000
+	traceExportMaxBatch    = 10_000
+	traceExportIntervalSec = 10
 	traceExportTimeoutSec  = 10
 	samplingPercentageFull = 100
 	samplingPercentageDiv  = 100.0
@@ -77,6 +79,15 @@ func initTraceSampler(samplingPercentage int) sdktrace.Sampler { //nolint:iretur
 	return sdktrace.ParentBased(sdktrace.TraceIDRatioBased(float64(samplingPercentage) / samplingPercentageDiv))
 }
 
+func traceBatchSpanProcessorOptions() []sdktrace.BatchSpanProcessorOption {
+	return []sdktrace.BatchSpanProcessorOption{
+		sdktrace.WithMaxQueueSize(traceMaxQueueSize),
+		sdktrace.WithMaxExportBatchSize(traceExportMaxBatch),
+		sdktrace.WithBatchTimeout(traceExportIntervalSec * time.Second),
+		sdktrace.WithExportTimeout(traceExportTimeoutSec * time.Second),
+	}
+}
+
 // InitTracerProvider creates an OpenTelemetry tracer provider and sets it as the global default.
 func InitTracerProvider(ctx context.Context, traceConfig TraceConfig, appName string) (func(), error) {
 	exp, err := initTracerExporter(ctx, traceConfig)
@@ -86,11 +97,7 @@ func InitTracerProvider(ctx context.Context, traceConfig TraceConfig, appName st
 
 	sampler := initTraceSampler(traceConfig.SamplingPercentage)
 
-	bp := sdktrace.NewBatchSpanProcessor(exp,
-		sdktrace.WithMaxQueueSize(traceMaxQueueSize),
-		sdktrace.WithMaxExportBatchSize(traceMaxQueueSize),
-		sdktrace.WithExportTimeout(traceExportTimeoutSec*time.Second),
-	)
+	bp := sdktrace.NewBatchSpanProcessor(exp, traceBatchSpanProcessorOptions()...)
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSpanProcessor(bp),
