@@ -1,3 +1,4 @@
+import type { AnswerPayload } from "~/lib/study/answer-payload";
 import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
 
 export type StudyQuestionAudioRef = {
@@ -143,24 +144,27 @@ async function postRecordAnswer(
   return (await response.json()) as RecordAnswerResponse;
 }
 
-export function recordAnswerForWordFill(
-  accessToken: string,
-  workbookId: string,
-  questionId: string,
-  correct: boolean,
-  locale?: AnswerLocaleHeaders,
-): Promise<RecordAnswerResponse> {
-  return postRecordAnswer(accessToken, workbookId, questionId, { correct }, locale);
+function toRecordAnswerBody(payload: AnswerPayload): Record<string, unknown> {
+  switch (payload.type) {
+    case "multiple_choice":
+      return { selectedChoiceIds: payload.selectedChoiceIds };
+    case "word_fill":
+      return { correct: payload.correct };
+    default: {
+      const _exhaustive: never = payload;
+      throw new Error("unsupported answer payload type");
+    }
+  }
 }
 
-export function recordAnswerForMultipleChoice(
+export function recordAnswer(
   accessToken: string,
   workbookId: string,
   questionId: string,
-  selectedChoiceIds: string[],
+  payload: AnswerPayload,
   locale?: AnswerLocaleHeaders,
 ): Promise<RecordAnswerResponse> {
-  return postRecordAnswer(accessToken, workbookId, questionId, { selectedChoiceIds }, locale);
+  return postRecordAnswer(accessToken, workbookId, questionId, toRecordAnswerBody(payload), locale);
 }
 
 export async function deleteStudyHistory(accessToken: string, workbookId: string): Promise<void> {

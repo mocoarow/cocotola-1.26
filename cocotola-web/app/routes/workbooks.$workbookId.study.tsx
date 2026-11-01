@@ -17,8 +17,7 @@ import { useStudyResume } from "~/hooks/use-study-resume";
 import {
   type AnswerLocaleHeaders,
   getStudyQuestions,
-  recordAnswerForMultipleChoice,
-  recordAnswerForWordFill,
+  recordAnswer,
   type StudyQuestion,
 } from "~/lib/api/study.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
@@ -29,6 +28,7 @@ import {
   isValidIanaTimezoneShape,
   isValidLocalDateKey,
 } from "~/lib/format/local-date";
+import { type AnswerPayload, parseAnswerPayload } from "~/lib/study/answer-payload";
 import {
   appendAnsweredId,
   clampExcludeIds,
@@ -106,37 +106,19 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
 
   const questionId = String(formData.get("questionId") ?? "");
-  const questionType = String(formData.get("questionType") ?? "");
-  const locale = parseAnswerLocale(formData);
-
-  if (questionType === "multiple_choice") {
-    const raw = String(formData.get("selectedChoiceIds") ?? "[]");
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      throw new Response("selectedChoiceIds must be valid JSON", { status: 400 });
-    }
-    if (!Array.isArray(parsed) || !parsed.every((v): v is string => typeof v === "string")) {
-      throw new Response("selectedChoiceIds must be an array of strings", { status: 400 });
-    }
-    const result = await recordAnswerForMultipleChoice(
-      accessToken,
-      workbookId,
-      questionId,
-      parsed,
-      locale,
-    );
-    return { ok: true, result };
+  const rawAnswer = String(formData.get("answer") ?? "");
+  const payload = parseAnswerPayload(rawAnswer);
+  if (payload === null) {
+    console.warn(`[study action] rejected: invalid answer payload (length=${rawAnswer.length})`);
+    throw new Response("Invalid request parameters", { status: 400 });
   }
 
-  const correct = formData.get("correct") === "true";
-  const result = await recordAnswerForWordFill(
+  const result = await recordAnswer(
     accessToken,
     workbookId,
     questionId,
-    correct,
-    locale,
+    payload,
+    parseAnswerLocale(formData),
   );
   return { ok: true, result };
 }
@@ -299,13 +281,12 @@ function StudySession({
     ? `/workbooks/${workbookId}/study?practice=true`
     : `/workbooks/${workbookId}/study`;
 
-  function handleMultipleChoiceAnswer(selectedChoiceIds: string[], correct: boolean) {
+  function submitAnswer(payload: AnswerPayload, correct: boolean) {
     fetcher.submit(
       {
         intent: "answer",
         questionId: question.questionId,
-        questionType: "multiple_choice",
-        selectedChoiceIds: JSON.stringify(selectedChoiceIds),
+        answer: JSON.stringify(payload),
         localDateKey: getLocalDateKey(timezone),
         timezone,
       },
@@ -314,19 +295,12 @@ function StudySession({
     advance(correct);
   }
 
+  function handleMultipleChoiceAnswer(selectedChoiceIds: string[], correct: boolean) {
+    submitAnswer({ type: "multiple_choice", selectedChoiceIds }, correct);
+  }
+
   function handleWordFillAnswer(correct: boolean) {
-    fetcher.submit(
-      {
-        intent: "answer",
-        questionId: question.questionId,
-        questionType: "word_fill",
-        correct: String(correct),
-        localDateKey: getLocalDateKey(timezone),
-        timezone,
-      },
-      { method: "post", action: actionPath },
-    );
-    advance(correct);
+    submitAnswer({ type: "word_fill", correct }, correct);
   }
 
   const cardKey = `${question.questionId}-${attemptCounts[question.questionId] ?? 0}`;

@@ -11,9 +11,13 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
 
 vi.mock("~/lib/api/study.server", () => ({
   getStudyQuestions: vi.fn(),
-  recordAnswerForMultipleChoice: vi.fn(),
-  recordAnswerForWordFill: vi.fn(),
+  getStudySummary: vi.fn(),
+  recordAnswer: vi.fn(),
+  deleteStudyHistory: vi.fn(),
+  listStudyRecords: vi.fn(),
 }));
+
+const fetcherSubmit = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
@@ -24,7 +28,7 @@ vi.mock("react-router", async (importOriginal) => {
     useNavigate: vi.fn(() => vi.fn()),
     useFetcher: vi.fn(() => ({
       state: "idle",
-      submit: vi.fn(),
+      submit: fetcherSubmit,
       Form: "form",
     })),
     Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
@@ -36,8 +40,10 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
+import { recordAnswer } from "~/lib/api/study.server";
+import { requireAuth } from "~/lib/auth/require-auth.server";
 import { studySessionStorageKey } from "~/lib/study-session";
-import StudyPage from "./workbooks.$workbookId.study";
+import StudyPage, { action } from "./workbooks.$workbookId.study";
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseRouteLoaderData = vi.mocked(useRouteLoaderData);
@@ -87,6 +93,74 @@ describe("StudyPage", () => {
     // Keep a working default for useNavigate — most tests don't override it
     // and would otherwise see `undefined` and crash inside the resume effect.
     mockedUseNavigate.mockReturnValue(vi.fn());
+    fetcherSubmit.mockReset();
+  });
+
+  it("should submit the multiple_choice answer payload when Next is clicked", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        {
+          questionId: "q-1",
+          questionType: "multiple_choice",
+          content: JSON.stringify({
+            questionText: "Pick",
+            choices: [
+              { id: "right", text: "Right", isCorrect: true },
+              { id: "wrong", text: "Wrong", isCorrect: false },
+            ],
+          }),
+          orderIndex: 0,
+        },
+      ],
+      currentUserId: "owner-1",
+    });
+    render(<StudyPage />);
+
+    // when
+    await user.click(screen.getByText("Wrong"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // then
+    const submitted = fetcherSubmit.mock.calls[0]?.[0] as Record<string, string>;
+    expect(JSON.parse(submitted.answer)).toEqual({
+      type: "multiple_choice",
+      selectedChoiceIds: ["wrong"],
+    });
+  });
+
+  it("should submit the word_fill answer payload when Next is clicked", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        {
+          questionId: "q-1",
+          questionType: "word_fill",
+          content: JSON.stringify({
+            source: { text: "hello", lang: "en" },
+            target: { text: "{{hola}}", lang: "es" },
+          }),
+          orderIndex: 0,
+        },
+      ],
+      currentUserId: "owner-1",
+    });
+    render(<StudyPage />);
+
+    // when
+    await user.type(screen.getByRole("textbox", { name: "Blank 1" }), "hola");
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // then
+    const submitted = fetcherSubmit.mock.calls[0]?.[0] as Record<string, string>;
+    expect(JSON.parse(submitted.answer)).toEqual({ type: "word_fill", correct: true });
   });
 
   it("should render empty state when no questions", () => {
@@ -651,5 +725,84 @@ describe("StudyPage", () => {
 
     // then (session complete)
     expect(screen.getByText("Session Complete!")).toBeInTheDocument();
+  });
+});
+
+type ActionArgs = Parameters<typeof action>[0];
+
+describe("StudyPage action", () => {
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      accessToken: "test-token",
+      refreshToken: undefined,
+    });
+    vi.mocked(recordAnswer).mockReset();
+    vi.mocked(recordAnswer).mockResolvedValue({
+      nextDueAt: "2026-11-03T00:00:00Z",
+      consecutiveCorrect: 1,
+      totalCorrect: 1,
+      totalIncorrect: 0,
+    });
+  });
+
+  function buildActionArgs(answer: string, url = "http://localhost/workbooks/wb-1/study") {
+    const request = new Request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ intent: "answer", questionId: "q-1", answer }).toString(),
+    });
+    return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as ActionArgs;
+  }
+
+  it.each([
+    [{ type: "multiple_choice", selectedChoiceIds: ["c1"] }],
+    [{ type: "word_fill", correct: false }],
+  ])("should record the answer payload when payload is %j", async (payload) => {
+    // given
+    const args = buildActionArgs(JSON.stringify(payload));
+
+    // when
+    await action(args);
+
+    // then
+    expect(recordAnswer).toHaveBeenCalledWith("test-token", "wb-1", "q-1", payload, undefined);
+  });
+
+  it("should return the recorded result when the answer payload is valid", async () => {
+    // given
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    const result = await action(args);
+
+    // then
+    expect(result).toEqual({
+      ok: true,
+      result: {
+        nextDueAt: "2026-11-03T00:00:00Z",
+        consecutiveCorrect: 1,
+        totalCorrect: 1,
+        totalIncorrect: 0,
+      },
+    });
+  });
+
+  it("should reject with 400 when the answer payload is invalid", async () => {
+    // given
+    const args = buildActionArgs(JSON.stringify({ type: "unknown" }));
+
+    // when / then
+    await expect(action(args)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("should skip validation and recording when practice mode", async () => {
+    // given
+    const args = buildActionArgs("{", "http://localhost/workbooks/wb-1/study?practice=true");
+
+    // when
+    await action(args);
+
+    // then
+    expect(recordAnswer).not.toHaveBeenCalled();
   });
 });

@@ -4,8 +4,7 @@ import {
   getStudyQuestions,
   getStudySummary,
   listStudyRecords,
-  recordAnswerForMultipleChoice,
-  recordAnswerForWordFill,
+  recordAnswer,
 } from "./study.server";
 
 const fetchMock = vi.fn();
@@ -231,7 +230,7 @@ describe("getStudySummary", () => {
   });
 });
 
-describe("recordAnswerForWordFill", () => {
+describe("recordAnswer", () => {
   beforeEach(() => {
     vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
   });
@@ -241,7 +240,7 @@ describe("recordAnswerForWordFill", () => {
     vi.restoreAllMocks();
   });
 
-  it("should send POST request with correct=true body", async () => {
+  it("should send POST request with correct=true body when payload is word_fill", async () => {
     // given
     const response = {
       nextDueAt: "2026-04-26T00:00:00Z",
@@ -255,7 +254,10 @@ describe("recordAnswerForWordFill", () => {
     });
 
     // when
-    const result = await recordAnswerForWordFill("test-token", "wb-1", "q-1", true);
+    const result = await recordAnswer("test-token", "wb-1", "q-1", {
+      type: "word_fill",
+      correct: true,
+    });
 
     // then
     expect(result).toEqual(response);
@@ -272,7 +274,7 @@ describe("recordAnswerForWordFill", () => {
     );
   });
 
-  it("should send correct=false for incorrect answer", async () => {
+  it("should send correct=false when word_fill answer is incorrect", async () => {
     // given
     fetchMock.mockResolvedValue({
       ok: true,
@@ -280,7 +282,7 @@ describe("recordAnswerForWordFill", () => {
     });
 
     // when
-    await recordAnswerForWordFill("token", "wb-1", "q-1", false);
+    await recordAnswer("token", "wb-1", "q-1", { type: "word_fill", correct: false });
 
     // then
     expect(fetchMock).toHaveBeenCalledWith(
@@ -299,7 +301,7 @@ describe("recordAnswerForWordFill", () => {
     });
 
     // when
-    await recordAnswerForWordFill("token", "wb/1", "q/2", true);
+    await recordAnswer("token", "wb/1", "q/2", { type: "word_fill", correct: true });
 
     // then
     expect(fetchMock).toHaveBeenCalledWith(
@@ -313,23 +315,12 @@ describe("recordAnswerForWordFill", () => {
     fetchMock.mockResolvedValue({ ok: false, status: 400 });
 
     // when / then
-    await expect(recordAnswerForWordFill("token", "wb-1", "q-1", true)).rejects.toBeInstanceOf(
-      Response,
-    );
-  });
-});
-
-describe("recordAnswerForMultipleChoice", () => {
-  beforeEach(() => {
-    vi.stubEnv("QUESTION_BASE_URL", "http://localhost:8090");
+    await expect(
+      recordAnswer("token", "wb-1", "q-1", { type: "word_fill", correct: true }),
+    ).rejects.toBeInstanceOf(Response);
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.restoreAllMocks();
-  });
-
-  it("should send POST request with selectedChoiceIds body", async () => {
+  it("should send POST request with selectedChoiceIds body when payload is multiple_choice", async () => {
     // given
     const response = {
       nextDueAt: "2026-04-26T00:00:00Z",
@@ -343,7 +334,10 @@ describe("recordAnswerForMultipleChoice", () => {
     });
 
     // when
-    const result = await recordAnswerForMultipleChoice("test-token", "wb-1", "q-1", ["c1", "c2"]);
+    const result = await recordAnswer("test-token", "wb-1", "q-1", {
+      type: "multiple_choice",
+      selectedChoiceIds: ["c1", "c2"],
+    });
 
     // then
     expect(result).toEqual(response);
@@ -368,7 +362,7 @@ describe("recordAnswerForMultipleChoice", () => {
     });
 
     // when
-    await recordAnswerForMultipleChoice("token", "wb-1", "q-1", []);
+    await recordAnswer("token", "wb-1", "q-1", { type: "multiple_choice", selectedChoiceIds: [] });
 
     // then
     expect(fetchMock).toHaveBeenCalledWith(
@@ -377,16 +371,6 @@ describe("recordAnswerForMultipleChoice", () => {
         body: JSON.stringify({ selectedChoiceIds: [] }),
       }),
     );
-  });
-
-  it("should throw Response when API returns error", async () => {
-    // given
-    fetchMock.mockResolvedValue({ ok: false, status: 400 });
-
-    // when / then
-    await expect(
-      recordAnswerForMultipleChoice("token", "wb-1", "q-1", ["c1"]),
-    ).rejects.toBeInstanceOf(Response);
   });
 });
 
