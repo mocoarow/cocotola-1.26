@@ -33,7 +33,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByText("こんにちは")).toBeInTheDocument();
@@ -45,7 +47,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.queryByRole("button", { name: /source/i })).not.toBeInTheDocument();
@@ -60,7 +64,13 @@ describe("word_fill question", () => {
     };
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content, audio)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell
+        question={wfQuestion(content, audio)}
+        onAnswer={onAnswer}
+        onSkip={vi.fn()}
+      />,
+    );
 
     // then
     expect(screen.getByRole("button", { name: /source/i })).toBeInTheDocument();
@@ -75,7 +85,13 @@ describe("word_fill question", () => {
     };
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content, audio)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell
+        question={wfQuestion(content, audio)}
+        onAnswer={onAnswer}
+        onSkip={vi.fn()}
+      />,
+    );
 
     // then
     expect(screen.queryByRole("button", { name: /target/i })).not.toBeInTheDocument();
@@ -87,7 +103,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     const inputs = screen.getAllByRole("textbox");
@@ -100,7 +118,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByLabelText("Blank 1")).toHaveFocus();
@@ -113,7 +133,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
 
     // then
@@ -127,7 +149,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
 
     // then: the just-completed blank keeps the value and is marked read-only
@@ -144,7 +168,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "apple");
 
     // then: locked input shows the correct-case answer, not the user's input
@@ -160,7 +186,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "first");
     // Focus advanced to Blank 2; click Blank 3 to deliberately leave Blank 2 empty.
     await user.click(screen.getByLabelText("Blank 3"));
@@ -178,7 +206,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "wrong");
 
     // then
@@ -192,7 +222,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     // Fill the second blank correctly while the first remains empty.
     await user.click(screen.getByLabelText("Blank 2"));
     await user.type(screen.getByLabelText("Blank 2"), "second");
@@ -209,7 +241,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
 
@@ -226,7 +260,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
 
@@ -241,7 +277,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.keyboard("{Enter}");
 
@@ -256,7 +294,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -273,7 +313,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -289,7 +331,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -303,7 +347,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -317,7 +363,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
     await user.click(screen.getByText("Next"));
 
@@ -325,15 +373,20 @@ describe("word_fill question", () => {
     expect(onAnswer).toHaveBeenCalledWith(incorrectDraft);
   });
 
-  it("should render fallback when content is invalid", () => {
+  it.each([
+    ["not JSON", "not json"],
+    ["missing target text", JSON.stringify({ source: { text: "hi", lang: "en" } })],
+  ])("should offer Skip when content is %s", (_label, content) => {
     // given
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion("not json")} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
-    expect(screen.getByText("not json")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
   });
 
   it("should have aria-label on blank inputs", () => {
@@ -342,7 +395,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByLabelText("Blank 1")).toBeInTheDocument();
@@ -357,7 +412,9 @@ describe("word_fill question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByRole("link", { name: "#1" })).toBeInTheDocument();
@@ -372,7 +429,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -388,7 +447,9 @@ describe("word_fill question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Show answer"));
 
     // then

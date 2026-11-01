@@ -239,6 +239,20 @@ function StudySession({
   }
 
   const question = queue[0];
+  // Skip the persistence side when userId is unknown so we never write under an ambiguous scope.
+  const scope = userId === null ? null : { userId, workbookId, practice };
+
+  function dequeueHead() {
+    // Read the queue length here, BEFORE setQueue, so the "session done"
+    // decision lives outside the setState updater. The updater itself must
+    // stay pure — StrictMode runs it twice — even though clearStudySession
+    // happens to be idempotent today.
+    const finishesSession = queue.length === 1;
+    setQueue((q) => q.slice(1));
+    if (scope !== null && finishesSession) {
+      clearStudySession(scope);
+    }
+  }
 
   function advance(correct: boolean) {
     setAttemptCounts((prev) => ({
@@ -250,22 +264,12 @@ function StudySession({
       // questions the user has finished. Incorrect attempts are not stored:
       // they get re-queued in memory and the user will retry within this
       // session; if they reload before retrying, the question reappears
-      // fresh (matching the pre-resume behavior). Skip the persistence side
-      // when userId is unknown so we never write under an ambiguous scope.
-      const scope = userId === null ? null : { userId, workbookId, practice };
+      // fresh (matching the pre-resume behavior).
       if (scope !== null) {
         appendAnsweredId(scope, question.questionId, Date.now());
       }
-      // Read the queue length here, BEFORE setQueue, so the "session done"
-      // decision lives outside the setState updater. The updater itself must
-      // stay pure — StrictMode runs it twice — even though clearStudySession
-      // happens to be idempotent today.
-      const finishesSession = queue.length === 1;
       setCorrectCount((c) => c + 1);
-      setQueue((q) => q.slice(1));
-      if (scope !== null && finishesSession) {
-        clearStudySession(scope);
-      }
+      dequeueHead();
     } else {
       setIncorrectCount((c) => c + 1);
       setQueue((q) => {
@@ -302,7 +306,12 @@ function StudySession({
       <ProgressBar current={correctCount} total={questions.length} />
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <StudyQuestionShell key={cardKey} question={question} onAnswer={handleAnswer} />
+        <StudyQuestionShell
+          key={cardKey}
+          question={question}
+          onAnswer={handleAnswer}
+          onSkip={dequeueHead}
+        />
       </div>
     </div>
   );

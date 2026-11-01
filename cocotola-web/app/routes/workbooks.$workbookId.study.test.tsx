@@ -96,6 +96,152 @@ describe("StudyPage", () => {
     fetcherSubmit.mockReset();
   });
 
+  function setLoaderDataWithUnrenderableFirst(rest: Array<{ questionId: string; text: string }>) {
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        { questionId: "q-bad", questionType: "unknown_type", content: "{}", orderIndex: 0 },
+        ...rest.map((q, i) => ({
+          questionId: q.questionId,
+          questionType: "multiple_choice",
+          content: JSON.stringify({
+            questionText: q.text,
+            choices: [{ id: "c", text: "C", isCorrect: true }],
+          }),
+          orderIndex: i + 1,
+        })),
+      ],
+      currentUserId: "owner-1",
+    });
+  }
+
+  it("should show the next question when an unrenderable question is skipped", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([{ questionId: "q-2", text: "Second question" }]);
+    render(<StudyPage />);
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(screen.getByText("Second question")).toBeInTheDocument();
+  });
+
+  it("should not submit an answer when an unrenderable question is skipped", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([{ questionId: "q-2", text: "Second question" }]);
+    render(<StudyPage />);
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(fetcherSubmit).not.toHaveBeenCalled();
+  });
+
+  it("should keep the saved session when a question other than the last is skipped", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([{ questionId: "q-2", text: "Second question" }]);
+    render(<StudyPage />);
+    const sessionKey = studySessionStorageKey({
+      userId: "owner-1",
+      workbookId: "wb-1",
+      practice: false,
+    });
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(window.localStorage.getItem(sessionKey)).not.toBeNull();
+  });
+
+  it("should not record a skipped question as answered", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([{ questionId: "q-2", text: "Second question" }]);
+    render(<StudyPage />);
+    const sessionKey = studySessionStorageKey({
+      userId: "owner-1",
+      workbookId: "wb-1",
+      practice: false,
+    });
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(JSON.parse(window.localStorage.getItem(sessionKey) ?? "{}").answeredIds).toEqual([]);
+  });
+
+  it("should not count a skipped question in the result totals", async () => {
+    // given: one question is answered correctly, then the unrenderable one is skipped
+    const user = userEvent.setup();
+    setLoaderData({
+      workbookId: "wb-1",
+      workbookOwnerId: "owner-1",
+      questions: [
+        {
+          questionId: "q-1",
+          questionType: "multiple_choice",
+          content: JSON.stringify({
+            questionText: "Answer me",
+            choices: [{ id: "c", text: "C", isCorrect: true }],
+          }),
+          orderIndex: 0,
+        },
+        { questionId: "q-bad", questionType: "unknown_type", content: "{}", orderIndex: 1 },
+      ],
+      currentUserId: "owner-1",
+    });
+    render(<StudyPage />);
+    await user.click(screen.getByText("C"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then: 100% (1/1); counting the skip as incorrect would show 50%
+    expect(screen.getByText("You scored 100%")).toBeInTheDocument();
+  });
+
+  it("should show the result screen when the last question is skipped", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([]);
+    render(<StudyPage />);
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(screen.getByText("Session Complete!")).toBeInTheDocument();
+  });
+
+  it("should clear the saved session when the last question is skipped", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderDataWithUnrenderableFirst([]);
+    render(<StudyPage />);
+    const sessionKey = studySessionStorageKey({
+      userId: "owner-1",
+      workbookId: "wb-1",
+      practice: false,
+    });
+    expect(window.localStorage.getItem(sessionKey)).not.toBeNull();
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Skip" }));
+
+    // then
+    expect(window.localStorage.getItem(sessionKey)).toBeNull();
+  });
+
   it("should submit the multiple_choice answer payload when Next is clicked", async () => {
     // given
     const user = userEvent.setup();

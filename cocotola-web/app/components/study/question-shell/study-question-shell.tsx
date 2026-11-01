@@ -10,26 +10,36 @@ import type { AnswerDraft, QuestionModule } from "./types";
 type StudyQuestionShellProps = {
   question: StudyQuestion;
   onAnswer: (draft: AnswerDraft) => void;
+  onSkip: () => void;
 };
 
-export function StudyQuestionShell({ question, onAnswer }: StudyQuestionShellProps) {
+export function StudyQuestionShell({ question, onAnswer, onSkip }: StudyQuestionShellProps) {
   if (!isQuestionType(question.questionType)) {
-    return <UnrenderableQuestion content={question.content} />;
+    return <UnrenderableQuestion onSkip={onSkip} />;
   }
   return (
     <ParsedQuestion
       module={getQuestionModule(question.questionType)}
       question={question}
       onAnswer={onAnswer}
+      onSkip={onSkip}
     />
   );
 }
 
-function UnrenderableQuestion({ content }: { content: string }) {
-  return <p className="text-sm text-muted-foreground">{content}</p>;
+function UnrenderableQuestion({ onSkip }: { onSkip: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">{t("workbooks.study.unrenderable")}</p>
+      <div className="flex justify-end">
+        <Button onClick={onSkip}>{t("workbooks.study.skip")}</Button>
+      </div>
+    </div>
+  );
 }
 
-type ParsedQuestionProps<T extends QuestionType, C> = {
+type QuestionFlowBaseProps<T extends QuestionType, C> = {
   module: QuestionModule<T, C>;
   question: StudyQuestion;
   onAnswer: (draft: AnswerDraft<T>) => void;
@@ -39,10 +49,11 @@ function ParsedQuestion<T extends QuestionType, C>({
   module,
   question,
   onAnswer,
-}: ParsedQuestionProps<T, C>) {
+  onSkip,
+}: QuestionFlowBaseProps<T, C> & { onSkip: () => void }) {
   const content = useMemo(() => module.parse(question.content), [module, question.content]);
   if (content === null) {
-    return <UnrenderableQuestion content={question.content} />;
+    return <UnrenderableQuestion onSkip={onSkip} />;
   }
   return <QuestionFlow module={module} content={content} question={question} onAnswer={onAnswer} />;
 }
@@ -56,7 +67,7 @@ function QuestionFlow<T extends QuestionType, C>({
   content,
   question,
   onAnswer,
-}: ParsedQuestionProps<T, C> & { content: C }) {
+}: QuestionFlowBaseProps<T, C> & { content: C }) {
   const { t } = useTranslation();
   const [state, setState] = useState<FlowState<T>>(() => ({
     phase: "answering",

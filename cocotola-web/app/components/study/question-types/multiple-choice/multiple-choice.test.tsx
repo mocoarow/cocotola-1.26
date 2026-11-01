@@ -48,7 +48,9 @@ describe("multiple_choice question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByText("What is 1+1?")).toBeInTheDocument();
@@ -66,7 +68,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Right"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -85,7 +89,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Wrong"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -103,7 +109,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Right"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -121,7 +129,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Right"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -143,7 +153,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Wrong"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -167,7 +179,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByText("Atlantic"));
     await user.click(screen.getByRole("button", { name: "Check" }));
@@ -192,7 +206,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -215,7 +231,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByText("Atlantic"));
     await user.click(screen.getByText("Mt Fuji"));
@@ -239,7 +257,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByText("A"));
 
@@ -257,7 +277,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -275,21 +297,25 @@ describe("multiple_choice question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
   });
 
-  it("should render fallback when content is invalid", () => {
+  it("should offer Skip when content is invalid", () => {
     // given
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion("bad json")} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion("bad json")} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
-    expect(screen.getByText("bad json")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
   });
 
   it("should show explanation after Check", async () => {
@@ -301,7 +327,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -318,7 +346,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -340,7 +370,9 @@ describe("multiple_choice question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByText("Select 2")).toBeInTheDocument();
@@ -369,7 +401,9 @@ describe("multiple_choice question", () => {
     const user = userEvent.setup();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     const initialOrder = choiceButtonOrder(choices);
     await user.click(screen.getByText("Bravo"));
     await user.click(screen.getByText("Charlie"));
@@ -392,7 +426,9 @@ describe("multiple_choice question", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.queryByText("Select 2")).not.toBeInTheDocument();
