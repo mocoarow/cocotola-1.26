@@ -75,6 +75,7 @@ smart_go_test(
         "//cocotola-lib/process",
         "@com_github_go_sql_driver_mysql//:mysql",
         "@com_github_jackc_pgx_v5//pgconn",
+        "@com_github_mocoarow_slogotel//:slogotel",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
         "@io_gorm_gorm//:gorm",
