@@ -187,6 +187,8 @@
       "playTargetAudio": "영문 듣기",
       "audioPlayFailed": "음성을 재생할 수 없습니다",
       "next": "다음",
+      "unrenderable": "이 문제는 표시할 수 없습니다.",
+      "skip": "건너뛰기",
       "correct": "정답!",
       "incorrect": "오답",
       "progress": "{{current}} / {{total}}",

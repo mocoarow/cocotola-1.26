@@ -1,10 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "~/i18n/config";
 
-import { MultipleChoiceCard } from "./multiple-choice-card";
+import { StudyQuestionShell } from "~/components/study/question-shell/study-question-shell";
+import type { StudyQuestion } from "~/lib/api/study.server";
 
 type ChoiceInput = { id: string; text: string; isCorrect: boolean };
 
@@ -22,7 +23,22 @@ function makeContent(
   });
 }
 
-describe("MultipleChoiceCard", () => {
+function mcQuestion(content: string): StudyQuestion {
+  return { questionId: "q-1", questionType: "multiple_choice", content, orderIndex: 0 };
+}
+
+function choiceButtonOrder(choices: ChoiceInput[]): string[] {
+  return screen
+    .getAllByRole("button")
+    .map((b) => b.textContent ?? "")
+    .filter((text) => choices.some((c) => c.text === text));
+}
+
+describe("multiple_choice question", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("should render question text and choices", () => {
     // given
     const content = makeContent("What is 1+1?", [
@@ -32,7 +48,9 @@ describe("MultipleChoiceCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByText("What is 1+1?")).toBeInTheDocument();
@@ -50,7 +68,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Right"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -69,12 +89,34 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Wrong"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
     // then
     expect(screen.getByText("Incorrect")).toBeInTheDocument();
+  });
+
+  it("should focus the Next button when Check reveals the result", async () => {
+    // given
+    const content = makeContent("Q?", [
+      { id: "1", text: "Right", isCorrect: true },
+      { id: "2", text: "Wrong", isCorrect: false },
+    ]);
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
+    await user.click(screen.getByText("Right"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+
+    // then
+    expect(screen.getByRole("button", { name: "Next" })).toHaveFocus();
   });
 
   it("should call onAnswer with the selection and true when only the correct choice is selected then Next", async () => {
@@ -87,15 +129,17 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Right"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    const [ids, correct] = onAnswer.mock.calls[0];
-    expect([...ids].sort()).toEqual(["1"]);
+    const [{ correct, payload }] = onAnswer.mock.calls[0];
+    expect([...payload.selectedChoiceIds].sort()).toEqual(["1"]);
     expect(correct).toBe(true);
   });
 
@@ -109,15 +153,17 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Wrong"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    const [ids, correct] = onAnswer.mock.calls[0];
-    expect([...ids].sort()).toEqual(["2"]);
+    const [{ correct, payload }] = onAnswer.mock.calls[0];
+    expect([...payload.selectedChoiceIds].sort()).toEqual(["2"]);
     expect(correct).toBe(false);
   });
 
@@ -133,7 +179,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByText("Atlantic"));
     await user.click(screen.getByRole("button", { name: "Check" }));
@@ -141,8 +189,8 @@ describe("MultipleChoiceCard", () => {
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    const [ids, correct] = onAnswer.mock.calls[0];
-    expect([...ids].sort()).toEqual(["1", "2"]);
+    const [{ correct, payload }] = onAnswer.mock.calls[0];
+    expect([...payload.selectedChoiceIds].sort()).toEqual(["1", "2"]);
     expect(correct).toBe(true);
   });
 
@@ -158,15 +206,17 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    const [ids, correct] = onAnswer.mock.calls[0];
-    expect([...ids].sort()).toEqual(["1"]);
+    const [{ correct, payload }] = onAnswer.mock.calls[0];
+    expect([...payload.selectedChoiceIds].sort()).toEqual(["1"]);
     expect(correct).toBe(false);
   });
 
@@ -181,7 +231,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("Pacific"));
     await user.click(screen.getByText("Atlantic"));
     await user.click(screen.getByText("Mt Fuji"));
@@ -190,8 +242,8 @@ describe("MultipleChoiceCard", () => {
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    const [ids, correct] = onAnswer.mock.calls[0];
-    expect([...ids].sort()).toEqual(["1", "2", "3"]);
+    const [{ correct, payload }] = onAnswer.mock.calls[0];
+    expect([...payload.selectedChoiceIds].sort()).toEqual(["1", "2", "3"]);
     expect(correct).toBe(false);
   });
 
@@ -205,7 +257,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByText("A"));
 
@@ -223,7 +277,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -241,21 +297,25 @@ describe("MultipleChoiceCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
   });
 
-  it("should render fallback when content is invalid", () => {
+  it("should offer Skip when content is invalid", () => {
     // given
     const onAnswer = vi.fn();
 
     // when
-    render(<MultipleChoiceCard content="bad json" onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion("bad json")} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
-    expect(screen.getByText("bad json")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Skip" })).toBeInTheDocument();
   });
 
   it("should show explanation after Check", async () => {
@@ -267,7 +327,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -284,7 +346,9 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
     await user.click(screen.getByText("A"));
     await user.click(screen.getByRole("button", { name: "Check" }));
 
@@ -306,14 +370,19 @@ describe("MultipleChoiceCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.getByText("Select 2")).toBeInTheDocument();
   });
 
   it("should keep choice order stable across selections when shuffleChoices is true", async () => {
-    // given
+    // given: a cycling random sequence so that any re-shuffle produces a different order
+    const randomValues = [0.1, 0.7, 0.3, 0.9, 0.5];
+    let call = 0;
+    vi.spyOn(Math, "random").mockImplementation(() => randomValues[call++ % randomValues.length]);
     const choices = [
       { id: "1", text: "Alpha", isCorrect: true },
       { id: "2", text: "Bravo", isCorrect: false },
@@ -332,21 +401,16 @@ describe("MultipleChoiceCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
-    const initialOrder = screen
-      .getAllByRole("button")
-      .map((b) => b.textContent ?? "")
-      .filter((text) => choices.some((c) => c.text === text));
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
+    const initialOrder = choiceButtonOrder(choices);
     await user.click(screen.getByText("Bravo"));
     await user.click(screen.getByText("Charlie"));
     await user.click(screen.getByText("Bravo"));
-    const orderAfterClicks = screen
-      .getAllByRole("button")
-      .map((b) => b.textContent ?? "")
-      .filter((text) => choices.some((c) => c.text === text));
 
     // then
-    expect(orderAfterClicks).toEqual(initialOrder);
+    expect(choiceButtonOrder(choices)).toEqual(initialOrder);
   });
 
   it("should not show the 'Select N' hint when showCorrectCount is false", () => {
@@ -362,7 +426,9 @@ describe("MultipleChoiceCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<MultipleChoiceCard content={content} onAnswer={onAnswer} />);
+    render(
+      <StudyQuestionShell question={mcQuestion(content)} onAnswer={onAnswer} onSkip={vi.fn()} />,
+    );
 
     // then
     expect(screen.queryByText("Select 2")).not.toBeInTheDocument();

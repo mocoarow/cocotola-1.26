@@ -187,6 +187,8 @@
       "playTargetAudio": "Listen (target)",
       "audioPlayFailed": "Could not play audio",
       "next": "Next",
+      "unrenderable": "This question cannot be displayed.",
+      "skip": "Skip",
       "correct": "Correct!",
       "incorrect": "Incorrect",
       "progress": "{{current}} / {{total}}",

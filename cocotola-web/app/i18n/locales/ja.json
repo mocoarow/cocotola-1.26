@@ -187,6 +187,8 @@
       "playTargetAudio": "英文を聞く",
       "audioPlayFailed": "音声を再生できませんでした",
       "next": "次へ",
+      "unrenderable": "この問題は表示できません。",
+      "skip": "スキップ",
       "correct": "正解！",
       "incorrect": "不正解",
       "progress": "{{current}} / {{total}}",
