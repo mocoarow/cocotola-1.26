@@ -8,10 +8,10 @@ import {
   useNavigate,
   useRouteLoaderData,
 } from "react-router";
-import { MultipleChoiceCard } from "~/components/study/multiple-choice-card";
 import { ProgressBar } from "~/components/study/progress-bar";
+import { StudyQuestionShell } from "~/components/study/question-shell/study-question-shell";
+import type { AnswerDraft } from "~/components/study/question-shell/types";
 import { StudyResult } from "~/components/study/study-result";
-import { WordFillCard } from "~/components/study/word-fill-card";
 import { Button } from "~/components/ui/button";
 import { useStudyResume } from "~/hooks/use-study-resume";
 import {
@@ -28,7 +28,7 @@ import {
   isValidIanaTimezoneShape,
   isValidLocalDateKey,
 } from "~/lib/format/local-date";
-import { type AnswerPayload, parseAnswerPayload } from "~/lib/study/answer-payload";
+import { parseAnswerPayload } from "~/lib/study/answer-payload";
 import {
   appendAnsweredId,
   clampExcludeIds,
@@ -281,26 +281,18 @@ function StudySession({
     ? `/workbooks/${workbookId}/study?practice=true`
     : `/workbooks/${workbookId}/study`;
 
-  function submitAnswer(payload: AnswerPayload, correct: boolean) {
+  function handleAnswer(draft: AnswerDraft) {
     fetcher.submit(
       {
         intent: "answer",
         questionId: question.questionId,
-        answer: JSON.stringify(payload),
+        answer: JSON.stringify(draft.payload),
         localDateKey: getLocalDateKey(timezone),
         timezone,
       },
       { method: "post", action: actionPath },
     );
-    advance(correct);
-  }
-
-  function handleMultipleChoiceAnswer(selectedChoiceIds: string[], correct: boolean) {
-    submitAnswer({ type: "multiple_choice", selectedChoiceIds }, correct);
-  }
-
-  function handleWordFillAnswer(correct: boolean) {
-    submitAnswer({ type: "word_fill", correct }, correct);
+    advance(draft.correct);
   }
 
   const cardKey = `${question.questionId}-${attemptCounts[question.questionId] ?? 0}`;
@@ -310,20 +302,7 @@ function StudySession({
       <ProgressBar current={correctCount} total={questions.length} />
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
-        {question.questionType === "multiple_choice" ? (
-          <MultipleChoiceCard
-            key={cardKey}
-            content={question.content}
-            onAnswer={handleMultipleChoiceAnswer}
-          />
-        ) : (
-          <WordFillCard
-            key={cardKey}
-            content={question.content}
-            audio={question.audio}
-            onAnswer={handleWordFillAnswer}
-          />
-        )}
+        <StudyQuestionShell key={cardKey} question={question} onAnswer={handleAnswer} />
       </div>
     </div>
   );

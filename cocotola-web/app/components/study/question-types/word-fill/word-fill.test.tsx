@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import "~/i18n/config";
 
-import { WordFillCard } from "./word-fill-card";
+import { StudyQuestionShell } from "~/components/study/question-shell/study-question-shell";
+import type { StudyQuestion, StudyQuestionAudio } from "~/lib/api/study.server";
 
 function makeContent(
   target: string,
@@ -18,14 +19,21 @@ function makeContent(
   });
 }
 
-describe("WordFillCard", () => {
+function wfQuestion(content: string, audio?: StudyQuestionAudio): StudyQuestion {
+  return { questionId: "q-1", questionType: "word_fill", content, orderIndex: 0, audio };
+}
+
+const correctDraft = { correct: true, payload: { type: "word_fill", correct: true } };
+const incorrectDraft = { correct: false, payload: { type: "word_fill", correct: false } };
+
+describe("word_fill question", () => {
   it("should render source text", () => {
     // given
     const content = makeContent("{{hello}}", "こんにちは");
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByText("こんにちは")).toBeInTheDocument();
@@ -37,7 +45,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.queryByRole("button", { name: /source/i })).not.toBeInTheDocument();
@@ -52,7 +60,7 @@ describe("WordFillCard", () => {
     };
 
     // when
-    render(<WordFillCard content={content} audio={audio} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content, audio)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByRole("button", { name: /source/i })).toBeInTheDocument();
@@ -67,7 +75,7 @@ describe("WordFillCard", () => {
     };
 
     // when
-    render(<WordFillCard content={content} audio={audio} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content, audio)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.queryByRole("button", { name: /target/i })).not.toBeInTheDocument();
@@ -79,7 +87,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     const inputs = screen.getAllByRole("textbox");
@@ -92,7 +100,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByLabelText("Blank 1")).toHaveFocus();
@@ -105,7 +113,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
 
     // then
@@ -119,7 +127,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
 
     // then: the just-completed blank keeps the value and is marked read-only
@@ -136,7 +144,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "apple");
 
     // then: locked input shows the correct-case answer, not the user's input
@@ -152,7 +160,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "first");
     // Focus advanced to Blank 2; click Blank 3 to deliberately leave Blank 2 empty.
     await user.click(screen.getByLabelText("Blank 3"));
@@ -170,7 +178,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "wrong");
 
     // then
@@ -184,7 +192,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     // Fill the second blank correctly while the first remains empty.
     await user.click(screen.getByLabelText("Blank 2"));
     await user.type(screen.getByLabelText("Blank 2"), "second");
@@ -201,7 +209,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
 
@@ -218,7 +226,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
 
@@ -233,12 +241,12 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.keyboard("{Enter}");
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(true);
+    expect(onAnswer).toHaveBeenCalledWith(correctDraft);
   });
 
   it("should call onAnswer with true only after the user clicks Next on the correct result screen", async () => {
@@ -248,14 +256,14 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.type(screen.getByLabelText("Blank 1"), "hello");
     await user.type(screen.getByLabelText("Blank 2"), "world");
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
     expect(onAnswer).toHaveBeenCalledTimes(1);
-    expect(onAnswer).toHaveBeenCalledWith(true);
+    expect(onAnswer).toHaveBeenCalledWith(correctDraft);
   });
 
   it("should reveal the answer and show next button when show-answer is clicked", async () => {
@@ -265,7 +273,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -274,16 +282,28 @@ describe("WordFillCard", () => {
     expect(screen.getByText("hello")).toBeInTheDocument();
   });
 
-  it("should show correct feedback when revealing answer with all blanks already filled correctly", async () => {
-    // given: cannot reach this state via auto-submit, so we exercise reveal directly
-    // by typing a wrong then a correct value to keep revealed gating active.
-    const content = makeContent("{{hello}}");
+  it("should show Correct! when revealing a card whose only blank is whitespace", async () => {
+    // given
+    const content = makeContent("say {{ }} here");
     const onAnswer = vi.fn();
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
-    // First click reveal with empty input → incorrect.
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
+    await user.click(screen.getByText("Show answer"));
+
+    // then
+    expect(screen.getByText("Correct!")).toBeInTheDocument();
+  });
+
+  it("should show Incorrect when revealing a card that has no blanks", async () => {
+    // given
+    const content = makeContent("no blanks here");
+    const onAnswer = vi.fn();
+    const user = userEvent.setup();
+
+    // when
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -297,12 +317,12 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.click(screen.getByText("Show answer"));
     await user.click(screen.getByText("Next"));
 
     // then
-    expect(onAnswer).toHaveBeenCalledWith(false);
+    expect(onAnswer).toHaveBeenCalledWith(incorrectDraft);
   });
 
   it("should render fallback when content is invalid", () => {
@@ -310,7 +330,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content="not json" onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion("not json")} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByText("not json")).toBeInTheDocument();
@@ -322,7 +342,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByLabelText("Blank 1")).toBeInTheDocument();
@@ -337,7 +357,7 @@ describe("WordFillCard", () => {
     const onAnswer = vi.fn();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
 
     // then
     expect(screen.getByRole("link", { name: "#1" })).toBeInTheDocument();
@@ -352,7 +372,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.click(screen.getByText("Show answer"));
 
     // then
@@ -368,7 +388,7 @@ describe("WordFillCard", () => {
     const user = userEvent.setup();
 
     // when
-    render(<WordFillCard content={content} onAnswer={onAnswer} />);
+    render(<StudyQuestionShell question={wfQuestion(content)} onAnswer={onAnswer} />);
     await user.click(screen.getByText("Show answer"));
 
     // then
