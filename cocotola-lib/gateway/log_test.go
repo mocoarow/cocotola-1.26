@@ -2,15 +2,38 @@ package gateway_test
 
 import (
 	"context"
+	"log"
 	"log/slog"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/mocoarow/slogotel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
+
+var defaultLoggerMu sync.Mutex
+
+func lockDefaultLogger(t *testing.T) {
+	t.Helper()
+
+	defaultLoggerMu.Lock()
+	prev := slog.Default()
+	prevOut, prevFlags := log.Writer(), log.Flags()
+	t.Cleanup(func() {
+		slog.SetDefault(prev)
+		log.SetOutput(prevOut)
+		log.SetFlags(prevFlags)
+		defaultLoggerMu.Unlock()
+	})
+}
+
+func noneLogConfig(level string) gateway.LogConfig {
+	return gateway.LogConfig{Level: level, Exporter: "none"}
+}
 
 type captureHandler struct {
 	handled []slog.Record
@@ -155,4 +178,61 @@ func Test_levelFilterHandler_WithGroup_shouldPreserveMinLevel(t *testing.T) {
 	// then
 	assert.False(t, h2.Enabled(context.Background(), slog.LevelInfo), "level below minLevel should be disabled")
 	assert.True(t, h2.Enabled(context.Background(), slog.LevelWarn), "level at minLevel should be enabled")
+}
+
+func Test_InitLog_shouldWrapDefaultHandlerWithSlogotel_whenExporterIsNone(t *testing.T) {
+	t.Parallel()
+
+	// given
+	lockDefaultLogger(t)
+
+	// when
+	_, err := gateway.InitLog(context.Background(), noneLogConfig("debug"), "test-app")
+
+	// then
+	require.NoError(t, err)
+	assert.IsType(t, &slogotel.Handler{}, slog.Default().Handler())
+}
+
+func Test_InitLog_shouldApplyConfiguredLevelToDefaultLogger_whenExporterIsNone(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		configLevel string
+		level       slog.Level
+	}{
+		{"debug", slog.LevelDebug},
+		{"error", slog.LevelError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.configLevel, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			lockDefaultLogger(t)
+
+			// when
+			_, err := gateway.InitLog(context.Background(), noneLogConfig(tt.configLevel), "test-app")
+
+			// then
+			require.NoError(t, err)
+			assert.True(t, slog.Default().Enabled(context.Background(), tt.level), "configured level should be enabled")
+			assert.False(t, slog.Default().Enabled(context.Background(), tt.level-1), "level below configured level should be disabled")
+		})
+	}
+}
+
+func Test_InitLog_shouldReturnCallableCleanup_whenExporterIsNone(t *testing.T) {
+	t.Parallel()
+
+	// given
+	lockDefaultLogger(t)
+
+	// when
+	cleanup, err := gateway.InitLog(context.Background(), noneLogConfig("debug"), "test-app")
+
+	// then
+	require.NoError(t, err)
+	require.NotNil(t, cleanup)
+	assert.NotPanics(t, cleanup)
 }
