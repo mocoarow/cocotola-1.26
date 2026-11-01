@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "auth",
@@ -8,5 +9,17 @@ go_library(
     deps = [
         "//cocotola-auth/domain",
         "//cocotola-lib/domain",
+    ],
+)
+
+smart_go_test(
+    name = "auth_test",
+    srcs = ["auth_s_test.go"],
+    deps = [
+        ":auth",
+        "//cocotola-auth/domain",
+        "@com_github_go_playground_validator_v10//:validator",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )
