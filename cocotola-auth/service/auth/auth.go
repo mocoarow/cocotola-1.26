@@ -2,7 +2,6 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -23,7 +22,7 @@ type UserInfo struct {
 // NewUserInfo creates a validated UserInfo.
 func NewUserInfo(userID domain.AppUserID, loginID string, organizationName string, expiresAt time.Time) (*UserInfo, error) {
 	if userID.IsZero() {
-		return nil, errors.New("user info user id must not be zero")
+		return nil, fmt.Errorf("user info user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &UserInfo{
 		UserID:           userID,
@@ -69,7 +68,7 @@ type PasswordAuthenticateOutput struct {
 // NewPasswordAuthenticateOutput creates a validated PasswordAuthenticateOutput.
 func NewPasswordAuthenticateOutput(userID domain.AppUserID, loginID string, organizationName string) (*PasswordAuthenticateOutput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("password authenticate output user id must not be zero")
+		return nil, fmt.Errorf("password authenticate output user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &PasswordAuthenticateOutput{
 		UserID:           userID,
@@ -94,7 +93,7 @@ type CreateSessionTokenInput struct {
 // NewCreateSessionTokenInput creates a validated CreateSessionTokenInput.
 func NewCreateSessionTokenInput(userID domain.AppUserID, loginID string, organizationName string) (*CreateSessionTokenInput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("create session token input user id must not be zero")
+		return nil, fmt.Errorf("create session token input user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &CreateSessionTokenInput{
 		UserID:           userID,
@@ -135,7 +134,7 @@ type CreateTokenPairInput struct {
 // NewCreateTokenPairInput creates a validated CreateTokenPairInput.
 func NewCreateTokenPairInput(userID domain.AppUserID, loginID string, organizationName string) (*CreateTokenPairInput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("create token pair input user id must not be zero")
+		return nil, fmt.Errorf("create token pair input user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &CreateTokenPairInput{
 		UserID:           userID,
@@ -194,7 +193,7 @@ type ValidateSessionTokenOutput struct {
 // NewValidateSessionTokenOutput creates a validated ValidateSessionTokenOutput.
 func NewValidateSessionTokenOutput(userID domain.AppUserID, loginID string, organizationName string) (*ValidateSessionTokenOutput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("validate session token output user id must not be zero")
+		return nil, fmt.Errorf("validate session token output user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &ValidateSessionTokenOutput{
 		UserID:           userID,
@@ -235,7 +234,7 @@ type ValidateAccessTokenOutput struct {
 // NewValidateAccessTokenOutput creates a validated ValidateAccessTokenOutput.
 func NewValidateAccessTokenOutput(userID domain.AppUserID, loginID string, organizationName string) (*ValidateAccessTokenOutput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("validate access token output user id must not be zero")
+		return nil, fmt.Errorf("validate access token output user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &ValidateAccessTokenOutput{
 		UserID:           userID,
@@ -346,7 +345,7 @@ type GuestAuthenticateOutput struct {
 // NewGuestAuthenticateOutput creates a validated GuestAuthenticateOutput.
 func NewGuestAuthenticateOutput(userID domain.AppUserID, loginID string, organizationName string) (*GuestAuthenticateOutput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("guest authenticate output user id must not be zero")
+		return nil, fmt.Errorf("guest authenticate output user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &GuestAuthenticateOutput{
 		UserID:           userID,
@@ -389,7 +388,7 @@ type SupabaseExchangeOutput struct {
 // NewSupabaseExchangeOutput creates a validated SupabaseExchangeOutput.
 func NewSupabaseExchangeOutput(userID domain.AppUserID, loginID string, organizationName string) (*SupabaseExchangeOutput, error) {
 	if userID.IsZero() {
-		return nil, errors.New("supabase exchange output user id must not be zero")
+		return nil, fmt.Errorf("supabase exchange output user id must not be zero: %w", domain.ErrInvalidArgument)
 	}
 	m := &SupabaseExchangeOutput{
 		UserID:           userID,
