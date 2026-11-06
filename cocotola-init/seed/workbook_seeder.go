@@ -68,10 +68,25 @@ type WorkbookOutput struct {
 	MaxExistingOrderIndex int32
 }
 
-// SeedPublicWorkbooks seeds the workbooks given to NewWorkbookSeeder.
+// SeedPublicWorkbooks seeds the workbooks given to NewWorkbookSeeder and
+// returns ErrInvalidSeed if the question service rejected any of their questions.
 func (s *WorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error {
-	_, err := s.SeedWorkbooks(ctx, organizationID, publicSpaceID, s.seeds)
-	return err
+	outputs, err := s.SeedWorkbooks(ctx, organizationID, publicSpaceID, s.seeds)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, out := range outputs {
+		if len(out.RejectedOrderIndexes) > 0 {
+			errs = append(errs, fmt.Errorf("workbook %q: question service rejected questions at order indexes %v: %w",
+				out.SeedKey, out.RejectedOrderIndexes, ErrInvalidSeed))
+		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("embedded seed questions rejected: %w", errors.Join(errs...))
+	}
+	return nil
 }
 
 // SeedWorkbooks creates each seed's workbook (if absent) and then each nested
