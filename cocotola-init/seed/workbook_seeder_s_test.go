@@ -404,8 +404,32 @@ func Test_WorkbookSeeder_shouldAddRemainingQuestions_whenQuestionRejectedWith400
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
 
-	// then: C2 is still added
-	require.NoError(t, err)
+	// then: C2 is still added before the rejection is reported
+	require.ErrorIs(t, err, seed.ErrInvalidSeed)
+}
+
+func Test_WorkbookSeeder_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejectedWith400(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: vocab-v1's C1 is rejected; grammar-v1 comes after it and must still be created
+	client := existingVocabularyClient(ctx, t)
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
+		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
+		Return(nil)
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
+		return body.Title == "Grammar"
+	})).Return("wb-Grammar", nil)
+	ensurer := existingVocabularyEnsurer(ctx, t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then: grammar-v1 was created (verified by the mock expectations) and the rejection is still reported
+	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
 func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {

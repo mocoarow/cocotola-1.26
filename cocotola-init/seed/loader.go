@@ -10,9 +10,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
 )
 
-// ErrInvalidSeed is returned when a seed set violates the invariants the seeder
-// relies on (e.g. empty or duplicate seedKeys). It is a sentinel so callers and
-// tests can match it with errors.Is regardless of the surrounding context.
+// ErrInvalidSeed is returned when a public workbook seed is invalid.
 var ErrInvalidSeed = errors.New("invalid public workbook seed")
 
 //go:embed seeds/public_workbooks.yaml
