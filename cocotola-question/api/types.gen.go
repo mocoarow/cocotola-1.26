@@ -172,12 +172,17 @@ type QuestionResponse struct {
 	UpdatedAt    time.Time     `json:"updatedAt"`
 }
 
-// RecordAnswerRequest Exactly one of `correct` or `selectedChoiceIds` must be provided, matched to
-// the question's type. `correct` is for `word_fill`; `selectedChoiceIds` is for
-// `multiple_choice` and lets the server decide correctness.
+// RecordAnswerRequest Exactly one of `correct`, `selectedChoiceIds` or `regions` must be provided,
+// matched to the question's type. `correct` is for `word_fill`;
+// `selectedChoiceIds` is for `multiple_choice` and `regions` is for `ordering`,
+// and both let the server decide correctness.
 type RecordAnswerRequest struct {
-	Correct           bool     `json:"correct,omitempty"`
-	SelectedChoiceIds []string `json:"selectedChoiceIds,omitempty"`
+	Correct bool `json:"correct,omitempty"`
+
+	// Regions Chip texts placed in each run of consecutive chips, in order. At most 40
+	// chips in total, and each text is at most 500 bytes.
+	Regions           [][]string `json:"regions,omitempty"`
+	SelectedChoiceIds []string   `json:"selectedChoiceIds,omitempty"`
 }
 
 // RecordAnswerResponse defines model for RecordAnswerResponse.

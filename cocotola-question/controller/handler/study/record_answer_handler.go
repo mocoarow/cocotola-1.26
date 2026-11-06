@@ -3,6 +3,7 @@ package study
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -38,8 +39,23 @@ func NewRecordAnswerHandler(usecase RecordAnswerUsecase) *RecordAnswerHandler {
 // detect omission; per-type guards (right field for the question's type) live
 // in the usecase, since the handler does not yet know the question type.
 type recordAnswerBody struct {
-	Correct           *bool     `json:"correct"`
-	SelectedChoiceIDs *[]string `json:"selectedChoiceIds"`
+	Correct           *bool       `json:"correct"`
+	SelectedChoiceIDs *[]string   `json:"selectedChoiceIds"`
+	Regions           *[][]string `json:"regions"`
+}
+
+func (b *recordAnswerBody) answerFieldCount() int {
+	count := 0
+	if b.Correct != nil {
+		count++
+	}
+	if b.SelectedChoiceIDs != nil {
+		count++
+	}
+	if b.Regions != nil {
+		count++
+	}
+	return count
 }
 
 // RecordAnswer handles POST /workbook/:workbookId/study/:questionId/answer.
@@ -126,18 +142,29 @@ func (h *RecordAnswerHandler) parseAnswerBody(ctx context.Context, c *gin.Contex
 }
 
 func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Context, ids *answerIDs, body *recordAnswerBody) (*studyservice.RecordAnswerInput, bool) {
-	localDateKey := c.GetHeader("X-Local-Date")
-	timezone := c.GetHeader("X-Local-Timezone")
-
-	switch {
-	case body.Correct == nil && body.SelectedChoiceIDs == nil:
+	count := body.answerFieldCount()
+	if count == 0 {
 		h.logger.WarnContext(ctx, "missing answer field")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "either correct or selectedChoiceIds must be provided"))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "one of correct, selectedChoiceIds or regions must be provided"))
 		return nil, false
-	case body.Correct != nil && body.SelectedChoiceIDs != nil:
+	}
+	if count > 1 {
 		h.logger.WarnContext(ctx, "ambiguous answer field")
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct and selectedChoiceIds are mutually exclusive"))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "correct, selectedChoiceIds and regions are mutually exclusive"))
 		return nil, false
+	}
+
+	in, err := newAnswerInput(ids, body, c.GetHeader("X-Local-Date"), c.GetHeader("X-Local-Timezone"))
+	if err != nil {
+		handleStudyError(ctx, h.logger, c, "new record answer input", err)
+		return nil, false
+	}
+	return in, true
+}
+
+// newAnswerInput expects exactly one answer field in body to be set.
+func newAnswerInput(ids *answerIDs, body *recordAnswerBody, localDateKey, timezone string) (*studyservice.RecordAnswerInput, error) {
+	switch {
 	case body.Correct != nil:
 		in, err := studyservice.NewRecordAnswerInputForWordFill(studyservice.RecordAnswerInputForWordFillParams{
 			OperatorID:     ids.userID,
@@ -149,11 +176,10 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 			Timezone:       timezone,
 		})
 		if err != nil {
-			handleStudyError(ctx, h.logger, c, "new record answer input", err)
-			return nil, false
+			return nil, fmt.Errorf("new word_fill answer input: %w", err)
 		}
-		return in, true
-	default:
+		return in, nil
+	case body.SelectedChoiceIDs != nil:
 		in, err := studyservice.NewRecordAnswerInputForMultipleChoice(studyservice.RecordAnswerInputForMultipleChoiceParams{
 			OperatorID:        ids.userID,
 			OrganizationID:    ids.organizationID,
@@ -164,9 +190,22 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 			Timezone:          timezone,
 		})
 		if err != nil {
-			handleStudyError(ctx, h.logger, c, "new record answer input", err)
-			return nil, false
+			return nil, fmt.Errorf("new multiple_choice answer input: %w", err)
 		}
-		return in, true
+		return in, nil
+	default:
+		in, err := studyservice.NewRecordAnswerInputForOrdering(studyservice.RecordAnswerInputForOrderingParams{
+			OperatorID:     ids.userID,
+			OrganizationID: ids.organizationID,
+			WorkbookID:     ids.workbookID,
+			QuestionID:     ids.questionID,
+			Regions:        *body.Regions,
+			LocalDateKey:   localDateKey,
+			Timezone:       timezone,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("new ordering answer input: %w", err)
+		}
+		return in, nil
 	}
 }

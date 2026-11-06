@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
 // MaxExcludeIDsCount caps the size of the client-supplied resume set
@@ -153,7 +154,7 @@ const (
 )
 
 // RecordAnswerInput is the validated input for recording an answer.
-// Exactly one of Correct or SelectedChoiceIDs is set; empty LocalDateKey or
+// Exactly one of Correct, SelectedChoiceIDs or Regions is set; empty LocalDateKey or
 // Timezone skips only the daily-stats increment.
 type RecordAnswerInput struct {
 	OperatorID        string `validate:"required"`
@@ -162,6 +163,7 @@ type RecordAnswerInput struct {
 	QuestionID        string `validate:"required"`
 	Correct           *bool
 	SelectedChoiceIDs *[]string
+	Regions           *[][]string
 	LocalDateKey      string
 	Timezone          string
 }
@@ -186,6 +188,7 @@ func NewRecordAnswerInputForWordFill(p RecordAnswerInputForWordFillParams) (*Rec
 		QuestionID:        p.QuestionID,
 		Correct:           &p.Correct,
 		SelectedChoiceIDs: nil,
+		Regions:           nil,
 		LocalDateKey:      p.LocalDateKey,
 		Timezone:          p.Timezone,
 	}
@@ -224,6 +227,7 @@ func NewRecordAnswerInputForMultipleChoice(p RecordAnswerInputForMultipleChoiceP
 		QuestionID:        p.QuestionID,
 		Correct:           nil,
 		SelectedChoiceIDs: &ids,
+		Regions:           nil,
 		LocalDateKey:      p.LocalDateKey,
 		Timezone:          p.Timezone,
 	}
@@ -231,6 +235,61 @@ func NewRecordAnswerInputForMultipleChoice(p RecordAnswerInputForMultipleChoiceP
 		return nil, fmt.Errorf("validate record answer input: %w", err)
 	}
 	return m, nil
+}
+
+// RecordAnswerInputForOrderingParams holds the named parameters for NewRecordAnswerInputForOrdering.
+type RecordAnswerInputForOrderingParams struct {
+	OperatorID     string
+	OrganizationID string
+	WorkbookID     string
+	QuestionID     string
+	Regions        [][]string
+	LocalDateKey   string
+	Timezone       string
+}
+
+// NewRecordAnswerInputForOrdering creates a validated RecordAnswerInput for ordering questions.
+// Regions and chips are each a subset of the content segments, so both counts are capped
+// by question.MaxOrderingSegments.
+func NewRecordAnswerInputForOrdering(p RecordAnswerInputForOrderingParams) (*RecordAnswerInput, error) {
+	if err := validateOrderingRegions(p.Regions); err != nil {
+		return nil, fmt.Errorf("validate ordering regions: %w", err)
+	}
+	regions := p.Regions
+	m := &RecordAnswerInput{
+		OperatorID:        p.OperatorID,
+		OrganizationID:    p.OrganizationID,
+		WorkbookID:        p.WorkbookID,
+		QuestionID:        p.QuestionID,
+		Correct:           nil,
+		SelectedChoiceIDs: nil,
+		Regions:           &regions,
+		LocalDateKey:      p.LocalDateKey,
+		Timezone:          p.Timezone,
+	}
+	if err := domain.ValidateInput(m); err != nil {
+		return nil, fmt.Errorf("validate record answer input: %w", err)
+	}
+	return m, nil
+}
+
+func validateOrderingRegions(regions [][]string) error {
+	if len(regions) > question.MaxOrderingSegments {
+		return fmt.Errorf("regions count exceeds limit (max %d, got %d): %w", question.MaxOrderingSegments, len(regions), domain.ErrInvalidArgument)
+	}
+	chips := 0
+	for i, region := range regions {
+		chips += len(region)
+		if chips > question.MaxOrderingSegments {
+			return fmt.Errorf("regions chip count exceeds limit (max %d): %w", question.MaxOrderingSegments, domain.ErrInvalidArgument)
+		}
+		for j, text := range region {
+			if len(text) > question.MaxOrderingTextLength {
+				return fmt.Errorf("regions[%d][%d] exceeds length limit (max %d bytes, got %d): %w", i, j, question.MaxOrderingTextLength, len(text), domain.ErrInvalidArgument)
+			}
+		}
+	}
+	return nil
 }
 
 // RecordAnswerOutput is the output for recording an answer.

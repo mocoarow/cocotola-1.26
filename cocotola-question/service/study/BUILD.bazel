@@ -6,7 +6,10 @@ go_library(
     srcs = ["study.go"],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study",
     visibility = ["//visibility:public"],
-    deps = ["//cocotola-question/domain"],
+    deps = [
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+    ],
 )
 
 smart_go_test(
@@ -18,6 +21,7 @@ smart_go_test(
     deps = [
         ":study",
         "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

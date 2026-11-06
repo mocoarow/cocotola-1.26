@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
 
@@ -139,30 +141,113 @@ func Test_RecordAnswerHandler_shouldReturn400_whenBodyHasNeitherField(t *testing
 
 	// then
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "either correct or selectedChoiceIds must be provided")
+	validateErrorResponse(t, respBytes, "invalid_request", "one of correct, selectedChoiceIds or regions must be provided")
 }
 
-func Test_RecordAnswerHandler_shouldReturn400_whenBothFieldsProvided(t *testing.T) {
+func Test_RecordAnswerHandler_shouldReturn400_whenMultipleAnswerFieldsProvided(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "correct and selectedChoiceIds", body: `{"correct":true,"selectedChoiceIds":["c1"]}`},
+		{name: "correct and regions", body: `{"correct":true,"regions":[["I","am"]]}`},
+		{name: "selectedChoiceIds and regions", body: `{"selectedChoiceIds":["c1"],"regions":[["I","am"]]}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			getUsecase := NewMockGetStudyQuestionsUsecase(t)
+			recordUsecase := NewMockRecordAnswerUsecase(t)
+			r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+			w := httptest.NewRecorder()
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", strings.NewReader(tt.body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorResponse(t, respBytes, "invalid_request", "correct, selectedChoiceIds and regions are mutually exclusive")
+		})
+	}
+}
+
+func Test_RecordAnswerHandler_shouldPassRegionsToUsecase_whenOrderingRegionsProvided(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	getUsecase := NewMockGetStudyQuestionsUsecase(t)
+	wantRegions := [][]string{{"am", "I"}, {"a", "student"}}
 	recordUsecase := NewMockRecordAnswerUsecase(t)
+	output := &studyservice.RecordAnswerOutput{
+		NextDueAt:          time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC),
+		ConsecutiveCorrect: 1,
+		TotalCorrect:       1,
+		TotalIncorrect:     0,
+	}
+	recordUsecase.On("RecordAnswer", mock.Anything, mock.MatchedBy(func(in *studyservice.RecordAnswerInput) bool {
+		return in.Regions != nil && assert.ObjectsAreEqual(wantRegions, *in.Regions)
+	})).Return(output, nil).Once()
+
+	getUsecase := NewMockGetStudyQuestionsUsecase(t)
 	r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
 	w := httptest.NewRecorder()
-	body := `{"correct":true,"selectedChoiceIds":["c1"]}`
+	body := `{"regions":[["am","I"],["a","student"]]}`
 
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", strings.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
-	respBytes := readBytes(t, w.Body)
 
 	// then
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "correct and selectedChoiceIds are mutually exclusive")
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func Test_RecordAnswerHandler_shouldReturn400WithGenericMessage_whenRegionsExceedLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		regions [][]string
+	}{
+		{name: "too many regions", regions: slices.Repeat([][]string{{}}, domainquestion.MaxOrderingSegments+1)},
+		{name: "too many chips", regions: [][]string{slices.Repeat([]string{"a"}, domainquestion.MaxOrderingSegments+1)}},
+		{name: "too long text", regions: [][]string{{strings.Repeat("a", domainquestion.MaxOrderingTextLength+1), "b"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			getUsecase := NewMockGetStudyQuestionsUsecase(t)
+			recordUsecase := NewMockRecordAnswerUsecase(t)
+			r := initStudyRouter(ctx, t, getUsecase, recordUsecase)
+			w := httptest.NewRecorder()
+			body, err := json.Marshal(map[string][][]string{"regions": tt.regions})
+			require.NoError(t, err)
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/workbook/"+fixtureWorkbookID+"/study/"+fixtureQuestionID+"/answer", bytes.NewReader(body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorResponse(t, respBytes, "invalid_request", http.StatusText(http.StatusBadRequest))
+		})
+	}
 }
 
 func Test_RecordAnswerHandler_shouldReturn200_whenMultipleChoiceSelectedChoiceIds(t *testing.T) {
