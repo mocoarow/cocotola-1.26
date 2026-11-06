@@ -78,19 +78,54 @@ jobs:
       TARGET_SERVICE: ${{ needs.resolve.outputs.service }}
       DRY_RUN: ${{ inputs.dry_run == true && 'true' || 'false' }}
       REPO: ${{ github.repository }}
+      MAX_OPEN_AUTO_ISSUES: 5
+      MAX_NEW_ISSUES_PER_RUN: 3
+      EXISTING_ISSUES_FILE: .nightly-scan/existing_auto_issues.json
+      CREATED_KINDS_FILE: /tmp/created_issues.txt
     steps:
-      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
-        id: app-token
-        with:
-          app-id: ${{ secrets.APPS_APP_ID }}
-          private-key: ${{ secrets.APPS_PRIVATE_KEY }}
-
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
+      - name: Collect existing auto issues
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          echo "started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${GITHUB_OUTPUT}"
+          mkdir -p "$(dirname "${EXISTING_ISSUES_FILE}")"
+          gh issue list --repo "${REPO}" --state all \
+            --search "\"[Auto] ${TARGET_SERVICE}:\" in:title" \
+            --limit 500 --json number,title,state,stateReason,body,author \
+            | jq --arg p "[Auto] ${TARGET_SERVICE}:" \
+                '[.[] | select((.title | startswith($p)) and .author.is_bot
+                               and (.state == "OPEN" or .stateReason == "NOT_PLANNED"))
+                      | {number, title, state, stateReason, body: .body[0:600]}]' \
+            > "${EXISTING_ISSUES_FILE}"
+          OPEN=$(jq '[.[] | select(.state == "OPEN")] | length' "${EXISTING_ISSUES_FILE}")
+          ROOM=$((MAX_OPEN_AUTO_ISSUES - OPEN))
+          MAX_NEW=$((ROOM < MAX_NEW_ISSUES_PER_RUN ? ROOM : MAX_NEW_ISSUES_PER_RUN))
+          echo "open_count=${OPEN}" >> "${GITHUB_OUTPUT}"
+          echo "max_new=${MAX_NEW}" >> "${GITHUB_OUTPUT}"
+          if [ "${MAX_NEW}" -le 0 ]; then
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+            echo "::notice::skip: backlog full (open=${OPEN}, max=${MAX_OPEN_AUTO_ISSUES})"
+          else
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - uses: actions/create-github-app-token@f8d387b68d61c58ab83c6c016672934102569859 # v3.0.0
+        id: app-token
+        if: steps.existing.outputs.skip == 'false'
+        with:
+          app-id: ${{ secrets.APPS_APP_ID }}
+          private-key: ${{ secrets.APPS_PRIVATE_KEY }}
+
       - name: Run Claude nightly scan
         id: claude
+        if: steps.existing.outputs.skip == 'false'
+        timeout-minutes: 25
         uses: anthropics/claude-code-action@12310e4417c3473095c957cb311b3cf59a38d659 # v1.0.99
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -145,18 +180,18 @@ jobs:
                - `.golangci.yml`
 
             2. **既存 Issue の重複チェック**:
-               `gh issue list --label claude-proposal --state open --limit 100 --json number,title,body`
-               で取得し、必要に応じて `gh issue view <番号>` で本文を確認する。
-               - open な `claude-proposal` Issue が **10 件以上** ある場合は、
-                 新規起票せず、最終応答に `skip: backlog full (count=N)` と
-                 書いて終了する。
+               `${{ env.EXISTING_ISSUES_FILE }}` を `Read` で読む。
+               このサービスの `[Auto]` Issue のうち、open のものと
+               not planned でクローズされたもの (却下済みの提案) が入っている。
+               - これらと同じファイル・関数・トピックの問題は起票しない。
+                 not planned のものは却下済みなので、言い換えて再提案もしない。
                - スキャン結果のすべてが既存 Issue でカバー済みの場合は、
                  ターンを浪費せず **即座に** `no actionable findings today`
                  と最終応答して終了する。新規性が低い「無理筋」の発見を
                  ひねり出して起票しない。
 
             3. **スキャン対象**: `$TARGET_SERVICE/` 配下のみ。
-               以下の観点で最もインパクトの大きい問題を **最大 3 件** 抽出する:
+               以下の観点で最もインパクトの大きい問題を **最大 ${{ steps.existing.outputs.max_new }} 件** 抽出する:
                - 800 行を超えるファイル (分割候補)
                - 50 行を超える関数 (分解候補)
                - 4 階層を超えるネスト (リファクタ候補)
@@ -164,38 +199,15 @@ jobs:
                - TODO/FIXME コメント (`git log -S` で 90 日以上前のもの優先)
                - 自明でない関数でテストが無いもの
 
-               既存 open Issue と同じトピックは除外する。
-
-            4. **Issue 起票 + ラベル付与** (DRY_RUN が `false` のときのみ):
-               このリポジトリは GitHub App token で動いているため、
-               `gh issue create --label <name>` を使うとラベルが
-               **silently drop** されて空ラベルの Issue だけ作られる
-               (stderr 空・exit 0 で気付けない)。そのため必ず
-               **create と labeling を別コマンドに分離する**:
-
-               ```
-               # 1. ラベル無しで Issue を作って URL を取り出す
-               URL=$(gh issue create \
-                 --title "[Auto] $TARGET_SERVICE: <一行要約>" \
-                 --body-file /tmp/issue_body_1.md)
-
-               # 2. 番号を URL の末尾から取り出す
-               NUM=${URL##*/}
-
-               # 3. gh issue edit でまとめてラベルを付ける
-               gh issue edit $NUM \
-                 --add-label claude-proposal \
-                 --add-label auto-generated \
-                 --add-label "area/$TARGET_SERVICE" \
-                 --add-label test
-               ```
-
+            4. **Issue 起票** (DRY_RUN が `false` のときのみ):
+               `gh issue create --title "[Auto] $TARGET_SERVICE: <一行要約>" --body-file /tmp/issue_body_<N>.md`
+               で起票する。出力の URL 末尾が Issue 番号。
+               ラベルは後続のステップが付けるので、`--label` も `gh issue edit` も使わない。
+               すべての起票が終わったら、起票した Issue ごとに「番号 種別」を 1 行ずつ並べた内容を
+               `${{ env.CREATED_KINDS_FILE }}` に **1 回の `Write` でまとめて** 書く
+               (種別は `refactor` / `test` / `cleanup` / `tech-debt` のいずれか 1 つ。
+               例: 1 行目 `123 test`、2 行目 `124 refactor`)。
                - Title: `[Auto] <TARGET_SERVICE>: <一行要約>`
-               - Labels (必ず `gh issue edit --add-label` で付与):
-                 - `claude-proposal`
-                 - `auto-generated`
-                 - `area/<TARGET_SERVICE>`
-                 - 種別ラベル 1 つ: `refactor` / `test` / `cleanup` / `tech-debt`
                - Body (Markdown):
 
                  ```
@@ -216,21 +228,16 @@ jobs:
                  _Generated by Claude nightly scan on YYYY-MM-DD_
                  ```
 
-               ラベルが無ければ `gh label create <name> --force` で作成
-               (色の目安: `claude-proposal`=8A2BE2, `auto-generated`=cccccc,
-               `area/*`=0e8a16, `refactor`=fbca04, `test`=1d76db,
-               `cleanup`=c5def5, `tech-debt`=d93f0b)。
-
             5. **DRY_RUN=true** の場合:
                起票せず、発見内容を最終応答に Markdown で出力する
                (action が Job Summary に自動転載する)。
 
             ## 厳守事項
             - **ソースファイルを 1 つも変更しない**。Issue 起票のみ。
-            - `Write` は **`/tmp/` 配下にのみ** 使うこと (Issue 本文の一時保存用)。
+            - `Write` は **`/tmp/` 配下にのみ** 使うこと (Issue 本文と種別の一時保存用)。
               リポジトリ内のファイルに `Write` しない。
             - PR を開かない。
-            - 起票は **最大 3 件**。それ以上の発見があっても上位 3 件に絞る。
+            - 起票は **最大 ${{ steps.existing.outputs.max_new }} 件**。それ以上の発見があっても上位に絞る。
             - 同じファイル/関数の重複起票はしない。
             - 確信が持てない問題 (誤検知の可能性) は起票しない。
 
@@ -238,54 +245,114 @@ jobs:
             最終応答に以下のいずれかを必ず含める
             (action が Job Summary に転載する):
             - 起票した Issue 番号一覧 (例: `Created: #123, #124, #125`)
-            - スキップ理由 (例: `skip: backlog full (count=12)`)
             - 発見ゼロ (例: `no actionable findings today`)
           claude_args: |
             --max-turns 90
-            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue create:*),Bash(gh issue edit:*),Bash(gh label create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
+            --allowedTools "Read,Glob,Grep,Write,Bash(gh issue view:*),Bash(gh issue create:*),Bash(date:*),Bash(git log:*),Bash(wc -l cocotola-:*)"
+
+      - name: Label created issues
+        id: label
+        if: ${{ !cancelled() && steps.existing.outputs.skip == 'false' && env.DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SINCE: ${{ steps.existing.outputs.started_at }}
+        run: |
+          set -euo pipefail
+          CREATED=$(gh issue list --repo "${REPO}" --state open --limit 50 \
+              --json number,title,url,createdAt,author \
+            | jq -c --arg p "[Auto] ${TARGET_SERVICE}:" --arg s "${SINCE}" \
+                '[.[] | select((.title | startswith($p)) and .createdAt >= $s and .author.is_bot)
+                      | {number, title, url}]')
+          echo "created=${CREATED}" >> "${GITHUB_OUTPUT}"
+          if [ "$(echo "${CREATED}" | jq 'length')" -eq 0 ]; then
+            exit 0
+          fi
+          declare -A COLORS=(
+            [claude-proposal]=8A2BE2 [auto-generated]=cccccc ["area/${TARGET_SERVICE}"]=0e8a16
+            [refactor]=fbca04 [test]=1d76db [cleanup]=c5def5 [tech-debt]=d93f0b
+          )
+          EXISTING_LABELS=$(gh label list --repo "${REPO}" --limit 500 --json name -q '.[].name')
+          for LABEL in "${!COLORS[@]}"; do
+            if ! grep -qxF "${LABEL}" <<< "${EXISTING_LABELS}"; then
+              gh label create "${LABEL}" --repo "${REPO}" --color "${COLORS[${LABEL}]}"
+            fi
+          done
+          FAILED=0
+          for NUM in $(echo "${CREATED}" | jq -r '.[].number'); do
+            LABELS=(claude-proposal auto-generated "area/${TARGET_SERVICE}")
+            KIND=""
+            if [ -f "${CREATED_KINDS_FILE}" ]; then
+              KIND=$(grep -m1 -E "^${NUM} (refactor|test|cleanup|tech-debt)$" "${CREATED_KINDS_FILE}" | cut -d' ' -f2 || true)
+            fi
+            if [ -n "${KIND}" ]; then
+              LABELS+=("${KIND}")
+            else
+              echo "::warning::#${NUM}: no valid kind recorded in ${CREATED_KINDS_FILE}"
+            fi
+            FIELDS=()
+            for LABEL in "${LABELS[@]}"; do
+              FIELDS+=(-f "labels[]=${LABEL}")
+            done
+            if ! gh api --method POST "repos/${REPO}/issues/${NUM}/labels" "${FIELDS[@]}" > /dev/null; then
+              echo "::error::#${NUM}: add labels failed"
+              FAILED=1
+            fi
+          done
+          exit "${FAILED}"
 
       - name: Notify Slack
         if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EXISTING_OUTCOME: ${{ steps.existing.outcome }}
           CLAUDE_OUTCOME: ${{ steps.claude.outcome }}
+          LABEL_OUTCOME: ${{ steps.label.outcome }}
+          SKIP: ${{ steps.existing.outputs.skip }}
+          OPEN_COUNT: ${{ steps.existing.outputs.open_count }}
+          CREATED: ${{ steps.label.outputs.created }}
         run: |
           set -euo pipefail
           if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
             echo "::warning::SLACK_WEBHOOK_URL is not set — skipping Slack notify"
             exit 0
           fi
-          SINCE=$(date -u -d '90 minutes ago' +%Y-%m-%dT%H:%M:%SZ)
-          if [ "${CLAUDE_OUTCOME}" != "success" ]; then
-            TEXT=$(printf ':x: *Claude Nightly Scan* — `%s`\nstatus: %s\n<%s|Run log>' \
-              "${TARGET_SERVICE}" "${CLAUDE_OUTCOME}" "${RUN_URL}")
+          if [ "${EXISTING_OUTCOME}" != "success" ]; then
+            TEXT=$(printf ':x: *Claude Nightly Scan* — `%s`\ncollect existing issues: %s\n<%s|Run log>' \
+              "${TARGET_SERVICE}" "${EXISTING_OUTCOME}" "${RUN_URL}")
+          elif [ "${SKIP}" = "true" ]; then
+            TEXT=$(printf ':crescent_moon: *Claude Nightly Scan* — `%s`\nskip: backlog full (open=%s, max=%s)\n<%s|Run log>' \
+              "${TARGET_SERVICE}" "${OPEN_COUNT}" "${MAX_OPEN_AUTO_ISSUES}" "${RUN_URL}")
           else
-            RECENT=$(gh issue list \
-              --repo "${REPO}" \
-              --label claude-proposal \
-              --state open \
-              --limit 50 \
-              --json number,title,url,createdAt \
-              | jq --arg s "${SINCE}" --arg svc "${TARGET_SERVICE}" \
-                  '[.[] | select(.createdAt > $s and
-                                 (.title | startswith("[Auto] " + $svc + ":")))]')
+            RECENT="${CREATED:-[]}"
             COUNT=$(echo "${RECENT}" | jq 'length')
-            if [ "${DRY_RUN}" = "true" ]; then
-              HEADER=$(printf ':test_tube: *Claude Nightly Scan (dry-run)* — `%s`' \
-                "${TARGET_SERVICE}")
-              BODY="dry-run complete"
-            elif [ "${COUNT}" = "0" ]; then
-              HEADER=$(printf ':crescent_moon: *Claude Nightly Scan* — `%s`' \
-                "${TARGET_SERVICE}")
-              BODY="完了 / 新規起票なし"
+            if [ "${CLAUDE_OUTCOME}" = "success" ]; then
+              ICON=':crescent_moon:'
+              STATUS='完了'
             else
-              HEADER=$(printf ':crescent_moon: *Claude Nightly Scan* — `%s`' \
-                "${TARGET_SERVICE}")
+              ICON=':x:'
+              STATUS="status: ${CLAUDE_OUTCOME}"
+            fi
+            if [ "${DRY_RUN}" = "true" ]; then
+              if [ "${CLAUDE_OUTCOME}" = "success" ]; then
+                ICON=':test_tube:'
+              fi
+              HEADER=$(printf '%s *Claude Nightly Scan (dry-run)* — `%s`' \
+                "${ICON}" "${TARGET_SERVICE}")
+              BODY="${STATUS}"
+            elif [ "${COUNT}" = "0" ]; then
+              HEADER=$(printf '%s *Claude Nightly Scan* — `%s`' \
+                "${ICON}" "${TARGET_SERVICE}")
+              BODY="${STATUS} / 新規起票なし"
+            else
+              HEADER=$(printf '%s *Claude Nightly Scan* — `%s`' \
+                "${ICON}" "${TARGET_SERVICE}")
               LIST=$(echo "${RECENT}" \
                 | jq -r '.[] | "• <\(.url)|#\(.number)> \(.title)"')
-              BODY=$(printf '完了 / %s 件起票\n%s' "${COUNT}" "${LIST}")
+              BODY=$(printf '%s / %s 件起票\n%s' "${STATUS}" "${COUNT}" "${LIST}")
+            fi
+            if [ "${LABEL_OUTCOME}" = "failure" ]; then
+              BODY=$(printf '%s\n:warning: ラベル付与に失敗' "${BODY}")
             fi
             TEXT=$(printf '%s\n%s\n<%s|Run log>' "${HEADER}" "${BODY}" "${RUN_URL}")
           fi
