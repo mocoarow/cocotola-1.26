@@ -192,6 +192,13 @@
       "correct": "正解！",
       "incorrect": "不正解",
       "progress": "{{current}} / {{total}}",
+      "ordering": {
+        "answer": "あなたの解答",
+        "chips": "語句の候補",
+        "correctOrder": "正しい並び",
+        "slotCorrect": "正しい位置",
+        "slotIncorrect": "誤った位置"
+      },
       "result": {
         "title": "セッション完了！",
         "score": "正答率 {{percent}}%",

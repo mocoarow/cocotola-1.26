@@ -372,6 +372,28 @@ describe("recordAnswer", () => {
       }),
     );
   });
+
+  it("should send regions body when payload is ordering", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    // when
+    await recordAnswer("token", "wb-1", "q-1", {
+      type: "ordering",
+      regions: [["I", "am"], ["you"]],
+    });
+
+    // then
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: JSON.stringify({ regions: [["I", "am"], ["you"]] }),
+      }),
+    );
+  });
 });
 
 describe("deleteStudyHistory", () => {

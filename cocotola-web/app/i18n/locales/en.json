@@ -192,6 +192,13 @@
       "correct": "Correct!",
       "incorrect": "Incorrect",
       "progress": "{{current}} / {{total}}",
+      "ordering": {
+        "answer": "Your answer",
+        "chips": "Word chips",
+        "correctOrder": "Correct order",
+        "slotCorrect": "Correct position",
+        "slotIncorrect": "Wrong position"
+      },
       "result": {
         "title": "Session Complete!",
         "score": "You scored {{percent}}%",

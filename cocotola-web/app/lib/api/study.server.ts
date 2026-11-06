@@ -150,6 +150,8 @@ function toRecordAnswerBody(payload: AnswerPayload): Record<string, unknown> {
       return { selectedChoiceIds: payload.selectedChoiceIds };
     case "word_fill":
       return { correct: payload.correct };
+    case "ordering":
+      return { regions: payload.regions };
     default: {
       const _exhaustive: never = payload;
       throw new Error("unsupported answer payload type");

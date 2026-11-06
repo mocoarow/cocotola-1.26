@@ -192,6 +192,13 @@
       "correct": "정답!",
       "incorrect": "오답",
       "progress": "{{current}} / {{total}}",
+      "ordering": {
+        "answer": "나의 답",
+        "chips": "어구 후보",
+        "correctOrder": "올바른 순서",
+        "slotCorrect": "올바른 위치",
+        "slotIncorrect": "틀린 위치"
+      },
       "result": {
         "title": "세션 완료!",
         "score": "정답률 {{percent}}%",
