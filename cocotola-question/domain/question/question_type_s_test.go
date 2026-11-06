@@ -32,6 +32,17 @@ func Test_NewQuestionType_shouldReturnMultipleChoice_whenValueIsMultipleChoice(t
 	assert.Equal(t, "multiple_choice", qt.Value())
 }
 
+func Test_NewQuestionType_shouldReturnOrdering_whenValueIsOrdering(t *testing.T) {
+	t.Parallel()
+
+	// when
+	qt, err := question.NewType("ordering")
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "ordering", qt.Value())
+}
+
 func Test_NewQuestionType_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 	t.Parallel()
 

@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "audio.go",
         "content.go",
+        "content_ordering.go",
         "lang.go",
         "question.go",
         "question_type.go",
@@ -19,11 +20,13 @@ smart_go_test(
     name = "question_test",
     srcs = [
         "audio_s_test.go",
+        "content_ordering_s_test.go",
         "content_s_test.go",
         "lang_s_test.go",
         "question_s_test.go",
         "question_type_s_test.go",
     ],
+    data = glob(["testdata/**"]),
     deps = [
         ":question",
         "//cocotola-question/contentjson",
