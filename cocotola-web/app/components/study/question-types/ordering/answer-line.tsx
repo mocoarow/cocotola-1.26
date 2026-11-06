@@ -1,11 +1,9 @@
 import { CheckIcon, XIcon } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "~/components/ui/button";
 import { chipSegmentIndices, type OrderingSegment, type Slots, slotCorrectness } from "./answer";
 import { slotDisplayTexts } from "./capitalize";
-
-export type RegisterChip = (chip: number) => (el: HTMLButtonElement | null) => void;
+import { DraggableChip, DroppableSlot, type RegisterChip } from "./drag";
 
 const CHIP_CLASS = "inline-flex h-9 items-center gap-1 rounded-md border px-3 text-base";
 
@@ -79,23 +77,27 @@ export function AnswerLine({
         if (token.kind === "fixed") return <span key={token.segmentIndex}>{token.text}</span>;
         const chip = slots[token.slot];
         const text = texts[token.slot];
-        if (chip === null || text === null) {
-          return <EmptySlot key={token.segmentIndex} slot={token.slot} />;
-        }
-        if (revealed) {
+        if (revealed && chip !== null && text !== null) {
           return (
             <RevealedSlot key={token.segmentIndex} text={text} correct={correctness[token.slot]} />
           );
         }
+        if (revealed) return <EmptySlot key={token.segmentIndex} slot={token.slot} />;
         return (
-          <Button
-            key={token.segmentIndex}
-            ref={registerSlot(chip)}
-            variant="outline"
-            onClick={() => onSlotTap(token.slot)}
-          >
-            {text}
-          </Button>
+          <DroppableSlot key={token.segmentIndex} slot={token.slot}>
+            {chip === null || text === null ? (
+              <EmptySlot slot={token.slot} />
+            ) : (
+              <DraggableChip
+                chip={chip}
+                register={registerSlot}
+                variant="outline"
+                onClick={() => onSlotTap(token.slot)}
+              >
+                {text}
+              </DraggableChip>
+            )}
+          </DroppableSlot>
         );
       })}
     </fieldset>

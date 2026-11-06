@@ -1,13 +1,24 @@
+import { type Announcements, DndContext, type DragEndEvent } from "@dnd-kit/core";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BodyProps } from "~/components/study/question-shell/types";
-import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
 import { type OrderingContent, type OrderingSegment, type Slots, toOrderingDraft } from "./answer";
-import { AnswerLine, CorrectOrder, type RegisterChip } from "./answer-line";
+import { AnswerLine, CorrectOrder } from "./answer-line";
+import { DraggableChip, type RegisterChip, useOrderingSensors, usePoolDrop } from "./drag";
+import { applyDrop } from "./drop";
 import { emptySlots, placeInFirstEmpty, returnChip } from "./placement";
 import { shuffleChips } from "./shuffle-chips";
 
 type ChipArea = "pool" | "slot";
+
+const NO_ANNOUNCEMENTS: Announcements = {
+  onDragStart: () => undefined,
+  onDragMove: () => undefined,
+  onDragOver: () => undefined,
+  onDragEnd: () => undefined,
+  onDragCancel: () => undefined,
+};
 
 // Keeps keyboard focus on a chip button after the chip moves between the pool and a slot.
 function useChipFocus() {
@@ -42,30 +53,38 @@ type ChipPoolProps = {
 
 function ChipPool({ segments, chips, register, onTap }: ChipPoolProps) {
   const { t } = useTranslation();
+  const drop = usePoolDrop();
   return (
     <fieldset
+      ref={drop.ref}
       aria-label={t("workbooks.study.ordering.chips")}
-      className="flex min-h-12 flex-wrap gap-2 rounded-lg border border-dashed p-2"
+      className={cn(
+        "flex min-h-12 flex-wrap gap-2 rounded-lg border border-dashed p-2",
+        drop.overClass,
+      )}
     >
       {chips.map((chip) => (
-        <Button key={chip} ref={register(chip)} variant="secondary" onClick={() => onTap(chip)}>
+        <DraggableChip
+          key={chip}
+          chip={chip}
+          register={register}
+          variant="secondary"
+          onClick={() => onTap(chip)}
+        >
           {segments[chip].text}
-        </Button>
+        </DraggableChip>
       ))}
     </fieldset>
   );
 }
 
-export function OrderingBody({
-  content,
-  phase,
-  onDraftChange,
-}: BodyProps<"ordering", OrderingContent>) {
-  const { segments, lang } = content.target;
+function useOrderingSlots(
+  segments: readonly OrderingSegment[],
+  onDraftChange: BodyProps<"ordering", OrderingContent>["onDraftChange"],
+) {
   const [order] = useState(() => shuffleChips(segments));
   const [slots, setSlots] = useState<Slots>(() => emptySlots(order.length));
   const chipFocus = useChipFocus();
-  const revealed = phase === "revealed";
   const poolChips = order.filter((chip) => !slots.includes(chip));
 
   function update(next: Slots) {
@@ -92,8 +111,31 @@ export function OrderingBody({
     chipFocus.focus("pool", chip);
   }
 
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    const next = applyDrop(slots, order, active.id, over?.id ?? null);
+    if (next !== slots) update(next);
+  }
+
+  return { slots, poolChips, chipFocus, handlePoolTap, handleSlotTap, handleDragEnd };
+}
+
+export function OrderingBody({
+  content,
+  phase,
+  onDraftChange,
+}: BodyProps<"ordering", OrderingContent>) {
+  const { segments, lang } = content.target;
+  const { slots, poolChips, chipFocus, handlePoolTap, handleSlotTap, handleDragEnd } =
+    useOrderingSlots(segments, onDraftChange);
+  const sensors = useOrderingSensors();
+  const revealed = phase === "revealed";
+
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      accessibility={{ announcements: NO_ANNOUNCEMENTS }}
+      onDragEnd={revealed ? undefined : handleDragEnd}
+    >
       <div className="rounded-lg bg-muted/50 p-4">
         <p className="text-lg font-medium">{content.source.text}</p>
       </div>
@@ -115,6 +157,6 @@ export function OrderingBody({
           onTap={handlePoolTap}
         />
       )}
-    </>
+    </DndContext>
   );
 }
