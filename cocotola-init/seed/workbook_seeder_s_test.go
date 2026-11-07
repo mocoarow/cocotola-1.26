@@ -48,7 +48,7 @@ func sampleSeeds() []seed.PublicWorkbookSeed {
 	}
 }
 
-func Test_WorkbookSeeder_shouldCreateAllWorkbooksAndQuestions_onFirstRun(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldCreateAllWorkbooksAndQuestions_onFirstRun(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -77,7 +77,7 @@ func Test_WorkbookSeeder_shouldCreateAllWorkbooksAndQuestions_onFirstRun(t *test
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -86,7 +86,7 @@ func Test_WorkbookSeeder_shouldCreateAllWorkbooksAndQuestions_onFirstRun(t *test
 	require.NoError(t, err)
 }
 
-func Test_WorkbookSeeder_shouldBeIdempotent_onSecondRun(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldBeIdempotent_onSecondRun(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -107,7 +107,7 @@ func Test_WorkbookSeeder_shouldBeIdempotent_onSecondRun(t *testing.T) {
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -116,7 +116,7 @@ func Test_WorkbookSeeder_shouldBeIdempotent_onSecondRun(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func Test_WorkbookSeeder_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenWhenTitleChanges(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenWhenTitleChanges(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -140,7 +140,7 @@ func Test_WorkbookSeeder_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenW
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-existing").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -178,7 +178,7 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportPositionsAndMaxExistingOrderI
 			{QuestionID: "q-2", Tags: []string{"seed-vocab-v1:q2"}},
 		}, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), nil)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t))
 
 	// when
 	got, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, csvSeeds())
@@ -200,7 +200,7 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejected
 		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).Return(nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), nil)
+	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t))
 
 	// when
 	got, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, csvSeeds())
@@ -212,7 +212,7 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejected
 	}, got)
 }
 
-func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -236,7 +236,7 @@ func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-existing").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -245,7 +245,7 @@ func Test_WorkbookSeeder_shouldNotReAddExistingQuestions_byTagSeedKey(t *testing
 	require.NoError(t, err)
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenListWorkbooksFails(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenListWorkbooksFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -257,7 +257,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenListWorkbooksFails(t *testing.T) 
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -266,7 +266,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenListWorkbooksFails(t *testing.T) 
 	require.ErrorIs(t, err, listErr)
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenCreateWorkbookFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -280,7 +280,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -289,7 +289,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenCreateWorkbookFails(t *testing.T)
 	require.ErrorIs(t, err, createErr)
 }
 
-func Test_WorkbookSeeder_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -312,7 +312,7 @@ func Test_WorkbookSeeder_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *
 				Return(nil, nil)
 			ensurer := NewMockWorkbookPolicyEnsurer(t)
 			seeds := []seed.PublicWorkbookSeed{{SeedKey: "vocab-v1", Title: "Vocabulary", Language: tt.language}}
-			seeder := seed.NewWorkbookSeeder(client, ensurer, seeds)
+			seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), seeds)
 
 			// when
 			err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -323,7 +323,7 @@ func Test_WorkbookSeeder_shouldReturnErrInvalidSeed_whenLanguageIsNotISO6391(t *
 	}
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenEnsurePoliciesFails(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenEnsurePoliciesFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -339,7 +339,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenEnsurePoliciesFails(t *testing.T)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").
 		Return(ensureErr)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -370,7 +370,7 @@ func addQuestionWithContent(content string) any {
 	return mock.MatchedBy(func(body seed.AddQuestionRequest) bool { return body.Content == content })
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith403(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith403(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -378,7 +378,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith403(t *testin
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
 		Return(&seed.HTTPStatusError{StatusCode: http.StatusForbidden})
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t)), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -389,7 +389,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith403(t *testin
 	assert.Equal(t, http.StatusForbidden, statusErr.StatusCode)
 }
 
-func Test_WorkbookSeeder_shouldAddRemainingQuestions_whenQuestionRejectedWith400(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejectedWith400(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -399,7 +399,7 @@ func Test_WorkbookSeeder_shouldAddRemainingQuestions_whenQuestionRejectedWith400
 		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t)), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -408,7 +408,7 @@ func Test_WorkbookSeeder_shouldAddRemainingQuestions_whenQuestionRejectedWith400
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_WorkbookSeeder_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejectedWith400(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejectedWith400(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -423,7 +423,7 @@ func Test_WorkbookSeeder_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRej
 	})).Return("wb-Grammar", nil)
 	ensurer := existingVocabularyEnsurer(ctx, t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds())
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds())
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -432,7 +432,7 @@ func Test_WorkbookSeeder_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRej
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -440,7 +440,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith5xx(t *testin
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
 		Return(&seed.HTTPStatusError{StatusCode: http.StatusInternalServerError})
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t)), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -451,7 +451,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWith5xx(t *testin
 	assert.Equal(t, http.StatusInternalServerError, statusErr.StatusCode)
 }
 
-func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -460,7 +460,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
 		Return(sendErr)
-	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t)), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -469,7 +469,7 @@ func Test_WorkbookSeeder_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *
 	require.ErrorIs(t, err, sendErr)
 }
 
-func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuestion(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuestion(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -490,7 +490,7 @@ func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuesti
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
@@ -507,7 +507,7 @@ func Test_WorkbookSeeder_shouldEmitQuestionTagsMatchingDomainPattern_onAddQuesti
 	}
 }
 
-func Test_WorkbookSeeder_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -526,7 +526,7 @@ func Test_WorkbookSeeder_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").Return(nil)
 
-	seeder := seed.NewWorkbookSeeder(client, ensurer, sampleSeeds()[:1])
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer), sampleSeeds()[:1])
 
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)

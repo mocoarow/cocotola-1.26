@@ -43,17 +43,29 @@ type WorkbookPolicyEnsurer interface {
 type WorkbookSeeder struct {
 	client        WorkbookAPIClient
 	policyEnsurer WorkbookPolicyEnsurer
-	seeds         []PublicWorkbookSeed
 	logger        *slog.Logger
 }
 
-// NewWorkbookSeeder constructs a seeder using the given client, policy ensurer and seeds.
-func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEnsurer, seeds []PublicWorkbookSeed) *WorkbookSeeder {
+// NewWorkbookSeeder constructs a seeder using the given client and policy ensurer.
+func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEnsurer) *WorkbookSeeder {
 	return &WorkbookSeeder{
 		client:        client,
 		policyEnsurer: policyEnsurer,
-		seeds:         seeds,
 		logger:        slog.Default().With(slog.String("component", "public-workbook-seeder")),
+	}
+}
+
+// PublicWorkbookSeeder seeds a fixed list of public workbooks.
+type PublicWorkbookSeeder struct {
+	seeder *WorkbookSeeder
+	seeds  []PublicWorkbookSeed
+}
+
+// NewPublicWorkbookSeeder constructs a PublicWorkbookSeeder that applies seeds via seeder.
+func NewPublicWorkbookSeeder(seeder *WorkbookSeeder, seeds []PublicWorkbookSeed) *PublicWorkbookSeeder {
+	return &PublicWorkbookSeeder{
+		seeder: seeder,
+		seeds:  seeds,
 	}
 }
 
@@ -68,10 +80,10 @@ type WorkbookOutput struct {
 	MaxExistingOrderIndex int32
 }
 
-// SeedPublicWorkbooks seeds the workbooks given to NewWorkbookSeeder and
+// SeedPublicWorkbooks seeds the workbooks given to NewPublicWorkbookSeeder and
 // returns ErrInvalidSeed if the question service rejected any of their questions.
-func (s *WorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error {
-	outputs, err := s.SeedWorkbooks(ctx, organizationID, publicSpaceID, s.seeds)
+func (s *PublicWorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error {
+	outputs, err := s.seeder.SeedWorkbooks(ctx, organizationID, publicSpaceID, s.seeds)
 	if err != nil {
 		return err
 	}
