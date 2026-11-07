@@ -45,6 +45,7 @@ smart_go_test(
         "//cocotola-lib/controller/handler",
         "//cocotola-question/controller",
         "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
         "//cocotola-question/service/study",
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_ohler55_ojg//jp",

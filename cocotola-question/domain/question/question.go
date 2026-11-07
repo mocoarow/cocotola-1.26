@@ -145,6 +145,15 @@ func (q *Question) validateContent(parser ContentParser) error {
 			return fmt.Errorf("validate multiple_choice content: %w", err)
 		}
 		return nil
+	case questionTypeOrdering:
+		c, err := parser.ParseOrdering(q.content)
+		if err != nil {
+			return fmt.Errorf("parse ordering content: %w", err)
+		}
+		if err := c.Validate(); err != nil {
+			return fmt.Errorf("validate ordering content: %w", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown question type for content validation: %w", domain.ErrInvalidArgument)
 	}

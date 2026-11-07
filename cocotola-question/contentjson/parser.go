@@ -38,6 +38,22 @@ type multipleChoice struct {
 	AllowPartialCredit bool     `json:"allowPartialCredit"`
 }
 
+type orderingSegment struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
+}
+
+type orderingTarget struct {
+	Lang     string            `json:"lang"`
+	Segments []orderingSegment `json:"segments"`
+}
+
+type ordering struct {
+	Source      textWithLang   `json:"source"`
+	Target      orderingTarget `json:"target"`
+	Explanation string         `json:"explanation"`
+}
+
 // Parser implements question.ContentParser for the JSON content format.
 type Parser struct{}
 
@@ -75,5 +91,22 @@ func (Parser) ParseMultipleChoice(raw string) (*question.MultipleChoiceContent, 
 		ShowCorrectCount:   c.ShowCorrectCount,
 		ShuffleChoices:     c.ShuffleChoices,
 		AllowPartialCredit: c.AllowPartialCredit,
+	}, nil
+}
+
+// ParseOrdering parses ordering content JSON.
+func (Parser) ParseOrdering(raw string) (*question.OrderingContent, error) {
+	var c ordering
+	if err := json.Unmarshal([]byte(raw), &c); err != nil {
+		return nil, fmt.Errorf("invalid ordering content JSON: %w", domain.ErrInvalidArgument)
+	}
+	segments := make([]question.OrderingSegment, len(c.Target.Segments))
+	for i, s := range c.Target.Segments {
+		segments[i] = question.OrderingSegment{Type: s.Type, Text: s.Text}
+	}
+	return &question.OrderingContent{
+		Source:      question.TextWithLang{Text: c.Source.Text, Lang: c.Source.Lang},
+		Target:      question.OrderingTarget{Lang: c.Target.Lang, Segments: segments},
+		Explanation: c.Explanation,
 	}, nil
 }

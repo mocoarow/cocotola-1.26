@@ -1,0 +1,180 @@
+[
+  {
+    "name": "one region, correct order",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "chip", "text": "a student" }
+    ],
+    "regions": [["I", "am", "a student"]],
+    "answer": [["I", "am", "a student"]],
+    "correct": true
+  },
+  {
+    "name": "one region, wrong order",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "chip", "text": "a student" }
+    ],
+    "regions": [["I", "am", "a student"]],
+    "answer": [["am", "I", "a student"]],
+    "correct": false
+  },
+  {
+    "name": "two regions split by fixed, correct order",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "fixed", "text": "a student, and" },
+      { "type": "chip", "text": "you" },
+      { "type": "chip", "text": "are" }
+    ],
+    "regions": [
+      ["I", "am"],
+      ["you", "are"]
+    ],
+    "answer": [
+      ["I", "am"],
+      ["you", "are"]
+    ],
+    "correct": true
+  },
+  {
+    "name": "two regions, chips swapped across regions",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "fixed", "text": "a student, and" },
+      { "type": "chip", "text": "you" },
+      { "type": "chip", "text": "are" }
+    ],
+    "regions": [
+      ["I", "am"],
+      ["you", "are"]
+    ],
+    "answer": [
+      ["I", "are"],
+      ["you", "am"]
+    ],
+    "correct": false
+  },
+  {
+    "name": "leading and trailing fixed",
+    "segments": [
+      { "type": "fixed", "text": "\"" },
+      { "type": "chip", "text": "see" },
+      { "type": "chip", "text": "you" },
+      { "type": "fixed", "text": ".\"" }
+    ],
+    "regions": [["see", "you"]],
+    "answer": [["see", "you"]],
+    "correct": true
+  },
+  {
+    "name": "duplicate chip text, either chip is correct",
+    "segments": [
+      { "type": "chip", "text": "the" },
+      { "type": "chip", "text": "cat" },
+      { "type": "chip", "text": "ate" },
+      { "type": "chip", "text": "the" },
+      { "type": "chip", "text": "fish" }
+    ],
+    "regions": [["the", "cat", "ate", "the", "fish"]],
+    "answer": [["the", "cat", "ate", "the", "fish"]],
+    "correct": true
+  },
+  {
+    "name": "duplicate chip text, wrong order",
+    "segments": [
+      { "type": "chip", "text": "the" },
+      { "type": "chip", "text": "cat" },
+      { "type": "chip", "text": "ate" },
+      { "type": "chip", "text": "the" },
+      { "type": "chip", "text": "fish" }
+    ],
+    "regions": [["the", "cat", "ate", "the", "fish"]],
+    "answer": [["the", "fish", "ate", "the", "cat"]],
+    "correct": false
+  },
+  {
+    "name": "region count differs",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "fixed", "text": "." },
+      { "type": "chip", "text": "you" },
+      { "type": "chip", "text": "are" }
+    ],
+    "regions": [
+      ["I", "am"],
+      ["you", "are"]
+    ],
+    "answer": [["I", "am", "you", "are"]],
+    "correct": false
+  },
+  {
+    "name": "one-chip regions split by fixed",
+    "segments": [
+      { "type": "chip", "text": "Yes" },
+      { "type": "fixed", "text": "," },
+      { "type": "chip", "text": "please" }
+    ],
+    "regions": [["Yes"], ["please"]],
+    "answer": [["Yes"], ["please"]],
+    "correct": true
+  },
+  {
+    "name": "consecutive fixed do not create an empty region",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "fixed", "text": "am" },
+      { "type": "fixed", "text": "a" },
+      { "type": "chip", "text": "student" }
+    ],
+    "regions": [["I"], ["student"]],
+    "answer": [["I"], ["student"]],
+    "correct": true
+  },
+  {
+    "name": "extra region after the correct ones",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" }
+    ],
+    "regions": [["I", "am"]],
+    "answer": [["I", "am"], ["here"]],
+    "correct": false
+  },
+  {
+    "name": "region length differs",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" },
+      { "type": "chip", "text": "here" }
+    ],
+    "regions": [["I", "am", "here"]],
+    "answer": [["I", "am"]],
+    "correct": false
+  },
+  {
+    "name": "text not in content",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" }
+    ],
+    "regions": [["I", "am"]],
+    "answer": [["I", "was"]],
+    "correct": false
+  },
+  {
+    "name": "empty answer",
+    "segments": [
+      { "type": "chip", "text": "I" },
+      { "type": "chip", "text": "am" }
+    ],
+    "regions": [["I", "am"]],
+    "answer": [],
+    "correct": false
+  }
+]

@@ -67,6 +67,16 @@ func fixtureMultipleChoiceQuestion() *domainquestion.Question {
 	return domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, domainquestion.TypeMultipleChoice(), fixtureMultipleChoiceContent, nil, 0, 1, now, now)
 }
 
+const fixtureOrderingContent = `{"source":{"text":"私は学生です。あなたは先生です。","lang":"ja"},"target":{"lang":"en","segments":[` +
+	`{"type":"chip","text":"I"},{"type":"chip","text":"am"},{"type":"fixed","text":"a student."},` +
+	`{"type":"chip","text":"you"},{"type":"chip","text":"are"},{"type":"fixed","text":"a teacher."}` +
+	`]},"explanation":""}`
+
+func fixtureOrderingQuestion() *domainquestion.Question {
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	return domainquestion.ReconstructQuestion(fixtureQuestionID, fixtureWorkbookID, domainquestion.TypeOrdering(), fixtureOrderingContent, nil, 0, 1, now, now)
+}
+
 func fixtureActiveQuestionList(t *testing.T, questionIDs ...string) *domain.ActiveQuestionList {
 	t.Helper()
 	list, err := domain.NewActiveQuestionList(fixtureWorkbookID, questionIDs)
@@ -95,6 +105,19 @@ func newRecordAnswerInputForMultipleChoice(t *testing.T, ids []string) *studyser
 		WorkbookID:        fixtureWorkbookID,
 		QuestionID:        fixtureQuestionID,
 		SelectedChoiceIDs: ids,
+	})
+	require.NoError(t, err)
+	return input
+}
+
+func newRecordAnswerInputForOrdering(t *testing.T, regions [][]string) *studyservice.RecordAnswerInput {
+	t.Helper()
+	input, err := studyservice.NewRecordAnswerInputForOrdering(studyservice.RecordAnswerInputForOrderingParams{
+		OperatorID:     fixtureOperatorID,
+		OrganizationID: fixtureOrganizationID,
+		WorkbookID:     fixtureWorkbookID,
+		QuestionID:     fixtureQuestionID,
+		Regions:        regions,
 	})
 	require.NoError(t, err)
 	return input
@@ -389,6 +412,195 @@ func Test_RecordAnswerCommand_shouldReturnInvalidArgument_whenMultipleChoiceUnkn
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_RecordAnswerCommand_shouldRecordCorrect_whenOrderingRegionsMatch(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureOrderingQuestion(), nil)
+
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	existingRecord := domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 2, now, now, 4, 1)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(existingRecord, nil)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	statsIncrementer := newMockdailyStatsIncrementer(t)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, statsIncrementer, testConfig)
+	input := newRecordAnswerInputForOrdering(t, [][]string{{"I", "am"}, {"you", "are"}})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 3, output.ConsecutiveCorrect)
+	assert.Equal(t, 5, output.TotalCorrect)
+	assert.Equal(t, 1, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldRecordIncorrect_whenOrderingRegionsDiffer(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureOrderingQuestion(), nil)
+
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	existingRecord := domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 2, now, now, 4, 1)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(existingRecord, nil)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	statsIncrementer := newMockdailyStatsIncrementer(t)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, statsIncrementer, testConfig)
+	input := newRecordAnswerInputForOrdering(t, [][]string{{"am", "I"}, {"you", "are"}})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, output.ConsecutiveCorrect)
+	assert.Equal(t, 4, output.TotalCorrect)
+	assert.Equal(t, 2, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldRecordIncorrect_whenOrderingRegionsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	workbookRepo := newMockworkbookFinder(t)
+	workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+	activeListRepo := newMockactiveQuestionListFinder(t)
+	activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+	questionFinder := newMockquestionFinder(t)
+	questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(fixtureOrderingQuestion(), nil)
+
+	now := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+	existingRecord := domainstudy.ReconstructRecord(fixtureWorkbookID, fixtureQuestionID, 2, now, now, 4, 1)
+
+	finder := newMockstudyRecordFinder(t)
+	finder.On("FindByID", mock.Anything, fixtureOperatorID, fixtureWorkbookID, fixtureQuestionID).Return(existingRecord, nil)
+
+	saver := newMockstudyRecordSaver(t)
+	saver.On("Save", mock.Anything, fixtureOperatorID, mock.AnythingOfType("*study.Record")).Return(nil)
+
+	statsIncrementer := newMockdailyStatsIncrementer(t)
+	cmd := studyusecase.NewRecordAnswerCommand(finder, saver, activeListRepo, questionFinder, workbookRepo, authChecker, statsIncrementer, testConfig)
+	input := newRecordAnswerInputForOrdering(t, [][]string{})
+
+	// when
+	output, err := cmd.RecordAnswer(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 2, output.TotalIncorrect)
+}
+
+func Test_RecordAnswerCommand_shouldReturnInvalidArgument_whenAnswerFieldsDoNotMatchQuestionType(t *testing.T) {
+	t.Parallel()
+
+	correct := true
+	choiceIDs := []string{"c1", "c2"}
+	regions := [][]string{{"I", "am"}, {"you", "are"}}
+	newInput := func(c *bool, ids *[]string, rs *[][]string) *studyservice.RecordAnswerInput {
+		return &studyservice.RecordAnswerInput{
+			OperatorID:        fixtureOperatorID,
+			OrganizationID:    fixtureOrganizationID,
+			WorkbookID:        fixtureWorkbookID,
+			QuestionID:        fixtureQuestionID,
+			Correct:           c,
+			SelectedChoiceIDs: ids,
+			Regions:           rs,
+			LocalDateKey:      "",
+			Timezone:          "",
+		}
+	}
+	tests := []struct {
+		name     string
+		question *domainquestion.Question
+		input    *studyservice.RecordAnswerInput
+	}{
+		{name: "ordering without any answer field", question: fixtureOrderingQuestion(), input: newInput(nil, nil, nil)},
+		{name: "ordering with regions and correct", question: fixtureOrderingQuestion(), input: newInput(&correct, nil, &regions)},
+		{name: "ordering with regions and selectedChoiceIds", question: fixtureOrderingQuestion(), input: newInput(nil, &choiceIDs, &regions)},
+		{name: "word_fill with correct and regions", question: fixtureWordFillQuestion(), input: newInput(&correct, nil, &regions)},
+		{name: "multiple_choice with selectedChoiceIds and regions", question: fixtureMultipleChoiceQuestion(), input: newInput(nil, &choiceIDs, &regions)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+			require.NoError(t, err)
+
+			workbookRepo := newMockworkbookFinder(t)
+			workbookRepo.On("FindByID", mock.Anything, fixtureWorkbookID).Return(fixtureWorkbook(), nil)
+
+			authChecker := newMockauthorizationChecker(t)
+			authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionStudyWorkbook(), wbResource).Return(true, nil)
+
+			activeListRepo := newMockactiveQuestionListFinder(t)
+			activeListRepo.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t, fixtureQuestionID), nil)
+
+			questionFinder := newMockquestionFinder(t)
+			questionFinder.On("FindByID", mock.Anything, fixtureWorkbookID, fixtureQuestionID).Return(tt.question, nil)
+
+			cmd := studyusecase.NewRecordAnswerCommand(nil, nil, activeListRepo, questionFinder, workbookRepo, authChecker, nil, testConfig)
+
+			// when
+			_, err = cmd.RecordAnswer(ctx, tt.input)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
 }
 
 func Test_RecordAnswerCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) {

@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BodyProps } from "~/components/study/question-shell/types";
+import { shuffle } from "~/components/study/question-types/shuffle";
 import { Button } from "~/components/ui/button";
 import type { Choice } from "~/components/workbook/schemas";
-import { type MultipleChoiceContent, shuffle, toMultipleChoiceDraft } from "./answer";
+import { type MultipleChoiceContent, toMultipleChoiceDraft } from "./answer";
 
 type ChoiceVariant = "outline" | "default" | "destructive";
 

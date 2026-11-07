@@ -15,6 +15,7 @@ type Type struct {
 const (
 	questionTypeWordFill       = "word_fill"
 	questionTypeMultipleChoice = "multiple_choice"
+	questionTypeOrdering       = "ordering"
 )
 
 // TypeWordFill returns the word fill question type.
@@ -23,6 +24,9 @@ func TypeWordFill() Type { return Type{value: questionTypeWordFill} }
 // TypeMultipleChoice returns the multiple choice question type.
 func TypeMultipleChoice() Type { return Type{value: questionTypeMultipleChoice} }
 
+// TypeOrdering returns the ordering question type.
+func TypeOrdering() Type { return Type{value: questionTypeOrdering} }
+
 // NewType creates a validated QuestionType from a string.
 func NewType(value string) (Type, error) {
 	switch value {
@@ -30,8 +34,10 @@ func NewType(value string) (Type, error) {
 		return TypeWordFill(), nil
 	case questionTypeMultipleChoice:
 		return TypeMultipleChoice(), nil
+	case questionTypeOrdering:
+		return TypeOrdering(), nil
 	default:
-		return Type{}, fmt.Errorf("invalid question type: must be 'word_fill' or 'multiple_choice': %w", domain.ErrInvalidArgument)
+		return Type{}, fmt.Errorf("invalid question type: must be 'word_fill', 'multiple_choice' or 'ordering': %w", domain.ErrInvalidArgument)
 	}
 }
 

@@ -27,6 +27,7 @@ var (
 type ContentParser interface {
 	ParseWordFill(raw string) (*WordFillContent, error)
 	ParseMultipleChoice(raw string) (*MultipleChoiceContent, error)
+	ParseOrdering(raw string) (*OrderingContent, error)
 }
 
 // --- word_fill ---

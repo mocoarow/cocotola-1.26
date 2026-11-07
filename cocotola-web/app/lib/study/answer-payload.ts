@@ -4,6 +4,13 @@ import { z } from "zod";
 export const MAX_SELECTED_CHOICE_IDS_COUNT = 40;
 export const MAX_CHOICE_ID_LENGTH = 100;
 
+// Mirror cocotola-question domain/question/content_ordering.go MaxOrderingSegments /
+// MaxOrderingTextLength, which service/study/study.go validateOrderingRegions also uses.
+export const MAX_ORDERING_SEGMENTS = 40;
+export const MAX_ORDERING_TEXT_BYTES = 500;
+
+const textEncoder = new TextEncoder();
+
 const answerPayloadSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("multiple_choice"),
@@ -14,6 +21,20 @@ const answerPayloadSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("word_fill"),
     correct: z.boolean(),
+  }),
+  z.object({
+    type: z.literal("ordering"),
+    regions: z
+      .array(
+        z.array(
+          z.string().refine((text) => textEncoder.encode(text).length <= MAX_ORDERING_TEXT_BYTES),
+        ),
+      )
+      .max(MAX_ORDERING_SEGMENTS)
+      .refine(
+        (regions) =>
+          regions.reduce((total, region) => total + region.length, 0) <= MAX_ORDERING_SEGMENTS,
+      ),
   }),
 ]);
 

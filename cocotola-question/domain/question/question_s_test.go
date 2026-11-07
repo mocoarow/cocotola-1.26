@@ -90,6 +90,7 @@ func Test_NewQuestion_shouldReturnError_whenContentCannotBeParsed(t *testing.T) 
 	}{
 		{name: "word_fill", qt: question.TypeWordFill()},
 		{name: "multiple_choice", qt: question.TypeMultipleChoice()},
+		{name: "ordering", qt: question.TypeOrdering()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -117,6 +118,7 @@ func Test_NewQuestion_shouldReturnError_whenContentFailsValidation(t *testing.T)
 	}{
 		{name: "word_fill without blanks", qt: question.TypeWordFill(), content: `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"apple","lang":"en"}}`},
 		{name: "multiple_choice without correct choice", qt: question.TypeMultipleChoice(), content: `{"questionText":"Q","choices":[{"id":"c1","text":"A","isCorrect":false}],"displayCount":1}`},
+		{name: "ordering with single chip", qt: question.TypeOrdering(), content: `{"source":{"text":"はい","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"Yes"},{"type":"fixed","text":"."}]}}`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -143,6 +145,21 @@ func Test_NewQuestion_shouldReturnQuestion_whenMultipleChoiceContentIsValid(t *t
 
 	// when
 	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, question.TypeMultipleChoice(), content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, content, q.Content())
+}
+
+func Test_NewQuestion_shouldReturnQuestion_whenOrderingContentIsValid(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	content := `{"source":{"text":"私は学生です。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"I"},{"type":"chip","text":"am"},{"type":"chip","text":"a student"},{"type":"fixed","text":"."}]}}`
+
+	// when
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, question.TypeOrdering(), content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.NoError(t, err)

@@ -76,33 +76,56 @@ func (c *RecordAnswerCommand) checkStudyAuthorization(ctx context.Context, input
 	return nil
 }
 
-// evaluateAnswer dispatches per question type to compute correctness from the input.
-// For multiple_choice the server is authoritative (set equality against IsCorrect choices);
-// for word_fill the client-supplied boolean is trusted as today.
-// Mismatched type/payload combinations return ErrInvalidArgument.
+// evaluateAnswer computes correctness per question type; word_fill trusts the client's boolean.
+// Each type requires its own answer field only; other combinations return ErrInvalidArgument.
 func evaluateAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
 	switch q.QuestionType().Value() {
 	case domainquestion.TypeMultipleChoice().Value():
-		if input.SelectedChoiceIDs == nil || input.Correct != nil {
-			return false, fmt.Errorf("multiple_choice requires selectedChoiceIds only: %w", domain.ErrInvalidArgument)
-		}
-		mc, err := contentjson.Parser{}.ParseMultipleChoice(q.Content())
-		if err != nil {
-			return false, fmt.Errorf("parse multiple_choice content: %w", err)
-		}
-		ok, err := mc.EvaluateAnswer(*input.SelectedChoiceIDs)
-		if err != nil {
-			return false, fmt.Errorf("evaluate multiple_choice answer: %w", err)
-		}
-		return ok, nil
+		return evaluateMultipleChoiceAnswer(q, input)
 	case domainquestion.TypeWordFill().Value():
-		if input.Correct == nil || input.SelectedChoiceIDs != nil {
-			return false, fmt.Errorf("word_fill requires correct only: %w", domain.ErrInvalidArgument)
-		}
-		return *input.Correct, nil
+		return evaluateWordFillAnswer(input)
+	case domainquestion.TypeOrdering().Value():
+		return evaluateOrderingAnswer(q, input)
 	default:
 		return false, fmt.Errorf("unsupported question type %q: %w", q.QuestionType().Value(), domain.ErrInvalidArgument)
 	}
+}
+
+func evaluateMultipleChoiceAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
+	if input.SelectedChoiceIDs == nil || input.Correct != nil || input.Regions != nil {
+		return false, fmt.Errorf("multiple_choice requires selectedChoiceIds only: %w", domain.ErrInvalidArgument)
+	}
+	mc, err := contentjson.Parser{}.ParseMultipleChoice(q.Content())
+	if err != nil {
+		return false, fmt.Errorf("parse multiple_choice content: %w", err)
+	}
+	ok, err := mc.EvaluateAnswer(*input.SelectedChoiceIDs)
+	if err != nil {
+		return false, fmt.Errorf("evaluate multiple_choice answer: %w", err)
+	}
+	return ok, nil
+}
+
+func evaluateWordFillAnswer(input *studyservice.RecordAnswerInput) (bool, error) {
+	if input.Correct == nil || input.SelectedChoiceIDs != nil || input.Regions != nil {
+		return false, fmt.Errorf("word_fill requires correct only: %w", domain.ErrInvalidArgument)
+	}
+	return *input.Correct, nil
+}
+
+func evaluateOrderingAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
+	if input.Regions == nil || input.Correct != nil || input.SelectedChoiceIDs != nil {
+		return false, fmt.Errorf("ordering requires regions only: %w", domain.ErrInvalidArgument)
+	}
+	oc, err := contentjson.Parser{}.ParseOrdering(q.Content())
+	if err != nil {
+		return false, fmt.Errorf("parse ordering content: %w", err)
+	}
+	ok, err := oc.EvaluateAnswer(*input.Regions)
+	if err != nil {
+		return false, fmt.Errorf("evaluate ordering answer: %w", err)
+	}
+	return ok, nil
 }
 
 func (c *RecordAnswerCommand) findOrCreateRecord(ctx context.Context, input *studyservice.RecordAnswerInput) (*domainstudy.Record, error) {

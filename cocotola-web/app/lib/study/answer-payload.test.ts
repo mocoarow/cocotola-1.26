@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   MAX_CHOICE_ID_LENGTH,
+  MAX_ORDERING_SEGMENTS,
+  MAX_ORDERING_TEXT_BYTES,
   MAX_SELECTED_CHOICE_IDS_COUNT,
   parseAnswerPayload,
 } from "./answer-payload";
@@ -28,9 +30,58 @@ describe("parseAnswerPayload", () => {
     expect(result).toEqual({ type: "word_fill", correct: true });
   });
 
+  it("should return ordering payload when regions is valid", () => {
+    // given
+    const raw = JSON.stringify({ type: "ordering", regions: [["I", "am"], ["you"]] });
+
+    // when
+    const result = parseAnswerPayload(raw);
+
+    // then
+    expect(result).toEqual({ type: "ordering", regions: [["I", "am"], ["you"]] });
+  });
+
+  it.each([
+    ["regions", Array.from({ length: MAX_ORDERING_SEGMENTS }, (_, i) => [`c${i}`])],
+    ["chips", [Array.from({ length: MAX_ORDERING_SEGMENTS }, (_, i) => `c${i}`)]],
+    ["text bytes", [["a".repeat(MAX_ORDERING_TEXT_BYTES)]]],
+  ])("should accept ordering payload at the %s limit", (_label, regions) => {
+    // given
+    const raw = JSON.stringify({ type: "ordering", regions });
+
+    // when
+    const result = parseAnswerPayload(raw);
+
+    // then
+    expect(result).not.toBeNull();
+  });
+
   it.each([
     ["not JSON", "{"],
-    ["unknown type", JSON.stringify({ type: "ordering", order: ["a"] })],
+    ["unknown type", JSON.stringify({ type: "matching", pairs: ["a"] })],
+    ["ordering without regions", JSON.stringify({ type: "ordering", order: ["a"] })],
+    ["ordering with non-string chip", JSON.stringify({ type: "ordering", regions: [[1]] })],
+    [
+      "ordering over region count limit",
+      JSON.stringify({
+        type: "ordering",
+        regions: Array.from({ length: MAX_ORDERING_SEGMENTS + 1 }, () => []),
+      }),
+    ],
+    [
+      "ordering over total chip count limit",
+      JSON.stringify({
+        type: "ordering",
+        regions: [Array.from({ length: MAX_ORDERING_SEGMENTS }, (_, i) => `c${i}`), ["extra"]],
+      }),
+    ],
+    [
+      "ordering over text byte limit",
+      JSON.stringify({
+        type: "ordering",
+        regions: [["あ".repeat(Math.floor(MAX_ORDERING_TEXT_BYTES / 3) + 1)]],
+      }),
+    ],
     ["missing type", JSON.stringify({ correct: true })],
     ["word_fill without correct", JSON.stringify({ type: "word_fill" })],
     ["word_fill with string correct", JSON.stringify({ type: "word_fill", correct: "true" })],

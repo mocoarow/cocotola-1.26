@@ -153,7 +153,25 @@
       "addChoice": "선택지 추가",
       "removeChoice": "선택지 삭제",
       "shuffleChoices": "선택지 섞기",
-      "showCorrectCount": "정답 개수 표시"
+      "showCorrectCount": "정답 개수 표시",
+      "ordering": "순서 배열",
+      "orderingDescription": "어구 칩을 올바른 순서로 배열합니다",
+      "titleOrdering": "순서 배열 문제 추가",
+      "orderingTarget": "정답 문장",
+      "orderingTargetHint": "칩은 / 로 구분합니다. 순서를 바꾸지 않는 문자열은 [[ ]] 로 감쌉니다. 예: I / am / a student [[.]] you / are / a teacher [[.]]",
+      "orderingPreview": "미리보기",
+      "orderingCapitalizationNote": "첫 번째 칩, 또는 . ? ! 바로 뒤의 칩은 학습 화면에서 대문자로 표시됩니다. 항상 대문자인 단어는 대문자로 작성하세요.",
+      "orderingErrors": {
+        "unmatchedOpen": "[[ 에 대응하는 ]] 가 없습니다",
+        "unmatchedClose": "]] 에 대응하는 [[ 가 없습니다",
+        "emptyChip": "빈 칩이 있습니다. 불필요한 / 가 없는지 확인하세요",
+        "emptyFixed": "[[ ]] 안이 비어 있습니다",
+        "tooFewChips": "칩은 {{min}}개 이상 필요합니다",
+        "tooManySegments": "칩과 고정 문자열은 합쳐서 {{max}}개까지입니다",
+        "textTooLong": "칩과 고정 문자열은 각각 {{max}}바이트까지입니다",
+        "forbiddenChar": "[ 와 ] 는 [[ ]] 이외에는 사용할 수 없습니다",
+        "htmlTag": "HTML 태그는 사용할 수 없습니다"
+      }
     },
     "studyDialog": {
       "title": "학습 시작",
@@ -192,6 +210,13 @@
       "correct": "정답!",
       "incorrect": "오답",
       "progress": "{{current}} / {{total}}",
+      "ordering": {
+        "answer": "나의 답",
+        "chips": "어구 후보",
+        "correctOrder": "올바른 순서",
+        "slotCorrect": "올바른 위치",
+        "slotIncorrect": "틀린 위치"
+      },
       "result": {
         "title": "세션 완료!",
         "score": "정답률 {{percent}}%",

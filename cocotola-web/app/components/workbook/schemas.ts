@@ -1,6 +1,6 @@
 import { type ZodError, z } from "zod";
 
-export type QuestionType = "word_fill" | "multiple_choice";
+export type QuestionType = "word_fill" | "multiple_choice" | "ordering";
 
 export const choiceSchema = z.object({
   id: z.string(),
@@ -45,6 +45,30 @@ export const multipleChoiceContentSchema = z.object({
   shuffleChoices: z.boolean().optional(),
   showCorrectCount: z.boolean().optional(),
 });
+
+// Mirror cocotola-question domain/question/content_ordering.go minOrderingChips.
+export const MIN_ORDERING_CHIPS = 2;
+
+export const orderingContentSchema = z.object({
+  source: z.object({ text: z.string(), lang: z.string() }),
+  target: z.object({
+    lang: z.string(),
+    segments: z
+      .array(z.object({ type: z.enum(["chip", "fixed"]), text: z.string() }))
+      .refine((segments) => segments.filter((s) => s.type === "chip").length >= MIN_ORDERING_CHIPS),
+  }),
+  explanation: z.string().optional(),
+});
+
+export function parseOrderingContent(
+  content: string,
+): z.output<typeof orderingContentSchema> | null {
+  try {
+    return orderingContentSchema.parse(JSON.parse(content));
+  } catch {
+    return null;
+  }
+}
 
 export function parseWordFillContent(
   content: string,
@@ -112,14 +136,15 @@ export function parseMultipleChoiceFormData(formData: FormData) {
     allowPartialCredit: false,
   });
 
-  const tagsRaw = formData.get("tags");
-  const tags =
-    typeof tagsRaw === "string"
-      ? tagsRaw
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [];
+  return { content, tags: parseTagsFormData(formData) };
+}
 
-  return { content, tags };
+export function parseTagsFormData(formData: FormData): string[] {
+  const tagsRaw = formData.get("tags");
+  return typeof tagsRaw === "string"
+    ? tagsRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
 }

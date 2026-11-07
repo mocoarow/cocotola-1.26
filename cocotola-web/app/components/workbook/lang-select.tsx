@@ -12,14 +12,19 @@ const LANG_KEYS = [
   { value: "pt", labelKey: "languages.pt" },
 ];
 
+export const DEFAULT_SOURCE_LANG = "ja";
+export const DEFAULT_TARGET_LANG = "en";
+
 export function LangSelect({
   id,
   name,
   defaultValue,
+  onChange,
 }: {
   id: string;
   name: string;
   defaultValue: string;
+  onChange?: (value: string) => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -27,6 +32,7 @@ export function LangSelect({
       id={id}
       name={name}
       defaultValue={defaultValue}
+      onChange={(e) => onChange?.(e.target.value)}
       className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
     >
       {LANG_KEYS.map((opt) => (
