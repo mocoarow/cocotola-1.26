@@ -19,9 +19,6 @@ export type OrderingFieldsDefaults = {
   tags: string;
 };
 
-export const DEFAULT_SOURCE_LANG = "ja";
-export const DEFAULT_TARGET_LANG = "en";
-
 export type OrderingNotationState = {
   notation: string;
   setNotation: (notation: string) => void;

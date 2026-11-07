@@ -4,10 +4,9 @@ import type { OrderingContent } from "~/components/study/question-types/ordering
 import { Button } from "~/components/ui/button";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
+import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG } from "../lang-select";
 import { formatOrderingNotation } from "./notation";
 import {
-  DEFAULT_SOURCE_LANG,
-  DEFAULT_TARGET_LANG,
   OrderingFields,
   type OrderingFieldsDefaults,
   useOrderingNotation,

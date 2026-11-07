@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
-import { LangSelect } from "./lang-select";
+import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
 
 export function WordFillEditForm({
   question,
@@ -48,7 +48,7 @@ export function WordFillEditForm({
         <LangSelect
           id="edit-sourceLang"
           name="sourceLang"
-          defaultValue={parsed.source?.lang ?? "ja"}
+          defaultValue={parsed.source?.lang ?? DEFAULT_SOURCE_LANG}
         />
       </div>
       <div className="space-y-1.5">
@@ -70,7 +70,7 @@ export function WordFillEditForm({
         <LangSelect
           id="edit-targetLang"
           name="targetLang"
-          defaultValue={parsed.target?.lang ?? "en"}
+          defaultValue={parsed.target?.lang ?? DEFAULT_TARGET_LANG}
         />
       </div>
       <div className="space-y-1.5">

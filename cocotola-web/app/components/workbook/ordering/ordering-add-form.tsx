@@ -3,9 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { SheetFooter } from "~/components/ui/sheet";
+import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG } from "../lang-select";
 import {
-  DEFAULT_SOURCE_LANG,
-  DEFAULT_TARGET_LANG,
   OrderingFields,
   type OrderingFieldsDefaults,
   useOrderingNotation,

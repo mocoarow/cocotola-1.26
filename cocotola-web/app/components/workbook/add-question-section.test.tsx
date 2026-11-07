@@ -27,4 +27,30 @@ describe("AddQuestionSection", () => {
     // then
     expect(screen.getByLabelText("Correct sentence")).toBeInTheDocument();
   });
+
+  it("should default the word fill source language to ja", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: /^Word Fill/ }));
+
+    // then
+    expect(screen.getByLabelText("Source Language")).toHaveValue("ja");
+  });
+
+  it("should default the word fill target language to en", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: /^Word Fill/ }));
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveValue("en");
+  });
 });

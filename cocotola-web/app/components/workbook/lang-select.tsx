@@ -12,6 +12,9 @@ const LANG_KEYS = [
   { value: "pt", labelKey: "languages.pt" },
 ];
 
+export const DEFAULT_SOURCE_LANG = "ja";
+export const DEFAULT_TARGET_LANG = "en";
+
 export function LangSelect({
   id,
   name,

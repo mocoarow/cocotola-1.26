@@ -13,7 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "~/components/ui/sheet";
-import { LangSelect } from "./lang-select";
+import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
 import { OrderingAddForm } from "./ordering/ordering-add-form";
 import type { Choice, QuestionType } from "./schemas";
 
@@ -39,7 +39,7 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="sourceLang" className="text-sm font-medium">
           {t("workbooks.addQuestion.sourceLang")}
         </label>
-        <LangSelect id="sourceLang" name="sourceLang" defaultValue="ja" />
+        <LangSelect id="sourceLang" name="sourceLang" defaultValue={DEFAULT_SOURCE_LANG} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="sourceText" className="text-sm font-medium">
@@ -52,7 +52,7 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="targetLang" className="text-sm font-medium">
           {t("workbooks.addQuestion.targetLang")}
         </label>
-        <LangSelect id="targetLang" name="targetLang" defaultValue="en" />
+        <LangSelect id="targetLang" name="targetLang" defaultValue={DEFAULT_TARGET_LANG} />
       </div>
       <div className="space-y-1.5">
         <label htmlFor="targetText" className="text-sm font-medium">
