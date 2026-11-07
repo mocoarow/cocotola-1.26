@@ -41,7 +41,7 @@ func runImport(ctx context.Context, cfg *config.Config, db *gorm.DB) error {
 		initialize.CocotolaOrganizationID(),
 		initialize.NewPublicSpaceFinder(db),
 		seed.NewCSVWorkbookLoader(reader, manifest),
-		seed.NewWorkbookSeeder(client, policyEnsurer, nil),
+		seed.NewWorkbookSeeder(client, policyEnsurer),
 	)
 	if err := im.Run(ctx); err != nil {
 		return fmt.Errorf("import: %w", err)
