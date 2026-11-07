@@ -13,10 +13,14 @@ import {
 } from "~/components/ui/sheet";
 import { AddQuestionSection } from "~/components/workbook/add-question-section";
 import { MultipleChoiceEditForm } from "~/components/workbook/multiple-choice-edit-form";
+import { parseOrderingFormData } from "~/components/workbook/ordering/form-data";
+import { OrderingEditForm } from "~/components/workbook/ordering/ordering-edit-form";
 import { QuestionCard } from "~/components/workbook/question-card";
 import {
   parseMultipleChoiceContent,
   parseMultipleChoiceFormData,
+  parseOrderingContent,
+  parseTagsFormData,
   parseWordFillContent,
 } from "~/components/workbook/schemas";
 import { WordFillEditForm } from "~/components/workbook/word-fill-edit-form";
@@ -84,6 +88,18 @@ export async function action({ request, params }: Route.ActionArgs) {
       return { ok: true };
     }
 
+    if (questionType === "ordering") {
+      const { content, tags } = parseOrderingFormData(formData);
+      const orderIndex = Number(formData.get("orderIndex") ?? 0);
+
+      await updateQuestion(accessToken, workbookId, questionId, {
+        content,
+        tags: tags.length > 0 ? tags : undefined,
+        orderIndex,
+      });
+      return { ok: true };
+    }
+
     if (questionType === "word_fill" || !questionType) {
       const sourceText = formData.get("sourceText");
       const sourceLang = formData.get("sourceLang");
@@ -116,15 +132,7 @@ export async function action({ request, params }: Route.ActionArgs) {
         ...(typeof explanation2 === "string" && explanation2.trim() ? { explanation2 } : {}),
       });
 
-      const tagsRaw = formData.get("tags");
-      const tags =
-        typeof tagsRaw === "string"
-          ? tagsRaw
-              .split(",")
-              .map((t) => t.trim())
-              .filter(Boolean)
-          : [];
-
+      const tags = parseTagsFormData(formData);
       const orderIndex = Number(formData.get("orderIndex") ?? 0);
 
       await updateQuestion(accessToken, workbookId, questionId, {
@@ -181,14 +189,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       ...(typeof explanation === "string" && explanation.trim() ? { explanation } : {}),
     });
 
-    const tagsRaw = formData.get("tags");
-    const tags =
-      typeof tagsRaw === "string"
-        ? tagsRaw
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : [];
+    const tags = parseTagsFormData(formData);
 
     await addQuestion(accessToken, workbookId, {
       questionType: "word_fill",
@@ -204,6 +205,18 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     await addQuestion(accessToken, workbookId, {
       questionType: "multiple_choice",
+      content,
+      tags: tags.length > 0 ? tags : undefined,
+      orderIndex: 0,
+    });
+    return { ok: true, added: true };
+  }
+
+  if (intent === "addOrdering") {
+    const { content, tags } = parseOrderingFormData(formData);
+
+    await addQuestion(accessToken, workbookId, {
+      questionType: "ordering",
       content,
       tags: tags.length > 0 ? tags : undefined,
       orderIndex: 0,
@@ -254,7 +267,9 @@ export default function WorkbookDetail() {
   const sheetTitle =
     editingQuestion?.questionType === "word_fill"
       ? t("workbooks.addQuestion.titleWordFill")
-      : t("workbooks.addQuestion.titleMultipleChoice");
+      : editingQuestion?.questionType === "ordering"
+        ? t("workbooks.addQuestion.titleOrdering")
+        : t("workbooks.addQuestion.titleMultipleChoice");
 
   const isClearing = clearHistoryFetcher.state !== "idle";
 
@@ -342,6 +357,14 @@ export default function WorkbookDetail() {
             <MultipleChoiceEditForm
               question={editingQuestion}
               parsed={parseMultipleChoiceContent(editingQuestion.content) ?? {}}
+              fetcher={editFetcher}
+              onCancel={() => setEditingQuestion(null)}
+            />
+          )}
+          {editingQuestion?.questionType === "ordering" && (
+            <OrderingEditForm
+              question={editingQuestion}
+              parsed={parseOrderingContent(editingQuestion.content)}
               fetcher={editFetcher}
               onCancel={() => setEditingQuestion(null)}
             />

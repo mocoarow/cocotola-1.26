@@ -3,9 +3,34 @@ import { useTranslation } from "react-i18next";
 import { useFetcher } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
 import { MarkdownText } from "~/components/markdown-text";
+import type { OrderingContent } from "~/components/study/question-types/ordering/answer";
 import { Button } from "~/components/ui/button";
 import type { Question } from "~/lib/api/question.server";
-import { parseMultipleChoiceContent, parseWordFillContent } from "./schemas";
+import { OrderingPreview } from "./ordering/ordering-preview";
+import { parseMultipleChoiceContent, parseOrderingContent, parseWordFillContent } from "./schemas";
+
+function OrderingCardBody({ content }: { content: OrderingContent }) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-1 text-sm">
+      <p>
+        <span className="font-medium text-muted-foreground">[{content.source.lang}]</span>{" "}
+        {content.source.text}
+      </p>
+      <div className="flex items-center gap-1.5">
+        <span className="font-medium text-muted-foreground">[{content.target.lang}]</span>
+        <OrderingPreview
+          segments={content.target.segments}
+          lang={content.target.lang}
+          label={t("workbooks.study.ordering.correctOrder")}
+        />
+      </div>
+      {content.explanation && (
+        <MarkdownText text={content.explanation} className="text-xs text-muted-foreground" />
+      )}
+    </div>
+  );
+}
 
 export function QuestionCard({
   question,
@@ -22,6 +47,10 @@ export function QuestionCard({
     question.questionType === "word_fill" ? (
       <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
         {t("workbooks.addQuestion.wordFill")}
+      </span>
+    ) : question.questionType === "ordering" ? (
+      <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+        {t("workbooks.addQuestion.ordering")}
       </span>
     ) : (
       <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[11px] font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
@@ -142,6 +171,34 @@ export function QuestionCard({
               <MarkdownText text={parsed.explanation} className="text-xs text-muted-foreground" />
             )}
           </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{question.content}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (question.questionType === "ordering") {
+    const parsed = parseOrderingContent(question.content);
+
+    return (
+      <div className="rounded-lg border bg-card p-4 shadow-sm">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {typeBadge}
+            {question.tags?.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          {actionButtons}
+        </div>
+        {parsed ? (
+          <OrderingCardBody content={parsed} />
         ) : (
           <p className="text-sm text-muted-foreground">{question.content}</p>
         )}

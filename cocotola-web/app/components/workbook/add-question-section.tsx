@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "~/components/ui/sheet";
 import { LangSelect } from "./lang-select";
+import { OrderingAddForm } from "./ordering/ordering-add-form";
 import type { Choice, QuestionType } from "./schemas";
 
 function WordFillForm({ onAdded }: { onAdded: () => void }) {
@@ -246,7 +247,9 @@ export function AddQuestionSection() {
       ? t("workbooks.addQuestion.titleWordFill")
       : selectedType === "multiple_choice"
         ? t("workbooks.addQuestion.titleMultipleChoice")
-        : t("workbooks.addQuestion.selectType");
+        : selectedType === "ordering"
+          ? t("workbooks.addQuestion.titleOrdering")
+          : t("workbooks.addQuestion.selectType");
 
   return (
     <Sheet
@@ -309,6 +312,18 @@ export function AddQuestionSection() {
                 {t("workbooks.addQuestion.multipleChoiceDescription")}
               </p>
             </button>
+            <button
+              type="button"
+              onClick={() => setSelectedType("ordering")}
+              className="rounded-lg border-2 border-transparent bg-amber-50 p-4 text-left transition-colors hover:border-amber-300 dark:bg-amber-900/20 dark:hover:border-amber-600"
+            >
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                {t("workbooks.addQuestion.ordering")}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("workbooks.addQuestion.orderingDescription")}
+              </p>
+            </button>
           </div>
         )}
 
@@ -316,6 +331,7 @@ export function AddQuestionSection() {
         {selectedType === "multiple_choice" && (
           <MultipleChoiceForm key={formKey} onAdded={handleClose} />
         )}
+        {selectedType === "ordering" && <OrderingAddForm key={formKey} onAdded={handleClose} />}
       </SheetContent>
     </Sheet>
   );

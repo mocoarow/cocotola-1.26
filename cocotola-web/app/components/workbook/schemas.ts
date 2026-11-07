@@ -136,14 +136,15 @@ export function parseMultipleChoiceFormData(formData: FormData) {
     allowPartialCredit: false,
   });
 
-  const tagsRaw = formData.get("tags");
-  const tags =
-    typeof tagsRaw === "string"
-      ? tagsRaw
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean)
-      : [];
+  return { content, tags: parseTagsFormData(formData) };
+}
 
-  return { content, tags };
+export function parseTagsFormData(formData: FormData): string[] {
+  const tagsRaw = formData.get("tags");
+  return typeof tagsRaw === "string"
+    ? tagsRaw
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
 }

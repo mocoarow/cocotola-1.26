@@ -153,7 +153,25 @@
       "addChoice": "選択肢を追加",
       "removeChoice": "選択肢を削除",
       "shuffleChoices": "選択肢をシャッフルする",
-      "showCorrectCount": "正解の数を表示する"
+      "showCorrectCount": "正解の数を表示する",
+      "ordering": "並び替え問題",
+      "orderingDescription": "語句のチップを正しい順に並べさせます",
+      "titleOrdering": "並び替え問題を追加",
+      "orderingTarget": "正解文",
+      "orderingTargetHint": "チップは / で区切ります。並べ替えない文字列は [[ ]] で囲みます。例: I / am / a student [[.]] you / are / a teacher [[.]]",
+      "orderingPreview": "プレビュー",
+      "orderingCapitalizationNote": "先頭のチップ、または . ? ! の直後のチップは学習画面で大文字で表示されます。常に大文字の語は大文字で書いてください。",
+      "orderingErrors": {
+        "unmatchedOpen": "[[ に対応する ]] がありません",
+        "unmatchedClose": "]] に対応する [[ がありません",
+        "emptyChip": "空のチップがあります。余分な / がないか確認してください",
+        "emptyFixed": "[[ ]] の中が空です",
+        "tooFewChips": "チップは {{min}} 個以上必要です",
+        "tooManySegments": "チップと固定の文字列は合わせて {{max}} 個までです",
+        "textTooLong": "チップと固定の文字列はそれぞれ {{max}} バイトまでです",
+        "forbiddenChar": "[ と ] は [[ ]] 以外で使えません",
+        "htmlTag": "HTML タグは使えません"
+      }
     },
     "studyDialog": {
       "title": "学習を開始",

@@ -4,7 +4,8 @@ import { z } from "zod";
 export const MAX_SELECTED_CHOICE_IDS_COUNT = 40;
 export const MAX_CHOICE_ID_LENGTH = 100;
 
-// Mirror cocotola-question service/study/study.go validateOrderingRegions limits.
+// Mirror cocotola-question domain/question/content_ordering.go MaxOrderingSegments /
+// MaxOrderingTextLength, which service/study/study.go validateOrderingRegions also uses.
 export const MAX_ORDERING_SEGMENTS = 40;
 export const MAX_ORDERING_TEXT_BYTES = 500;
 

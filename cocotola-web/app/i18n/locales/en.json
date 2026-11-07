@@ -153,7 +153,25 @@
       "addChoice": "Add Choice",
       "removeChoice": "Remove Choice",
       "shuffleChoices": "Shuffle choices",
-      "showCorrectCount": "Show number of correct answers"
+      "showCorrectCount": "Show number of correct answers",
+      "ordering": "Ordering",
+      "orderingDescription": "Put the chips in the correct order",
+      "titleOrdering": "Add Ordering Question",
+      "orderingTarget": "Correct sentence",
+      "orderingTargetHint": "Separate chips with /. Wrap text that stays in place with [[ ]]. e.g. I / am / a student [[.]] you / are / a teacher [[.]]",
+      "orderingPreview": "Preview",
+      "orderingCapitalizationNote": "The first chip, and any chip right after . ? or !, is shown capitalized on the study screen. Write words that are always capitalized with a capital letter.",
+      "orderingErrors": {
+        "unmatchedOpen": "[[ has no matching ]]",
+        "unmatchedClose": "]] has no matching [[",
+        "emptyChip": "A chip is empty. Check for extra /",
+        "emptyFixed": "[[ ]] is empty",
+        "tooFewChips": "At least {{min}} chips are required",
+        "tooManySegments": "Up to {{max}} chips and fixed texts are allowed in total",
+        "textTooLong": "Each chip and fixed text must be at most {{max}} bytes",
+        "forbiddenChar": "[ and ] cannot be used except as [[ ]]",
+        "htmlTag": "HTML tags cannot be used"
+      }
     },
     "studyDialog": {
       "title": "Start Studying",
