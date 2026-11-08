@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-empty
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/gin-gonic/gin v1.12.0

@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-app
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/go-playground/validator/v10 v10.30.5

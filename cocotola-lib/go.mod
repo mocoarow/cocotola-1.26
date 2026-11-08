@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-lib
 
-go 1.26.1
+go 1.26.10
 
 require (
 	cloud.google.com/go/firestore v1.22.0

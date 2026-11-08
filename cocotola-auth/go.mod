@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-auth
 
-go 1.26.1
+go 1.26.10
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.8.0

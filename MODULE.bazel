@@ -2,7 +2,7 @@
 bazel_dep(name = "rules_go", version = "0.60.0", repo_name = "rules_go")
 
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
-go_sdk.download(version = "1.26.1")
+go_sdk.download(version = "1.26.10")
 
 # gazelle
 bazel_dep(name = "gazelle", version = "0.47.0", repo_name = "gazelle")
