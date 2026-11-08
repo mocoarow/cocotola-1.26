@@ -1,8 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OrderingContent } from "~/components/study/question-types/ordering/answer";
 import i18n from "~/i18n/config";
 import type { Question } from "~/lib/api/question.server";
+import { SAME_LANGUAGE_ERROR_KEY } from "../lang-pair";
 import { QUESTION_INVALID_ERROR_KEY, type QuestionEditFetcher } from "../question-form-error";
 import { OrderingEditForm } from "./ordering-edit-form";
 
@@ -43,7 +45,102 @@ function renderForm(parsed: OrderingContent | null = PARSED, formFetcher = fetch
   );
 }
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+function saveButton() {
+  return screen.getByRole("button", { name: i18n.t("common.save") });
+}
+
 describe("OrderingEditForm", () => {
+  it("should disable the save button when the target language equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ko");
+
+    // then
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it("should show the same language error when the source language equals the target language", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Source Language"), "fr");
+
+    // then
+    expect(screen.getByText(i18n.t(SAME_LANGUAGE_ERROR_KEY))).toBeInTheDocument();
+  });
+
+  it("should mark the target language invalid when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ko");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("should describe the target language with the same language error when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ko");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAccessibleDescription(
+      i18n.t(SAME_LANGUAGE_ERROR_KEY),
+    );
+  });
+
+  it("should enable the save button when the target language differs from the source language again", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ko");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "en");
+
+    // then
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it("should disable the save button on open when the saved languages are the same", () => {
+    // given
+    const parsed: OrderingContent = { ...PARSED, target: { ...PARSED.target, lang: "ko" } };
+
+    // when
+    renderForm(parsed);
+
+    // then
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it("should capitalize the preview in the selected target language", async () => {
+    // given
+    const user = userEvent.setup();
+    renderForm();
+    const toLocaleUpperCase = vi.spyOn(String.prototype, "toLocaleUpperCase");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "de");
+
+    // then
+    expect(toLocaleUpperCase).toHaveBeenCalledWith("de");
+  });
+
   it("should show the error key returned by the action", () => {
     // given
     const rejected = {

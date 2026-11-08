@@ -162,7 +162,8 @@
       "orderingPreview": "Preview",
       "orderingCapitalizationNote": "The first chip, and any chip right after . ? or !, is shown capitalized on the study screen. Write words that are always capitalized with a capital letter.",
       "errors": {
-        "invalid": "Please check your input."
+        "invalid": "Please check your input.",
+        "sameLanguage": "Choose a target language different from the source language."
       },
       "orderingErrors": {
         "unmatchedOpen": "[[ has no matching ]]",

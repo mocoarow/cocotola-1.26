@@ -14,12 +14,25 @@ vi.mock("react-router", async (importOriginal) => {
 
 import { useFetcher } from "react-router";
 import { AddQuestionSection } from "./add-question-section";
+import { SAME_LANGUAGE_ERROR_KEY } from "./lang-pair";
 import { QUESTION_INVALID_ERROR_KEY } from "./question-form-error";
 
 function idleFetcher(data?: unknown) {
   return { state: "idle", Form: "form", submit: vi.fn(), data } as unknown as ReturnType<
     typeof useFetcher
   >;
+}
+
+async function openWordFillForm() {
+  const user = userEvent.setup();
+  render(<AddQuestionSection />);
+  await user.click(screen.getByRole("button", { name: "Add Question" }));
+  await user.click(screen.getByRole("button", { name: /^Word Fill/ }));
+  return user;
+}
+
+function submitButton() {
+  return screen.getByRole("button", { name: i18n.t("workbooks.addQuestion.submit") });
 }
 
 beforeEach(() => {
@@ -117,6 +130,76 @@ describe("AddQuestionSection", () => {
     expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
       i18n.t("workbooks.addQuestion.tagsHint"),
     );
+  });
+
+  it("should disable the word fill submit button when the target language equals the source language", async () => {
+    // given
+    const user = await openWordFillForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(submitButton()).toBeDisabled();
+  });
+
+  it("should show the same language error when the word fill target language equals the source language", async () => {
+    // given
+    const user = await openWordFillForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Source Language"), "en");
+
+    // then
+    expect(screen.getByText(i18n.t(SAME_LANGUAGE_ERROR_KEY))).toBeInTheDocument();
+  });
+
+  it("should mark the word fill target language invalid when it equals the source language", async () => {
+    // given
+    const user = await openWordFillForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("should describe the word fill target language with the same language error when it equals the source language", async () => {
+    // given
+    const user = await openWordFillForm();
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAccessibleDescription(
+      i18n.t(SAME_LANGUAGE_ERROR_KEY),
+    );
+  });
+
+  it("should enable the word fill submit button when the target language differs from the source language again", async () => {
+    // given
+    const user = await openWordFillForm();
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "fr");
+
+    // then
+    expect(submitButton()).toBeEnabled();
+  });
+
+  it("should hide the same language error when the word fill target language differs from the source language again", async () => {
+    // given
+    const user = await openWordFillForm();
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "fr");
+
+    // then
+    expect(screen.queryByText(i18n.t(SAME_LANGUAGE_ERROR_KEY))).not.toBeInTheDocument();
   });
 
   it("should describe the multiple choice tags with the hint", async () => {

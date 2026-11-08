@@ -3,7 +3,7 @@ import type { OrderingContent } from "~/components/study/question-types/ordering
 import { Button } from "~/components/ui/button";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
-import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG } from "../lang-select";
+import { useLangPair } from "../lang-pair";
 import { type QuestionEditFetcher, QuestionFormError } from "../question-form-error";
 import { formatOrderingNotation } from "./notation";
 import {
@@ -15,8 +15,6 @@ import {
 function editDefaults(question: Question, parsed: OrderingContent | null): OrderingFieldsDefaults {
   return {
     sourceText: parsed?.source.text ?? "",
-    sourceLang: parsed?.source.lang ?? DEFAULT_SOURCE_LANG,
-    targetLang: parsed?.target.lang ?? DEFAULT_TARGET_LANG,
     explanation: parsed?.explanation ?? "",
     tags: question.tags?.join(", ") ?? "",
   };
@@ -37,6 +35,7 @@ export function OrderingEditForm({
   const notation = useOrderingNotation(
     parsed ? formatOrderingNotation(parsed.target.segments) : "",
   );
+  const langs = useLangPair(parsed?.source.lang, parsed?.target.lang);
   const isSubmitting = fetcher.state !== "idle";
 
   return (
@@ -48,11 +47,12 @@ export function OrderingEditForm({
       <OrderingFields
         idPrefix="edit-ordering-"
         defaults={editDefaults(question, parsed)}
+        langs={langs}
         state={notation}
       />
       <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
-        <Button type="submit" disabled={isSubmitting || !notation.result.ok}>
+        <Button type="submit" disabled={isSubmitting || !notation.result.ok || langs.sameLanguage}>
           {isSubmitting ? t("common.saving") : t("common.save")}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

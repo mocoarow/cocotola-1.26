@@ -18,21 +18,27 @@ export const DEFAULT_TARGET_LANG = "en";
 export function LangSelect({
   id,
   name,
-  defaultValue,
+  value,
   onChange,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: {
   id: string;
   name: string;
-  defaultValue: string;
-  onChange?: (value: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }) {
   const { t } = useTranslation();
   return (
     <select
       id={id}
       name={name}
-      defaultValue={defaultValue}
-      onChange={(e) => onChange?.(e.target.value)}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-invalid={ariaInvalid}
+      aria-describedby={ariaDescribedBy}
       className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
     >
       {LANG_KEYS.map((opt) => (

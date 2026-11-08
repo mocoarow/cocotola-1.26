@@ -13,6 +13,7 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useFetcher } from "react-router";
+import { SAME_LANGUAGE_ERROR_KEY } from "../lang-pair";
 import { QUESTION_INVALID_ERROR_KEY } from "../question-form-error";
 import { OrderingAddForm } from "./ordering-add-form";
 
@@ -121,6 +122,67 @@ describe("OrderingAddForm", () => {
 
     // then
     expect(toLocaleUpperCase).toHaveBeenCalledWith("fr");
+  });
+
+  it("should disable the submit button when the target language equals the source language", async () => {
+    // given
+    const { user } = await renderWithNotation("I / am [[.]]");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByRole("button", { name: "Add Question" })).toBeDisabled();
+  });
+
+  it("should show the same language error when the source language equals the target language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Source Language"), "en");
+
+    // then
+    expect(screen.getByText(i18n.t(SAME_LANGUAGE_ERROR_KEY))).toBeInTheDocument();
+  });
+
+  it("should mark the target language invalid when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("should describe the target language with the same language error when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAccessibleDescription(
+      i18n.t(SAME_LANGUAGE_ERROR_KEY),
+    );
+  });
+
+  it("should enable the submit button when the target language differs from the source language again", async () => {
+    // given
+    const { user } = await renderWithNotation("I / am [[.]]");
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "fr");
+
+    // then
+    expect(screen.getByRole("button", { name: "Add Question" })).toBeEnabled();
   });
 
   it("should show the capitalization note", () => {
