@@ -38,6 +38,18 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Check image targets
+        run: |
+          bazelisk query 'kind("pkg_tar|oci_image", //...) intersect deps(//... except attr(tags, manual, //...))' > "${RUNNER_TEMP}/untagged_images.txt"
+          if [ -s "${RUNNER_TEMP}/untagged_images.txt" ]; then
+            echo "::error::Image targets must be tagged manual:"
+            cat "${RUNNER_TEMP}/untagged_images.txt"
+            exit 1
+          fi
+          bazelisk query 'kind("oci_push|oci_load", //...)' > "${RUNNER_TEMP}/image_targets.txt"
+          test -s "${RUNNER_TEMP}/image_targets.txt"
+          bazelisk build --nobuild --target_pattern_file="${RUNNER_TEMP}/image_targets.txt"
+
       - run: task test-go
 
   test_web:
