@@ -7,7 +7,8 @@
 # Renaming a Title or Description is safe (the workbook is matched by
 # seedKey, not by Title). Renaming a seedKey creates a new entity.
 #
-# Content schema by questionType (see cocotola-question/domain/question/content.go):
+# Content schema by questionType (see cocotola-question/domain/question/content.go
+# and content_ordering.go):
 #   word_fill:
 #     {
 #       "source": {"text": "...", "lang": "ja|en|..."},
@@ -29,6 +30,14 @@
 #     }
 #     - 1..40 choices; at least one isCorrect.
 #     - displayCount must be in [1,20], <= len(choices), >= number of correct.
+#   ordering:
+#     {
+#       "source": {"text": "...", "lang": "ja|en|..."},
+#       "target": {"lang": "ja|en|...", "segments": [{"type": "chip|fixed", "text": "..."}, ...]},
+#       "explanation": "optional, no HTML"
+#     }
+#     - source.lang must differ from target.lang.
+#     - <= 40 segments; at least 2 chips; chips must not contain / [ ], fixed must not contain [ ].
 workbooks:
   # ---------- Workbook 1: 穴埋め問題 30問 ----------
   - seedKey: fillblank-en-jp-v1
@@ -942,4 +951,291 @@ workbooks:
           - topic:language
           - choices:4
           - correct:1
+        orderIndex: 30
+
+  # ---------- Workbook 4: 並び替え問題 30問 ----------
+  - seedKey: ordering-en-jp-v1
+    title: "並び替え問題: 英語の語順 30問"
+    description: "日本語の文に合うように英語の語句を並べ替える問題集です。肯定文・疑問文・2文の組み合わせなど、英語の語順の基本を30問収録しています。"
+    language: ja
+    questions:
+      - seedKey: q01
+        questionType: ordering
+        content: '{"source":{"text":"私は学生です。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"I"},{"type":"chip","text":"am"},{"type":"chip","text":"a student"},{"type":"fixed","text":"."}]},"explanation":"英語は「主語 + 動詞」の順に並べます。I am のあとに名詞 a student を置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 1
+      - seedKey: q02
+        questionType: ordering
+        content: '{"source":{"text":"彼女は毎朝コーヒーを飲みます。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"she"},{"type":"chip","text":"drinks"},{"type":"chip","text":"coffee"},{"type":"fixed","text":"every morning."}]},"explanation":"「主語 + 動詞 + 目的語」の順です。「コーヒーを」は動詞 drinks のあとに置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:food
+          - lang:en-ja
+        orderIndex: 2
+      - seedKey: q03
+        questionType: ordering
+        content: '{"source":{"text":"私の犬はとても大きいです。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"my"},{"type":"chip","text":"dog"},{"type":"chip","text":"is"},{"type":"chip","text":"very"},{"type":"chip","text":"big"},{"type":"fixed","text":"."}]},"explanation":"my dog が主語です。very は形容詞 big の直前に置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:animals
+          - lang:en-ja
+        orderIndex: 3
+      - seedKey: q04
+        questionType: ordering
+        content: '{"source":{"text":"あなたは日本出身ですか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"are"},{"type":"chip","text":"you"},{"type":"chip","text":"from"},{"type":"chip","text":"Japan"},{"type":"fixed","text":"?"}]},"explanation":"be 動詞の疑問文は、be 動詞 are を主語 you の前に出します。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:question
+          - lang:en-ja
+        orderIndex: 4
+      - seedKey: q05
+        questionType: ordering
+        content: '{"source":{"text":"はじめまして。私の名前はケンです。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"Nice to meet you."},{"type":"chip","text":"my"},{"type":"chip","text":"name"},{"type":"chip","text":"is"},{"type":"fixed","text":"Ken."}]},"explanation":"2文目を並べ替えます。my name が主語で、そのあとに be 動詞 is を置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:greeting
+          - format:multi-sentence
+          - lang:en-ja
+        orderIndex: 5
+      - seedKey: q06
+        questionType: ordering
+        content: '{"source":{"text":"私はたいてい7時に起きます。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"I"},{"type":"chip","text":"usually"},{"type":"chip","text":"get up"},{"type":"fixed","text":"at seven."}]},"explanation":"usually のような頻度の副詞は一般動詞 get up の前に置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:daily-life
+          - lang:en-ja
+        orderIndex: 6
+      - seedKey: q07
+        questionType: ordering
+        content: '{"source":{"text":"これは何ですか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"what"},{"type":"chip","text":"is"},{"type":"chip","text":"this"},{"type":"fixed","text":"?"}]},"explanation":"疑問詞 what を文頭に置き、そのあとに is this と続けます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:question
+          - lang:en-ja
+        orderIndex: 7
+      - seedKey: q08
+        questionType: ordering
+        content: '{"source":{"text":"空は青い。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"the sky"},{"type":"chip","text":"is"},{"type":"chip","text":"blue"},{"type":"fixed","text":"."}]},"explanation":"「主語 + be 動詞 + 形容詞」の順です。sky には the を付けます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:colors
+          - lang:en-ja
+        orderIndex: 8
+      - seedKey: q09
+        questionType: ordering
+        content: '{"source":{"text":"私には兄が2人います。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"I"},{"type":"chip","text":"have"},{"type":"chip","text":"two"},{"type":"chip","text":"older"},{"type":"chip","text":"brothers"},{"type":"fixed","text":"."}]},"explanation":"「〜がいる」は have で表します。数 two、形容詞 older、名詞 brothers の順に並べます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:family
+          - lang:en-ja
+        orderIndex: 9
+      - seedKey: q10
+        questionType: ordering
+        content: '{"source":{"text":"今日はとても暑い。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"it"},{"type":"chip","text":"is"},{"type":"chip","text":"very"},{"type":"chip","text":"hot"},{"type":"fixed","text":"today."}]},"explanation":"天気や気温は it を主語にして表します。very は hot の前に置きます。"}'
+        tags:
+          - type:ordering
+          - level:beginner
+          - topic:weather
+          - lang:en-ja
+        orderIndex: 10
+      - seedKey: q11
+        questionType: ordering
+        content: '{"source":{"text":"私はりんごが好きですが、兄はバナナが好きです。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"I like apples, but"},{"type":"chip","text":"my brother"},{"type":"chip","text":"likes"},{"type":"chip","text":"bananas"},{"type":"fixed","text":"."}]},"explanation":"but のあとを「主語 + 動詞 + 目的語」の順に並べます。my brother は三人称単数なので likes です。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:food
+          - lang:en-ja
+        orderIndex: 11
+      - seedKey: q12
+        questionType: ordering
+        content: '{"source":{"text":"雨が降っています。傘を持っていきなさい。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"It is raining."},{"type":"chip","text":"take"},{"type":"chip","text":"your umbrella"},{"type":"chip","text":"with"},{"type":"chip","text":"you"},{"type":"fixed","text":"."}]},"explanation":"2文目は命令文なので動詞 take から始めます。「持っていく」は take ... with you で表します。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:weather
+          - format:multi-sentence
+          - lang:en-ja
+        orderIndex: 12
+      - seedKey: q13
+        questionType: ordering
+        content: '{"source":{"text":"駅はどこですか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"where"},{"type":"chip","text":"is"},{"type":"chip","text":"the station"},{"type":"fixed","text":"?"}]},"explanation":"疑問詞 where を文頭に置き、be 動詞 is、主語 the station の順に続けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:travel
+          - lang:en-ja
+        orderIndex: 13
+      - seedKey: q14
+        questionType: ordering
+        content: '{"source":{"text":"私は来年フランスを訪れるつもりです。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"I"},{"type":"chip","text":"am going to"},{"type":"chip","text":"visit"},{"type":"chip","text":"France"},{"type":"fixed","text":"next year."}]},"explanation":"予定は be going to と動詞の原形で表します。visit のあとに目的語 France を置きます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:travel
+          - lang:en-ja
+        orderIndex: 14
+      - seedKey: q15
+        questionType: ordering
+        content: '{"source":{"text":"時間があるとき、私はギターを弾きます。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"when"},{"type":"chip","text":"I"},{"type":"chip","text":"have"},{"type":"chip","text":"time"},{"type":"fixed","text":","},{"type":"chip","text":"I"},{"type":"chip","text":"play"},{"type":"chip","text":"the guitar"},{"type":"fixed","text":"."}]},"explanation":"接続詞 when のあとに「主語 + 動詞」を続けます。楽器を演奏するときは play the guitar のように the を付けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:hobby
+          - format:multi-region
+          - lang:en-ja
+        orderIndex: 15
+      - seedKey: q16
+        questionType: ordering
+        content: '{"source":{"text":"あなたは宿題を終えましたか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"have"},{"type":"chip","text":"you"},{"type":"chip","text":"finished"},{"type":"chip","text":"your homework"},{"type":"fixed","text":"?"}]},"explanation":"現在完了の疑問文は have を主語の前に出し、過去分詞 finished を続けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:school
+          - lang:en-ja
+        orderIndex: 16
+      - seedKey: q17
+        questionType: ordering
+        content: '{"source":{"text":"私の父は病院で働いています。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"my father"},{"type":"chip","text":"works"},{"type":"chip","text":"at"},{"type":"chip","text":"a hospital"},{"type":"fixed","text":"."}]},"explanation":"場所を表す at a hospital は動詞 works のあとに置きます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:occupation
+          - lang:en-ja
+        orderIndex: 17
+      - seedKey: q18
+        questionType: ordering
+        content: '{"source":{"text":"こんにちは、トム。元気ですか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"Hello, Tom."},{"type":"chip","text":"how"},{"type":"chip","text":"are"},{"type":"chip","text":"you"},{"type":"fixed","text":"?"}]},"explanation":"2文目の疑問文を並べ替えます。疑問詞 how を文頭に置き、are you と続けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:greeting
+          - format:multi-sentence
+          - lang:en-ja
+        orderIndex: 18
+      - seedKey: q19
+        questionType: ordering
+        content: '{"source":{"text":"彼はその知らせを聞いて驚いた。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"he"},{"type":"chip","text":"was"},{"type":"chip","text":"surprised"},{"type":"chip","text":"to hear"},{"type":"chip","text":"the news"},{"type":"fixed","text":"."}]},"explanation":"感情の原因は be surprised to ... のように不定詞で後ろに続けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:emotions
+          - lang:en-ja
+        orderIndex: 19
+      - seedKey: q20
+        questionType: ordering
+        content: '{"source":{"text":"私は月曜日から金曜日まで働きます。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"I"},{"type":"chip","text":"work"},{"type":"fixed","text":"from"},{"type":"chip","text":"Monday"},{"type":"chip","text":"to"},{"type":"chip","text":"Friday"},{"type":"fixed","text":"."}]},"explanation":"「AからBまで」は from A to B で表します。曜日は大文字で始めます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:calendar
+          - format:multi-region
+          - lang:en-ja
+        orderIndex: 20
+      - seedKey: q21
+        questionType: ordering
+        content: '{"source":{"text":"富士山は日本で一番高い山です。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"Mount Fuji"},{"type":"chip","text":"is"},{"type":"chip","text":"the highest"},{"type":"chip","text":"mountain"},{"type":"fixed","text":"in Japan."}]},"explanation":"最上級は the highest のように the を付けて名詞 mountain の前に置きます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:geography
+          - lang:en-ja
+        orderIndex: 21
+      - seedKey: q22
+        questionType: ordering
+        content: '{"source":{"text":"あなたは何時に寝ますか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"what time"},{"type":"chip","text":"do"},{"type":"chip","text":"you"},{"type":"chip","text":"go to bed"},{"type":"fixed","text":"?"}]},"explanation":"what time を文頭に置き、一般動詞の疑問文なので do you と続けます。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:question
+          - lang:en-ja
+        orderIndex: 22
+      - seedKey: q23
+        questionType: ordering
+        content: '{"source":{"text":"私が駅に着いたとき、電車はすでに出発していた。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"when"},{"type":"chip","text":"I"},{"type":"chip","text":"arrived at"},{"type":"chip","text":"the station"},{"type":"fixed","text":", the train"},{"type":"chip","text":"had"},{"type":"chip","text":"already left"},{"type":"fixed","text":"."}]},"explanation":"過去のある時点より前に完了したことは過去完了 had + 過去分詞で表します。already left は had のあとに置きます。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:travel
+          - format:multi-region
+          - lang:en-ja
+        orderIndex: 23
+      - seedKey: q24
+        questionType: ordering
+        content: '{"source":{"text":"英語を話すことは思っていたより難しい。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"speaking"},{"type":"chip","text":"English"},{"type":"chip","text":"is"},{"type":"chip","text":"harder"},{"type":"chip","text":"than"},{"type":"chip","text":"I"},{"type":"chip","text":"thought"},{"type":"fixed","text":"."}]},"explanation":"動名詞 speaking English が主語です。比較級 harder のあとに than I thought を続けます。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:language
+          - lang:en-ja
+        orderIndex: 24
+      - seedKey: q25
+        questionType: ordering
+        content: '{"source":{"text":"水はセ氏100度で沸騰します。これは誰もが知っている事実です。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"Water boils at 100 degrees Celsius. This is"},{"type":"chip","text":"a fact"},{"type":"chip","text":"that"},{"type":"chip","text":"everyone"},{"type":"chip","text":"knows"},{"type":"fixed","text":"."}]},"explanation":"2文目の This is のあとを並べ替えます。a fact のあとに関係代名詞 that を置き、that everyone knows が a fact を後ろから説明します。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:science
+          - format:multi-sentence
+          - lang:en-ja
+        orderIndex: 25
+      - seedKey: q26
+        questionType: ordering
+        content: '{"source":{"text":"空港へ行くにはバスと電車のどちらに乗るべきですか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"should"},{"type":"chip","text":"I"},{"type":"chip","text":"take"},{"type":"fixed","text":"a bus or a train"},{"type":"chip","text":"to get to"},{"type":"chip","text":"the airport"},{"type":"fixed","text":"?"}]},"explanation":"助動詞の疑問文は should を主語の前に出します。目的を表す to get to は文の後ろに置きます。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:travel
+          - format:multi-region
+          - lang:en-ja
+        orderIndex: 26
+      - seedKey: q27
+        questionType: ordering
+        content: '{"source":{"text":"早起きは三文の徳。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"the early bird"},{"type":"chip","text":"catches"},{"type":"chip","text":"the worm"},{"type":"fixed","text":"."}]},"explanation":"英語のことわざで「早起きの鳥は虫を捕まえる」という意味です。「主語 + 動詞 + 目的語」の順です。"}'
+        tags:
+          - type:ordering
+          - level:intermediate
+          - topic:idiom
+          - lang:en-ja
+        orderIndex: 27
+      - seedKey: q28
+        questionType: ordering
+        content: '{"source":{"text":"物価は昨年からずっと上がり続けている。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"prices"},{"type":"chip","text":"have"},{"type":"chip","text":"been rising"},{"type":"fixed","text":"since last year."}]},"explanation":"過去から今まで続く動作は現在完了進行形 have been + ing で表します。起点は since で示します。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:economy
+          - lang:en-ja
+        orderIndex: 28
+      - seedKey: q29
+        questionType: ordering
+        content: '{"source":{"text":"1945年に戦争が終わり、多くの人々が故郷へ帰った。","lang":"ja"},"target":{"lang":"en","segments":[{"type":"chip","text":"the war"},{"type":"chip","text":"ended"},{"type":"fixed","text":"in 1945, and"},{"type":"chip","text":"many people"},{"type":"chip","text":"returned"},{"type":"chip","text":"to their hometowns"},{"type":"fixed","text":"."}]},"explanation":"and の前後をそれぞれ「主語 + 動詞」の順に並べます。帰る先は to their hometowns で動詞のあとに置きます。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:history
+          - format:multi-region
+          - lang:en-ja
+        orderIndex: 29
+      - seedKey: q30
+        questionType: ordering
+        content: '{"source":{"text":"私はこの本を3回読みました。あなたはもう読みましたか？","lang":"ja"},"target":{"lang":"en","segments":[{"type":"fixed","text":"I have read this book three times."},{"type":"chip","text":"have"},{"type":"chip","text":"you"},{"type":"chip","text":"read"},{"type":"chip","text":"it"},{"type":"chip","text":"yet"},{"type":"fixed","text":"?"}]},"explanation":"2文目は現在完了の疑問文です。have を主語の前に出し、疑問文の「もう」は yet を文末に置きます。"}'
+        tags:
+          - type:ordering
+          - level:advanced
+          - topic:literature
+          - format:multi-sentence
+          - lang:en-ja
         orderIndex: 30

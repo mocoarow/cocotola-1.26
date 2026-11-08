@@ -30,6 +30,44 @@ func Test_DefaultSeeds_shouldReturnNonEmpty_andHaveUniqueSeedKeys(t *testing.T) 
 	}
 }
 
+const orderingWorkbookSeedKey = "ordering-en-jp-v1"
+
+func findDefaultSeed(t *testing.T, seedKey string) seed.PublicWorkbookSeed {
+	t.Helper()
+
+	seeds, err := seed.DefaultSeeds()
+	require.NoError(t, err)
+	for _, s := range seeds {
+		if s.SeedKey == seedKey {
+			return s
+		}
+	}
+	require.FailNowf(t, "seed not found", "seedKey %q", seedKey)
+	return seed.PublicWorkbookSeed{}
+}
+
+func Test_DefaultSeeds_shouldContain30Questions_whenOrderingWorkbookIsLoaded(t *testing.T) {
+	t.Parallel()
+
+	// when
+	wb := findDefaultSeed(t, orderingWorkbookSeedKey)
+
+	// then
+	assert.Len(t, wb.Questions, 30)
+}
+
+func Test_DefaultSeeds_shouldHaveOrderingQuestionType_whenOrderingWorkbookIsLoaded(t *testing.T) {
+	t.Parallel()
+
+	// when
+	wb := findDefaultSeed(t, orderingWorkbookSeedKey)
+
+	// then
+	for _, q := range wb.Questions {
+		assert.Equalf(t, "ordering", q.QuestionType, "question %q", q.SeedKey)
+	}
+}
+
 func Test_validateSeeds_shouldReturnNil_whenLanguageIsISO6391(t *testing.T) {
 	t.Parallel()
 
