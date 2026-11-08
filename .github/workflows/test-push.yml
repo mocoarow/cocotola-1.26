@@ -54,6 +54,13 @@ jobs:
           files: coverage.lcov
           slug: mocoarow/cocotola-1.26
 
+      - name: Show disk usage
+        if: always()
+        continue-on-error: true
+        run: |
+          df -h /
+          du -sh ~/.cache/bazel-disk "$(bazelisk info output_base)"
+
   test_web:
     runs-on: ubuntu-latest
     permissions:
