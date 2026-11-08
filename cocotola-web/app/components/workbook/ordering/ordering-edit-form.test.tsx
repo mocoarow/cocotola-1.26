@@ -2,10 +2,9 @@ import { render, screen } from "@testing-library/react";
 import type { useFetcher } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { OrderingContent } from "~/components/study/question-types/ordering/answer";
+import i18n from "~/i18n/config";
 import type { Question } from "~/lib/api/question.server";
 import { OrderingEditForm } from "./ordering-edit-form";
-
-import "~/i18n/config";
 
 const fetcher = { state: "idle", Form: "form" } as unknown as ReturnType<typeof useFetcher>;
 
@@ -86,6 +85,26 @@ describe("OrderingEditForm", () => {
 
     // then
     expect(screen.getByLabelText("Tags (optional)")).toHaveValue("level:beginner, topic:be");
+  });
+
+  it("should describe the notation field with the hint and the note", () => {
+    // given / when
+    renderForm();
+
+    // then
+    expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
+      `${i18n.t("workbooks.addQuestion.orderingTargetHint")} ${i18n.t("workbooks.addQuestion.orderingCapitalizationNote")}`,
+    );
+  });
+
+  it("should describe the tags field with the hint", () => {
+    // given / when
+    renderForm();
+
+    // then
+    expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.tagsHint"),
+    );
   });
 
   it("should submit with the ordering question type", () => {

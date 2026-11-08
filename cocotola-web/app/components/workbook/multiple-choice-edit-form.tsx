@@ -155,7 +155,15 @@ export function MultipleChoiceEditForm({
         <label htmlFor="edit-mc-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="edit-mc-tags" name="tags" defaultValue={question.tags?.join(", ") ?? ""} />
+        <Input
+          id="edit-mc-tags"
+          name="tags"
+          defaultValue={question.tags?.join(", ") ?? ""}
+          aria-describedby="edit-mc-tags-hint"
+        />
+        <p id="edit-mc-tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
       <SheetFooter>

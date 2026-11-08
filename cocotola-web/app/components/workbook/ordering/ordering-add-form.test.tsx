@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import "~/i18n/config";
+import i18n from "~/i18n/config";
 
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
@@ -46,13 +46,43 @@ describe("OrderingAddForm", () => {
     expect(container.querySelector('input[name="intent"]')).toHaveValue("addOrdering");
   });
 
-  it("should describe the notation field with the error when the notation is invalid", async () => {
+  it("should show the unmatched close error message in the notation description", async () => {
     // given / when
     await renderWithNotation("I / am .]]");
 
     // then
     expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
-      "]] has no matching [[",
+      expect.stringContaining("]] has no matching [["),
+    );
+  });
+
+  it("should describe the notation field with the hint, the error and the note in screen order when the notation is invalid", async () => {
+    // given / when
+    await renderWithNotation("I / am .]]");
+
+    // then
+    expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
+      `${i18n.t("workbooks.addQuestion.orderingTargetHint")} ${i18n.t("workbooks.addQuestion.orderingErrors.unmatchedClose")} ${i18n.t("workbooks.addQuestion.orderingCapitalizationNote")}`,
+    );
+  });
+
+  it("should describe the notation field with only the hint and the note when the notation is valid", async () => {
+    // given / when
+    await renderWithNotation("I / am [[.]]");
+
+    // then
+    expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
+      `${i18n.t("workbooks.addQuestion.orderingTargetHint")} ${i18n.t("workbooks.addQuestion.orderingCapitalizationNote")}`,
+    );
+  });
+
+  it("should describe the tags field with the hint", () => {
+    // given / when
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // then
+    expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.tagsHint"),
     );
   });
 

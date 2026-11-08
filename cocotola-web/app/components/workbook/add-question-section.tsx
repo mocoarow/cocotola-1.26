@@ -58,8 +58,16 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="targetText" className="text-sm font-medium">
           {t("workbooks.addQuestion.targetText")}
         </label>
-        <Input id="targetText" name="targetText" placeholder="{{throw}} it {{away}}" required />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.targetHint")}</p>
+        <Input
+          id="targetText"
+          name="targetText"
+          placeholder="{{throw}} it {{away}}"
+          required
+          aria-describedby="targetText-hint"
+        />
+        <p id="targetText-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.targetHint")}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -73,8 +81,15 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="tags" name="tags" placeholder="level:beginner,topic:phrasal-verbs" />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.tagsHint")}</p>
+        <Input
+          id="tags"
+          name="tags"
+          placeholder="level:beginner,topic:phrasal-verbs"
+          aria-describedby="tags-hint"
+        />
+        <p id="tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
       <SheetFooter>
@@ -221,8 +236,15 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="mc-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="mc-tags" name="tags" placeholder="level:beginner,topic:grammar" />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.tagsHint")}</p>
+        <Input
+          id="mc-tags"
+          name="tags"
+          placeholder="level:beginner,topic:grammar"
+          aria-describedby="mc-tags-hint"
+        />
+        <p id="mc-tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
       <SheetFooter>

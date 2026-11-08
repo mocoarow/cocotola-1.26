@@ -91,6 +91,9 @@ function NotationField({
   const { t } = useTranslation();
   const error = shownError(state);
   const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const noteId = `${id}-note`;
+  const describedBy = error ? `${hintId} ${errorId} ${noteId}` : `${hintId} ${noteId}`;
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-sm font-medium">
@@ -104,9 +107,9 @@ function NotationField({
         placeholder="I / am / a student [[.]]"
         required
         aria-invalid={error !== null}
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={describedBy}
       />
-      <p className="text-xs text-muted-foreground">
+      <p id={hintId} className="text-xs text-muted-foreground">
         {t("workbooks.addQuestion.orderingTargetHint")}
       </p>
       <NotationError id={errorId} error={error} />
@@ -117,7 +120,7 @@ function NotationField({
           label={t("workbooks.addQuestion.orderingPreview")}
         />
       )}
-      <p className="text-xs text-muted-foreground">
+      <p id={noteId} className="text-xs text-muted-foreground">
         {t("workbooks.addQuestion.orderingCapitalizationNote")}
       </p>
     </div>
@@ -139,13 +142,24 @@ function TextField({
   required?: boolean;
   hint?: string;
 }) {
+  const hintId = `${id}-hint`;
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <Input id={id} name={name} defaultValue={defaultValue} required={required} />
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <Input
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        required={required}
+        aria-describedby={hint ? hintId : undefined}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }

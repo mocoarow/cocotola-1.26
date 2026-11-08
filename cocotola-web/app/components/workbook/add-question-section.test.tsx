@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import "~/i18n/config";
+import i18n from "~/i18n/config";
 
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
@@ -52,5 +52,50 @@ describe("AddQuestionSection", () => {
 
     // then
     expect(screen.getByLabelText("Target Language")).toHaveValue("en");
+  });
+
+  it("should describe the word fill target text with the hint", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: /^Word Fill/ }));
+
+    // then
+    expect(screen.getByLabelText("Target Text")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.targetHint"),
+    );
+  });
+
+  it("should describe the word fill tags with the hint", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: /^Word Fill/ }));
+
+    // then
+    expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.tagsHint"),
+    );
+  });
+
+  it("should describe the multiple choice tags with the hint", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: /^Multiple Choice/ }));
+
+    // then
+    expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.tagsHint"),
+    );
   });
 });

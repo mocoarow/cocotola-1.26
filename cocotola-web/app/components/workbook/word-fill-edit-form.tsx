@@ -82,7 +82,11 @@ export function WordFillEditForm({
           name="targetText"
           defaultValue={parsed.target?.text ?? ""}
           required
+          aria-describedby="edit-targetText-hint"
         />
+        <p id="edit-targetText-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.targetHint")}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -95,7 +99,15 @@ export function WordFillEditForm({
         <label htmlFor="edit-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="edit-tags" name="tags" defaultValue={question.tags?.join(", ") ?? ""} />
+        <Input
+          id="edit-tags"
+          name="tags"
+          defaultValue={question.tags?.join(", ") ?? ""}
+          aria-describedby="edit-tags-hint"
+        />
+        <p id="edit-tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
       <SheetFooter>
