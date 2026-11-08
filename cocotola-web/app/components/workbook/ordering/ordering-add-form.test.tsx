@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import "~/i18n/config";
+import i18n from "~/i18n/config";
 
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
@@ -13,6 +13,8 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useFetcher } from "react-router";
+import { SAME_LANGUAGE_ERROR_KEY } from "../lang-pair";
+import { QUESTION_INVALID_ERROR_KEY } from "../question-form-error";
 import { OrderingAddForm } from "./ordering-add-form";
 
 async function renderWithNotation(notation: string) {
@@ -46,13 +48,43 @@ describe("OrderingAddForm", () => {
     expect(container.querySelector('input[name="intent"]')).toHaveValue("addOrdering");
   });
 
-  it("should describe the notation field with the error when the notation is invalid", async () => {
+  it("should show the unmatched close error message in the notation description", async () => {
     // given / when
     await renderWithNotation("I / am .]]");
 
     // then
     expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
-      "]] has no matching [[",
+      expect.stringContaining("]] has no matching [["),
+    );
+  });
+
+  it("should describe the notation field with the hint, the error and the note in screen order when the notation is invalid", async () => {
+    // given / when
+    await renderWithNotation("I / am .]]");
+
+    // then
+    expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
+      `${i18n.t("workbooks.addQuestion.orderingTargetHint")} ${i18n.t("workbooks.addQuestion.orderingErrors.unmatchedClose")} ${i18n.t("workbooks.addQuestion.orderingCapitalizationNote")}`,
+    );
+  });
+
+  it("should describe the notation field with only the hint and the note when the notation is valid", async () => {
+    // given / when
+    await renderWithNotation("I / am [[.]]");
+
+    // then
+    expect(screen.getByLabelText("Correct sentence")).toHaveAccessibleDescription(
+      `${i18n.t("workbooks.addQuestion.orderingTargetHint")} ${i18n.t("workbooks.addQuestion.orderingCapitalizationNote")}`,
+    );
+  });
+
+  it("should describe the tags field with the hint", () => {
+    // given / when
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // then
+    expect(screen.getByLabelText("Tags (optional)")).toHaveAccessibleDescription(
+      i18n.t("workbooks.addQuestion.tagsHint"),
     );
   });
 
@@ -92,12 +124,92 @@ describe("OrderingAddForm", () => {
     expect(toLocaleUpperCase).toHaveBeenCalledWith("fr");
   });
 
+  it("should disable the submit button when the target language equals the source language", async () => {
+    // given
+    const { user } = await renderWithNotation("I / am [[.]]");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByRole("button", { name: "Add Question" })).toBeDisabled();
+  });
+
+  it("should show the same language error when the source language equals the target language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Source Language"), "en");
+
+    // then
+    expect(screen.getByText(i18n.t(SAME_LANGUAGE_ERROR_KEY))).toBeInTheDocument();
+  });
+
+  it("should mark the target language invalid when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAttribute("aria-invalid", "true");
+  });
+
+  it("should describe the target language with the same language error when it equals the source language", async () => {
+    // given
+    const user = userEvent.setup();
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // then
+    expect(screen.getByLabelText("Target Language")).toHaveAccessibleDescription(
+      i18n.t(SAME_LANGUAGE_ERROR_KEY),
+    );
+  });
+
+  it("should enable the submit button when the target language differs from the source language again", async () => {
+    // given
+    const { user } = await renderWithNotation("I / am [[.]]");
+    await user.selectOptions(screen.getByLabelText("Target Language"), "ja");
+
+    // when
+    await user.selectOptions(screen.getByLabelText("Target Language"), "fr");
+
+    // then
+    expect(screen.getByRole("button", { name: "Add Question" })).toBeEnabled();
+  });
+
   it("should show the capitalization note", () => {
     // given / when
     render(<OrderingAddForm onAdded={vi.fn()} />);
 
     // then
     expect(screen.getByText(/shown capitalized on the study screen/)).toBeInTheDocument();
+  });
+
+  it("should show the error key returned by the action", () => {
+    // given
+    vi.mocked(useFetcher).mockImplementation(
+      () =>
+        ({
+          state: "idle",
+          Form: "form",
+          submit: vi.fn(),
+          data: { ok: false, errorKey: QUESTION_INVALID_ERROR_KEY },
+        }) as unknown as ReturnType<typeof useFetcher>,
+    );
+
+    // when
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // then
+    expect(screen.getByText(i18n.t(QUESTION_INVALID_ERROR_KEY))).toBeInTheDocument();
   });
 
   it("should call onAdded when the question has been added", () => {

@@ -1,7 +1,7 @@
 import { BugIcon, Trash2Icon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useFetcher, useLoaderData } from "react-router";
+import { data, Link, useFetcher, useLoaderData } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
 import { Button } from "~/components/ui/button";
 import {
@@ -17,6 +17,10 @@ import { parseOrderingFormData } from "~/components/workbook/ordering/form-data"
 import { OrderingEditForm } from "~/components/workbook/ordering/ordering-edit-form";
 import { QuestionCard } from "~/components/workbook/question-card";
 import {
+  QUESTION_INVALID_ERROR_KEY,
+  type QuestionActionData,
+} from "~/components/workbook/question-form-error";
+import {
   parseMultipleChoiceContent,
   parseMultipleChoiceFormData,
   parseOrderingContent,
@@ -30,6 +34,7 @@ import {
   addQuestion,
   deleteQuestion,
   listQuestions,
+  QuestionValidationError,
   updateQuestion,
 } from "~/lib/api/question.server";
 import { deleteStudyHistory } from "~/lib/api/study.server";
@@ -45,6 +50,18 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     listQuestions(accessToken, workbookId),
   ]);
   return { workbook, questions };
+}
+
+async function saveQuestion<T>(save: () => Promise<unknown>, saved: T) {
+  try {
+    await save();
+  } catch (error) {
+    if (error instanceof QuestionValidationError) {
+      return data({ ok: false, errorKey: QUESTION_INVALID_ERROR_KEY }, { status: 400 });
+    }
+    throw error;
+  }
+  return saved;
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
@@ -80,24 +97,30 @@ export async function action({ request, params }: Route.ActionArgs) {
       const { content, tags } = parseMultipleChoiceFormData(formData);
       const orderIndex = Number(formData.get("orderIndex") ?? 0);
 
-      await updateQuestion(accessToken, workbookId, questionId, {
-        content,
-        tags: tags.length > 0 ? tags : undefined,
-        orderIndex,
-      });
-      return { ok: true };
+      return saveQuestion(
+        () =>
+          updateQuestion(accessToken, workbookId, questionId, {
+            content,
+            tags: tags.length > 0 ? tags : undefined,
+            orderIndex,
+          }),
+        { ok: true },
+      );
     }
 
     if (questionType === "ordering") {
       const { content, tags } = parseOrderingFormData(formData);
       const orderIndex = Number(formData.get("orderIndex") ?? 0);
 
-      await updateQuestion(accessToken, workbookId, questionId, {
-        content,
-        tags: tags.length > 0 ? tags : undefined,
-        orderIndex,
-      });
-      return { ok: true };
+      return saveQuestion(
+        () =>
+          updateQuestion(accessToken, workbookId, questionId, {
+            content,
+            tags: tags.length > 0 ? tags : undefined,
+            orderIndex,
+          }),
+        { ok: true },
+      );
     }
 
     if (questionType === "word_fill" || !questionType) {
@@ -135,12 +158,15 @@ export async function action({ request, params }: Route.ActionArgs) {
       const tags = parseTagsFormData(formData);
       const orderIndex = Number(formData.get("orderIndex") ?? 0);
 
-      await updateQuestion(accessToken, workbookId, questionId, {
-        content,
-        tags: tags.length > 0 ? tags : undefined,
-        orderIndex,
-      });
-      return { ok: true };
+      return saveQuestion(
+        () =>
+          updateQuestion(accessToken, workbookId, questionId, {
+            content,
+            tags: tags.length > 0 ? tags : undefined,
+            orderIndex,
+          }),
+        { ok: true },
+      );
     }
 
     throw new Response(`Unknown questionType: ${String(questionType)}`, { status: 400 });
@@ -191,37 +217,46 @@ export async function action({ request, params }: Route.ActionArgs) {
 
     const tags = parseTagsFormData(formData);
 
-    await addQuestion(accessToken, workbookId, {
-      questionType: "word_fill",
-      content,
-      tags: tags.length > 0 ? tags : undefined,
-      orderIndex: 0,
-    });
-    return { ok: true, added: true };
+    return saveQuestion(
+      () =>
+        addQuestion(accessToken, workbookId, {
+          questionType: "word_fill",
+          content,
+          tags: tags.length > 0 ? tags : undefined,
+          orderIndex: 0,
+        }),
+      { ok: true, added: true },
+    );
   }
 
   if (intent === "addMultipleChoice") {
     const { content, tags } = parseMultipleChoiceFormData(formData);
 
-    await addQuestion(accessToken, workbookId, {
-      questionType: "multiple_choice",
-      content,
-      tags: tags.length > 0 ? tags : undefined,
-      orderIndex: 0,
-    });
-    return { ok: true, added: true };
+    return saveQuestion(
+      () =>
+        addQuestion(accessToken, workbookId, {
+          questionType: "multiple_choice",
+          content,
+          tags: tags.length > 0 ? tags : undefined,
+          orderIndex: 0,
+        }),
+      { ok: true, added: true },
+    );
   }
 
   if (intent === "addOrdering") {
     const { content, tags } = parseOrderingFormData(formData);
 
-    await addQuestion(accessToken, workbookId, {
-      questionType: "ordering",
-      content,
-      tags: tags.length > 0 ? tags : undefined,
-      orderIndex: 0,
-    });
-    return { ok: true, added: true };
+    return saveQuestion(
+      () =>
+        addQuestion(accessToken, workbookId, {
+          questionType: "ordering",
+          content,
+          tags: tags.length > 0 ? tags : undefined,
+          orderIndex: 0,
+        }),
+      { ok: true, added: true },
+    );
   }
 
   throw new Response(`Unknown intent: ${String(intent)}`, { status: 400 });
@@ -231,7 +266,9 @@ export default function WorkbookDetail() {
   const { workbook, questions } = useLoaderData<typeof loader>();
   const { t } = useTranslation();
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
-  const editFetcher = useFetcher<{ ok: boolean }>();
+  const [editOpenCount, setEditOpenCount] = useState(0);
+  const [editFetcherKey, setEditFetcherKey] = useState("edit-question-initial");
+  const editFetcher = useFetcher<QuestionActionData>({ key: editFetcherKey });
   const clearHistoryFetcher = useFetcher<{ ok: boolean; cleared?: boolean }>();
   const confirm = useConfirm();
   const [showCleared, setShowCleared] = useState(false);
@@ -252,6 +289,13 @@ export default function WorkbookDetail() {
       return () => clearTimeout(timer);
     }
   }, [clearHistoryFetcher.data]);
+
+  function openEditor(question: Question) {
+    const openCount = editOpenCount + 1;
+    setEditOpenCount(openCount);
+    setEditFetcherKey(`edit-question-${question.questionId}-${openCount}`);
+    setEditingQuestion(question);
+  }
 
   async function handleClearStudyHistory() {
     const confirmed = await confirm({
@@ -325,11 +369,7 @@ export default function WorkbookDetail() {
       ) : (
         <div className="space-y-3">
           {questions.map((question) => (
-            <QuestionCard
-              key={question.questionId}
-              question={question}
-              onEdit={setEditingQuestion}
-            />
+            <QuestionCard key={question.questionId} question={question} onEdit={openEditor} />
           ))}
         </div>
       )}

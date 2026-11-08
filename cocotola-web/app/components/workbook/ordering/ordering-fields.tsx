@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "~/components/ui/input";
 import { MAX_ORDERING_SEGMENTS, MAX_ORDERING_TEXT_BYTES } from "~/lib/study/answer-payload";
-import { LangSelect } from "../lang-select";
+import { type LangPair, SourceLangField, TargetLangField } from "../lang-pair";
 import { MIN_ORDERING_CHIPS } from "../schemas";
 import {
   type OrderingNotationError,
@@ -13,8 +13,6 @@ import { OrderingPreview } from "./ordering-preview";
 
 export type OrderingFieldsDefaults = {
   sourceText: string;
-  sourceLang: string;
-  targetLang: string;
   explanation: string;
   tags: string;
 };
@@ -50,35 +48,6 @@ function NotationError({ id, error }: { id: string; error: OrderingNotationError
   );
 }
 
-function TargetFields({
-  idPrefix,
-  defaultLang,
-  state,
-}: {
-  idPrefix: string;
-  defaultLang: string;
-  state: OrderingNotationState;
-}) {
-  const { t } = useTranslation();
-  const [lang, setLang] = useState(defaultLang);
-  return (
-    <>
-      <div className="space-y-1.5">
-        <label htmlFor={`${idPrefix}targetLang`} className="text-sm font-medium">
-          {t("workbooks.addQuestion.targetLang")}
-        </label>
-        <LangSelect
-          id={`${idPrefix}targetLang`}
-          name="targetLang"
-          defaultValue={defaultLang}
-          onChange={setLang}
-        />
-      </div>
-      <NotationField id={`${idPrefix}targetText`} state={state} lang={lang} />
-    </>
-  );
-}
-
 function NotationField({
   id,
   state,
@@ -91,6 +60,9 @@ function NotationField({
   const { t } = useTranslation();
   const error = shownError(state);
   const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const noteId = `${id}-note`;
+  const describedBy = error ? `${hintId} ${errorId} ${noteId}` : `${hintId} ${noteId}`;
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-sm font-medium">
@@ -104,9 +76,9 @@ function NotationField({
         placeholder="I / am / a student [[.]]"
         required
         aria-invalid={error !== null}
-        aria-describedby={error ? errorId : undefined}
+        aria-describedby={describedBy}
       />
-      <p className="text-xs text-muted-foreground">
+      <p id={hintId} className="text-xs text-muted-foreground">
         {t("workbooks.addQuestion.orderingTargetHint")}
       </p>
       <NotationError id={errorId} error={error} />
@@ -117,7 +89,7 @@ function NotationField({
           label={t("workbooks.addQuestion.orderingPreview")}
         />
       )}
-      <p className="text-xs text-muted-foreground">
+      <p id={noteId} className="text-xs text-muted-foreground">
         {t("workbooks.addQuestion.orderingCapitalizationNote")}
       </p>
     </div>
@@ -139,13 +111,24 @@ function TextField({
   required?: boolean;
   hint?: string;
 }) {
+  const hintId = `${id}-hint`;
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-sm font-medium">
         {label}
       </label>
-      <Input id={id} name={name} defaultValue={defaultValue} required={required} />
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      <Input
+        id={id}
+        name={name}
+        defaultValue={defaultValue}
+        required={required}
+        aria-describedby={hint ? hintId : undefined}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -153,25 +136,18 @@ function TextField({
 export function OrderingFields({
   idPrefix,
   defaults,
+  langs,
   state,
 }: {
   idPrefix: string;
   defaults: OrderingFieldsDefaults;
+  langs: LangPair;
   state: OrderingNotationState;
 }) {
   const { t } = useTranslation();
   return (
     <>
-      <div className="space-y-1.5">
-        <label htmlFor={`${idPrefix}sourceLang`} className="text-sm font-medium">
-          {t("workbooks.addQuestion.sourceLang")}
-        </label>
-        <LangSelect
-          id={`${idPrefix}sourceLang`}
-          name="sourceLang"
-          defaultValue={defaults.sourceLang}
-        />
-      </div>
+      <SourceLangField id={`${idPrefix}sourceLang`} langs={langs} />
       <TextField
         id={`${idPrefix}sourceText`}
         name="sourceText"
@@ -179,7 +155,8 @@ export function OrderingFields({
         defaultValue={defaults.sourceText}
         required
       />
-      <TargetFields idPrefix={idPrefix} defaultLang={defaults.targetLang} state={state} />
+      <TargetLangField id={`${idPrefix}targetLang`} langs={langs} />
+      <NotationField id={`${idPrefix}targetText`} state={state} lang={langs.targetLang} />
       <TextField
         id={`${idPrefix}explanation`}
         name="explanation"

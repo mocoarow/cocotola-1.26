@@ -161,6 +161,10 @@
       "orderingTargetHint": "チップは / で区切ります。並べ替えない文字列は [[ ]] で囲みます。例: I / am / a student [[.]] you / are / a teacher [[.]]",
       "orderingPreview": "プレビュー",
       "orderingCapitalizationNote": "先頭のチップ、または . ? ! の直後のチップは学習画面で大文字で表示されます。常に大文字の語は大文字で書いてください。",
+      "errors": {
+        "invalid": "入力内容を確認してください。",
+        "sameLanguage": "訳文の言語は原文の言語と別の言語を選んでください。"
+      },
       "orderingErrors": {
         "unmatchedOpen": "[[ に対応する ]] がありません",
         "unmatchedClose": "]] に対応する [[ がありません",

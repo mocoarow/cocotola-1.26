@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import type { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
-import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
+import { SourceLangField, TargetLangField, useLangPair } from "./lang-pair";
+import { type QuestionEditFetcher, QuestionFormError } from "./question-form-error";
 
 export function WordFillEditForm({
   question,
@@ -20,10 +20,11 @@ export function WordFillEditForm({
     explanation1?: string;
     explanation2?: string;
   };
-  fetcher: ReturnType<typeof useFetcher>;
+  fetcher: QuestionEditFetcher;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
+  const langs = useLangPair(parsed.source?.lang, parsed.target?.lang);
   const isSubmitting = fetcher.state !== "idle";
 
   return (
@@ -41,16 +42,7 @@ export function WordFillEditForm({
         <input type="hidden" name="explanation2" value={parsed.explanation2} />
       )}
 
-      <div className="space-y-1.5">
-        <label htmlFor="edit-sourceLang" className="text-sm font-medium">
-          {t("workbooks.addQuestion.sourceLang")}
-        </label>
-        <LangSelect
-          id="edit-sourceLang"
-          name="sourceLang"
-          defaultValue={parsed.source?.lang ?? DEFAULT_SOURCE_LANG}
-        />
-      </div>
+      <SourceLangField id="edit-sourceLang" langs={langs} />
       <div className="space-y-1.5">
         <label htmlFor="edit-sourceText" className="text-sm font-medium">
           {t("workbooks.addQuestion.sourceText")}
@@ -63,16 +55,7 @@ export function WordFillEditForm({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="edit-targetLang" className="text-sm font-medium">
-          {t("workbooks.addQuestion.targetLang")}
-        </label>
-        <LangSelect
-          id="edit-targetLang"
-          name="targetLang"
-          defaultValue={parsed.target?.lang ?? DEFAULT_TARGET_LANG}
-        />
-      </div>
+      <TargetLangField id="edit-targetLang" langs={langs} />
       <div className="space-y-1.5">
         <label htmlFor="edit-targetText" className="text-sm font-medium">
           {t("workbooks.addQuestion.targetText")}
@@ -82,7 +65,11 @@ export function WordFillEditForm({
           name="targetText"
           defaultValue={parsed.target?.text ?? ""}
           required
+          aria-describedby="edit-targetText-hint"
         />
+        <p id="edit-targetText-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.targetHint")}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -95,11 +82,20 @@ export function WordFillEditForm({
         <label htmlFor="edit-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="edit-tags" name="tags" defaultValue={question.tags?.join(", ") ?? ""} />
+        <Input
+          id="edit-tags"
+          name="tags"
+          defaultValue={question.tags?.join(", ") ?? ""}
+          aria-describedby="edit-tags-hint"
+        />
+        <p id="edit-tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || langs.sameLanguage}>
           {isSubmitting ? t("common.saving") : t("common.save")}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

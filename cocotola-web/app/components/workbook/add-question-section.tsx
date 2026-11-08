@@ -13,13 +13,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "~/components/ui/sheet";
-import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
+import { SourceLangField, TargetLangField, useLangPair } from "./lang-pair";
 import { OrderingAddForm } from "./ordering/ordering-add-form";
+import { type AddQuestionActionData, QuestionFormError } from "./question-form-error";
 import type { Choice, QuestionType } from "./schemas";
 
 function WordFillForm({ onAdded }: { onAdded: () => void }) {
-  const fetcher = useFetcher<{ ok: boolean; added?: boolean }>();
+  const fetcher = useFetcher<AddQuestionActionData>();
   const { t } = useTranslation();
+  const langs = useLangPair();
   const isSubmitting = fetcher.state !== "idle";
 
   const added = useRef(false);
@@ -35,12 +37,7 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
     <fetcher.Form method="post" className="flex flex-1 flex-col gap-4 overflow-y-auto px-4">
       <input type="hidden" name="intent" value="addWordFill" />
 
-      <div className="space-y-1.5">
-        <label htmlFor="sourceLang" className="text-sm font-medium">
-          {t("workbooks.addQuestion.sourceLang")}
-        </label>
-        <LangSelect id="sourceLang" name="sourceLang" defaultValue={DEFAULT_SOURCE_LANG} />
-      </div>
+      <SourceLangField id="sourceLang" langs={langs} />
       <div className="space-y-1.5">
         <label htmlFor="sourceText" className="text-sm font-medium">
           {t("workbooks.addQuestion.sourceText")}
@@ -48,18 +45,21 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <Input id="sourceText" name="sourceText" placeholder="ゴミを捨てる" required />
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="targetLang" className="text-sm font-medium">
-          {t("workbooks.addQuestion.targetLang")}
-        </label>
-        <LangSelect id="targetLang" name="targetLang" defaultValue={DEFAULT_TARGET_LANG} />
-      </div>
+      <TargetLangField id="targetLang" langs={langs} />
       <div className="space-y-1.5">
         <label htmlFor="targetText" className="text-sm font-medium">
           {t("workbooks.addQuestion.targetText")}
         </label>
-        <Input id="targetText" name="targetText" placeholder="{{throw}} it {{away}}" required />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.targetHint")}</p>
+        <Input
+          id="targetText"
+          name="targetText"
+          placeholder="{{throw}} it {{away}}"
+          required
+          aria-describedby="targetText-hint"
+        />
+        <p id="targetText-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.targetHint")}
+        </p>
       </div>
 
       <div className="space-y-1.5">
@@ -73,12 +73,20 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="tags" name="tags" placeholder="level:beginner,topic:phrasal-verbs" />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.tagsHint")}</p>
+        <Input
+          id="tags"
+          name="tags"
+          placeholder="level:beginner,topic:phrasal-verbs"
+          aria-describedby="tags-hint"
+        />
+        <p id="tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || langs.sameLanguage}>
           {isSubmitting ? t("workbooks.addQuestion.adding") : t("workbooks.addQuestion.submit")}
         </Button>
       </SheetFooter>
@@ -92,7 +100,7 @@ const INITIAL_CHOICES: Choice[] = [
 ];
 
 function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
-  const fetcher = useFetcher<{ ok: boolean; added?: boolean }>();
+  const fetcher = useFetcher<AddQuestionActionData>();
   const { t } = useTranslation();
   const isSubmitting = fetcher.state !== "idle";
   const [choices, setChoices] = useState<Choice[]>(INITIAL_CHOICES);
@@ -221,10 +229,18 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
         <label htmlFor="mc-tags" className="text-sm font-medium">
           {t("workbooks.addQuestion.tags")}
         </label>
-        <Input id="mc-tags" name="tags" placeholder="level:beginner,topic:grammar" />
-        <p className="text-xs text-muted-foreground">{t("workbooks.addQuestion.tagsHint")}</p>
+        <Input
+          id="mc-tags"
+          name="tags"
+          placeholder="level:beginner,topic:grammar"
+          aria-describedby="mc-tags-hint"
+        />
+        <p id="mc-tags-hint" className="text-xs text-muted-foreground">
+          {t("workbooks.addQuestion.tagsHint")}
+        </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t("workbooks.addQuestion.adding") : t("workbooks.addQuestion.submit")}
