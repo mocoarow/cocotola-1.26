@@ -161,6 +161,9 @@
       "orderingTargetHint": "칩은 / 로 구분합니다. 순서를 바꾸지 않는 문자열은 [[ ]] 로 감쌉니다. 예: I / am / a student [[.]] you / are / a teacher [[.]]",
       "orderingPreview": "미리보기",
       "orderingCapitalizationNote": "첫 번째 칩, 또는 . ? ! 바로 뒤의 칩은 학습 화면에서 대문자로 표시됩니다. 항상 대문자인 단어는 대문자로 작성하세요.",
+      "errors": {
+        "invalid": "입력 내용을 확인해 주세요."
+      },
       "orderingErrors": {
         "unmatchedOpen": "[[ 에 대응하는 ]] 가 없습니다",
         "unmatchedClose": "]] 에 대응하는 [[ 가 없습니다",

@@ -1,8 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addQuestion, deleteQuestion, listQuestions, updateQuestion } from "./question.server";
+import {
+  addQuestion,
+  deleteQuestion,
+  listQuestions,
+  QuestionValidationError,
+  updateQuestion,
+} from "./question.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
+
+const BACKEND_MESSAGE = "source.lang must differ from target.lang";
+
+const ADD_BODY = { questionType: "word_fill", content: "{}", orderIndex: 0 };
+
+const UPDATE_BODY = { content: "{}", orderIndex: 0 };
+
+function backendError(status: number) {
+  return {
+    ok: false,
+    status,
+    text: () => Promise.resolve(BACKEND_MESSAGE),
+    json: () => Promise.resolve({ message: BACKEND_MESSAGE }),
+  };
+}
 
 describe("listQuestions", () => {
   beforeEach(() => {
@@ -89,14 +110,54 @@ describe("addQuestion", () => {
     });
   });
 
-  it("should throw Response when API returns error", async () => {
+  it("should throw QuestionValidationError when API returns 400", async () => {
     // given
-    fetchMock.mockResolvedValue({ ok: false, status: 400, text: () => Promise.resolve("bad") });
+    fetchMock.mockResolvedValue(backendError(400));
 
     // when / then
-    await expect(
-      addQuestion("token", "wb-1", { questionType: "word_fill", content: "{}", orderIndex: 0 }),
-    ).rejects.toBeInstanceOf(Response);
+    await expect(addQuestion("token", "wb-1", ADD_BODY)).rejects.toBeInstanceOf(
+      QuestionValidationError,
+    );
+  });
+
+  it("should not include the backend body in QuestionValidationError", async () => {
+    // given
+    fetchMock.mockResolvedValue(backendError(400));
+
+    // when
+    const error = await addQuestion("token", "wb-1", ADD_BODY).catch((e: unknown) => e);
+
+    // then
+    expect(String((error as Error).message)).not.toContain(BACKEND_MESSAGE);
+  });
+
+  it.each([403, 500])("should throw Response when API returns %i", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when / then
+    await expect(addQuestion("token", "wb-1", ADD_BODY)).rejects.toBeInstanceOf(Response);
+  });
+
+  it.each([403, 500])("should keep the status %i in the Response", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when / then
+    await expect(addQuestion("token", "wb-1", ADD_BODY)).rejects.toMatchObject({ status });
+  });
+
+  it.each([
+    403, 500,
+  ])("should not include the backend body in Response when API returns %i", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when
+    const error = await addQuestion("token", "wb-1", ADD_BODY).catch((e: unknown) => e);
+
+    // then
+    expect(await (error as Response).text()).not.toContain(BACKEND_MESSAGE);
   });
 });
 
@@ -154,18 +215,62 @@ describe("updateQuestion", () => {
     );
   });
 
-  it("should throw Response when API returns error", async () => {
+  it("should throw QuestionValidationError when API returns 400", async () => {
     // given
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 403,
-      text: () => Promise.resolve("forbidden"),
-    });
+    fetchMock.mockResolvedValue(backendError(400));
 
     // when / then
-    await expect(
-      updateQuestion("token", "wb-1", "q-1", { content: "{}", orderIndex: 0 }),
-    ).rejects.toBeInstanceOf(Response);
+    await expect(updateQuestion("token", "wb-1", "q-1", UPDATE_BODY)).rejects.toBeInstanceOf(
+      QuestionValidationError,
+    );
+  });
+
+  it("should not include the backend body in QuestionValidationError", async () => {
+    // given
+    fetchMock.mockResolvedValue(backendError(400));
+
+    // when
+    const error = await updateQuestion("token", "wb-1", "q-1", UPDATE_BODY).catch(
+      (e: unknown) => e,
+    );
+
+    // then
+    expect(String((error as Error).message)).not.toContain(BACKEND_MESSAGE);
+  });
+
+  it.each([403, 500])("should throw Response when API returns %i", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when / then
+    await expect(updateQuestion("token", "wb-1", "q-1", UPDATE_BODY)).rejects.toBeInstanceOf(
+      Response,
+    );
+  });
+
+  it.each([403, 500])("should keep the status %i in the Response", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when / then
+    await expect(updateQuestion("token", "wb-1", "q-1", UPDATE_BODY)).rejects.toMatchObject({
+      status,
+    });
+  });
+
+  it.each([
+    403, 500,
+  ])("should not include the backend body in Response when API returns %i", async (status) => {
+    // given
+    fetchMock.mockResolvedValue(backendError(status));
+
+    // when
+    const error = await updateQuestion("token", "wb-1", "q-1", UPDATE_BODY).catch(
+      (e: unknown) => e,
+    );
+
+    // then
+    expect(await (error as Response).text()).not.toContain(BACKEND_MESSAGE);
   });
 });
 

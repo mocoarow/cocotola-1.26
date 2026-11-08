@@ -1,11 +1,11 @@
 import { CircleCheckIcon, CircleIcon, PlusIcon, XIcon } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
+import { type QuestionEditFetcher, QuestionFormError } from "./question-form-error";
 import type { Choice } from "./schemas";
 
 export function MultipleChoiceEditForm({
@@ -22,7 +22,7 @@ export function MultipleChoiceEditForm({
     shuffleChoices?: boolean;
     showCorrectCount?: boolean;
   };
-  fetcher: ReturnType<typeof useFetcher>;
+  fetcher: QuestionEditFetcher;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
@@ -166,6 +166,7 @@ export function MultipleChoiceEditForm({
         </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t("common.saving") : t("common.save")}

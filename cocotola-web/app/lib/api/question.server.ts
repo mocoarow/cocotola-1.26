@@ -14,6 +14,20 @@ type ListQuestionsResponse = {
   questions: Question[];
 };
 
+export class QuestionValidationError extends Error {
+  constructor() {
+    super("Question rejected as invalid");
+    this.name = "QuestionValidationError";
+  }
+}
+
+function questionSaveError(status: number, message: string): Error | Response {
+  if (status === 400) {
+    return new QuestionValidationError();
+  }
+  return new Response(message, { status });
+}
+
 type AddQuestionBody = {
   questionType: string;
   content: string;
@@ -62,8 +76,7 @@ export async function updateQuestion(
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Response(text || "Failed to update question", { status: response.status });
+    throw questionSaveError(response.status, "Failed to update question");
   }
 
   return (await response.json()) as Question;
@@ -105,8 +118,7 @@ export async function addQuestion(
   });
 
   if (!response.ok) {
-    const text = await response.text();
-    throw new Response(text || "Failed to add question", { status: response.status });
+    throw questionSaveError(response.status, "Failed to add question");
   }
 
   return (await response.json()) as Question;

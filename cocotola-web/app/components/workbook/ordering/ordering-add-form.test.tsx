@@ -13,6 +13,7 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useFetcher } from "react-router";
+import { QUESTION_INVALID_ERROR_KEY } from "../question-form-error";
 import { OrderingAddForm } from "./ordering-add-form";
 
 async function renderWithNotation(notation: string) {
@@ -128,6 +129,25 @@ describe("OrderingAddForm", () => {
 
     // then
     expect(screen.getByText(/shown capitalized on the study screen/)).toBeInTheDocument();
+  });
+
+  it("should show the error key returned by the action", () => {
+    // given
+    vi.mocked(useFetcher).mockImplementation(
+      () =>
+        ({
+          state: "idle",
+          Form: "form",
+          submit: vi.fn(),
+          data: { ok: false, errorKey: QUESTION_INVALID_ERROR_KEY },
+        }) as unknown as ReturnType<typeof useFetcher>,
+    );
+
+    // when
+    render(<OrderingAddForm onAdded={vi.fn()} />);
+
+    // then
+    expect(screen.getByText(i18n.t(QUESTION_INVALID_ERROR_KEY))).toBeInTheDocument();
   });
 
   it("should call onAdded when the question has been added", () => {

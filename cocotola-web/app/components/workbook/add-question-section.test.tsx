@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import i18n from "~/i18n/config";
 
@@ -12,9 +12,44 @@ vi.mock("react-router", async (importOriginal) => {
   };
 });
 
+import { useFetcher } from "react-router";
 import { AddQuestionSection } from "./add-question-section";
+import { QUESTION_INVALID_ERROR_KEY } from "./question-form-error";
+
+function idleFetcher(data?: unknown) {
+  return { state: "idle", Form: "form", submit: vi.fn(), data } as unknown as ReturnType<
+    typeof useFetcher
+  >;
+}
+
+beforeEach(() => {
+  vi.mocked(useFetcher).mockImplementation(() => idleFetcher());
+});
+
+afterEach(() => {
+  vi.resetAllMocks();
+});
 
 describe("AddQuestionSection", () => {
+  it.each([
+    { type: "word fill", button: /^Word Fill/ },
+    { type: "multiple choice", button: /^Multiple Choice/ },
+  ])("should show the error key returned for the $type form", async ({ button }) => {
+    // given
+    vi.mocked(useFetcher).mockImplementation(() =>
+      idleFetcher({ ok: false, errorKey: QUESTION_INVALID_ERROR_KEY }),
+    );
+    const user = userEvent.setup();
+    render(<AddQuestionSection />);
+    await user.click(screen.getByRole("button", { name: "Add Question" }));
+
+    // when
+    await user.click(screen.getByRole("button", { name: button }));
+
+    // then
+    expect(screen.getByText(i18n.t(QUESTION_INVALID_ERROR_KEY))).toBeInTheDocument();
+  });
+
   it("should show the ordering form when the ordering type is selected", async () => {
     // given
     const user = userEvent.setup();

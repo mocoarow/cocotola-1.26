@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import type { useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
 import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
+import { type QuestionEditFetcher, QuestionFormError } from "./question-form-error";
 
 export function WordFillEditForm({
   question,
@@ -20,7 +20,7 @@ export function WordFillEditForm({
     explanation1?: string;
     explanation2?: string;
   };
-  fetcher: ReturnType<typeof useFetcher>;
+  fetcher: QuestionEditFetcher;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
@@ -110,6 +110,7 @@ export function WordFillEditForm({
         </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t("common.saving") : t("common.save")}

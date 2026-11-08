@@ -15,10 +15,11 @@ import {
 } from "~/components/ui/sheet";
 import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG, LangSelect } from "./lang-select";
 import { OrderingAddForm } from "./ordering/ordering-add-form";
+import { type AddQuestionActionData, QuestionFormError } from "./question-form-error";
 import type { Choice, QuestionType } from "./schemas";
 
 function WordFillForm({ onAdded }: { onAdded: () => void }) {
-  const fetcher = useFetcher<{ ok: boolean; added?: boolean }>();
+  const fetcher = useFetcher<AddQuestionActionData>();
   const { t } = useTranslation();
   const isSubmitting = fetcher.state !== "idle";
 
@@ -92,6 +93,7 @@ function WordFillForm({ onAdded }: { onAdded: () => void }) {
         </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t("workbooks.addQuestion.adding") : t("workbooks.addQuestion.submit")}
@@ -107,7 +109,7 @@ const INITIAL_CHOICES: Choice[] = [
 ];
 
 function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
-  const fetcher = useFetcher<{ ok: boolean; added?: boolean }>();
+  const fetcher = useFetcher<AddQuestionActionData>();
   const { t } = useTranslation();
   const isSubmitting = fetcher.state !== "idle";
   const [choices, setChoices] = useState<Choice[]>(INITIAL_CHOICES);
@@ -247,6 +249,7 @@ function MultipleChoiceForm({ onAdded }: { onAdded: () => void }) {
         </p>
       </div>
 
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? t("workbooks.addQuestion.adding") : t("workbooks.addQuestion.submit")}

@@ -1,12 +1,12 @@
 import { render, screen } from "@testing-library/react";
-import type { useFetcher } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { OrderingContent } from "~/components/study/question-types/ordering/answer";
 import i18n from "~/i18n/config";
 import type { Question } from "~/lib/api/question.server";
+import { QUESTION_INVALID_ERROR_KEY, type QuestionEditFetcher } from "../question-form-error";
 import { OrderingEditForm } from "./ordering-edit-form";
 
-const fetcher = { state: "idle", Form: "form" } as unknown as ReturnType<typeof useFetcher>;
+const fetcher = { state: "idle", Form: "form" } as unknown as QuestionEditFetcher;
 
 const QUESTION: Question = {
   questionId: "q-1",
@@ -32,13 +32,32 @@ const PARSED: OrderingContent = {
   explanation: "疑問文",
 };
 
-function renderForm(parsed: OrderingContent | null = PARSED) {
+function renderForm(parsed: OrderingContent | null = PARSED, formFetcher = fetcher) {
   return render(
-    <OrderingEditForm question={QUESTION} parsed={parsed} fetcher={fetcher} onCancel={vi.fn()} />,
+    <OrderingEditForm
+      question={QUESTION}
+      parsed={parsed}
+      fetcher={formFetcher}
+      onCancel={vi.fn()}
+    />,
   );
 }
 
 describe("OrderingEditForm", () => {
+  it("should show the error key returned by the action", () => {
+    // given
+    const rejected = {
+      ...fetcher,
+      data: { ok: false, errorKey: QUESTION_INVALID_ERROR_KEY },
+    } as unknown as QuestionEditFetcher;
+
+    // when
+    renderForm(PARSED, rejected);
+
+    // then
+    expect(screen.getByText(i18n.t(QUESTION_INVALID_ERROR_KEY))).toBeInTheDocument();
+  });
+
   it("should fill the notation formatted from the segments", () => {
     // given / when
     renderForm();

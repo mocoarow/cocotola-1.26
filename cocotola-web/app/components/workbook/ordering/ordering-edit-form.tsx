@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
-import type { useFetcher } from "react-router";
 import type { OrderingContent } from "~/components/study/question-types/ordering/answer";
 import { Button } from "~/components/ui/button";
 import { SheetFooter } from "~/components/ui/sheet";
 import type { Question } from "~/lib/api/question.server";
 import { DEFAULT_SOURCE_LANG, DEFAULT_TARGET_LANG } from "../lang-select";
+import { type QuestionEditFetcher, QuestionFormError } from "../question-form-error";
 import { formatOrderingNotation } from "./notation";
 import {
   OrderingFields,
@@ -30,7 +30,7 @@ export function OrderingEditForm({
 }: {
   question: Question;
   parsed: OrderingContent | null;
-  fetcher: ReturnType<typeof useFetcher>;
+  fetcher: QuestionEditFetcher;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
@@ -50,6 +50,7 @@ export function OrderingEditForm({
         defaults={editDefaults(question, parsed)}
         state={notation}
       />
+      <QuestionFormError errorKey={fetcher.data?.errorKey} />
       <SheetFooter>
         <Button type="submit" disabled={isSubmitting || !notation.result.ok}>
           {isSubmitting ? t("common.saving") : t("common.save")}
