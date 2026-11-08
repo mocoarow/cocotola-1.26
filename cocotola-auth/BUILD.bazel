@@ -44,12 +44,14 @@ go_binary(
 pkg_tar(
     name = "pkg",
     srcs = [":cocotola-auth"],
+    tags = ["manual"],
 )
 
 oci_image(
     name = "image",
     base = "@distroless_static_debian12_linux_amd64",
     entrypoint = ["/cocotola-auth"],
+    tags = ["manual"],
     tars = [":pkg"],
 )
 
@@ -57,6 +59,7 @@ oci_load(
     name = "load",
     image = ":image",
     repo_tags = ["cocotola-auth:latest"],
+    tags = ["manual"],
 )
 
 oci_push(
@@ -64,4 +67,5 @@ oci_push(
     image = ":image",
     remote_tags = ["latest"],
     repository = "us-central1-docker.pkg.dev/mocoarow-cocotola/cocotola-auth/cocotola-auth",
+    tags = ["manual"],
 )

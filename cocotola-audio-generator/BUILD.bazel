@@ -24,12 +24,14 @@ go_binary(
 pkg_tar(
     name = "pkg",
     srcs = [":cocotola-audio-generator"],
+    tags = ["manual"],
 )
 
 oci_image(
     name = "image",
     base = "@distroless_static_debian12_linux_amd64",
     entrypoint = ["/cocotola-audio-generator"],
+    tags = ["manual"],
     tars = [":pkg"],
 )
 
@@ -37,6 +39,7 @@ oci_load(
     name = "load",
     image = ":image",
     repo_tags = ["cocotola-audio-generator:latest"],
+    tags = ["manual"],
 )
 
 oci_push(
@@ -44,4 +47,5 @@ oci_push(
     image = ":image",
     remote_tags = ["latest"],
     repository = "us-central1-docker.pkg.dev/mocoarow-cocotola/cocotola-audio-generator/cocotola-audio-generator",
+    tags = ["manual"],
 )
