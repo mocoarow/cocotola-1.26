@@ -31,6 +31,7 @@ jobs:
           # main -> every PR rebuilt the Go toolchain/stdlib from cold (~11 min).
           disk-cache: go-bazel
           repository-cache: true
+          cache-save: false
 
       - run: bazel info
 
