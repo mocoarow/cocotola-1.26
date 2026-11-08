@@ -19,12 +19,14 @@ go_binary(
 pkg_tar(
     name = "pkg",
     srcs = [":hello-world"],
+    tags = ["manual"],
 )
 
 oci_image(
     name = "image",
     base = "@distroless_static_debian12_linux_amd64",
     entrypoint = ["/hello-world"],
+    tags = ["manual"],
     tars = [":pkg"],
 )
 
@@ -32,6 +34,7 @@ oci_load(
     name = "load",
     image = ":image",
     repo_tags = ["hello-world:latest"],
+    tags = ["manual"],
 )
 
 oci_push(
@@ -39,6 +42,7 @@ oci_push(
     image = ":image",
     remote_tags = ["latest"],
     repository = "us-west1-docker.pkg.dev/mocoarow-25-08/hello-world/hello-world",
+    tags = ["manual"],
 )
 
 smart_go_test(

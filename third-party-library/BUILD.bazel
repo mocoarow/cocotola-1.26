@@ -20,6 +20,7 @@ go_binary(
 pkg_tar(
     name = "pkg",
     srcs = [":third-party-library"],
+    tags = ["manual"],
 )
 
 oci_image(
@@ -27,6 +28,7 @@ oci_image(
     # base = "@distroless_static_debian12_linux_amd64",
     base = "@distroless_static_debian12_debug",
     entrypoint = ["/third-party-library"],
+    tags = ["manual"],
     tars = [":pkg"],
 )
 
@@ -34,4 +36,5 @@ oci_load(
     name = "load",
     image = ":image",
     repo_tags = ["third-party-library:latest"],
+    tags = ["manual"],
 )
