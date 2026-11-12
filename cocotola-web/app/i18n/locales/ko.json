@@ -218,6 +218,7 @@
         "answer": "나의 답",
         "chips": "어구 후보",
         "correctOrder": "올바른 순서",
+        "keyboardHelp": "키보드: ← / → 로 어구 사이를 이동하고, Home / End 로 처음·끝으로 가며, ↑ / ↓ 로 답과 어구 후보를 전환하고, Backspace 로 답의 마지막 어구를 후보로 되돌리며, Shift + ← / → 로 답의 어구를 옆과 바꿉니다.",
         "slotCorrect": "올바른 위치",
         "slotIncorrect": "틀린 위치"
       },

@@ -218,6 +218,7 @@
         "answer": "Your answer",
         "chips": "Word chips",
         "correctOrder": "Correct order",
+        "keyboardHelp": "Keyboard: ← / → move between chips, Home / End jump to the first or last, ↑ / ↓ switch between your answer and the word chips, Backspace returns the chip at the end of your answer to the word chips,Shift + ← / → swap a chip in your answer with its neighbor.",
         "slotCorrect": "Correct position",
         "slotIncorrect": "Wrong position"
       },
