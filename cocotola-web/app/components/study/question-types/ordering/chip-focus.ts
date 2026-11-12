@@ -7,6 +7,7 @@ import {
   entryItem,
   type FocusMemory,
   keyAction,
+  type SlotEdit,
 } from "./keyboard";
 
 export type ChipBinding = {
@@ -24,7 +25,7 @@ const sameItem = (a: AreaItem | undefined, b: AreaItem) =>
   a?.chip === b.chip && a.position === b.position;
 
 // Roving tabindex over the pool and the answer area, plus focus that follows a chip after it moves.
-export function useChipFocus(areas: Areas) {
+export function useChipFocus(areas: Areas, onEdit: (edit: SlotEdit) => void) {
   const buttons = useRef(new Map<string, HTMLButtonElement>());
   const [target, setTarget] = useState<{ to: ChipFocus } | null>(null);
   const [memory, setMemory] = useState<FocusMemory>({});
@@ -46,6 +47,7 @@ export function useChipFocus(areas: Areas) {
     if (action.kind === "ignore") return;
     event.preventDefault();
     if (action.kind === "move") focus(action.to.area, action.to.chip);
+    if (action.kind === "edit") onEdit(action.edit);
   };
 
   const bind =

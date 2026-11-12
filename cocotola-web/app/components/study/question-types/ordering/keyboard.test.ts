@@ -214,6 +214,144 @@ describe("keyAction between areas", () => {
   });
 });
 
+describe("keyAction with Backspace", () => {
+  const areaTests = [
+    { area: "pool" as const, chip: 5 },
+    { area: "slot" as const, chip: 1 },
+  ];
+  for (const tt of areaTests) {
+    it(`should return the chip in the last filled slot from the ${tt.area}`, () => {
+      // given / when
+      const action = keyAction(press("Backspace"), tt, AREAS, {});
+
+      // then
+      expect(action).toEqual({ kind: "edit", edit: { kind: "return", slot: 3 } });
+    });
+  }
+
+  it("should return the chip in the highest filled slot when later slots are empty", () => {
+    // given
+    const areas = chipAreas([4], [1, 2, null]);
+
+    // when
+    const action = keyAction(press("Backspace"), { area: "pool", chip: 4 }, areas, {});
+
+    // then
+    expect(action).toEqual({ kind: "edit", edit: { kind: "return", slot: 1 } });
+  });
+
+  it("should return the chip in the highest filled slot with Shift + Backspace", () => {
+    // given / when
+    const action = keyAction(
+      press("Backspace", { shiftKey: true }),
+      { area: "pool", chip: 5 },
+      AREAS,
+      {},
+    );
+
+    // then
+    expect(action).toEqual({ kind: "edit", edit: { kind: "return", slot: 3 } });
+  });
+
+  it("should stay when the answer area is empty", () => {
+    // given
+    const areas = chipAreas([4, 5], [null, null]);
+
+    // when
+    const action = keyAction(press("Backspace"), { area: "pool", chip: 4 }, areas, {});
+
+    // then
+    expect(action).toEqual({ kind: "stay" });
+  });
+
+  it("should ignore Ctrl+Backspace", () => {
+    // given / when
+    const action = keyAction(
+      press("Backspace", { ctrlKey: true }),
+      { area: "pool", chip: 5 },
+      AREAS,
+      {},
+    );
+
+    // then
+    expect(action).toEqual({ kind: "ignore" });
+  });
+});
+
+describe("keyAction with Shift + an arrow in the answer area", () => {
+  const tests = [
+    { name: "swap with the next slot", key: "ArrowRight", chip: 2, slot: 3 },
+    { name: "swap with the previous slot", key: "ArrowLeft", chip: 3, slot: 2 },
+    { name: "move into the empty previous slot", key: "ArrowLeft", chip: 2, slot: 1 },
+    { name: "move into the empty next slot", key: "ArrowRight", chip: 1, slot: 1 },
+  ];
+  for (const tt of tests) {
+    it(`should ${tt.name}`, () => {
+      // given / when
+      const action = keyAction(
+        press(tt.key, { shiftKey: true }),
+        { area: "slot", chip: tt.chip },
+        AREAS,
+        {},
+      );
+
+      // then
+      expect(action).toEqual({
+        kind: "edit",
+        edit: { kind: "place", chip: tt.chip, slot: tt.slot },
+      });
+    });
+  }
+
+  it("should move like a plain End with Shift + End", () => {
+    // given / when
+    const action = keyAction(
+      press("End", { shiftKey: true }),
+      { area: "slot", chip: 1 },
+      AREAS,
+      {},
+    );
+
+    // then
+    expect(action).toEqual({ kind: "move", to: { area: "slot", chip: 3 } });
+  });
+
+  it("should move into an empty slot at the end of the answer area", () => {
+    // given
+    const areas = chipAreas([], [1, null]);
+
+    // when
+    const action = keyAction(
+      press("ArrowRight", { shiftKey: true }),
+      { area: "slot", chip: 1 },
+      areas,
+      {},
+    );
+
+    // then
+    expect(action).toEqual({ kind: "edit", edit: { kind: "place", chip: 1, slot: 1 } });
+  });
+
+  const edgeTests = [
+    { key: "ArrowLeft", chip: 1 },
+    { key: "ArrowRight", chip: 3 },
+  ];
+  for (const tt of edgeTests) {
+    it(`should stay with Shift + ${tt.key} on chip ${tt.chip} at the edge`, () => {
+      // given / when
+      const action = keyAction(
+        press(tt.key, { shiftKey: true }),
+        { area: "slot", chip: tt.chip },
+        AREAS,
+        {},
+      );
+
+      // then
+      expect(action).toEqual({ kind: "stay" });
+    });
+  }
+});
+
 describe("keyAction for other keys", () => {
   const tests = [{ key: "Enter" }, { key: " " }, { key: "Tab" }, { key: "a" }];
   for (const tt of tests) {

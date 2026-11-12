@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import type userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
@@ -61,6 +61,10 @@ export function tabStops(container: HTMLElement): string[] {
     .queryAllByRole("button")
     .filter((b) => b.tabIndex === 0)
     .map((b) => b.textContent ?? "");
+}
+
+export function focusChip(container: HTMLElement, name: string) {
+  act(() => within(container).getByRole("button", { name }).focus());
 }
 
 export async function tapChips(user: ReturnType<typeof userEvent.setup>, texts: string[]) {

@@ -8,8 +8,8 @@ import { AnswerLine, CorrectOrder } from "./answer-line";
 import { type BindChip, useChipFocus } from "./chip-focus";
 import { DraggableChip, useOrderingSensors, usePoolDrop } from "./drag";
 import { applyDrop } from "./drop";
-import { chipAreas } from "./keyboard";
-import { emptySlots, placeInFirstEmpty, returnChip } from "./placement";
+import { chipAreas, type SlotEdit } from "./keyboard";
+import { emptySlots, placeChip, placeInFirstEmpty, returnChip } from "./placement";
 import { shuffleChips } from "./shuffle-chips";
 
 const NO_ANNOUNCEMENTS: Announcements = {
@@ -73,7 +73,7 @@ function useOrderingSlots(
   const [order] = useState(() => shuffleChips(segments));
   const [slots, setSlots] = useState<Slots>(() => emptySlots(order.length));
   const poolChips = order.filter((chip) => !slots.includes(chip));
-  const chipFocus = useChipFocus(chipAreas(poolChips, slots));
+  const chipFocus = useChipFocus(chipAreas(poolChips, slots), handleEdit);
 
   function update(next: Slots) {
     setSlots(next);
@@ -97,6 +97,15 @@ function useOrderingSlots(
     if (chip === null) return;
     update(returnChip(slots, slot));
     chipFocus.focus("pool", chip);
+  }
+
+  function handleEdit(edit: SlotEdit) {
+    if (edit.kind === "return") {
+      handleSlotTap(edit.slot);
+      return;
+    }
+    update(placeChip(slots, edit.chip, edit.slot));
+    chipFocus.focus("slot", edit.chip);
   }
 
   function handleDragEnd({ active, over }: DragEndEvent) {
