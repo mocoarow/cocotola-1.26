@@ -218,6 +218,7 @@
         "answer": "あなたの解答",
         "chips": "語句の候補",
         "correctOrder": "正しい並び",
+        "keyboardHelp": "キーボード: ← / → で語句の間を移動、Home / End で先頭・末尾へ、↑ / ↓ で解答と候補を切り替えます。",
         "slotCorrect": "正しい位置",
         "slotIncorrect": "誤った位置"
       },

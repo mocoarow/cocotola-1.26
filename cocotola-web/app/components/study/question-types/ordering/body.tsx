@@ -1,16 +1,16 @@
 import { type Announcements, DndContext, type DragEndEvent } from "@dnd-kit/core";
-import { useEffect, useRef, useState } from "react";
+import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BodyProps } from "~/components/study/question-shell/types";
 import { cn } from "~/lib/utils";
 import { type OrderingContent, type OrderingSegment, type Slots, toOrderingDraft } from "./answer";
 import { AnswerLine, CorrectOrder } from "./answer-line";
-import { DraggableChip, type RegisterChip, useOrderingSensors, usePoolDrop } from "./drag";
+import { type BindChip, useChipFocus } from "./chip-focus";
+import { DraggableChip, useOrderingSensors, usePoolDrop } from "./drag";
 import { applyDrop } from "./drop";
+import { chipAreas } from "./keyboard";
 import { emptySlots, placeInFirstEmpty, returnChip } from "./placement";
 import { shuffleChips } from "./shuffle-chips";
-
-type ChipArea = "pool" | "slot";
 
 const NO_ANNOUNCEMENTS: Announcements = {
   onDragStart: () => undefined,
@@ -20,44 +20,23 @@ const NO_ANNOUNCEMENTS: Announcements = {
   onDragCancel: () => undefined,
 };
 
-// Keeps keyboard focus on a chip button after the chip moves between the pool and a slot.
-function useChipFocus() {
-  const buttons = useRef(new Map<string, HTMLButtonElement>());
-  const [target, setTarget] = useState<{ key: string } | null>(null);
-
-  useEffect(() => {
-    if (target !== null) buttons.current.get(target.key)?.focus();
-  }, [target]);
-
-  const register =
-    (area: ChipArea): RegisterChip =>
-    (chip) =>
-    (el) => {
-      if (el) buttons.current.set(`${area}-${chip}`, el);
-      else buttons.current.delete(`${area}-${chip}`);
-    };
-
-  return {
-    registerPool: register("pool"),
-    registerSlot: register("slot"),
-    focus: (area: ChipArea, chip: number) => setTarget({ key: `${area}-${chip}` }),
-  };
-}
-
 type ChipPoolProps = {
   segments: readonly OrderingSegment[];
   chips: readonly number[];
-  register: RegisterChip;
+  helpId: string;
+  bind: BindChip;
   onTap: (chip: number) => void;
 };
 
-function ChipPool({ segments, chips, register, onTap }: ChipPoolProps) {
+function ChipPool({ segments, chips, helpId, bind, onTap }: ChipPoolProps) {
   const { t } = useTranslation();
   const drop = usePoolDrop();
   return (
-    <fieldset
+    <div
       ref={drop.ref}
+      role="toolbar"
       aria-label={t("workbooks.study.ordering.chips")}
+      aria-describedby={helpId}
       className={cn(
         "flex min-h-12 flex-wrap gap-2 rounded-lg border border-dashed p-2",
         drop.overClass,
@@ -67,14 +46,23 @@ function ChipPool({ segments, chips, register, onTap }: ChipPoolProps) {
         <DraggableChip
           key={chip}
           chip={chip}
-          register={register}
+          bind={bind}
           variant="secondary"
           onClick={() => onTap(chip)}
         >
           {segments[chip].text}
         </DraggableChip>
       ))}
-    </fieldset>
+    </div>
+  );
+}
+
+function KeyboardHelp({ id }: { id: string }) {
+  const { t } = useTranslation();
+  return (
+    <p id={id} data-testid="ordering-keyboard-help" className="text-sm text-muted-foreground">
+      {t("workbooks.study.ordering.keyboardHelp")}
+    </p>
   );
 }
 
@@ -84,8 +72,8 @@ function useOrderingSlots(
 ) {
   const [order] = useState(() => shuffleChips(segments));
   const [slots, setSlots] = useState<Slots>(() => emptySlots(order.length));
-  const chipFocus = useChipFocus();
   const poolChips = order.filter((chip) => !slots.includes(chip));
+  const chipFocus = useChipFocus(chipAreas(poolChips, slots));
 
   function update(next: Slots) {
     setSlots(next);
@@ -128,6 +116,7 @@ export function OrderingBody({
   const { slots, poolChips, chipFocus, handlePoolTap, handleSlotTap, handleDragEnd } =
     useOrderingSlots(segments, onDraftChange);
   const sensors = useOrderingSensors();
+  const helpId = useId();
   const revealed = phase === "revealed";
 
   return (
@@ -144,18 +133,23 @@ export function OrderingBody({
         slots={slots}
         lang={lang}
         revealed={revealed}
-        registerSlot={chipFocus.registerSlot}
+        helpId={helpId}
+        bindSlot={chipFocus.bindSlot}
         onSlotTap={handleSlotTap}
       />
       {revealed ? (
         <CorrectOrder segments={segments} lang={lang} />
       ) : (
-        <ChipPool
-          segments={segments}
-          chips={poolChips}
-          register={chipFocus.registerPool}
-          onTap={handlePoolTap}
-        />
+        <>
+          <ChipPool
+            segments={segments}
+            chips={poolChips}
+            helpId={helpId}
+            bind={chipFocus.bindPool}
+            onTap={handlePoolTap}
+          />
+          <KeyboardHelp id={helpId} />
+        </>
       )}
     </DndContext>
   );

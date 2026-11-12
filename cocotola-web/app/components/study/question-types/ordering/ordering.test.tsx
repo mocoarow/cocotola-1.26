@@ -1,62 +1,18 @@
-import { render, screen, within } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-import "~/i18n/config";
-
-import { StudyQuestionShell } from "~/components/study/question-shell/study-question-shell";
-import type { StudyQuestion } from "~/lib/api/study.server";
-
-type Segment = { type: "chip" | "fixed"; text: string };
-
-const chip = (text: string): Segment => ({ type: "chip", text });
-const fixed = (text: string): Segment => ({ type: "fixed", text });
-
-// With Math.random() fixed to 0, three chips [a, b, c] are offered as [b, c, a].
-const THREE_CHIPS = [chip("you"), chip("are"), chip("kind")];
-
-function makeContent(segments: Segment[], explanation = "") {
-  return JSON.stringify({
-    source: { text: "あなたは親切です", lang: "ja" },
-    target: { lang: "en", segments },
-    explanation,
-  });
-}
-
-function orderingQuestion(content: string): StudyQuestion {
-  return { questionId: "q-1", questionType: "ordering", content, orderIndex: 0 };
-}
-
-function renderQuestion(content: string, onAnswer = vi.fn()) {
-  render(
-    <StudyQuestionShell
-      question={orderingQuestion(content)}
-      onAnswer={onAnswer}
-      onSkip={vi.fn()}
-    />,
-  );
-  return onAnswer;
-}
-
-function pool() {
-  return screen.getByRole("group", { name: "Word chips" });
-}
-
-function answerArea() {
-  return screen.getByRole("group", { name: "Your answer" });
-}
-
-function buttonTexts(container: HTMLElement): string[] {
-  return within(container)
-    .queryAllByRole("button")
-    .map((b) => b.textContent ?? "");
-}
-
-async function tapChips(user: ReturnType<typeof userEvent.setup>, texts: string[]) {
-  for (const text of texts) {
-    await user.click(within(pool()).getByRole("button", { name: text }));
-  }
-}
+import {
+  answerArea,
+  buttonTexts,
+  chip,
+  fixed,
+  makeContent,
+  pool,
+  renderQuestion,
+  revealedAnswer,
+  THREE_CHIPS,
+  tapChips,
+} from "./test-helpers";
 
 describe("ordering question", () => {
   beforeEach(() => {
@@ -291,7 +247,7 @@ describe("ordering question", () => {
     await user.click(screen.getByRole("button", { name: "Check" }));
 
     // then
-    const slotStatuses = within(answerArea())
+    const slotStatuses = within(revealedAnswer())
       .getAllByText(/^(Correct position|Wrong position)$/)
       .map((el) => el.textContent);
     expect(slotStatuses).toEqual(["Wrong position", "Wrong position", "Correct position"]);
@@ -307,7 +263,7 @@ describe("ordering question", () => {
     await user.click(screen.getByRole("button", { name: "Check" }));
 
     // then
-    expect(within(answerArea()).queryAllByRole("button")).toHaveLength(0);
+    expect(within(revealedAnswer()).queryAllByRole("button")).toHaveLength(0);
   });
 
   it("should show the correct order after Check", async () => {

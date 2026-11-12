@@ -9,9 +9,8 @@ import {
 import type { ReactNode } from "react";
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
+import type { BindChip } from "./chip-focus";
 import { chipDragId, POOL_DROP_ID, slotDropId } from "./drop";
-
-export type RegisterChip = (chip: number) => (el: HTMLButtonElement | null) => void;
 
 const MOUSE_DRAG_DISTANCE_PX = 8;
 const TOUCH_DRAG_DELAY_MS = 200;
@@ -28,22 +27,23 @@ export function useOrderingSensors() {
 
 type DraggableChipProps = {
   chip: number;
-  register: RegisterChip;
+  bind: BindChip;
   variant: "secondary" | "outline";
   onClick: () => void;
   children: ReactNode;
 };
 
-export function DraggableChip({ chip, register, variant, onClick, children }: DraggableChipProps) {
+export function DraggableChip({ chip, bind, variant, onClick, children }: DraggableChipProps) {
   const { setNodeRef, listeners, transform, isDragging } = useDraggable({ id: chipDragId(chip) });
-  const registerChip = register(chip);
+  const { ref, ...binding } = bind(chip);
   return (
     <Button
       ref={(el) => {
-        registerChip(el);
+        ref(el);
         setNodeRef(el);
       }}
       {...listeners}
+      {...binding}
       variant={variant}
       onClick={onClick}
       className={cn("touch-manipulation", isDragging && "relative z-10 shadow-md transition-none")}

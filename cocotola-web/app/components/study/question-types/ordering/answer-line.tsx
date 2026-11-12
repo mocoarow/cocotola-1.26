@@ -3,9 +3,11 @@ import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { chipSegmentIndices, type OrderingSegment, type Slots, slotCorrectness } from "./answer";
 import { slotDisplayTexts } from "./capitalize";
-import { DraggableChip, DroppableSlot, type RegisterChip } from "./drag";
+import type { BindChip } from "./chip-focus";
+import { DraggableChip, DroppableSlot } from "./drag";
 
 const CHIP_CLASS = "inline-flex h-9 items-center gap-1 rounded-md border px-3 text-base";
+const ANSWER_LINE_CLASS = "flex flex-wrap items-center gap-2 text-lg";
 
 type Token =
   | { kind: "fixed"; segmentIndex: number; text: string }
@@ -53,54 +55,68 @@ type AnswerLineProps = {
   slots: Slots;
   lang: string;
   revealed: boolean;
-  registerSlot: RegisterChip;
+  helpId: string;
+  bindSlot: BindChip;
   onSlotTap: (slot: number) => void;
 };
 
-export function AnswerLine({
+function AnswerLineTokens({
   segments,
   slots,
   lang,
   revealed,
-  registerSlot,
+  bindSlot,
   onSlotTap,
-}: AnswerLineProps) {
-  const { t } = useTranslation();
+}: Omit<AnswerLineProps, "helpId">) {
   const texts = slotDisplayTexts(segments, slots, lang);
   const correctness = slotCorrectness(segments, slots);
+  return layoutTokens(segments).map((token) => {
+    if (token.kind === "fixed") return <span key={token.segmentIndex}>{token.text}</span>;
+    const chip = slots[token.slot];
+    const text = texts[token.slot];
+    if (revealed && chip !== null && text !== null) {
+      return (
+        <RevealedSlot key={token.segmentIndex} text={text} correct={correctness[token.slot]} />
+      );
+    }
+    if (revealed) return <EmptySlot key={token.segmentIndex} slot={token.slot} />;
+    return (
+      <DroppableSlot key={token.segmentIndex} slot={token.slot}>
+        {chip === null || text === null ? (
+          <EmptySlot slot={token.slot} />
+        ) : (
+          <DraggableChip
+            chip={chip}
+            bind={bindSlot}
+            variant="outline"
+            onClick={() => onSlotTap(token.slot)}
+          >
+            {text}
+          </DraggableChip>
+        )}
+      </DroppableSlot>
+    );
+  });
+}
+
+export function AnswerLine({ helpId, ...props }: AnswerLineProps) {
+  const { t } = useTranslation();
+  if (props.revealed) {
+    return (
+      <fieldset aria-label={t("workbooks.study.ordering.answer")} className={ANSWER_LINE_CLASS}>
+        <AnswerLineTokens {...props} />
+      </fieldset>
+    );
+  }
   return (
-    <fieldset
+    <div
+      role="toolbar"
       aria-label={t("workbooks.study.ordering.answer")}
-      className="flex flex-wrap items-center gap-2 text-lg"
+      aria-describedby={helpId}
+      className={ANSWER_LINE_CLASS}
     >
-      {layoutTokens(segments).map((token) => {
-        if (token.kind === "fixed") return <span key={token.segmentIndex}>{token.text}</span>;
-        const chip = slots[token.slot];
-        const text = texts[token.slot];
-        if (revealed && chip !== null && text !== null) {
-          return (
-            <RevealedSlot key={token.segmentIndex} text={text} correct={correctness[token.slot]} />
-          );
-        }
-        if (revealed) return <EmptySlot key={token.segmentIndex} slot={token.slot} />;
-        return (
-          <DroppableSlot key={token.segmentIndex} slot={token.slot}>
-            {chip === null || text === null ? (
-              <EmptySlot slot={token.slot} />
-            ) : (
-              <DraggableChip
-                chip={chip}
-                register={registerSlot}
-                variant="outline"
-                onClick={() => onSlotTap(token.slot)}
-              >
-                {text}
-              </DraggableChip>
-            )}
-          </DroppableSlot>
-        );
-      })}
-    </fieldset>
+      <AnswerLineTokens {...props} />
+    </div>
   );
 }
 
