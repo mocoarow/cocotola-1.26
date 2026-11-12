@@ -46,12 +46,12 @@ type WorkbookSeeder struct {
 	logger        *slog.Logger
 }
 
-// NewWorkbookSeeder constructs a seeder using the given client and policy ensurer.
-func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEnsurer) *WorkbookSeeder {
+// NewWorkbookSeeder constructs a seeder using the given client, policy ensurer and logger.
+func NewWorkbookSeeder(client WorkbookAPIClient, policyEnsurer WorkbookPolicyEnsurer, logger *slog.Logger) *WorkbookSeeder {
 	return &WorkbookSeeder{
 		client:        client,
 		policyEnsurer: policyEnsurer,
-		logger:        slog.Default().With(slog.String("component", "public-workbook-seeder")),
+		logger:        logger,
 	}
 }
 
