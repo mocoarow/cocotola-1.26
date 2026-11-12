@@ -25,7 +25,8 @@ func runInit(ctx context.Context, cfg *config.Config, db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("load default seeds: %w", err)
 	}
-	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, policyEnsurer), seeds)
+	seederLogger := slog.Default().With(slog.String("component", "public-workbook-seeder"))
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, policyEnsurer, seederLogger), seeds)
 
 	slog.InfoContext(ctx, "starting initialization", slog.String("app", appName))
 	if err := initialize.Initialize(ctx, db, seeder, cfg.App.OwnerLoginID, cfg.App.OwnerPassword); err != nil {
