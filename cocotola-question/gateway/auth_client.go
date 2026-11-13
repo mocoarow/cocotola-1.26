@@ -145,9 +145,7 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 		}()
 
 		if resp.StatusCode != http.StatusOK {
-			logger.WarnContext(ctx, "auth service returned non-200", slog.Int("status", resp.StatusCode))
-			c.Status(http.StatusUnauthorized)
-			c.Abort()
+			abortOnAuthStatus(ctx, c, logger, resp.StatusCode)
 			return
 		}
 
@@ -164,6 +162,17 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 		c.Set(controller.ContextFieldUserLanguage{}, me.Language)
 		c.Next()
 	}
+}
+
+func abortOnAuthStatus(ctx context.Context, c *gin.Context, logger *slog.Logger, status int) {
+	if status == http.StatusUnauthorized {
+		logger.InfoContext(ctx, "auth service rejected credentials", slog.Int("status", status))
+		c.Status(http.StatusUnauthorized)
+	} else {
+		logger.ErrorContext(ctx, "auth service returned unexpected status", slog.Int("status", status))
+		c.Status(http.StatusBadGateway)
+	}
+	c.Abort()
 }
 
 // AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves
