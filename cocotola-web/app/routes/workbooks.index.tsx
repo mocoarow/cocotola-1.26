@@ -17,6 +17,7 @@ import {
 } from "~/components/ui/sheet";
 import { AddedWorkbookCard } from "~/components/workbook/added-workbook-card";
 import { LangSelect } from "~/components/workbook/lang-select";
+import { useJustSucceeded } from "~/hooks/use-just-succeeded";
 import { listSharedWorkbooks, unshareWorkbook } from "~/lib/api/sharing.server";
 import { findPrivateSpace } from "~/lib/api/space.server";
 import {
@@ -208,7 +209,8 @@ function CreateWorkbookButton() {
   const [language, setLanguage] = useState<string>(() => toContentLanguage(i18n.resolvedLanguage));
   const isSubmitting = fetcher.state !== "idle";
 
-  if (fetcher.data?.ok && open) {
+  const justSucceeded = useJustSucceeded(fetcher.data);
+  if (justSucceeded) {
     setOpen(false);
     setFormKey((k) => k + 1);
   }

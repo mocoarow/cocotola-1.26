@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useFetcher } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
+import { useJustSucceeded } from "~/hooks/use-just-succeeded";
 
 export function WorkbookHeader({
   title,
@@ -23,7 +24,8 @@ export function WorkbookHeader({
   const [editDescription, setEditDescription] = useState(description);
   const isSubmitting = fetcher.state !== "idle";
 
-  if (fetcher.data?.ok && editing) {
+  const justSucceeded = useJustSucceeded(fetcher.data);
+  if (justSucceeded) {
     setEditing(false);
   }
 

@@ -63,7 +63,9 @@ export async function createWorkbook(
     language: string;
   },
 ): Promise<Workbook> {
-  console.info(`[workbook] createWorkbook called: spaceId=${data.spaceId}, title=${data.title}`);
+  console.info(
+    `[workbook] createWorkbook called: spaceId=${data.spaceId}, titleLength=${data.title.length}`,
+  );
 
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook`;
