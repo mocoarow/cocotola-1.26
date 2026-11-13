@@ -97,13 +97,13 @@ func (h *GetStudyQuestionsHandler) GetStudyQuestions(c *gin.Context) {
 		ExcludeIDs:     excludeIDs,
 	})
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new get study questions input", err)
+		controller.HandleError(ctx, h.logger, c, "new get study questions input", err)
 		return
 	}
 
 	output, err := h.usecase.GetStudyQuestions(ctx, input)
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "get study questions", err)
+		controller.HandleError(ctx, h.logger, c, "get study questions", err)
 		return
 	}
 

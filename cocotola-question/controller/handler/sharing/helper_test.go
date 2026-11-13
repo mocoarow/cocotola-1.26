@@ -54,7 +54,7 @@ func fakeAuthMiddleware(userID string, organizationID string) gin.HandlerFunc {
 	}
 }
 
-func initSharingRouter(ctx context.Context, t *testing.T, listSharedUsecase *MockListSharedUsecase) *gin.Engine {
+func initSharingRouter(ctx context.Context, t *testing.T, listSharedUsecase *MockListSharedUsecase, middleware ...gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
@@ -68,6 +68,7 @@ func initSharingRouter(ctx context.Context, t *testing.T, listSharedUsecase *Moc
 		sharinghandler.NewListPublicHandler(NewMockListPublicUsecase(t)),
 		parent,
 		fakeAuthMiddleware(fixtureUserID, fixtureOrganizationID),
+		middleware...,
 	)
 
 	return router

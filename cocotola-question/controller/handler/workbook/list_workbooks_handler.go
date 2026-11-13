@@ -60,14 +60,13 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 
 	input, err := workbookservice.NewListWorkbooksInput(userID, organizationID, spaceID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid list workbooks input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new list workbooks input", err)
 		return
 	}
 
 	output, err := h.usecase.ListWorkbooks(ctx, input)
 	if err != nil {
-		handleWorkbookError(ctx, h.logger, c, "list workbooks", err)
+		controller.HandleError(ctx, h.logger, c, "list workbooks", err)
 		return
 	}
 

@@ -60,14 +60,13 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 
 	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, req.Description, string(req.Visibility), req.Language)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid create workbook input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new create workbook input", err)
 		return
 	}
 
 	output, err := h.usecase.CreateWorkbook(ctx, input)
 	if err != nil {
-		handleWorkbookError(ctx, h.logger, c, "create workbook", err)
+		controller.HandleError(ctx, h.logger, c, "create workbook", err)
 		return
 	}
 

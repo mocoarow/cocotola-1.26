@@ -14,7 +14,7 @@ func Test_InitInternalWorkbookRouter_shouldRegisterListRoute_whenMounted(t *test
 	t.Parallel()
 
 	// given
-	r := initInternalWorkbookRouter(context.Background(), t, NewMockCreateWorkbookUsecase(t))
+	r := initInternalWorkbookRouter(context.Background(), t, NewMockCreateWorkbookUsecase(t), NewMockUpdateWorkbookUsecase(t))
 
 	// when
 	routes := r.Routes()

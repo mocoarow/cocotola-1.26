@@ -2,15 +2,7 @@
 package workbook
 
 import (
-	"context"
-	"errors"
-	"log/slog"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 // InitWorkbookRouter sets up the routes for workbook operations under the given parent router group.
@@ -49,29 +41,4 @@ func InitInternalWorkbookRouter(
 	workbookGroup.GET("", listHandler.ListWorkbooks)
 	workbookGroup.PUT("/:workbookId", updateHandler.UpdateWorkbook)
 	workbookGroup.DELETE("/:workbookId", deleteHandler.DeleteWorkbook)
-}
-
-func handleWorkbookError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
-	if errors.Is(err, domain.ErrForbidden) {
-		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))
-		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))
-		return
-	}
-	if errors.Is(err, domain.ErrWorkbookNotFound) {
-		logger.WarnContext(ctx, "workbook not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("workbook_not_found", "workbook not found"))
-		return
-	}
-	if errors.Is(err, domain.ErrOwnedWorkbookListNotFound) {
-		logger.WarnContext(ctx, "owned workbook list not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("owned_workbook_list_not_found", "owned workbook list not found"))
-		return
-	}
-	if errors.Is(err, domain.ErrOwnedWorkbookLimitReached) {
-		logger.WarnContext(ctx, "owned workbook limit reached", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("owned_workbook_limit_reached", "owned workbook limit reached"))
-		return
-	}
-	logger.ErrorContext(ctx, action, slog.Any("error", err))
-	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }

@@ -69,13 +69,13 @@ func (h *AddQuestionHandler) AddQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewAddQuestionInput(userID, organizationID, workbookID, req.QuestionType, req.Content, req.Tags, int(req.OrderIndex))
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "new add question input", err)
+		controller.HandleError(ctx, h.logger, c, "new add question input", err)
 		return
 	}
 
 	output, err := h.usecase.AddQuestion(ctx, input)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "add question", err)
+		controller.HandleError(ctx, h.logger, c, "add question", err)
 		return
 	}
 

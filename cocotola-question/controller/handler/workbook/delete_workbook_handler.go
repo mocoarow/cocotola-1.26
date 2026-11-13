@@ -59,13 +59,12 @@ func (h *DeleteWorkbookHandler) DeleteWorkbook(c *gin.Context) {
 
 	input, err := workbookservice.NewDeleteWorkbookInput(userID, organizationID, workbookID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid delete workbook input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new delete workbook input", err)
 		return
 	}
 
 	if err := h.usecase.DeleteWorkbook(ctx, input); err != nil {
-		handleWorkbookError(ctx, h.logger, c, "delete workbook", err)
+		controller.HandleError(ctx, h.logger, c, "delete workbook", err)
 		return
 	}
 

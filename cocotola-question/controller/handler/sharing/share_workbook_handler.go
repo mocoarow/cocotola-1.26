@@ -60,14 +60,13 @@ func (h *ShareWorkbookHandler) ShareWorkbook(c *gin.Context) {
 
 	input, err := referenceservice.NewShareWorkbookInput(userID, organizationID, workbookID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid share workbook input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new share workbook input", err)
 		return
 	}
 
 	output, err := h.usecase.ShareWorkbook(ctx, input)
 	if err != nil {
-		handleSharingError(ctx, h.logger, c, "share workbook", err)
+		controller.HandleError(ctx, h.logger, c, "share workbook", err)
 		return
 	}
 

@@ -59,14 +59,13 @@ func (h *ListPublicHandler) ListPublic(c *gin.Context) {
 
 	input, err := referenceservice.NewListPublicInput(userID, organizationID, language)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid list public input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new list public input", err)
 		return
 	}
 
 	output, err := h.usecase.ListPublic(ctx, input)
 	if err != nil {
-		handleSharingError(ctx, h.logger, c, "list public", err)
+		controller.HandleError(ctx, h.logger, c, "list public", err)
 		return
 	}
 

@@ -86,13 +86,13 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 		TodayDateKey:   todayKey,
 	})
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new get dashboard input", err)
+		controller.HandleError(ctx, h.logger, c, "new get dashboard input", err)
 		return
 	}
 
 	output, err := h.usecase.GetDashboard(ctx, input)
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "get dashboard", err)
+		controller.HandleError(ctx, h.logger, c, "get dashboard", err)
 		return
 	}
 

@@ -77,13 +77,13 @@ func (h *GetStudySummaryHandler) GetStudySummary(c *gin.Context) {
 		Practice:       practice,
 	})
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new get study summary input", err)
+		controller.HandleError(ctx, h.logger, c, "new get study summary input", err)
 		return
 	}
 
 	output, err := h.usecase.GetStudySummary(ctx, input)
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "get study summary", err)
+		controller.HandleError(ctx, h.logger, c, "get study summary", err)
 		return
 	}
 

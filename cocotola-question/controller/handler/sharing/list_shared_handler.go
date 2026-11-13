@@ -53,14 +53,13 @@ func (h *ListSharedHandler) ListShared(c *gin.Context) {
 
 	input, err := referenceservice.NewListSharedInput(userID, organizationID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid list shared input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new list shared input", err)
 		return
 	}
 
 	output, err := h.usecase.ListShared(ctx, input)
 	if err != nil {
-		handleSharingError(ctx, h.logger, c, "list shared", err)
+		controller.HandleError(ctx, h.logger, c, "list shared", err)
 		return
 	}
 

@@ -68,13 +68,13 @@ func (h *GetQuestionHandler) GetQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewGetQuestionInput(userID, organizationID, workbookID, questionID)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "new get question input", err)
+		controller.HandleError(ctx, h.logger, c, "new get question input", err)
 		return
 	}
 
 	output, err := h.usecase.GetQuestion(ctx, input)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "get question", err)
+		controller.HandleError(ctx, h.logger, c, "get question", err)
 		return
 	}
 

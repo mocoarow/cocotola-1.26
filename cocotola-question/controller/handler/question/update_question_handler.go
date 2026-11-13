@@ -76,13 +76,13 @@ func (h *UpdateQuestionHandler) UpdateQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewUpdateQuestionInput(userID, organizationID, workbookID, questionID, req.Content, req.Tags, int(req.OrderIndex))
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "new update question input", err)
+		controller.HandleError(ctx, h.logger, c, "new update question input", err)
 		return
 	}
 
 	output, err := h.usecase.UpdateQuestion(ctx, input)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "update question", err)
+		controller.HandleError(ctx, h.logger, c, "update question", err)
 		return
 	}
 

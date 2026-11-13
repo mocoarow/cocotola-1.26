@@ -57,7 +57,7 @@ func fakeOperatorMiddleware(userID string, organizationID string) gin.HandlerFun
 	}
 }
 
-func initInternalWorkbookRouter(ctx context.Context, t *testing.T, createUsecase *MockCreateWorkbookUsecase) *gin.Engine {
+func initInternalWorkbookRouter(ctx context.Context, t *testing.T, createUsecase *MockCreateWorkbookUsecase, updateUsecase *MockUpdateWorkbookUsecase) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
@@ -68,7 +68,7 @@ func initInternalWorkbookRouter(ctx context.Context, t *testing.T, createUsecase
 	workbookhandler.InitInternalWorkbookRouter(
 		workbookhandler.NewCreateWorkbookHandler(createUsecase),
 		workbookhandler.NewListWorkbooksHandler(NewMockListWorkbooksUsecase(t)),
-		workbookhandler.NewUpdateWorkbookHandler(NewMockUpdateWorkbookUsecase(t)),
+		workbookhandler.NewUpdateWorkbookHandler(updateUsecase),
 		workbookhandler.NewDeleteWorkbookHandler(NewMockDeleteWorkbookUsecase(t)),
 		internal,
 	)

@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "controller",
@@ -11,6 +12,23 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-lib/controller",
+        "//cocotola-lib/domain/versioned",
         "//cocotola-question/api",
+        "//cocotola-question/domain",
+        "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "controller_test",
+    srcs = ["error_test.go"],
+    deps = [
+        ":controller",
+        "//cocotola-lib/domain/versioned",
+        "//cocotola-question/api",
+        "//cocotola-question/domain",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -64,13 +64,13 @@ func (h *ListStudyRecordsHandler) ListStudyRecords(c *gin.Context) {
 		WorkbookID:     workbookID,
 	})
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new list study records input", err)
+		controller.HandleError(ctx, h.logger, c, "new list study records input", err)
 		return
 	}
 
 	output, err := h.usecase.ListStudyRecords(ctx, input)
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "list study records", err)
+		controller.HandleError(ctx, h.logger, c, "list study records", err)
 		return
 	}
 

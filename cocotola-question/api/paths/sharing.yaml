@@ -150,6 +150,13 @@ public:
             schema:
               $ref: '../schemas/sharing.yaml#/ListPublicResponse'
         headers: {}
+      '400':
+        description: Invalid user language
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
       '403':
         description: Forbidden
         content:
