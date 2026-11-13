@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "doc.go",
         "metrics_middleware.go",
+        "recovery_middleware.go",
         "wait_middleware.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware",
@@ -13,17 +14,26 @@ go_library(
     deps = [
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_prometheus_client_golang//prometheus",
+        "@io_opentelemetry_go_otel_trace//:trace",
     ],
 )
 
 smart_go_test(
     name = "middleware_test",
-    srcs = ["middleware_test.go"],
+    srcs = [
+        "middleware_test.go",
+        "recovery_middleware_test.go",
+    ],
     deps = [
         ":middleware",
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_prometheus_client_golang//prometheus",
         "@com_github_prometheus_client_golang//prometheus/promhttp",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_opentelemetry_go_contrib_instrumentation_github_com_gin_gonic_gin_otelgin//:otelgin",
+        "@io_opentelemetry_go_otel//codes",
+        "@io_opentelemetry_go_otel_sdk//trace",
+        "@io_opentelemetry_go_otel_sdk//trace/tracetest",
     ],
 )

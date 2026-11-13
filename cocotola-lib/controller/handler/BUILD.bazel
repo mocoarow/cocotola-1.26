@@ -25,5 +25,9 @@ smart_go_test(
     deps = [
         ":handler",
         "//cocotola-lib/controller",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_prometheus_client_golang//prometheus/promhttp",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

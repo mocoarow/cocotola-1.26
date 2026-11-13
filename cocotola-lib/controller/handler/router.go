@@ -28,7 +28,6 @@ func InitRootRouterGroup(_ context.Context, config controller.ServerConfig, appN
 	}
 
 	router := gin.New()
-	router.Use(gin.Recovery())
 	router.Use(cors.New(corsConfig))
 	router.Use(middleware.PrometheusMiddleware())
 	router.Use(otelgin.Middleware(appName, otelgin.WithFilter(func(req *http.Request) bool {
@@ -50,6 +49,8 @@ func InitRootRouterGroup(_ context.Context, config controller.ServerConfig, appN
 			},
 		}))
 	}
+
+	router.Use(middleware.NewRecoveryMiddleware(slog.Default()))
 
 	if config.Debug.Wait {
 		router.Use(middleware.NewWaitMiddleware(time.Second))
