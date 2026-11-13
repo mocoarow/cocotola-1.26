@@ -1,3 +1,4 @@
+import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createWorkbook,
@@ -127,6 +128,29 @@ describe("createWorkbook", () => {
       },
       body: JSON.stringify(data),
     });
+  });
+
+  it("should not log the title via console.info", async () => {
+    // given
+    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ workbookId: "wb-new" }),
+    });
+    const title = "secret-title-7f3a";
+
+    // when
+    await createWorkbook("token", {
+      spaceId: "sp-1",
+      title,
+      description: "",
+      visibility: "private",
+      language: "fr",
+    });
+
+    // then
+    const logged = infoSpy.mock.calls.map((args) => format(...args)).join("\n");
+    expect(logged).not.toContain(title);
   });
 
   it("should throw WorkbookValidationError when API rejects the input", async () => {
