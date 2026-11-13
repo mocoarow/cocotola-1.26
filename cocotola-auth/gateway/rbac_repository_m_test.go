@@ -309,6 +309,26 @@ func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnFalse_whenUserLacksPe
 	assert.False(t, ok)
 }
 
+func Test_CasbinAuthorizationChecker_IsAllowed_shouldReturnFalse_whenUserCanViewOnlyOwnSpaceAndResourceIsAny(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+	checker := gateway.NewCasbinAuthorizationChecker(rbacRepo)
+
+	orgID := randOrgID(t)
+	userID := randAppUserID(t)
+	require.NoError(t, rbacRepo.AddPolicyForUser(ctx, orgID, userID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(randSpaceID(t)), domainrbac.EffectAllow()))
+
+	// when
+	ok, err := checker.IsAllowed(ctx, orgID, userID, domainrbac.ActionViewSpace(), domainrbac.ResourceAny())
+
+	// then
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
 func Test_RBACRepository_GetGroupsForUser_shouldReturnGroups_whenUserHasGroups(t *testing.T) {
 	t.Parallel()
 	// given

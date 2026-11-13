@@ -627,3 +627,77 @@ func (_c *mockspaceFinder_FindByOrganizationID_Call) RunAndReturn(run func(ctx c
 	_c.Call.Return(run)
 	return _c
 }
+
+// FindPublicOrOwnedByOrganizationID provides a mock function for the type mockspaceFinder
+func (_mock *mockspaceFinder) FindPublicOrOwnedByOrganizationID(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID) ([]space.Space, error) {
+	ret := _mock.Called(ctx, organizationID, ownerID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindPublicOrOwnedByOrganizationID")
+	}
+
+	var r0 []space.Space
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID) ([]space.Space, error)); ok {
+		return returnFunc(ctx, organizationID, ownerID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID, domain.AppUserID) []space.Space); ok {
+		r0 = returnFunc(ctx, organizationID, ownerID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]space.Space)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID, domain.AppUserID) error); ok {
+		r1 = returnFunc(ctx, organizationID, ownerID)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindPublicOrOwnedByOrganizationID'
+type mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call struct {
+	*mock.Call
+}
+
+// FindPublicOrOwnedByOrganizationID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - organizationID domain.OrganizationID
+//   - ownerID domain.AppUserID
+func (_e *mockspaceFinder_Expecter) FindPublicOrOwnedByOrganizationID(ctx interface{}, organizationID interface{}, ownerID interface{}) *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call {
+	return &mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call{Call: _e.mock.On("FindPublicOrOwnedByOrganizationID", ctx, organizationID, ownerID)}
+}
+
+func (_c *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call) Run(run func(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID)) *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 domain.OrganizationID
+		if args[1] != nil {
+			arg1 = args[1].(domain.OrganizationID)
+		}
+		var arg2 domain.AppUserID
+		if args[2] != nil {
+			arg2 = args[2].(domain.AppUserID)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call) Return(spaces []space.Space, err error) *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call {
+	_c.Call.Return(spaces, err)
+	return _c
+}
+
+func (_c *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID) ([]space.Space, error)) *mockspaceFinder_FindPublicOrOwnedByOrganizationID_Call {
+	_c.Call.Return(run)
+	return _c
+}
