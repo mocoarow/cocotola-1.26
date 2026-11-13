@@ -19,7 +19,7 @@ const (
 )
 
 // NewAPIKeyMiddleware authenticates internal service callers via X-Service-Api-Key.
-// The operator becomes SystemAppUserID and the tenant comes from X-Organization-Id.
+// The operator becomes SystemAppUserID.
 // The header is deliberately distinct from public auth headers to prevent impersonation.
 func NewAPIKeyMiddleware(expectedKey string) gin.HandlerFunc {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-APIKeyMiddleware"))
@@ -47,6 +47,19 @@ func NewAPIKeyMiddleware(expectedKey string) gin.HandlerFunc {
 			return
 		}
 
+		c.Set(controller.ContextFieldUserID{}, domain.SystemAppUserID)
+		c.Next()
+	}
+}
+
+// NewOrganizationIDHeaderMiddleware requires X-Organization-Id on organization-scoped internal routes.
+// It must run after NewAPIKeyMiddleware, which authenticates the caller.
+func NewOrganizationIDHeaderMiddleware() gin.HandlerFunc {
+	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, domain.AppName+"-OrganizationIDHeaderMiddleware"))
+
+	return func(c *gin.Context) {
+		ctx := c.Request.Context()
+
 		orgID := c.GetHeader(organizationHeader)
 		if orgID == "" {
 			logger.WarnContext(ctx, "missing organization id header")
@@ -55,14 +68,6 @@ func NewAPIKeyMiddleware(expectedKey string) gin.HandlerFunc {
 			return
 		}
 
-		// Populated context fields:
-		//   - ContextFieldUserID:         SystemAppUserID (fixed bootstrap user)
-		//   - ContextFieldOrganizationID: from X-Organization-Id header
-		//
-		// Intentionally omitted (not applicable to service-to-service calls):
-		//   - ContextFieldOrganizationName
-		//   - Any user-session fields set by the public auth middleware
-		c.Set(controller.ContextFieldUserID{}, domain.SystemAppUserID)
 		c.Set(controller.ContextFieldOrganizationID{}, orgID)
 		c.Next()
 	}

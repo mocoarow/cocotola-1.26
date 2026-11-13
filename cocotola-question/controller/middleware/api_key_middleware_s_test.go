@@ -28,11 +28,11 @@ type capturedContext struct {
 	OrganizationID string
 }
 
-func setupAPIKeyRouter(t *testing.T, expectedKey string, captured *capturedContext) *gin.Engine {
+func setupRouter(t *testing.T, mw gin.HandlerFunc, captured *capturedContext) *gin.Engine {
 	t.Helper()
 
 	r := gin.New()
-	r.Use(middleware.NewAPIKeyMiddleware(expectedKey))
+	r.Use(mw)
 	r.GET("/internal/test", func(c *gin.Context) {
 		if captured != nil {
 			captured.UserID = c.GetString(controller.ContextFieldUserID{})
@@ -44,41 +44,43 @@ func setupAPIKeyRouter(t *testing.T, expectedKey string, captured *capturedConte
 	return r
 }
 
-func Test_APIKeyMiddleware_shouldReturn200_whenAPIKeyAndOrgIDAreValid(t *testing.T) {
+func serve(t *testing.T, r *gin.Engine, headers map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/internal/test", nil)
+	require.NoError(t, err)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	return w
+}
+
+func Test_APIKeyMiddleware_shouldSetSystemUserID_whenAPIKeyIsValidWithoutOrganizationID(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
 	// given
 	captured := &capturedContext{}
-	r := setupAPIKeyRouter(t, testAPIKey, captured)
-	w := httptest.NewRecorder()
+	r := setupRouter(t, middleware.NewAPIKeyMiddleware(testAPIKey), captured)
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/internal/test", nil)
-	require.NoError(t, err)
-	req.Header.Set("X-Service-Api-Key", testAPIKey)
-	req.Header.Set("X-Organization-Id", testOrgID)
-	r.ServeHTTP(w, req)
+	w := serve(t, r, map[string]string{"X-Service-Api-Key": testAPIKey})
 
 	// then
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, domain.SystemAppUserID, captured.UserID)
-	assert.Equal(t, testOrgID, captured.OrganizationID)
 }
 
 func Test_APIKeyMiddleware_shouldReturn401_whenAPIKeyIsMissing(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
 	// given
-	r := setupAPIKeyRouter(t, testAPIKey, nil)
-	w := httptest.NewRecorder()
+	r := setupRouter(t, middleware.NewAPIKeyMiddleware(testAPIKey), nil)
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/internal/test", nil)
-	require.NoError(t, err)
-	req.Header.Set("X-Organization-Id", testOrgID)
-	r.ServeHTTP(w, req)
+	w := serve(t, r, map[string]string{"X-Organization-Id": testOrgID})
 
 	// then
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -86,36 +88,40 @@ func Test_APIKeyMiddleware_shouldReturn401_whenAPIKeyIsMissing(t *testing.T) {
 
 func Test_APIKeyMiddleware_shouldReturn403_whenAPIKeyIsInvalid(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
 	// given
-	r := setupAPIKeyRouter(t, testAPIKey, nil)
-	w := httptest.NewRecorder()
+	r := setupRouter(t, middleware.NewAPIKeyMiddleware(testAPIKey), nil)
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/internal/test", nil)
-	require.NoError(t, err)
-	req.Header.Set("X-Service-Api-Key", testWrongKey)
-	req.Header.Set("X-Organization-Id", testOrgID)
-	r.ServeHTTP(w, req)
+	w := serve(t, r, map[string]string{"X-Service-Api-Key": testWrongKey, "X-Organization-Id": testOrgID})
 
 	// then
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
-func Test_APIKeyMiddleware_shouldReturn400_whenOrganizationIDIsMissing(t *testing.T) {
+func Test_OrganizationIDHeaderMiddleware_shouldSetOrganizationID_whenHeaderIsPresent(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
 	// given
-	r := setupAPIKeyRouter(t, testAPIKey, nil)
-	w := httptest.NewRecorder()
+	captured := &capturedContext{}
+	r := setupRouter(t, middleware.NewOrganizationIDHeaderMiddleware(), captured)
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/internal/test", nil)
-	require.NoError(t, err)
-	req.Header.Set("X-Service-Api-Key", testAPIKey)
-	r.ServeHTTP(w, req)
+	w := serve(t, r, map[string]string{"X-Organization-Id": testOrgID})
+
+	// then
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, testOrgID, captured.OrganizationID)
+}
+
+func Test_OrganizationIDHeaderMiddleware_shouldReturn400_whenHeaderIsMissing(t *testing.T) {
+	t.Parallel()
+
+	// given
+	r := setupRouter(t, middleware.NewOrganizationIDHeaderMiddleware(), nil)
+
+	// when
+	w := serve(t, r, nil)
 
 	// then
 	assert.Equal(t, http.StatusBadRequest, w.Code)

@@ -1,4 +1,5 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "initialize",
@@ -14,6 +15,7 @@ go_library(
         "//cocotola-question/controller/handler/sharing",
         "//cocotola-question/controller/handler/study",
         "//cocotola-question/controller/handler/workbook",
+        "//cocotola-question/controller/middleware",
         "//cocotola-question/domain",
         "//cocotola-question/gateway",
         "//cocotola-question/usecase/question",
@@ -21,5 +23,20 @@ go_library(
         "//cocotola-question/usecase/study",
         "//cocotola-question/usecase/workbook",
         "@com_github_gin_gonic_gin//:gin",
+    ],
+)
+
+smart_go_test(
+    name = "initialize_test",
+    srcs = ["initialize_m_test.go"],
+    deps = [
+        ":initialize",
+        "//cocotola-question/api",
+        "//cocotola-question/config",
+        "//cocotola-question/controller/middleware",
+        "//cocotola-question/gateway",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )
