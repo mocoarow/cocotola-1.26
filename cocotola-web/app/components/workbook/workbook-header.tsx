@@ -9,10 +9,12 @@ export function WorkbookHeader({
   title,
   description,
   visibility,
+  language,
 }: {
   title: string;
   description: string;
   visibility: string;
+  language: string;
 }) {
   const fetcher = useFetcher();
   const { t } = useTranslation();
@@ -38,6 +40,7 @@ export function WorkbookHeader({
         <fetcher.Form method="post" className="space-y-3">
           <input type="hidden" name="intent" value="updateTitle" />
           <input type="hidden" name="visibility" value={visibility} />
+          <input type="hidden" name="language" value={language} />
           <div className="space-y-2">
             <label htmlFor="edit-wb-title" className="block text-sm font-medium">
               {t("workbooks.detail.titleLabel")}

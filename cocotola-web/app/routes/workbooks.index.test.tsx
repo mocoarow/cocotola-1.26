@@ -17,13 +17,17 @@ vi.mock("~/lib/api/space.server", () => ({
   findPrivateSpace: vi.fn(),
 }));
 
-vi.mock("~/lib/api/workbook.server", () => ({
-  listWorkbooks: vi.fn(),
-  createWorkbook: vi.fn(),
-  getWorkbook: vi.fn(),
-  updateWorkbook: vi.fn(),
-  deleteWorkbook: vi.fn(),
-}));
+vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/lib/api/workbook.server")>();
+  return {
+    listWorkbooks: vi.fn(),
+    createWorkbook: vi.fn(),
+    getWorkbook: vi.fn(),
+    updateWorkbook: vi.fn(),
+    deleteWorkbook: vi.fn(),
+    WorkbookValidationError: actual.WorkbookValidationError,
+  };
+});
 
 vi.mock("~/lib/api/sharing.server", () => ({
   listPublicWorkbooks: vi.fn(),
@@ -51,9 +55,14 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useLoaderData, useSearchParams } from "react-router";
+import i18n from "~/i18n/config";
 import { listSharedWorkbooks, unshareWorkbook } from "~/lib/api/sharing.server";
 import { findPrivateSpace } from "~/lib/api/space.server";
-import { listWorkbooks } from "~/lib/api/workbook.server";
+import {
+  createWorkbook as createWorkbookApi,
+  listWorkbooks,
+  WorkbookValidationError,
+} from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import WorkbooksIndex, { action, loader } from "./workbooks.index";
 
@@ -89,6 +98,7 @@ function createWorkbook(overrides: Partial<Workbook> = {}): Workbook {
     title: "English Vocabulary",
     description: "Basic English words",
     visibility: "private",
+    language: "fr",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-04-10T00:00:00Z",
     ...overrides,
@@ -418,5 +428,89 @@ describe("WorkbooksIndex action", () => {
 
     // when / then
     await expect(action(args)).rejects.toMatchObject({ status: 400 });
+  });
+
+  describe("create intent", () => {
+    const CREATE_ENTRIES = { intent: "create", title: "French verbs", description: "" };
+
+    beforeEach(() => {
+      vi.mocked(createWorkbookApi).mockReset();
+      vi.mocked(findPrivateSpace).mockResolvedValue({
+        spaceId: "sp-9",
+        organizationId: "org-1",
+        ownerId: "user-1",
+        keyName: "private@@user-1",
+        name: "Private",
+        spaceType: "private",
+        deleted: false,
+      });
+    });
+
+    it("should send the selected language", async () => {
+      // given
+      const args = buildActionArgs({ ...CREATE_ENTRIES, language: "fr" });
+
+      // when
+      await action(args);
+
+      // then
+      expect(vi.mocked(createWorkbookApi).mock.calls[0][1].language).toBe("fr");
+    });
+
+    it("should return the languageInvalid error key when the language is not a content language", async () => {
+      // given
+      const args = buildActionArgs({ ...CREATE_ENTRIES, language: "xx" });
+
+      // when
+      const result = await action(args);
+
+      // then
+      expect(result).toEqual({ ok: false, errorKey: "workbooks.index.errors.languageInvalid" });
+    });
+
+    it("should return the invalid error key when the workbook is rejected as invalid", async () => {
+      // given
+      vi.mocked(createWorkbookApi).mockRejectedValue(new WorkbookValidationError());
+      const args = buildActionArgs({ ...CREATE_ENTRIES, language: "fr" });
+
+      // when
+      const result = await action(args);
+
+      // then
+      expect(result).toEqual({ ok: false, errorKey: "workbooks.index.errors.invalid" });
+    });
+
+    it("should rethrow the error when the creation fails for another reason", async () => {
+      // given
+      const failure = new Response("Failed to create workbook", { status: 500 });
+      vi.mocked(createWorkbookApi).mockRejectedValue(failure);
+      const args = buildActionArgs({ ...CREATE_ENTRIES, language: "fr" });
+
+      // when / then
+      await expect(action(args)).rejects.toBe(failure);
+    });
+  });
+});
+
+describe("WorkbooksIndex create form", () => {
+  const originalLanguage = i18n.language;
+
+  afterEach(async () => {
+    await i18n.changeLanguage(originalLanguage);
+  });
+
+  it("should preselect the UI language as the workbook language", async () => {
+    // given
+    await i18n.changeLanguage("ko");
+    mockedUseLoaderData.mockReturnValue({ workbooks: [], addedWorkbooks: [], spaceId: "sp-1" });
+    render(<WorkbooksIndex />, { wrapper: ConfirmDialogProvider });
+
+    // when
+    await userEvent.click(
+      screen.getByRole("button", { name: i18n.t("workbooks.index.newWorkbook") }),
+    );
+
+    // then
+    expect(screen.getByLabelText(i18n.t("workbooks.index.languageLabel"))).toHaveValue("ko");
   });
 });

@@ -38,7 +38,7 @@ import {
   updateQuestion,
 } from "~/lib/api/question.server";
 import { deleteStudyHistory } from "~/lib/api/study.server";
-import { getWorkbook, updateWorkbook } from "~/lib/api/workbook.server";
+import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId";
 
@@ -64,6 +64,36 @@ async function saveQuestion<T>(save: () => Promise<unknown>, saved: T) {
   return saved;
 }
 
+async function handleUpdateTitleIntent(
+  accessToken: string,
+  workbookId: string,
+  formData: FormData,
+) {
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) {
+    return { ok: false, errorKey: "workbooks.detail.errors.titleRequired" };
+  }
+  if (title.length > 200) {
+    return { ok: false, errorKey: "workbooks.detail.errors.titleTooLong" };
+  }
+  const language = String(formData.get("language") ?? "");
+  if (!language) {
+    return { ok: false, errorKey: "workbooks.detail.errors.invalid" };
+  }
+  const description = String(formData.get("description") ?? "");
+  const rawVisibility = String(formData.get("visibility") ?? "private");
+  const visibility = rawVisibility === "public" ? "public" : "private";
+  try {
+    await updateWorkbook(accessToken, workbookId, { title, description, visibility, language });
+  } catch (error) {
+    if (error instanceof WorkbookValidationError) {
+      return { ok: false, errorKey: "workbooks.detail.errors.invalid" };
+    }
+    throw error;
+  }
+  return { ok: true };
+}
+
 export async function action({ request, params }: Route.ActionArgs) {
   const { accessToken } = await requireAuth(request);
   const { workbookId } = params;
@@ -71,18 +101,7 @@ export async function action({ request, params }: Route.ActionArgs) {
   const intent = formData.get("intent");
 
   if (intent === "updateTitle") {
-    const title = String(formData.get("title") ?? "").trim();
-    if (!title) {
-      return { ok: false, errorKey: "workbooks.detail.errors.titleRequired" };
-    }
-    if (title.length > 200) {
-      return { ok: false, errorKey: "workbooks.detail.errors.titleTooLong" };
-    }
-    const description = String(formData.get("description") ?? "");
-    const rawVisibility = String(formData.get("visibility") ?? "private");
-    const visibility = rawVisibility === "public" ? "public" : "private";
-    await updateWorkbook(accessToken, workbookId, { title, description, visibility });
-    return { ok: true };
+    return handleUpdateTitleIntent(accessToken, workbookId, formData);
   }
 
   if (intent === "updateQuestion") {
@@ -323,6 +342,7 @@ export default function WorkbookDetail() {
         title={workbook.title}
         description={workbook.description}
         visibility={workbook.visibility}
+        language={workbook.language}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">

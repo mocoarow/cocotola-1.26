@@ -49,6 +49,7 @@
       "descriptionLabel": "説明",
       "titlePlaceholder": "例: 英語ボキャブラリー",
       "descriptionPlaceholder": "任意の説明",
+      "languageLabel": "言語",
       "creating": "作成中...",
       "updated": "更新日:",
       "study": "学習",
@@ -71,7 +72,9 @@
       "errors": {
         "titleRequired": "タイトルは必須です",
         "titleTooLong": "タイトルは200文字以下にしてください",
-        "descriptionTooLong": "説明は1000文字以下にしてください"
+        "descriptionTooLong": "説明は1000文字以下にしてください",
+        "languageInvalid": "一覧から言語を選んでください",
+        "invalid": "入力内容を確認してください。"
       }
     },
     "public": {
@@ -110,7 +113,8 @@
       "clearStudyHistoryDone": "学習履歴をクリアしました。",
       "errors": {
         "titleRequired": "タイトルは必須です",
-        "titleTooLong": "タイトルは200文字以下にしてください"
+        "titleTooLong": "タイトルは200文字以下にしてください",
+        "invalid": "入力内容を確認してください。"
       }
     },
     "debugStudy": {
