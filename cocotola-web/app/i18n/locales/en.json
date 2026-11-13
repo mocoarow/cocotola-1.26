@@ -49,6 +49,7 @@
       "descriptionLabel": "Description",
       "titlePlaceholder": "e.g. English Vocabulary",
       "descriptionPlaceholder": "Optional description",
+      "languageLabel": "Language",
       "creating": "Creating...",
       "updated": "Updated:",
       "study": "Study",
@@ -71,7 +72,9 @@
       "errors": {
         "titleRequired": "Title is required",
         "titleTooLong": "Title must be 200 characters or less",
-        "descriptionTooLong": "Description must be 1000 characters or less"
+        "descriptionTooLong": "Description must be 1000 characters or less",
+        "languageInvalid": "Choose a language from the list",
+        "invalid": "Please check your input."
       }
     },
     "public": {
@@ -110,7 +113,8 @@
       "clearStudyHistoryDone": "Study history cleared.",
       "errors": {
         "titleRequired": "Title is required",
-        "titleTooLong": "Title must be 200 characters or less"
+        "titleTooLong": "Title must be 200 characters or less",
+        "invalid": "Please check your input."
       }
     },
     "debugStudy": {

@@ -5,6 +5,7 @@ import {
   getWorkbook,
   listWorkbooks,
   updateWorkbook,
+  WorkbookValidationError,
 } from "./workbook.server";
 
 const fetchMock = vi.fn();
@@ -110,6 +111,7 @@ describe("createWorkbook", () => {
       title: "New Workbook",
       description: "desc",
       visibility: "private" as const,
+      language: "fr",
     };
 
     // when
@@ -127,7 +129,7 @@ describe("createWorkbook", () => {
     });
   });
 
-  it("should throw Response when API returns error", async () => {
+  it("should throw WorkbookValidationError when API rejects the input", async () => {
     // given
     fetchMock.mockResolvedValue({ ok: false, status: 400 });
     const data = {
@@ -135,10 +137,26 @@ describe("createWorkbook", () => {
       title: "Test",
       description: "",
       visibility: "private" as const,
+      language: "fr",
     };
 
     // when / then
-    await expect(createWorkbook("token", data)).rejects.toBeInstanceOf(Response);
+    await expect(createWorkbook("token", data)).rejects.toBeInstanceOf(WorkbookValidationError);
+  });
+
+  it("should throw Response when API returns a server error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    const data = {
+      spaceId: "sp-1",
+      title: "Test",
+      description: "",
+      visibility: "private" as const,
+      language: "fr",
+    };
+
+    // when / then
+    await expect(createWorkbook("token", data)).rejects.toMatchObject({ status: 500 });
   });
 });
 
@@ -260,7 +278,12 @@ describe("updateWorkbook", () => {
       ok: true,
       json: () => Promise.resolve(workbook),
     });
-    const data = { title: "Updated Title", description: "desc", visibility: "private" as const };
+    const data = {
+      title: "Updated Title",
+      description: "desc",
+      visibility: "private" as const,
+      language: "fr",
+    };
 
     // when
     const result = await updateWorkbook("test-token", "wb-1", data);
@@ -277,12 +300,23 @@ describe("updateWorkbook", () => {
     });
   });
 
-  it("should throw Response when API returns error", async () => {
+  it("should throw WorkbookValidationError when API rejects the input", async () => {
     // given
     fetchMock.mockResolvedValue({ ok: false, status: 400 });
-    const data = { title: "Test", description: "", visibility: "private" as const };
+    const data = { title: "Test", description: "", visibility: "private" as const, language: "fr" };
 
     // when / then
-    await expect(updateWorkbook("token", "wb-1", data)).rejects.toBeInstanceOf(Response);
+    await expect(updateWorkbook("token", "wb-1", data)).rejects.toBeInstanceOf(
+      WorkbookValidationError,
+    );
+  });
+
+  it("should throw Response when API returns a server error", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    const data = { title: "Test", description: "", visibility: "private" as const, language: "fr" };
+
+    // when / then
+    await expect(updateWorkbook("token", "wb-1", data)).rejects.toMatchObject({ status: 500 });
   });
 });

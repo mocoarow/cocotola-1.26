@@ -1,19 +1,12 @@
 import { useTranslation } from "react-i18next";
+import {
+  CONTENT_LANGUAGES,
+  type ContentLanguage,
+  DEFAULT_CONTENT_LANGUAGE,
+} from "~/lib/workbook/content-language";
 
-const LANG_KEYS = [
-  { value: "ja", labelKey: "languages.ja" },
-  { value: "en", labelKey: "languages.en" },
-  { value: "it", labelKey: "languages.it" },
-  { value: "fr", labelKey: "languages.fr" },
-  { value: "de", labelKey: "languages.de" },
-  { value: "es", labelKey: "languages.es" },
-  { value: "zh", labelKey: "languages.zh" },
-  { value: "ko", labelKey: "languages.ko" },
-  { value: "pt", labelKey: "languages.pt" },
-];
-
-export const DEFAULT_SOURCE_LANG = "ja";
-export const DEFAULT_TARGET_LANG = "en";
+export const DEFAULT_SOURCE_LANG: ContentLanguage = DEFAULT_CONTENT_LANGUAGE;
+export const DEFAULT_TARGET_LANG: ContentLanguage = "en";
 
 export function LangSelect({
   id,
@@ -41,9 +34,9 @@ export function LangSelect({
       aria-describedby={ariaDescribedBy}
       className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
     >
-      {LANG_KEYS.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {t(opt.labelKey)}
+      {CONTENT_LANGUAGES.map((lang) => (
+        <option key={lang} value={lang}>
+          {t(`languages.${lang}`)}
         </option>
       ))}
     </select>

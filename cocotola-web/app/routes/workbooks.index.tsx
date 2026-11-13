@@ -16,6 +16,7 @@ import {
   SheetTrigger,
 } from "~/components/ui/sheet";
 import { AddedWorkbookCard } from "~/components/workbook/added-workbook-card";
+import { LangSelect } from "~/components/workbook/lang-select";
 import { listSharedWorkbooks, unshareWorkbook } from "~/lib/api/sharing.server";
 import { findPrivateSpace } from "~/lib/api/space.server";
 import {
@@ -23,9 +24,11 @@ import {
   deleteWorkbook,
   listWorkbooks,
   type Workbook,
+  WorkbookValidationError,
 } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { formatDate } from "~/lib/format/date";
+import { isContentLanguage, toContentLanguage } from "~/lib/workbook/content-language";
 import {
   MY_WORKBOOKS_TABS,
   type MyWorkbooksTab,
@@ -55,35 +58,53 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { workbooks, addedWorkbooks, spaceId };
 }
 
+async function handleCreateIntent(accessToken: string, formData: FormData) {
+  const privateSpace = await findPrivateSpace(accessToken);
+  if (!privateSpace) {
+    throw new Response("No private space found", { status: 400 });
+  }
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const language = String(formData.get("language") ?? "");
+
+  if (!title) {
+    return { ok: false, errorKey: "workbooks.index.errors.titleRequired" };
+  }
+  if (title.length > 200) {
+    return { ok: false, errorKey: "workbooks.index.errors.titleTooLong" };
+  }
+  if (description.length > 1000) {
+    return { ok: false, errorKey: "workbooks.index.errors.descriptionTooLong" };
+  }
+  if (!isContentLanguage(language)) {
+    console.warn(`[workbooks] create rejected: unsupported language (length=${language.length})`);
+    return { ok: false, errorKey: "workbooks.index.errors.languageInvalid" };
+  }
+
+  try {
+    await createWorkbook(accessToken, {
+      spaceId: privateSpace.spaceId,
+      title,
+      description,
+      visibility: "private",
+      language,
+    });
+  } catch (error) {
+    if (error instanceof WorkbookValidationError) {
+      return { ok: false, errorKey: "workbooks.index.errors.invalid" };
+    }
+    throw error;
+  }
+  return { ok: true };
+}
+
 export async function action({ request }: Route.ActionArgs) {
   const { accessToken } = await requireAuth(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "create") {
-    const privateSpace = await findPrivateSpace(accessToken);
-    if (!privateSpace) {
-      throw new Response("No private space found", { status: 400 });
-    }
-    const title = String(formData.get("title") ?? "").trim();
-    const description = String(formData.get("description") ?? "").trim();
-
-    if (!title) {
-      return { ok: false, errorKey: "workbooks.index.errors.titleRequired" };
-    }
-    if (title.length > 200) {
-      return { ok: false, errorKey: "workbooks.index.errors.titleTooLong" };
-    }
-    if (description.length > 1000) {
-      return { ok: false, errorKey: "workbooks.index.errors.descriptionTooLong" };
-    }
-
-    await createWorkbook(accessToken, {
-      spaceId: privateSpace.spaceId,
-      title,
-      description,
-      visibility: "private",
-    });
+    return handleCreateIntent(accessToken, formData);
   }
 
   if (intent === "delete") {
@@ -181,9 +202,10 @@ function WorkbookCard({ workbook }: { workbook: Workbook }) {
 
 function CreateWorkbookButton() {
   const fetcher = useFetcher();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [language, setLanguage] = useState<string>(() => toContentLanguage(i18n.resolvedLanguage));
   const isSubmitting = fetcher.state !== "idle";
 
   if (fetcher.data?.ok && open) {
@@ -230,6 +252,12 @@ function CreateWorkbookButton() {
               maxLength={1000}
               placeholder={t("workbooks.index.descriptionPlaceholder")}
             />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="language" className="text-sm font-medium">
+              {t("workbooks.index.languageLabel")}
+            </label>
+            <LangSelect id="language" name="language" value={language} onChange={setLanguage} />
           </div>
           {fetcher.data && !fetcher.data.ok && "errorKey" in fetcher.data && (
             <p className="text-sm text-destructive">{t(fetcher.data.errorKey)}</p>

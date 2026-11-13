@@ -8,9 +8,24 @@ export type Workbook = {
   title: string;
   description: string;
   visibility: "private" | "public";
+  language: string;
   createdAt: string;
   updatedAt: string;
 };
+
+export class WorkbookValidationError extends Error {
+  constructor() {
+    super("Workbook rejected as invalid");
+    this.name = "WorkbookValidationError";
+  }
+}
+
+function workbookSaveError(status: number, message: string): Error | Response {
+  if (status === 400) {
+    return new WorkbookValidationError();
+  }
+  return new Response(message, { status });
+}
 
 type ListWorkbooksResponse = {
   workbooks: Workbook[];
@@ -40,7 +55,13 @@ export async function listWorkbooks(accessToken: string, spaceId: string): Promi
 
 export async function createWorkbook(
   accessToken: string,
-  data: { spaceId: string; title: string; description: string; visibility: "private" | "public" },
+  data: {
+    spaceId: string;
+    title: string;
+    description: string;
+    visibility: "private" | "public";
+    language: string;
+  },
 ): Promise<Workbook> {
   console.info(`[workbook] createWorkbook called: spaceId=${data.spaceId}, title=${data.title}`);
 
@@ -59,7 +80,7 @@ export async function createWorkbook(
 
   if (!response.ok) {
     console.error(`[workbook] createWorkbook failed: status=${response.status}, url=${url}`);
-    throw new Response("Failed to create workbook", { status: response.status });
+    throw workbookSaveError(response.status, "Failed to create workbook");
   }
 
   const workbook = (await response.json()) as Workbook;
@@ -85,7 +106,7 @@ export async function getWorkbook(accessToken: string, workbookId: string): Prom
 export async function updateWorkbook(
   accessToken: string,
   workbookId: string,
-  data: { title: string; description: string; visibility: "private" | "public" },
+  data: { title: string; description: string; visibility: "private" | "public"; language: string },
 ): Promise<Workbook> {
   const baseUrl = getQuestionUrl();
   const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
@@ -100,7 +121,7 @@ export async function updateWorkbook(
   });
 
   if (!response.ok) {
-    throw new Response("Failed to update workbook", { status: response.status });
+    throw workbookSaveError(response.status, "Failed to update workbook");
   }
 
   return (await response.json()) as Workbook;

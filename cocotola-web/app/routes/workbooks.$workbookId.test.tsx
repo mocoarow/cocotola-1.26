@@ -23,13 +23,17 @@ vi.mock("~/lib/api/study.server", () => ({
   listStudyRecords: vi.fn(),
 }));
 
-vi.mock("~/lib/api/workbook.server", () => ({
-  listWorkbooks: vi.fn(),
-  createWorkbook: vi.fn(),
-  getWorkbook: vi.fn(),
-  updateWorkbook: vi.fn(),
-  deleteWorkbook: vi.fn(),
-}));
+vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/lib/api/workbook.server")>();
+  return {
+    listWorkbooks: vi.fn(),
+    createWorkbook: vi.fn(),
+    getWorkbook: vi.fn(),
+    updateWorkbook: vi.fn(),
+    deleteWorkbook: vi.fn(),
+    WorkbookValidationError: actual.WorkbookValidationError,
+  };
+});
 
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -40,6 +44,7 @@ import i18n from "~/i18n/config";
 import type { Question } from "~/lib/api/question.server";
 import { addQuestion, QuestionValidationError, updateQuestion } from "~/lib/api/question.server";
 import type { Workbook } from "~/lib/api/workbook.server";
+import { updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import WorkbookDetail, { action } from "./workbooks.$workbookId";
 
@@ -82,6 +87,13 @@ const MULTIPLE_CHOICE_ENTRIES = {
 };
 
 const UPDATE_ENTRIES = { intent: "updateQuestion", questionId: "q-1" };
+
+const UPDATE_TITLE_ENTRIES = {
+  intent: "updateTitle",
+  title: "Phrasal verbs",
+  description: "",
+  visibility: "private",
+};
 
 type QuestionBranch = {
   name: string;
@@ -292,6 +304,50 @@ describe("WorkbookDetail action", () => {
     // when / then
     await expect(action(args)).rejects.toBe(failure);
   });
+
+  it("should send the submitted language on updateTitle intent", async () => {
+    // given
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(updateWorkbook).mock.calls[0][2].language).toBe("fr");
+  });
+
+  it("should return the invalid error key when updateTitle intent has no language", async () => {
+    // given
+    const args = buildActionArgs(UPDATE_TITLE_ENTRIES);
+
+    // when
+    const result = await action(args);
+
+    // then
+    expect(result).toEqual({ ok: false, errorKey: "workbooks.detail.errors.invalid" });
+  });
+
+  it("should return the invalid error key when updateTitle is rejected as invalid", async () => {
+    // given
+    vi.mocked(updateWorkbook).mockRejectedValue(new WorkbookValidationError());
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when
+    const result = await action(args);
+
+    // then
+    expect(result).toEqual({ ok: false, errorKey: "workbooks.detail.errors.invalid" });
+  });
+
+  it("should rethrow the error when updateTitle fails for another reason", async () => {
+    // given
+    const failure = new Response("Failed to update workbook", { status: 500 });
+    vi.mocked(updateWorkbook).mockRejectedValue(failure);
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when / then
+    await expect(action(args)).rejects.toBe(failure);
+  });
 });
 
 const BOUNDARY_TEXT = "route error boundary";
@@ -304,6 +360,7 @@ const WORKBOOK: Workbook = {
   title: "Phrasal verbs",
   description: "",
   visibility: "private",
+  language: "fr",
   createdAt: "2026-11-01T00:00:00Z",
   updatedAt: "2026-11-01T00:00:00Z",
 };
@@ -332,7 +389,7 @@ function revalidatedTitle(loadCount: number) {
   return `${WORKBOOK.title} ${loadCount}`;
 }
 
-function renderDetail(editAction: () => unknown) {
+function renderDetail(editAction: (args: { request: Request }) => unknown) {
   let loadCount = 0;
   const Stub = createRoutesStub([
     {
@@ -486,5 +543,25 @@ describe("WorkbookDetail edit sheet", () => {
 
     // then
     expect(screen.getByRole("button", { name: i18n.t("common.save") })).toBeInTheDocument();
+  });
+});
+
+describe("WorkbookDetail header", () => {
+  it("should submit the workbook's language when the title is saved", async () => {
+    // given
+    let submitted: FormData | undefined;
+    const user = renderDetail(async ({ request }) => {
+      submitted = await request.formData();
+      return { ok: true };
+    });
+    await user.click(
+      await screen.findByRole("button", { name: i18n.t("workbooks.detail.editWorkbook") }),
+    );
+
+    // when
+    await user.click(screen.getByRole("button", { name: i18n.t("common.save") }));
+
+    // then
+    await vi.waitFor(() => expect(submitted?.get("language")).toBe(WORKBOOK.language));
   });
 });
