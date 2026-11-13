@@ -7,9 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 )
@@ -458,4 +460,85 @@ func Test_AuthServiceAuthorizationChecker_IsAllowed_shouldReturnReadBodyError_wh
 
 	// then
 	require.ErrorIs(t, err, io.ErrUnexpectedEOF)
+}
+
+func setupAuthMiddlewareRouter(t *testing.T, authStatus int) *gin.Engine {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(authStatus)
+		_, _ = w.Write([]byte(`{"userId":"user-42","loginId":"login-42","organizationName":"org-42","language":"ja"}`))
+	}))
+	t.Cleanup(server.Close)
+
+	r := gin.New()
+	r.Use(gateway.NewAuthMiddleware(server.URL, server.Client()))
+	r.GET("/protected", func(c *gin.Context) {
+		c.String(http.StatusOK, c.GetString(controller.ContextFieldUserID{}))
+	})
+	return r
+}
+
+func serveProtected(t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	t.Helper()
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
+	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer token")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func Test_NewAuthMiddleware_shouldSetUserID_whenAuthReturns200(t *testing.T) {
+	t.Parallel()
+
+	// given
+	r := setupAuthMiddlewareRouter(t, http.StatusOK)
+
+	// when
+	w := serveProtected(t, r)
+
+	// then
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "user-42", w.Body.String())
+}
+
+func Test_NewAuthMiddleware_shouldReturn401_whenAuthReturns401(t *testing.T) {
+	t.Parallel()
+
+	// given
+	r := setupAuthMiddlewareRouter(t, http.StatusUnauthorized)
+
+	// when
+	w := serveProtected(t, r)
+
+	// then
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+}
+
+func Test_NewAuthMiddleware_shouldReturn502_whenAuthFails(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		authStatus int
+	}{
+		{name: "internal server error", authStatus: http.StatusInternalServerError},
+		{name: "service unavailable", authStatus: http.StatusServiceUnavailable},
+		{name: "too many requests", authStatus: http.StatusTooManyRequests},
+		{name: "forbidden", authStatus: http.StatusForbidden},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			r := setupAuthMiddlewareRouter(t, tt.authStatus)
+
+			// when
+			w := serveProtected(t, r)
+
+			// then
+			assert.Equal(t, http.StatusBadGateway, w.Code)
+		})
+	}
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -38,9 +39,7 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieCo
 		if token := extractBearerToken(c); token != "" {
 			output, err := authUsecase.ValidateAccessToken(ctx, &authservice.ValidateAccessTokenInput{JWTString: token})
 			if err != nil {
-				logger.WarnContext(ctx, "validate access token", slog.Any("error", err))
-				c.Status(http.StatusUnauthorized)
-				c.Abort()
+				abortTokenValidation(ctx, c, logger, "validate access token", err)
 				return
 			}
 			setUserContext(ctx, c, output.UserID, output.LoginID, output.OrganizationName, logger)
@@ -59,9 +58,7 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieCo
 
 		output, err := authUsecase.ValidateSessionToken(ctx, &authservice.ValidateSessionTokenInput{RawToken: cookie})
 		if err != nil {
-			logger.WarnContext(ctx, "validate session token", slog.Any("error", err))
-			c.Status(http.StatusUnauthorized)
-			c.Abort()
+			abortTokenValidation(ctx, c, logger, "validate session token", err)
 			return
 		}
 		setUserContext(ctx, c, output.UserID, output.LoginID, output.OrganizationName, logger)
@@ -75,6 +72,24 @@ func NewAuthMiddleware(authUsecase AuthUsecase, cookieConfig controller.CookieCo
 
 		c.Next()
 	}
+}
+
+func abortTokenValidation(ctx context.Context, c *gin.Context, logger *slog.Logger, msg string, err error) {
+	if isTokenRejected(err) {
+		logger.WarnContext(ctx, msg, slog.Any("error", err))
+		c.Status(http.StatusUnauthorized)
+	} else {
+		logger.ErrorContext(ctx, msg, slog.Any("error", err))
+		c.Status(http.StatusInternalServerError)
+	}
+	c.Abort()
+}
+
+func isTokenRejected(err error) bool {
+	return errors.Is(err, domain.ErrUnauthenticated) ||
+		errors.Is(err, domain.ErrTokenNotFound) ||
+		errors.Is(err, domain.ErrTokenRevoked) ||
+		errors.Is(err, domain.ErrSessionExpired)
 }
 
 func extractBearerToken(c *gin.Context) string {

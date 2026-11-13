@@ -3,6 +3,7 @@ package middleware_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -118,24 +119,60 @@ func Test_AuthMiddleware_shouldReturn401_whenAuthorizationHeaderIsNotBearer(t *t
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
-func Test_AuthMiddleware_shouldReturn401_whenValidateAccessTokenReturnsError(t *testing.T) {
+var rejectedTokenErrors = []struct {
+	name string
+	err  error
+}{
+	{name: "unauthenticated", err: fmt.Errorf("parse access token: %w", domain.ErrUnauthenticated)},
+	{name: "token not found", err: fmt.Errorf("find token: %w", domain.ErrTokenNotFound)},
+	{name: "token revoked", err: domain.ErrTokenRevoked},
+	{name: "session expired", err: domain.ErrSessionExpired},
+}
+
+func Test_AuthMiddleware_shouldReturn401_whenValidateAccessTokenRejectsToken(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range rejectedTokenErrors {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			mockUsecase := NewMockAuthUsecase(t)
+			mockUsecase.On("ValidateAccessToken", mock.Anything, mock.Anything).Return(nil, tt.err).Once()
+			r := setupRouter(t, mockUsecase)
+			w := httptest.NewRecorder()
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
+			require.NoError(t, err)
+			req.Header.Set("Authorization", "Bearer invalid-token")
+			r.ServeHTTP(w, req)
+
+			// then
+			assert.Equal(t, http.StatusUnauthorized, w.Code)
+		})
+	}
+}
+
+func Test_AuthMiddleware_shouldReturn500_whenValidateAccessTokenFailsInternally(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
 	mockUsecase := NewMockAuthUsecase(t)
-	mockUsecase.On("ValidateAccessToken", mock.Anything, mock.Anything).Return(nil, errors.New("invalid token")).Once()
+	mockUsecase.On("ValidateAccessToken", mock.Anything, mock.Anything).Return(nil, errors.New("find access token whitelist: connection refused")).Once()
 	r := setupRouter(t, mockUsecase)
 	w := httptest.NewRecorder()
 
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
-	req.Header.Set("Authorization", "Bearer invalid-token")
+	req.Header.Set("Authorization", "Bearer valid-token")
 	r.ServeHTTP(w, req)
 
 	// then
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
 
 func Test_AuthMiddleware_shouldReturn200_whenValidSessionCookie(t *testing.T) {
@@ -230,22 +267,48 @@ func Test_AuthMiddleware_shouldPreferBearerOverCookie(t *testing.T) {
 	}
 }
 
-func Test_AuthMiddleware_shouldReturn401_whenSessionCookieIsInvalid(t *testing.T) {
+func Test_AuthMiddleware_shouldReturn401_whenValidateSessionTokenRejectsToken(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range rejectedTokenErrors {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given
+			mockUsecase := NewMockAuthUsecase(t)
+			mockUsecase.On("ValidateSessionToken", mock.Anything, mock.Anything).Return(nil, tt.err).Once()
+			r := setupRouter(t, mockUsecase)
+			w := httptest.NewRecorder()
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
+			require.NoError(t, err)
+			req.AddCookie(newTestCookie("session_token", "invalid-session"))
+			r.ServeHTTP(w, req)
+
+			// then
+			assert.Equal(t, http.StatusUnauthorized, w.Code)
+		})
+	}
+}
+
+func Test_AuthMiddleware_shouldReturn500_whenValidateSessionTokenFailsInternally(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
 	mockUsecase := NewMockAuthUsecase(t)
-	mockUsecase.On("ValidateSessionToken", mock.Anything, mock.Anything).Return(nil, errors.New("session expired")).Once()
+	mockUsecase.On("ValidateSessionToken", mock.Anything, mock.Anything).Return(nil, errors.New("find session token: connection refused")).Once()
 	r := setupRouter(t, mockUsecase)
 	w := httptest.NewRecorder()
 
 	// when
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/protected", nil)
 	require.NoError(t, err)
-	req.AddCookie(newTestCookie("session_token", "invalid-session"))
+	req.AddCookie(newTestCookie("session_token", "valid-session"))
 	r.ServeHTTP(w, req)
 
 	// then
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 }
