@@ -79,7 +79,7 @@ func (h *RecordAnswerHandler) RecordAnswer(c *gin.Context) {
 
 	output, err := h.usecase.RecordAnswer(ctx, input)
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "record answer", err)
+		controller.HandleError(ctx, h.logger, c, "record answer", err)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *RecordAnswerHandler) buildAnswerInput(ctx context.Context, c *gin.Conte
 
 	in, err := newAnswerInput(ids, body, c.GetHeader("X-Local-Date"), c.GetHeader("X-Local-Timezone"))
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new record answer input", err)
+		controller.HandleError(ctx, h.logger, c, "new record answer input", err)
 		return nil, false
 	}
 	return in, true

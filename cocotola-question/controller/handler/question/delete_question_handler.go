@@ -66,12 +66,12 @@ func (h *DeleteQuestionHandler) DeleteQuestion(c *gin.Context) {
 
 	input, err := questionservice.NewDeleteQuestionInput(userID, organizationID, workbookID, questionID)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "new delete question input", err)
+		controller.HandleError(ctx, h.logger, c, "new delete question input", err)
 		return
 	}
 
 	if err := h.usecase.DeleteQuestion(ctx, input); err != nil {
-		handleQuestionError(ctx, h.logger, c, "delete question", err)
+		controller.HandleError(ctx, h.logger, c, "delete question", err)
 		return
 	}
 

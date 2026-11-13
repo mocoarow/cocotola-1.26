@@ -2,7 +2,6 @@ package question
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -11,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -82,12 +80,12 @@ func (h *AudioHandler) ListPendingAudio(c *gin.Context) {
 
 	input, err := questionservice.NewListPendingAudioInput(limit)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "list pending audio input", err)
+		controller.HandleError(ctx, h.logger, c, "list pending audio input", err)
 		return
 	}
 	output, err := h.usecase.ListPendingAudio(ctx, input)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "list pending audio", err)
+		controller.HandleError(ctx, h.logger, c, "list pending audio", err)
 		return
 	}
 	resp := pendingAudioResponse{Items: make([]pendingAudioItemDTO, 0, len(output.Items))}
@@ -125,11 +123,11 @@ func (h *AudioHandler) ClaimAudio(c *gin.Context) {
 	}
 	input, err := questionservice.NewClaimAudioInput(workbookID, questionID, req.InputHash)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "claim audio input", err)
+		controller.HandleError(ctx, h.logger, c, "claim audio input", err)
 		return
 	}
 	if err := h.usecase.ClaimAudio(ctx, input); err != nil {
-		handleAudioError(ctx, h.logger, c, "claim audio", err)
+		controller.HandleError(ctx, h.logger, c, "claim audio", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{audioStatusKey: "generating"})
@@ -169,11 +167,11 @@ func (h *AudioHandler) CompleteAudio(c *gin.Context) {
 	}
 	input, err := questionservice.NewCompleteAudioInput(workbookID, questionID, req.InputHash, refs)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "complete audio input", err)
+		controller.HandleError(ctx, h.logger, c, "complete audio input", err)
 		return
 	}
 	if err := h.usecase.CompleteAudio(ctx, input); err != nil {
-		handleAudioError(ctx, h.logger, c, "complete audio", err)
+		controller.HandleError(ctx, h.logger, c, "complete audio", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{audioStatusKey: "ready"})
@@ -199,11 +197,11 @@ func (h *AudioHandler) FailAudio(c *gin.Context) {
 	}
 	input, err := questionservice.NewFailAudioInput(workbookID, questionID, req.InputHash, req.Reason)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "fail audio input", err)
+		controller.HandleError(ctx, h.logger, c, "fail audio input", err)
 		return
 	}
 	if err := h.usecase.FailAudio(ctx, input); err != nil {
-		handleAudioError(ctx, h.logger, c, "fail audio", err)
+		controller.HandleError(ctx, h.logger, c, "fail audio", err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{audioStatusKey: "failed"})
@@ -260,12 +258,12 @@ func (h *AudioHandler) ReclaimStaleAudio(c *gin.Context) {
 
 	input, err := questionservice.NewReclaimStaleAudioInput(time.Duration(staleSec)*time.Second, limit)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "reclaim stale audio input", err)
+		controller.HandleError(ctx, h.logger, c, "reclaim stale audio input", err)
 		return
 	}
 	output, err := h.usecase.ReclaimStaleAudio(ctx, input)
 	if err != nil {
-		handleAudioError(ctx, h.logger, c, "reclaim stale audio", err)
+		controller.HandleError(ctx, h.logger, c, "reclaim stale audio", err)
 		return
 	}
 	c.JSON(http.StatusOK, reclaimStaleAudioResponse{Reclaimed: output.Reclaimed})
@@ -280,39 +278,4 @@ func InitInternalAudioRouter(handler *AudioHandler, parentRouterGroup gin.IRoute
 	g.POST("/:workbookId/:questionId/claim", handler.ClaimAudio)
 	g.POST("/:workbookId/:questionId/complete", handler.CompleteAudio)
 	g.POST("/:workbookId/:questionId/fail", handler.FailAudio)
-}
-
-func handleAudioError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
-	if errors.Is(err, domain.ErrInvalidArgument) {
-		logger.WarnContext(ctx, "invalid argument", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
-		return
-	}
-	if errors.Is(err, domain.ErrQuestionNotFound) {
-		logger.WarnContext(ctx, "question not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("question_not_found", "question not found"))
-		return
-	}
-	if errors.Is(err, domain.ErrAudioNotPending) {
-		logger.InfoContext(ctx, "audio not pending", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("audio_not_pending", "audio is not pending"))
-		return
-	}
-	if errors.Is(err, domain.ErrAudioNotGenerating) {
-		logger.InfoContext(ctx, "audio not generating", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("audio_not_generating", "audio is not generating"))
-		return
-	}
-	if errors.Is(err, domain.ErrAudioInputHashMismatch) {
-		logger.InfoContext(ctx, "audio input hash mismatch", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("audio_input_hash_mismatch", "audio input hash does not match"))
-		return
-	}
-	if errors.Is(err, domain.ErrAudioConcurrentModification) {
-		logger.InfoContext(ctx, "audio concurrent modification", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("audio_concurrent_modification", "audio was modified concurrently"))
-		return
-	}
-	logger.ErrorContext(ctx, action, slog.Any("error", err))
-	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }

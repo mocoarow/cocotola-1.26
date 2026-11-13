@@ -16,7 +16,6 @@ go_library(
         "//cocotola-lib/logging",
         "//cocotola-question/api",
         "//cocotola-question/controller",
-        "//cocotola-question/domain",
         "//cocotola-question/domain/workbook",
         "//cocotola-question/service/reference",
         "@com_github_gin_gonic_gin//:gin",
@@ -27,6 +26,7 @@ smart_go_test(
     name = "sharing_test",
     srcs = [
         "helper_test.go",
+        "list_public_handler_s_test.go",
         "list_shared_handler_s_test.go",
         "mocks_test.go",
     ],

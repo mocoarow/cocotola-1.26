@@ -60,14 +60,13 @@ func (h *GetWorkbookHandler) GetWorkbook(c *gin.Context) {
 
 	input, err := workbookservice.NewGetWorkbookInput(userID, organizationID, workbookID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid get workbook input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new get workbook input", err)
 		return
 	}
 
 	output, err := h.usecase.GetWorkbook(ctx, input)
 	if err != nil {
-		handleWorkbookError(ctx, h.logger, c, "get workbook", err)
+		controller.HandleError(ctx, h.logger, c, "get workbook", err)
 		return
 	}
 

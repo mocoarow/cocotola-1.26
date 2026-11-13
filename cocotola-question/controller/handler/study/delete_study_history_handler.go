@@ -63,12 +63,12 @@ func (h *DeleteStudyHistoryHandler) DeleteStudyHistory(c *gin.Context) {
 		WorkbookID:     workbookID,
 	})
 	if err != nil {
-		handleStudyError(ctx, h.logger, c, "new delete study history input", err)
+		controller.HandleError(ctx, h.logger, c, "new delete study history input", err)
 		return
 	}
 
 	if err := h.usecase.DeleteStudyHistory(ctx, input); err != nil {
-		handleStudyError(ctx, h.logger, c, "delete study history", err)
+		controller.HandleError(ctx, h.logger, c, "delete study history", err)
 		return
 	}
 

@@ -62,13 +62,13 @@ func (h *ListQuestionsHandler) ListQuestions(c *gin.Context) {
 
 	input, err := questionservice.NewListQuestionsInput(userID, organizationID, workbookID)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "new list questions input", err)
+		controller.HandleError(ctx, h.logger, c, "new list questions input", err)
 		return
 	}
 
 	output, err := h.usecase.ListQuestions(ctx, input)
 	if err != nil {
-		handleQuestionError(ctx, h.logger, c, "list questions", err)
+		controller.HandleError(ctx, h.logger, c, "list questions", err)
 		return
 	}
 

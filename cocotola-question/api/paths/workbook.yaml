@@ -38,7 +38,7 @@ workbook:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
       '409':
-        description: Owned workbook limit reached
+        description: Owned workbook limit reached, or owned workbook list was modified concurrently
         content:
           application/json:
             schema:
@@ -185,6 +185,13 @@ workbook-by-id:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
+      '409':
+        description: Workbook was modified concurrently
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
       '500':
         description: Internal server error
         content:
@@ -222,6 +229,13 @@ workbook-by-id:
         headers: {}
       '404':
         description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+        headers: {}
+      '409':
+        description: Owned workbook list was modified concurrently
         content:
           application/json:
             schema:
@@ -268,7 +282,7 @@ internal-workbook:
             schema:
               $ref: '../schemas/common.yaml#/ErrorResponse'
       '409':
-        description: Owned workbook limit reached
+        description: Owned workbook limit reached, or owned workbook list was modified concurrently
         content:
           application/json:
             schema:
@@ -341,8 +355,20 @@ internal-workbook-by-id:
           application/json:
             schema:
               $ref: '../schemas/workbook.yaml#/WorkbookResponse'
+      '400':
+        description: Invalid request
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
       '404':
         description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '409':
+        description: Workbook was modified concurrently
         content:
           application/json:
             schema:
@@ -375,6 +401,12 @@ internal-workbook-by-id:
         description: Successfully deleted
       '404':
         description: Workbook not found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/common.yaml#/ErrorResponse'
+      '409':
+        description: Owned workbook list was modified concurrently
         content:
           application/json:
             schema:

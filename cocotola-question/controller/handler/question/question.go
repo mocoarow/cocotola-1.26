@@ -2,16 +2,7 @@
 package question
 
 import (
-	"context"
-	"errors"
-	"log/slog"
-	"net/http"
-
 	"github.com/gin-gonic/gin"
-
-	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 // InitQuestionRouter sets up the routes for question operations under the given parent router group.
@@ -50,39 +41,4 @@ func InitInternalQuestionRouter(
 	questionGroup.GET("", listHandler.ListQuestions)
 	questionGroup.PUT("/:questionId", updateHandler.UpdateQuestion)
 	questionGroup.DELETE("/:questionId", deleteHandler.DeleteQuestion)
-}
-
-func handleQuestionError(ctx context.Context, logger *slog.Logger, c *gin.Context, action string, err error) {
-	if errors.Is(err, domain.ErrInvalidArgument) {
-		logger.WarnContext(ctx, "invalid argument", slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", http.StatusText(http.StatusBadRequest)))
-		return
-	}
-	if errors.Is(err, domain.ErrForbidden) {
-		logger.WarnContext(ctx, "forbidden", slog.Any("error", err))
-		c.JSON(http.StatusForbidden, controller.NewErrorResponse("forbidden", http.StatusText(http.StatusForbidden)))
-		return
-	}
-	if errors.Is(err, domain.ErrWorkbookNotFound) {
-		logger.WarnContext(ctx, "workbook not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("workbook_not_found", "workbook not found"))
-		return
-	}
-	if errors.Is(err, domain.ErrQuestionNotFound) {
-		logger.WarnContext(ctx, "question not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("question_not_found", "question not found"))
-		return
-	}
-	if errors.Is(err, domain.ErrActiveQuestionListNotFound) {
-		logger.WarnContext(ctx, "active question list not found", slog.Any("error", err))
-		c.JSON(http.StatusNotFound, controller.NewErrorResponse("active_question_list_not_found", "active question list not found"))
-		return
-	}
-	if errors.Is(err, libversioned.ErrConcurrentModification) {
-		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
-		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "resource was modified concurrently"))
-		return
-	}
-	logger.ErrorContext(ctx, action, slog.Any("error", err))
-	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 }

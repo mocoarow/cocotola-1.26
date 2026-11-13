@@ -25,7 +25,7 @@ func Test_CreateWorkbookHandler_CreateWorkbook_shouldReturn409_whenOwnedWorkbook
 	createUsecase := NewMockCreateWorkbookUsecase(t)
 	createUsecase.On("CreateWorkbook", mock.Anything, mock.Anything).
 		Return(nil, fmt.Errorf("add owned workbook: %w", domain.ErrOwnedWorkbookLimitReached)).Once()
-	r := initInternalWorkbookRouter(ctx, t, createUsecase)
+	r := initInternalWorkbookRouter(ctx, t, createUsecase, NewMockUpdateWorkbookUsecase(t))
 	w := httptest.NewRecorder()
 
 	// when

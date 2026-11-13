@@ -59,13 +59,12 @@ func (h *UnshareHandler) Unshare(c *gin.Context) {
 
 	input, err := referenceservice.NewUnshareInput(userID, organizationID, refID)
 	if err != nil {
-		h.logger.ErrorContext(ctx, "invalid unshare input", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
+		controller.HandleError(ctx, h.logger, c, "new unshare input", err)
 		return
 	}
 
 	if err := h.usecase.Unshare(ctx, input); err != nil {
-		handleSharingError(ctx, h.logger, c, "unshare", err)
+		controller.HandleError(ctx, h.logger, c, "unshare", err)
 		return
 	}
 
