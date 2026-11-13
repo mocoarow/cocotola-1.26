@@ -18,6 +18,7 @@ import (
 	sharinghandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing"
 	studyhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study"
 	workbookhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 	sharingusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing"
@@ -52,7 +53,8 @@ type PolicyAdder = domain.PolicyAdder
 //
 // Public routes are mounted under parent. Internal service-to-service routes are mounted
 // under parent.Group("internal", apiKeyMiddleware) to keep the X-Service-Api-Key auth path
-// completely separated from the user-facing auth middleware.
+// completely separated from the user-facing auth middleware. The audio queue routes are
+// processed across organizations, so only they skip the X-Organization-Id requirement.
 func Initialize(
 	ctx context.Context,
 	parent gin.IRouter,
@@ -136,8 +138,9 @@ func Initialize(
 
 	// internal routes (service-to-service via X-Service-Api-Key)
 	internalParent := parent.Group("internal", apiKeyMiddleware)
-	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, internalParent)
-	questionhandler.InitInternalQuestionRouter(addQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, internalParent)
+	internalOrgParent := internalParent.Group("", middleware.NewOrganizationIDHeaderMiddleware())
+	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, internalOrgParent)
+	questionhandler.InitInternalQuestionRouter(addQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, internalOrgParent)
 	questionhandler.InitInternalAudioRouter(audioHandler, internalParent)
 
 	cleanup := func() {
