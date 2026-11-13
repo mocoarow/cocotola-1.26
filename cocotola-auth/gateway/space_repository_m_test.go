@@ -312,3 +312,68 @@ func Test_SpaceRepository_FindByOrganizationID_shouldExcludeDeletedSpaces_whenDe
 	require.NoError(t, err)
 	assert.Equal(t, []domain.SpaceID{activeID}, spaceIDs(spaces))
 }
+
+func Test_SpaceRepository_FindPublicOrOwnedByOrganizationID_shouldExcludeOthersPrivateSpaces_whenOtherUsersHavePrivateSpaces(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "space-owned-org")
+	userIDs := setupUsers(ctx, t, tx, orgID, "space-owned-org", 2)
+	operatorID, otherID := userIDs[0], userIDs[1]
+	repo := gateway.NewSpaceRepository(tx)
+	publicID := setupSpace(ctx, t, repo, orgID, otherID, "public", domainspace.TypePublic(), false)
+	ownedID := setupSpace(ctx, t, repo, orgID, operatorID, "private-operator", domainspace.TypePrivate(), false)
+	setupSpace(ctx, t, repo, orgID, otherID, "private-other", domainspace.TypePrivate(), false)
+
+	// when
+	spaces, err := repo.FindPublicOrOwnedByOrganizationID(ctx, orgID, operatorID)
+
+	// then
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []domain.SpaceID{publicID, ownedID}, spaceIDs(spaces))
+}
+
+func Test_SpaceRepository_FindPublicOrOwnedByOrganizationID_shouldExcludeOtherOrganizations_whenOtherOrganizationHasSpaces(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	otherOrgID := setupOrganization(ctx, t, tx, "space-owned-other-org")
+	otherOwnerID := setupUsers(ctx, t, tx, otherOrgID, "space-owned-other-org", 1)[0]
+	orgID := setupOrganization(ctx, t, tx, "space-owned-own-org")
+	operatorID := setupUsers(ctx, t, tx, orgID, "space-owned-own-org", 1)[0]
+	repo := gateway.NewSpaceRepository(tx)
+	setupSpace(ctx, t, repo, otherOrgID, otherOwnerID, "public", domainspace.TypePublic(), false)
+	ownedID := setupSpace(ctx, t, repo, orgID, operatorID, "private", domainspace.TypePrivate(), false)
+
+	// when
+	spaces, err := repo.FindPublicOrOwnedByOrganizationID(ctx, orgID, operatorID)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []domain.SpaceID{ownedID}, spaceIDs(spaces))
+}
+
+func Test_SpaceRepository_FindPublicOrOwnedByOrganizationID_shouldExcludeDeletedSpaces_whenDeletedSpacesExist(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "space-owned-deleted-org")
+	operatorID := setupUsers(ctx, t, tx, orgID, "space-owned-deleted-org", 1)[0]
+	repo := gateway.NewSpaceRepository(tx)
+	setupSpace(ctx, t, repo, orgID, operatorID, "public", domainspace.TypePublic(), true)
+	ownedID := setupSpace(ctx, t, repo, orgID, operatorID, "private-active", domainspace.TypePrivate(), false)
+	setupSpace(ctx, t, repo, orgID, operatorID, "private-deleted", domainspace.TypePrivate(), true)
+
+	// when
+	spaces, err := repo.FindPublicOrOwnedByOrganizationID(ctx, orgID, operatorID)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []domain.SpaceID{ownedID}, spaceIDs(spaces))
+}

@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	fixturePublicSpaceID  = domain.MustParseSpaceID("00000000-0000-7000-8000-000000000001")
-	fixturePrivateSpaceID = domain.MustParseSpaceID("00000000-0000-7000-8000-000000000002")
+	fixturePublicSpaceID       = domain.MustParseSpaceID("00000000-0000-7000-8000-000000000001")
+	fixturePrivateSpaceID      = domain.MustParseSpaceID("00000000-0000-7000-8000-000000000002")
+	fixtureOtherPrivateSpaceID = domain.MustParseSpaceID("00000000-0000-7000-8000-000000000003")
+	fixtureOtherUserID         = domain.MustParseAppUserID("44444444-4444-7444-8444-444444444444")
 )
 
 func fixturePublicSpace(t *testing.T) domainspace.Space {
@@ -26,7 +28,7 @@ func fixturePublicSpace(t *testing.T) domainspace.Space {
 	return *domainspace.ReconstructSpace(
 		fixturePublicSpaceID,
 		fixtureOrgID,
-		fixtureOwnerID,
+		fixtureOtherUserID,
 		"public@@acme",
 		"Public Space",
 		domainspace.TypePublic(),
@@ -47,6 +49,19 @@ func fixturePrivateSpace(t *testing.T) domainspace.Space {
 	)
 }
 
+func fixtureOtherPrivateSpace(t *testing.T) domainspace.Space {
+	t.Helper()
+	return *domainspace.ReconstructSpace(
+		fixtureOtherPrivateSpaceID,
+		fixtureOrgID,
+		fixtureOtherUserID,
+		"private@@other",
+		"Other Private Space",
+		domainspace.TypePrivate(),
+		false,
+	)
+}
+
 func newListSpacesInput(t *testing.T) *spaceservice.ListSpacesInput {
 	t.Helper()
 	input, err := spaceservice.NewListSpacesInput(fixtureOwnerID, fixtureOrgName)
@@ -54,125 +69,129 @@ func newListSpacesInput(t *testing.T) *spaceservice.ListSpacesInput {
 	return input
 }
 
-func Test_ListSpacesQuery_ListSpaces_shouldReturnPublicSpaces_whenOperatorIsAllowed(t *testing.T) {
+func newOrgFinderReturningOrg(t *testing.T) *mockorganizationFinderByName {
+	t.Helper()
+	orgRepo := newMockorganizationFinderByName(t)
+	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(fixtureOrganization(t), nil)
+	return orgRepo
+}
+
+func onIsAllowed(authChecker *mockauthorizationChecker, action domainrbac.Action, resource domainrbac.Resource, allowed bool, err error) {
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrgID, fixtureOwnerID, action, resource).Return(allowed, err)
+}
+
+func newAuthCheckerAllowingList(t *testing.T, canViewAnySpace bool) *mockauthorizationChecker {
+	t.Helper()
+	authChecker := newMockauthorizationChecker(t)
+	onIsAllowed(authChecker, domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), true, nil)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceAny(), canViewAnySpace, nil)
+	return authChecker
+}
+
+func Test_ListSpacesQuery_ListSpaces_shouldReturnAllSpacesWithoutPerSpaceCheck_whenOperatorCanViewAnySpace(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
-
+	authChecker := newAuthCheckerAllowingList(t, true)
 	spaceRepo := newMockspaceFinder(t)
 	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).
+		Return([]domainspace.Space{fixturePublicSpace(t), fixtureOtherPrivateSpace(t)}, nil)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
+
+	// when
+	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []domain.SpaceID{fixturePublicSpaceID, fixtureOtherPrivateSpaceID}, outputSpaceIDs(output))
+}
+
+func Test_ListSpacesQuery_ListSpaces_shouldMapSpaceFields_whenSpaceIsReturned(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newAuthCheckerAllowingList(t, false)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(fixturePrivateSpaceID), true, nil)
+	spaceRepo := newMockspaceFinder(t)
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
+		Return([]domainspace.Space{fixturePrivateSpace(t)}, nil)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
+
+	// when
+	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []spaceservice.Item{{
+		SpaceID:        fixturePrivateSpaceID,
+		OrganizationID: fixtureOrgID,
+		OwnerID:        fixtureOwnerID,
+		KeyName:        "private@@owner",
+		Name:           "Private Space",
+		SpaceType:      "private",
+		Deleted:        false,
+	}}, output.Spaces)
+}
+
+func Test_ListSpacesQuery_ListSpaces_shouldReturnPublicSpaces_whenOperatorCannotViewAnySpace(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newAuthCheckerAllowingList(t, false)
+	spaceRepo := newMockspaceFinder(t)
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
 		Return([]domainspace.Space{fixturePublicSpace(t)}, nil)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
 
 	// then
 	require.NoError(t, err)
-	require.Len(t, output.Spaces, 1)
-	assert.Equal(t, fixturePublicSpaceID, output.Spaces[0].SpaceID)
-	assert.Equal(t, "public", output.Spaces[0].SpaceType)
+	assert.Equal(t, []domain.SpaceID{fixturePublicSpaceID}, outputSpaceIDs(output))
 }
 
-func Test_ListSpacesQuery_ListSpaces_shouldIncludePrivateSpace_whenOperatorHasAccess(t *testing.T) {
+func Test_ListSpacesQuery_ListSpaces_shouldIncludeOwnedPrivateSpace_whenOperatorCanViewIt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionViewSpace(),
-		domainrbac.ResourceSpace(fixturePrivateSpaceID),
-	).Return(true, nil)
-
+	authChecker := newAuthCheckerAllowingList(t, false)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(fixturePrivateSpaceID), true, nil)
 	spaceRepo := newMockspaceFinder(t)
-	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
 		Return([]domainspace.Space{fixturePublicSpace(t), fixturePrivateSpace(t)}, nil)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
 
 	// then
 	require.NoError(t, err)
-	require.Len(t, output.Spaces, 2)
-	assert.Equal(t, fixturePublicSpaceID, output.Spaces[0].SpaceID)
-	assert.Equal(t, fixturePrivateSpaceID, output.Spaces[1].SpaceID)
-	assert.Equal(t, "private", output.Spaces[1].SpaceType)
+	assert.Equal(t, []domain.SpaceID{fixturePublicSpaceID, fixturePrivateSpaceID}, outputSpaceIDs(output))
 }
 
-func Test_ListSpacesQuery_ListSpaces_shouldSkipPrivateSpace_whenOperatorHasNoAccess(t *testing.T) {
+func Test_ListSpacesQuery_ListSpaces_shouldSkipOwnedPrivateSpace_whenOperatorCannotViewIt(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionViewSpace(),
-		domainrbac.ResourceSpace(fixturePrivateSpaceID),
-	).Return(false, nil)
-
+	authChecker := newAuthCheckerAllowingList(t, false)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(fixturePrivateSpaceID), false, nil)
 	spaceRepo := newMockspaceFinder(t)
-	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
 		Return([]domainspace.Space{fixturePublicSpace(t), fixturePrivateSpace(t)}, nil)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
 
 	// then
 	require.NoError(t, err)
-	require.Len(t, output.Spaces, 1)
-	assert.Equal(t, fixturePublicSpaceID, output.Spaces[0].SpaceID)
+	assert.Equal(t, []domain.SpaceID{fixturePublicSpaceID}, outputSpaceIDs(output))
 }
 
 func Test_ListSpacesQuery_ListSpaces_shouldReturnEmpty_whenNoSpacesExist(t *testing.T) {
@@ -180,25 +199,11 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnEmpty_whenNoSpacesExist(t *test
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
-
+	authChecker := newAuthCheckerAllowingList(t, false)
 	spaceRepo := newMockspaceFinder(t)
-	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
 		Return([]domainspace.Space{}, nil)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	output, err := query.ListSpaces(ctx, newListSpacesInput(t))
@@ -216,11 +221,7 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenOrganizationFinderFai
 	repoErr := errors.New("database unavailable")
 	orgRepo := newMockorganizationFinderByName(t)
 	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(nil, repoErr)
-
-	authChecker := newMockauthorizationChecker(t)
-	spaceRepo := newMockspaceFinder(t)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(newMockspaceFinder(t), orgRepo, newMockauthorizationChecker(t))
 
 	// when
 	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
@@ -234,24 +235,10 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenListAuthCheckerFails(
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
 	authErr := errors.New("auth backend down")
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(false, authErr)
-
-	spaceRepo := newMockspaceFinder(t)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	onIsAllowed(authChecker, domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), false, authErr)
+	query := spaceusecase.NewListSpacesQuery(newMockspaceFinder(t), newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
@@ -265,23 +252,9 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnForbidden_whenOperatorIsNotAllo
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(false, nil)
-
-	spaceRepo := newMockspaceFinder(t)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	onIsAllowed(authChecker, domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), false, nil)
+	query := spaceusecase.NewListSpacesQuery(newMockspaceFinder(t), newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
@@ -290,30 +263,50 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnForbidden_whenOperatorIsNotAllo
 	require.ErrorIs(t, err, domain.ErrForbidden)
 }
 
-func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenSpaceRepoFails(t *testing.T) {
+func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenViewAnySpaceAuthCheckerFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
+	viewErr := errors.New("view any check failed")
 	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
+	onIsAllowed(authChecker, domainrbac.ActionListSpaces(), domainrbac.ResourceAny(), true, nil)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceAny(), false, viewErr)
+	query := spaceusecase.NewListSpacesQuery(newMockspaceFinder(t), newOrgFinderReturningOrg(t), authChecker)
 
+	// when
+	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
+
+	// then
+	require.ErrorIs(t, err, viewErr)
+}
+
+func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenFindAllSpacesFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
 	repoErr := errors.New("query failed")
 	spaceRepo := newMockspaceFinder(t)
 	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).Return(nil, repoErr)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), newAuthCheckerAllowingList(t, true))
 
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	// when
+	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
+
+	// then
+	require.ErrorIs(t, err, repoErr)
+}
+
+func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenFindPublicOrOwnedSpacesFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	repoErr := errors.New("query failed")
+	spaceRepo := newMockspaceFinder(t)
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).Return(nil, repoErr)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), newAuthCheckerAllowingList(t, false))
 
 	// when
 	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
@@ -327,38 +320,25 @@ func Test_ListSpacesQuery_ListSpaces_shouldReturnError_whenViewSpaceAuthCheckerF
 	ctx := context.Background()
 
 	// given
-	org := fixtureOrganization(t)
-	orgRepo := newMockorganizationFinderByName(t)
-	orgRepo.On("FindByName", mock.Anything, fixtureOrgName).Return(org, nil)
-
 	viewErr := errors.New("view check failed")
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionListSpaces(),
-		domainrbac.ResourceAny(),
-	).Return(true, nil)
-	authChecker.On(
-		"IsAllowed",
-		mock.Anything,
-		fixtureOrgID,
-		fixtureOwnerID,
-		domainrbac.ActionViewSpace(),
-		domainrbac.ResourceSpace(fixturePrivateSpaceID),
-	).Return(false, viewErr)
-
+	authChecker := newAuthCheckerAllowingList(t, false)
+	onIsAllowed(authChecker, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(fixturePrivateSpaceID), false, viewErr)
 	spaceRepo := newMockspaceFinder(t)
-	spaceRepo.On("FindByOrganizationID", mock.Anything, fixtureOrgID).
+	spaceRepo.On("FindPublicOrOwnedByOrganizationID", mock.Anything, fixtureOrgID, fixtureOwnerID).
 		Return([]domainspace.Space{fixturePrivateSpace(t)}, nil)
-
-	query := spaceusecase.NewListSpacesQuery(spaceRepo, orgRepo, authChecker)
+	query := spaceusecase.NewListSpacesQuery(spaceRepo, newOrgFinderReturningOrg(t), authChecker)
 
 	// when
 	_, err := query.ListSpaces(ctx, newListSpacesInput(t))
 
 	// then
 	require.ErrorIs(t, err, viewErr)
+}
+
+func outputSpaceIDs(output *spaceservice.ListSpacesOutput) []domain.SpaceID {
+	ids := make([]domain.SpaceID, len(output.Spaces))
+	for i := range output.Spaces {
+		ids[i] = output.Spaces[i].SpaceID
+	}
+	return ids
 }

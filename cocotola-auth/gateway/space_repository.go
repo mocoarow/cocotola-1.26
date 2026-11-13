@@ -177,6 +177,22 @@ func (r *SpaceRepository) FindByOrganizationID(ctx context.Context, organization
 		Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find spaces by organization id: %w", err)
 	}
+	return toSpaceDomains(records)
+}
+
+// FindPublicOrOwnedByOrganizationID returns the public spaces of the given organization and the spaces owned by ownerID.
+func (r *SpaceRepository) FindPublicOrOwnedByOrganizationID(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID) ([]domainspace.Space, error) {
+	var records []spaceRecord
+	if err := r.db.WithContext(ctx).
+		Where("organization_id = ? AND deleted = ? AND (space_type = ? OR owner_id = ?)",
+			organizationID.String(), false, domainspace.TypePublic().Value(), ownerID.String()).
+		Find(&records).Error; err != nil {
+		return nil, fmt.Errorf("find public or owned spaces by organization id: %w", err)
+	}
+	return toSpaceDomains(records)
+}
+
+func toSpaceDomains(records []spaceRecord) ([]domainspace.Space, error) {
 	spaces := make([]domainspace.Space, len(records))
 	for i := range records {
 		space, err := toSpaceDomain(&records[i])

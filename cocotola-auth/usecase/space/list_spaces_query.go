@@ -13,6 +13,7 @@ import (
 type spaceFinder interface {
 	FindByID(ctx context.Context, id domain.SpaceID) (*domainspace.Space, error)
 	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) ([]domainspace.Space, error)
+	FindPublicOrOwnedByOrganizationID(ctx context.Context, organizationID domain.OrganizationID, ownerID domain.AppUserID) ([]domainspace.Space, error)
 }
 
 // ListSpacesQuery returns spaces accessible by the operator.
@@ -50,43 +51,53 @@ func (q *ListSpacesQuery) ListSpaces(ctx context.Context, input *spaceservice.Li
 		return nil, domain.ErrForbidden
 	}
 
-	allSpaces, err := q.spaceRepo.FindByOrganizationID(ctx, org.ID())
+	canViewAnySpace, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceAny())
 	if err != nil {
-		return nil, fmt.Errorf("find spaces by organization: %w", err)
+		return nil, fmt.Errorf("check view any space: %w", err)
 	}
-
-	var items []spaceservice.Item
-	for _, s := range allSpaces {
-		if s.SpaceType().IsPublic() {
-			items = append(items, spaceservice.Item{
-				SpaceID:        s.ID(),
-				OrganizationID: s.OrganizationID(),
-				OwnerID:        s.OwnerID(),
-				KeyName:        s.KeyName(),
-				Name:           s.Name(),
-				SpaceType:      s.SpaceType().Value(),
-				Deleted:        s.Deleted(),
-			})
-
-			continue
-		}
-
-		spaceAllowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(s.ID()))
+	if canViewAnySpace {
+		allSpaces, err := q.spaceRepo.FindByOrganizationID(ctx, org.ID())
 		if err != nil {
-			return nil, fmt.Errorf("check space access: %w", err)
+			return nil, fmt.Errorf("find spaces by organization: %w", err)
 		}
-		if spaceAllowed {
-			items = append(items, spaceservice.Item{
-				SpaceID:        s.ID(),
-				OrganizationID: s.OrganizationID(),
-				OwnerID:        s.OwnerID(),
-				KeyName:        s.KeyName(),
-				Name:           s.Name(),
-				SpaceType:      s.SpaceType().Value(),
-				Deleted:        s.Deleted(),
-			})
-		}
+		return &spaceservice.ListSpacesOutput{Spaces: toItems(allSpaces)}, nil
 	}
 
-	return &spaceservice.ListSpacesOutput{Spaces: items}, nil
+	candidates, err := q.spaceRepo.FindPublicOrOwnedByOrganizationID(ctx, org.ID(), input.OperatorID)
+	if err != nil {
+		return nil, fmt.Errorf("find public or owned spaces: %w", err)
+	}
+
+	visible := make([]domainspace.Space, 0, len(candidates))
+	for _, s := range candidates {
+		if !s.SpaceType().IsPublic() {
+			spaceAllowed, err := q.authChecker.IsAllowed(ctx, org.ID(), input.OperatorID, domainrbac.ActionViewSpace(), domainrbac.ResourceSpace(s.ID()))
+			if err != nil {
+				return nil, fmt.Errorf("check space access: %w", err)
+			}
+			if !spaceAllowed {
+				continue
+			}
+		}
+		visible = append(visible, s)
+	}
+
+	return &spaceservice.ListSpacesOutput{Spaces: toItems(visible)}, nil
+}
+
+func toItems(spaces []domainspace.Space) []spaceservice.Item {
+	items := make([]spaceservice.Item, len(spaces))
+	for i := range spaces {
+		s := &spaces[i]
+		items[i] = spaceservice.Item{
+			SpaceID:        s.ID(),
+			OrganizationID: s.OrganizationID(),
+			OwnerID:        s.OwnerID(),
+			KeyName:        s.KeyName(),
+			Name:           s.Name(),
+			SpaceType:      s.SpaceType().Value(),
+			Deleted:        s.Deleted(),
+		}
+	}
+	return items
 }
