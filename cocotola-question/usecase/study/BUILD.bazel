@@ -30,15 +30,17 @@ smart_go_test(
     name = "study_test",
     srcs = [
         "delete_study_history_command_s_test.go",
+        "export_test.go",
         "get_dashboard_query_s_test.go",
         "get_study_questions_query_s_test.go",
         "get_study_summary_query_s_test.go",
         "list_study_records_query_s_test.go",
         "mocks_test.go",
+        "question_selection_s_test.go",
         "record_answer_command_s_test.go",
     ],
+    embed = [":study"],
     deps = [
-        ":study",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/study",
