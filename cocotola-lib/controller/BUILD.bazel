@@ -28,9 +28,11 @@ smart_go_test(
     name = "controller_test",
     srcs = [
         "cors_s_test.go",
+        "export_test.go",
+        "http_server_s_test.go",
         "metrics_server_s_test.go",
         "stringutil_s_test.go",
         "web_server_s_test.go",
     ],
-    deps = [":controller"],
+    embed = [":controller"],
 )
