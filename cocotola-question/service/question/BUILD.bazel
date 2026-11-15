@@ -14,9 +14,13 @@ go_library(
 
 smart_go_test(
     name = "question_test",
-    srcs = ["audio_s_test.go"],
+    srcs = [
+        "audio_s_test.go",
+        "question_s_test.go",
+    ],
     deps = [
         ":question",
+        "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
