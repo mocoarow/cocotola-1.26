@@ -25,6 +25,9 @@ const (
 	defaultHTTPPort             = 8080
 	defaultMetricsPort          = 8081
 	defaultReadHeaderTimeoutSec = 30
+	defaultReadTimeoutSec       = 60
+	defaultWriteTimeoutSec      = 60
+	defaultIdleTimeoutSec       = 120
 )
 
 func main() {
@@ -68,6 +71,9 @@ func newServerConfig() libcontroller.ServerConfig {
 		HTTPPort:             getEnvIntOrDefault("HTTP_PORT", defaultHTTPPort),
 		MetricsPort:          getEnvIntOrDefault("METRICS_PORT", defaultMetricsPort),
 		ReadHeaderTimeoutSec: getEnvIntOrDefault("READ_HEADER_TIMEOUT_SEC", defaultReadHeaderTimeoutSec),
+		ReadTimeoutSec:       getEnvIntOrDefault("READ_TIMEOUT_SEC", defaultReadTimeoutSec),
+		WriteTimeoutSec:      getEnvIntOrDefault("WRITE_TIMEOUT_SEC", defaultWriteTimeoutSec),
+		IdleTimeoutSec:       getEnvIntOrDefault("IDLE_TIMEOUT_SEC", defaultIdleTimeoutSec),
 		CORS: libcontroller.CORSConfig{
 			AllowOrigins:     getEnvOrDefault("CORS_ALLOW_ORIGINS", "*"),
 			AllowMethods:     getEnvOrDefault("CORS_ALLOW_METHODS", "GET,POST,PUT,DELETE,OPTIONS"),
@@ -159,11 +165,10 @@ func run() (int, error) {
 	})
 
 	// run
-	readHeaderTimeout := time.Duration(serverCfg.ReadHeaderTimeoutSec) * time.Second
-	shutdownTime := time.Duration(serverCfg.Shutdown.ShutdownTimeSec) * time.Second
+	timeouts := serverCfg.HTTPServerTimeouts()
 	result := libprocess.Run(ctx,
-		libcontroller.WithWebServerProcess(router, serverCfg.HTTPPort, readHeaderTimeout, shutdownTime),
-		libcontroller.WithMetricsServerProcess(serverCfg.MetricsPort, readHeaderTimeout, shutdownTime),
+		libcontroller.WithWebServerProcess(router, serverCfg.HTTPPort, timeouts),
+		libcontroller.WithMetricsServerProcess(serverCfg.MetricsPort, timeouts),
 		libgateway.WithSignalWatchProcess(),
 	)
 

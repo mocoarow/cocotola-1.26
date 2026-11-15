@@ -4,6 +4,9 @@ server:
   httpPort: ${QUESTION_HTTP_PORT:-8090}
   metricsPort: ${QUESTION_METRICS_PORT:-8091}
   readHeaderTimeoutSec: ${QUESTION_READ_HEADER_TIMEOUT_SEC:-30}
+  readTimeoutSec: ${QUESTION_READ_TIMEOUT_SEC:-60}
+  writeTimeoutSec: ${QUESTION_WRITE_TIMEOUT_SEC:-60}
+  idleTimeoutSec: ${QUESTION_IDLE_TIMEOUT_SEC:-120}
   cors:
     allowOrigins: ${QUESTION_CORS_ALLOW_ORIGINS:-'*'}
     allowMethods: ${QUESTION_CORS_ALLOW_METHODS:-'GET,POST,PUT,DELETE,OPTIONS'}

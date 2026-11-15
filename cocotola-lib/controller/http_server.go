@@ -7,8 +7,39 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 )
+
+// HTTPServerTimeouts holds the http.Server timeouts and the graceful shutdown deadline.
+type HTTPServerTimeouts struct {
+	ReadHeader time.Duration
+	Read       time.Duration
+	Write      time.Duration
+	Idle       time.Duration
+	Shutdown   time.Duration
+}
+
+func newHTTPServer(port int, handler http.Handler, timeouts HTTPServerTimeouts) *http.Server {
+	return &http.Server{
+		Addr:                         ":" + strconv.Itoa(port),
+		Handler:                      handler,
+		DisableGeneralOptionsHandler: false,
+		TLSConfig:                    nil,
+		ReadTimeout:                  timeouts.Read,
+		ReadHeaderTimeout:            timeouts.ReadHeader,
+		WriteTimeout:                 timeouts.Write,
+		IdleTimeout:                  timeouts.Idle,
+		MaxHeaderBytes:               0,
+		TLSNextProto:                 nil,
+		ConnState:                    nil,
+		ErrorLog:                     nil,
+		BaseContext:                  nil,
+		ConnContext:                  nil,
+		HTTP2:                        nil,
+		Protocols:                    nil,
+	}
+}
 
 func runHTTPServer(ctx context.Context, server *http.Server, logger *slog.Logger, shutdownTime time.Duration) error {
 	lc := net.ListenConfig{
