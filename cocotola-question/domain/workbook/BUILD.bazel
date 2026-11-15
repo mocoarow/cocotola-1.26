@@ -19,12 +19,14 @@ go_library(
 smart_go_test(
     name = "workbook_test",
     srcs = [
+        "export_test.go",
         "language_s_test.go",
         "visibility_s_test.go",
+        "workbook_length_s_test.go",
         "workbook_s_test.go",
     ],
+    embed = [":workbook"],
     deps = [
-        ":workbook",
         "//cocotola-question/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
