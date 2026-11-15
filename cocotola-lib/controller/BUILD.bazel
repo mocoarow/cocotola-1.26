@@ -27,6 +27,7 @@ go_library(
 smart_go_test(
     name = "controller_test",
     srcs = [
+        "config_s_test.go",
         "cors_s_test.go",
         "export_test.go",
         "http_server_s_test.go",

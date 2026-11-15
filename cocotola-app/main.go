@@ -107,11 +107,10 @@ func run() (int, error) {
 	defer questionCleanup()
 
 	// run
-	readHeaderTimeout := time.Duration(cfg.Server.ReadHeaderTimeoutSec) * time.Second
-	shutdownTime := time.Duration(cfg.Server.Shutdown.ShutdownTimeSec) * time.Second
+	timeouts := cfg.Server.HTTPServerTimeouts()
 	result := libprocess.Run(ctx,
-		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, readHeaderTimeout, shutdownTime),
-		libcontroller.WithMetricsServerProcess(cfg.Server.MetricsPort, readHeaderTimeout, shutdownTime),
+		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, timeouts),
+		libcontroller.WithMetricsServerProcess(cfg.Server.MetricsPort, timeouts),
 		libgateway.WithSignalWatchProcess(),
 		authResult.EventBusStart,
 	)
