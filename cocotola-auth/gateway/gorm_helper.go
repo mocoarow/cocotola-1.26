@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -52,19 +51,6 @@ func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string,
 		return fmt.Errorf("save %s: %w", label, err)
 	}
 	return nil
-}
-
-// findRecordByHash looks up a record by token_hash column and returns ErrTokenNotFound
-// when no matching record exists.
-func findRecordByHash[R any](ctx context.Context, db *gorm.DB, hash string, label string) (*R, error) {
-	var record R
-	if err := db.WithContext(ctx).Where("token_hash = ?", hash).First(&record).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, domain.ErrTokenNotFound
-		}
-		return nil, fmt.Errorf("find %s by hash: %w", label, err)
-	}
-	return &record, nil
 }
 
 // findAndConvertWhitelist queries whitelist records and converts them to domain entries.

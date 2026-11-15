@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -11,9 +12,12 @@ import (
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
-// --- refresh token ---
+const (
+	refreshTokenTable = "refresh_token"
+	sessionTokenTable = "session_token"
+)
 
-type refreshTokenRecord struct {
+type opaqueTokenRecord struct {
 	ID               string     `gorm:"column:id;primaryKey"`
 	Version          int        `gorm:"column:version"`
 	CreatedAt        time.Time  `gorm:"column:created_at"`
@@ -26,14 +30,52 @@ type refreshTokenRecord struct {
 	RevokedAt        *time.Time `gorm:"column:revoked_at"`
 }
 
-func (refreshTokenRecord) TableName() string { return "refresh_token" }
+type opaqueToken interface {
+	ID() string
+	UserID() domain.AppUserID
+	LoginID() domain.LoginID
+	OrganizationName() string
+	TokenHash() domain.TokenHash
+	CreatedAt() time.Time
+	ExpiresAt() time.Time
+	RevokedAt() *time.Time
+}
 
-func toRefreshTokenDomain(r *refreshTokenRecord) (*domaintoken.RefreshToken, error) {
-	userID, err := domain.ParseAppUserID(r.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid user id %q in db: %w", r.UserID, err)
+type reconstructOpaqueTokenFunc[T any] func(id string, userID domain.AppUserID, loginID domain.LoginID, organizationName string, tokenHash domain.TokenHash, createdAt time.Time, expiresAt time.Time, revokedAt *time.Time) *T
+
+func saveOpaqueToken(ctx context.Context, db *gorm.DB, table string, token opaqueToken) error {
+	record := opaqueTokenRecord{
+		ID:               token.ID(),
+		Version:          1,
+		CreatedAt:        token.CreatedAt(),
+		UpdatedAt:        time.Now(),
+		UserID:           token.UserID().String(),
+		LoginID:          string(token.LoginID()),
+		OrganizationName: token.OrganizationName(),
+		TokenHash:        string(token.TokenHash()),
+		ExpiresAt:        token.ExpiresAt(),
+		RevokedAt:        token.RevokedAt(),
 	}
-	return domaintoken.ReconstructRefreshToken(r.ID, userID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt), nil
+	if err := db.WithContext(ctx).Table(table).Save(&record).Error; err != nil {
+		return fmt.Errorf("save %s: %w", table, err)
+	}
+	return nil
+}
+
+// findOpaqueTokenByHash looks up a token in the given table and returns ErrTokenNotFound when none matches.
+func findOpaqueTokenByHash[T any](ctx context.Context, db *gorm.DB, table string, hash string, reconstruct reconstructOpaqueTokenFunc[T]) (*T, error) {
+	var record opaqueTokenRecord
+	if err := db.WithContext(ctx).Table(table).Where("token_hash = ?", hash).First(&record).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrTokenNotFound
+		}
+		return nil, fmt.Errorf("find %s by hash: %w", table, err)
+	}
+	userID, err := domain.ParseAppUserID(record.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user id %q in %s: %w", record.UserID, table, err)
+	}
+	return reconstruct(record.ID, userID, domain.LoginID(record.LoginID), record.OrganizationName, domain.TokenHash(record.TokenHash), record.CreatedAt, record.ExpiresAt, record.RevokedAt), nil
 }
 
 // RefreshTokenRepository implements refresh token persistence using GORM.
@@ -46,60 +88,12 @@ func NewRefreshTokenRepository(db *gorm.DB) *RefreshTokenRepository {
 
 // Save persists a refresh token record (upsert: insert or update).
 func (r *RefreshTokenRepository) Save(ctx context.Context, token *domaintoken.RefreshToken) error {
-	record := refreshTokenRecord{
-		ID:               token.ID(),
-		Version:          1,
-		CreatedAt:        token.CreatedAt(),
-		UpdatedAt:        time.Now(),
-		UserID:           token.UserID().String(),
-		LoginID:          string(token.LoginID()),
-		OrganizationName: token.OrganizationName(),
-		TokenHash:        string(token.TokenHash()),
-		ExpiresAt:        token.ExpiresAt(),
-		RevokedAt:        token.RevokedAt(),
-	}
-	if err := r.db.WithContext(ctx).Save(&record).Error; err != nil {
-		return fmt.Errorf("save refresh token: %w", err)
-	}
-	return nil
+	return saveOpaqueToken(ctx, r.db, refreshTokenTable, token)
 }
 
 // FindByTokenHash looks up a refresh token by its SHA256 hash.
 func (r *RefreshTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.RefreshToken, error) {
-	record, err := findRecordByHash[refreshTokenRecord](ctx, r.db, hash, "refresh token")
-	if err != nil {
-		return nil, fmt.Errorf("find refresh token by hash: %w", err)
-	}
-	token, err := toRefreshTokenDomain(record)
-	if err != nil {
-		return nil, fmt.Errorf("convert refresh token domain: %w", err)
-	}
-	return token, nil
-}
-
-// --- session token ---
-
-type sessionTokenRecord struct {
-	ID               string     `gorm:"column:id;primaryKey"`
-	Version          int        `gorm:"column:version"`
-	CreatedAt        time.Time  `gorm:"column:created_at"`
-	UpdatedAt        time.Time  `gorm:"column:updated_at"`
-	UserID           string     `gorm:"column:user_id"`
-	LoginID          string     `gorm:"column:login_id"`
-	OrganizationName string     `gorm:"column:organization_name"`
-	TokenHash        string     `gorm:"column:token_hash"`
-	ExpiresAt        time.Time  `gorm:"column:expires_at"`
-	RevokedAt        *time.Time `gorm:"column:revoked_at"`
-}
-
-func (sessionTokenRecord) TableName() string { return "session_token" }
-
-func toSessionTokenDomain(r *sessionTokenRecord) (*domaintoken.SessionToken, error) {
-	userID, err := domain.ParseAppUserID(r.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("invalid user id %q in db: %w", r.UserID, err)
-	}
-	return domaintoken.ReconstructSessionToken(r.ID, userID, domain.LoginID(r.LoginID), r.OrganizationName, domain.TokenHash(r.TokenHash), r.CreatedAt, r.ExpiresAt, r.RevokedAt), nil
+	return findOpaqueTokenByHash(ctx, r.db, refreshTokenTable, hash, domaintoken.ReconstructRefreshToken)
 }
 
 // SessionTokenRepository implements session token persistence using GORM.
@@ -112,33 +106,10 @@ func NewSessionTokenRepository(db *gorm.DB) *SessionTokenRepository {
 
 // Save persists a session token record (upsert: insert or update).
 func (r *SessionTokenRepository) Save(ctx context.Context, token *domaintoken.SessionToken) error {
-	record := sessionTokenRecord{
-		ID:               token.ID(),
-		Version:          1,
-		CreatedAt:        token.CreatedAt(),
-		UpdatedAt:        time.Now(),
-		UserID:           token.UserID().String(),
-		LoginID:          string(token.LoginID()),
-		OrganizationName: token.OrganizationName(),
-		TokenHash:        string(token.TokenHash()),
-		ExpiresAt:        token.ExpiresAt(),
-		RevokedAt:        token.RevokedAt(),
-	}
-	if err := r.db.WithContext(ctx).Save(&record).Error; err != nil {
-		return fmt.Errorf("save session token: %w", err)
-	}
-	return nil
+	return saveOpaqueToken(ctx, r.db, sessionTokenTable, token)
 }
 
 // FindByTokenHash looks up a session token by its SHA256 hash.
 func (r *SessionTokenRepository) FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error) {
-	record, err := findRecordByHash[sessionTokenRecord](ctx, r.db, hash, "session token")
-	if err != nil {
-		return nil, fmt.Errorf("find session token by hash: %w", err)
-	}
-	token, err := toSessionTokenDomain(record)
-	if err != nil {
-		return nil, fmt.Errorf("convert session token domain: %w", err)
-	}
-	return token, nil
+	return findOpaqueTokenByHash(ctx, r.db, sessionTokenTable, hash, domaintoken.ReconstructSessionToken)
 }
