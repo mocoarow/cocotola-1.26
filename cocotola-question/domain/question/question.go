@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -112,7 +113,7 @@ func (q *Question) validate(parser ContentParser) error {
 	if q.content == "" {
 		return fmt.Errorf("question content is required: %w", domain.ErrInvalidArgument)
 	}
-	if len(q.content) > maxContentLength {
+	if utf8.RuneCountInString(q.content) > maxContentLength {
 		return fmt.Errorf("question content must not exceed %d characters: %w", maxContentLength, domain.ErrInvalidArgument)
 	}
 	if q.orderIndex < 0 {

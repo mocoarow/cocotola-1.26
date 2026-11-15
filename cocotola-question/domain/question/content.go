@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -141,7 +142,7 @@ func validateExplanation(explanation string) error {
 	if explanation == "" {
 		return nil
 	}
-	if len(explanation) > maxExplanationLength {
+	if utf8.RuneCountInString(explanation) > maxExplanationLength {
 		return fmt.Errorf("explanation must not exceed %d characters: %w", maxExplanationLength, domain.ErrInvalidArgument)
 	}
 	if htmlTagPattern.MatchString(explanation) {
@@ -154,7 +155,7 @@ func validateTextWithLang(twl TextWithLang, fieldName string) error {
 	if twl.Text == "" {
 		return fmt.Errorf("%s text is required: %w", fieldName, domain.ErrInvalidArgument)
 	}
-	if len(twl.Text) > maxQuestionTextLength {
+	if utf8.RuneCountInString(twl.Text) > maxQuestionTextLength {
 		return fmt.Errorf("%s text must not exceed %d characters: %w", fieldName, maxQuestionTextLength, domain.ErrInvalidArgument)
 	}
 	if htmlTagPattern.MatchString(twl.Text) {
@@ -188,7 +189,7 @@ func validateQuestionText(text string) error {
 	if text == "" {
 		return fmt.Errorf("questionText is required: %w", domain.ErrInvalidArgument)
 	}
-	if len(text) > maxQuestionTextLength {
+	if utf8.RuneCountInString(text) > maxQuestionTextLength {
 		return fmt.Errorf("questionText must not exceed %d characters: %w", maxQuestionTextLength, domain.ErrInvalidArgument)
 	}
 	if htmlTagPattern.MatchString(text) {
@@ -218,7 +219,7 @@ func validateChoices(choices []Choice) error {
 		if choice.Text == "" {
 			return fmt.Errorf("choice[%d] text is required: %w", i, domain.ErrInvalidArgument)
 		}
-		if len(choice.Text) > maxChoiceTextLength {
+		if utf8.RuneCountInString(choice.Text) > maxChoiceTextLength {
 			return fmt.Errorf("choice[%d] text must not exceed %d characters: %w", i, maxChoiceTextLength, domain.ErrInvalidArgument)
 		}
 	}
