@@ -111,7 +111,7 @@ func Test_NewWorkbook_shouldReturnError_whenTitleExceedsMaxLength(t *testing.T) 
 
 	// given
 	id, spaceID, ownerID, orgID, _, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
-	longTitle := strings.Repeat("a", 201)
+	longTitle := strings.Repeat("a", workbook.MaxTitleLength+1)
 
 	// when
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, longTitle, desc, vis, lang, createdAt, updatedAt)
@@ -125,7 +125,7 @@ func Test_NewWorkbook_shouldSucceed_whenTitleIsAtMaxLength(t *testing.T) {
 
 	// given
 	id, spaceID, ownerID, orgID, _, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
-	maxTitle := strings.Repeat("a", 200)
+	maxTitle := strings.Repeat("a", workbook.MaxTitleLength)
 
 	// when
 	wb, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, maxTitle, desc, vis, lang, createdAt, updatedAt)
@@ -140,7 +140,7 @@ func Test_NewWorkbook_shouldReturnError_whenDescriptionExceedsMaxLength(t *testi
 
 	// given
 	id, spaceID, ownerID, orgID, title, _, vis, lang, createdAt, updatedAt := validWorkbookArgs()
-	longDesc := strings.Repeat("a", 1001)
+	longDesc := strings.Repeat("a", workbook.MaxDescriptionLength+1)
 
 	// when
 	_, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, longDesc, vis, lang, createdAt, updatedAt)
@@ -271,7 +271,7 @@ func Test_Workbook_UpdateDescription_shouldReturnError_whenDescriptionExceedsMax
 	wb, _ := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt)
 
 	// when
-	err := wb.UpdateDescription(strings.Repeat("a", 1001))
+	err := wb.UpdateDescription(strings.Repeat("a", workbook.MaxDescriptionLength+1))
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)

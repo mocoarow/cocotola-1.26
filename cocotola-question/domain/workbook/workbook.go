@@ -3,6 +3,7 @@ package workbook
 import (
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -82,10 +83,10 @@ func (w *Workbook) validate() error {
 	if w.title == "" {
 		return fmt.Errorf("workbook title is required: %w", domain.ErrInvalidArgument)
 	}
-	if len(w.title) > maxTitleLength {
+	if utf8.RuneCountInString(w.title) > maxTitleLength {
 		return fmt.Errorf("workbook title must not exceed %d characters: %w", maxTitleLength, domain.ErrInvalidArgument)
 	}
-	if len(w.description) > maxDescriptionLength {
+	if utf8.RuneCountInString(w.description) > maxDescriptionLength {
 		return fmt.Errorf("workbook description must not exceed %d characters: %w", maxDescriptionLength, domain.ErrInvalidArgument)
 	}
 	if w.visibility.Value() == "" {
@@ -152,7 +153,7 @@ func (w *Workbook) UpdateTitle(title string) error {
 	if title == "" {
 		return fmt.Errorf("workbook title is required: %w", domain.ErrInvalidArgument)
 	}
-	if len(title) > maxTitleLength {
+	if utf8.RuneCountInString(title) > maxTitleLength {
 		return fmt.Errorf("workbook title must not exceed %d characters: %w", maxTitleLength, domain.ErrInvalidArgument)
 	}
 	w.title = title
@@ -161,7 +162,7 @@ func (w *Workbook) UpdateTitle(title string) error {
 
 // UpdateDescription updates the workbook description.
 func (w *Workbook) UpdateDescription(desc string) error {
-	if len(desc) > maxDescriptionLength {
+	if utf8.RuneCountInString(desc) > maxDescriptionLength {
 		return fmt.Errorf("workbook description must not exceed %d characters: %w", maxDescriptionLength, domain.ErrInvalidArgument)
 	}
 	w.description = desc
