@@ -15,6 +15,9 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-init/importer:
     config:
       all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-init/initialize:
+    interfaces:
+      PublicWorkbookSeeder:
   github.com/mocoarow/cocotola-1.26/cocotola-init/seed:
     interfaces:
       WorkbookAPIClient:
