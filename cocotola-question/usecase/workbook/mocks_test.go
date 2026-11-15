@@ -862,22 +862,22 @@ func (_m *mockspaceTypeFetcher) EXPECT() *mockspaceTypeFetcher_Expecter {
 }
 
 // FetchSpaceType provides a mock function for the type mockspaceTypeFetcher
-func (_mock *mockspaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceID string) (string, error) {
+func (_mock *mockspaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceID string) (domain.SpaceType, error) {
 	ret := _mock.Called(ctx, spaceID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FetchSpaceType")
 	}
 
-	var r0 string
+	var r0 domain.SpaceType
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (domain.SpaceType, error)); ok {
 		return returnFunc(ctx, spaceID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) domain.SpaceType); ok {
 		r0 = returnFunc(ctx, spaceID)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(domain.SpaceType)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(ctx, spaceID)
@@ -917,12 +917,12 @@ func (_c *mockspaceTypeFetcher_FetchSpaceType_Call) Run(run func(ctx context.Con
 	return _c
 }
 
-func (_c *mockspaceTypeFetcher_FetchSpaceType_Call) Return(s string, err error) *mockspaceTypeFetcher_FetchSpaceType_Call {
-	_c.Call.Return(s, err)
+func (_c *mockspaceTypeFetcher_FetchSpaceType_Call) Return(spaceType domain.SpaceType, err error) *mockspaceTypeFetcher_FetchSpaceType_Call {
+	_c.Call.Return(spaceType, err)
 	return _c
 }
 
-func (_c *mockspaceTypeFetcher_FetchSpaceType_Call) RunAndReturn(run func(ctx context.Context, spaceID string) (string, error)) *mockspaceTypeFetcher_FetchSpaceType_Call {
+func (_c *mockspaceTypeFetcher_FetchSpaceType_Call) RunAndReturn(run func(ctx context.Context, spaceID string) (domain.SpaceType, error)) *mockspaceTypeFetcher_FetchSpaceType_Call {
 	_c.Call.Return(run)
 	return _c
 }

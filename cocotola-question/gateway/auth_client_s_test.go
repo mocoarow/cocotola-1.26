@@ -151,9 +151,10 @@ func Test_AuthServiceSpaceTypeFetcher_FetchSpaceType_shouldReturnSpaceType_whenS
 	tests := []struct {
 		name      string
 		spaceType string
+		want      domain.SpaceType
 	}{
-		{name: "public", spaceType: "public"},
-		{name: "private", spaceType: "private"},
+		{name: "public", spaceType: "public", want: domain.SpaceTypePublic()},
+		{name: "private", spaceType: "private", want: domain.SpaceTypePrivate()},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -168,7 +169,7 @@ func Test_AuthServiceSpaceTypeFetcher_FetchSpaceType_shouldReturnSpaceType_whenS
 
 			// then
 			require.NoError(t, err)
-			assert.Equal(t, tt.spaceType, spaceType)
+			assert.Equal(t, tt.want, spaceType)
 		})
 	}
 }

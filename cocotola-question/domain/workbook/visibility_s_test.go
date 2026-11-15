@@ -60,6 +60,41 @@ func Test_NewVisibility_shouldReturnError_whenValueIsInvalid(t *testing.T) {
 	}
 }
 
+func Test_VisibilityFromSpaceType_shouldReturnMatchingVisibility_whenSpaceTypeIsKnown(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		spaceType domain.SpaceType
+		want      workbook.Visibility
+	}{
+		{name: "public", spaceType: domain.SpaceTypePublic(), want: workbook.VisibilityPublic()},
+		{name: "private", spaceType: domain.SpaceTypePrivate(), want: workbook.VisibilityPrivate()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// when
+			got, err := workbook.VisibilityFromSpaceType(tt.spaceType)
+
+			// then
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_VisibilityFromSpaceType_shouldReturnErrInvalidSpaceType_whenSpaceTypeIsZero(t *testing.T) {
+	t.Parallel()
+
+	// when
+	_, err := workbook.VisibilityFromSpaceType(domain.SpaceType{})
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidSpaceType)
+}
+
 func Test_VisibilityPrivate_shouldReturnPrivateType(t *testing.T) {
 	t.Parallel()
 

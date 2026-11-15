@@ -75,7 +75,7 @@ func Test_CreateWorkbookCommand_shouldCreateWorkbook_whenUnderLimit(t *testing.T
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
 
 	wbSaver := newMockworkbookSaver(t)
 	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
@@ -130,7 +130,7 @@ func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("public", nil)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePublic(), nil)
 
 	wbSaver := newMockworkbookSaver(t)
 	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
@@ -196,6 +196,30 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	require.ErrorIs(t, err, authErr)
 }
 
+func Test_CreateWorkbookCommand_shouldReturnErrInvalidSpaceType_whenSpaceTypeIsZero(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	spaceResource, err := domain.ResourceSpace(fixtureSpaceID)
+	require.NoError(t, err)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), spaceResource).Return(true, nil)
+
+	spaceTypeFetcher := newMockspaceTypeFetcher(t)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceType{}, nil)
+
+	cmd := workbookusecase.NewCreateWorkbookCommand(nil, nil, nil, nil, spaceTypeFetcher, authChecker, nil)
+	input := newCreateWorkbookInput(t)
+
+	// when
+	_, err = cmd.CreateWorkbook(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidSpaceType)
+}
+
 func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -215,7 +239,7 @@ func Test_CreateWorkbookCommand_shouldReturnLimitReached_whenAtCapacity(t *testi
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(nil, listFinder, nil, maxWbFetcher, spaceTypeFetcher, authChecker, nil)
 	input := newCreateWorkbookInput(t)
@@ -253,7 +277,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testin
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), workbookResourceMatcher, domain.EffectAllow()).Return(policyErr)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, nil, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)
@@ -293,7 +317,7 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	expectAllWorkbookPolicies(policyAdder)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return("private", nil)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
 	input := newCreateWorkbookInput(t)

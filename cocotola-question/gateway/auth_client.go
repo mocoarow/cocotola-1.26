@@ -208,11 +208,11 @@ func NewAuthServiceSpaceTypeFetcher(authBaseURL string, apiKey string, httpClien
 	}
 }
 
-// FetchSpaceType returns the SpaceType ("public" or "private") of the given space.
+// FetchSpaceType returns the SpaceType of the given space.
 // Returns domain.ErrSpaceNotFound when cocotola-auth responds with 404.
-func (f *AuthServiceSpaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceID string) (string, error) {
+func (f *AuthServiceSpaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceID string) (domain.SpaceType, error) {
 	if spaceID == "" {
-		return "", fmt.Errorf("space id is required: %w", domain.ErrInvalidArgument)
+		return domain.SpaceType{}, fmt.Errorf("space id is required: %w", domain.ErrInvalidArgument)
 	}
 
 	reqURL := f.authBaseURL + "/api/v1/internal/auth/space/" + url.PathEscape(spaceID)
@@ -231,15 +231,14 @@ func (f *AuthServiceSpaceTypeFetcher) FetchSpaceType(ctx context.Context, spaceI
 		}
 	})
 	if err != nil {
-		return "", fmt.Errorf("get auth space %s: %w", spaceID, err)
+		return domain.SpaceType{}, fmt.Errorf("get auth space %s: %w", spaceID, err)
 	}
 
-	switch result.SpaceType {
-	case "public", "private":
-		return result.SpaceType, nil
-	default:
-		return "", fmt.Errorf("unexpected space type %q for space %s: %w", result.SpaceType, spaceID, domain.ErrInvalidSpaceType)
+	spaceType, err := domain.NewSpaceType(result.SpaceType)
+	if err != nil {
+		return domain.SpaceType{}, fmt.Errorf("space %s: %w", spaceID, err)
 	}
+	return spaceType, nil
 }
 
 // AuthServiceMaxWorkbooksFetcher calls cocotola-auth's internal API to fetch the max workbooks setting for a user.

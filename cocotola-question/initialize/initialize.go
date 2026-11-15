@@ -39,9 +39,9 @@ type MaxWorkbooksFetcher interface {
 	FetchMaxWorkbooks(ctx context.Context, userID string) (int, error)
 }
 
-// SpaceTypeFetcher resolves a space's type ("public" or "private") via cocotola-auth.
+// SpaceTypeFetcher resolves a space's type via cocotola-auth.
 type SpaceTypeFetcher interface {
-	FetchSpaceType(ctx context.Context, spaceID string) (string, error)
+	FetchSpaceType(ctx context.Context, spaceID string) (domain.SpaceType, error)
 }
 
 // PolicyAdder adds per-user RBAC policies via the auth service.

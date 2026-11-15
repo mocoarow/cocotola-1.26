@@ -10,6 +10,7 @@ go_library(
         "error.go",
         "owned_workbook_list.go",
         "rbac.go",
+        "space_type.go",
         "validator.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/domain",
@@ -27,6 +28,7 @@ smart_go_test(
         "active_question_list_s_test.go",
         "owned_workbook_list_s_test.go",
         "rbac_s_test.go",
+        "space_type_s_test.go",
         "validator_s_test.go",
     ],
     deps = [
