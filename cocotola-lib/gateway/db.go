@@ -96,6 +96,10 @@ func openGormDBWithObservers(dialector gorm.Dialector, logHandler slog.Handler, 
 		return nil, fmt.Errorf("use tracing plugin: %w", err)
 	}
 
+	if err := registerDriverErrorRedaction(db); err != nil {
+		return nil, fmt.Errorf("register driver error redaction: %w", err)
+	}
+
 	return db, nil
 }
 

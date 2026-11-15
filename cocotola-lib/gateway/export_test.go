@@ -40,3 +40,6 @@ func NewShutdownCtxForTest(ctx context.Context, timeout time.Duration) (context.
 
 // OpenGormDBWithObservers exports openGormDBWithObservers for testing.
 var OpenGormDBWithObservers = openGormDBWithObservers
+
+// RedactDriverError exports redactDriverError for testing.
+var RedactDriverError = redactDriverError

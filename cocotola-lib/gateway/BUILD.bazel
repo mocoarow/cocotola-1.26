@@ -5,6 +5,7 @@ go_library(
     name = "gateway",
     srcs = [
         "db.go",
+        "db_error.go",
         "db_mysql.go",
         "db_postgres.go",
         "doc.go",
@@ -59,6 +60,7 @@ go_library(
 smart_go_test(
     name = "gateway_test",
     srcs = [
+        "db_error_s_test.go",
         "db_gorm_s_test.go",
         "db_mysql_s_test.go",
         "db_postgres_s_test.go",
@@ -81,6 +83,7 @@ smart_go_test(
         "@io_gorm_gorm//:gorm",
         "@io_gorm_gorm//utils/tests",
         "@io_opentelemetry_go_contrib_instrumentation_net_http_otelhttp//:otelhttp",
+        "@io_opentelemetry_go_otel//codes",
         "@io_opentelemetry_go_otel//semconv/v1.40.0:v1_40_0",
         "@io_opentelemetry_go_otel_sdk//trace",
         "@io_opentelemetry_go_otel_sdk//trace/tracetest",
