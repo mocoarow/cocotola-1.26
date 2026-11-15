@@ -20,15 +20,17 @@ smart_go_test(
     name = "question_test",
     srcs = [
         "audio_s_test.go",
+        "content_length_s_test.go",
         "content_ordering_s_test.go",
         "content_s_test.go",
+        "export_test.go",
         "lang_s_test.go",
         "question_s_test.go",
         "question_type_s_test.go",
     ],
     data = glob(["testdata/**"]),
+    embed = [":question"],
     deps = [
-        ":question",
         "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "@com_github_stretchr_testify//assert",

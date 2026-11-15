@@ -1,9 +1,11 @@
 package question_test
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -258,10 +260,57 @@ func Test_NewQuestion_shouldReturnError_whenContentExceedsMaxLength(t *testing.T
 
 	// given
 	a := validQuestionArgs()
-	longContent := strings.Repeat("a", 10001)
+	longContent := strings.Repeat("a", question.MaxContentLength+1)
 
 	// when
 	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, longContent, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func multibyteWordFillContent(t *testing.T, length int) string {
+	t.Helper()
+
+	const skeleton = `{"source":{"text":"りんご","lang":"ja"},"target":{"text":"{{apple}}","lang":"en"},` +
+		`"explanation":"%s","explanation1":"%s","explanation2":"%s"}`
+	placeholders := strings.Count(skeleton, "%s")
+	remaining := length - utf8.RuneCountInString(skeleton) + len("%s")*placeholders
+	paddings := make([]any, placeholders)
+	for i := range paddings {
+		n := min(remaining, question.MaxExplanationLength)
+		paddings[i] = multibyteText(n)
+		remaining -= n
+	}
+	require.Zero(t, remaining)
+	content := fmt.Sprintf(skeleton, paddings...)
+	require.Equal(t, length, utf8.RuneCountInString(content))
+	return content
+}
+
+func Test_NewQuestion_shouldReturnQuestion_whenMultibyteContentIsAtMaxLength(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	content := multibyteWordFillContent(t, question.MaxContentLength)
+
+	// when
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_NewQuestion_shouldReturnError_whenMultibyteContentExceedsMaxLength(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	content := multibyteWordFillContent(t, question.MaxContentLength+1)
+
+	// when
+	_, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)
