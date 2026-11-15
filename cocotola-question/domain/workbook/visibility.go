@@ -35,6 +35,18 @@ func NewVisibility(value string) (Visibility, error) {
 	}
 }
 
+// VisibilityFromSpaceType returns the visibility a workbook in a space of the given type must have.
+func VisibilityFromSpaceType(spaceType domain.SpaceType) (Visibility, error) {
+	switch {
+	case spaceType.IsPublic():
+		return VisibilityPublic(), nil
+	case spaceType.IsPrivate():
+		return VisibilityPrivate(), nil
+	default:
+		return Visibility{}, fmt.Errorf("visibility from space type: %w", domain.ErrInvalidSpaceType)
+	}
+}
+
 // Value returns the string representation.
 func (v Visibility) Value() string { return v.value }
 

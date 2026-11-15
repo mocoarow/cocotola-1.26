@@ -74,17 +74,12 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("load owned list with limit: %w", err)
 	}
 
-	vis, err := domainworkbook.NewVisibility(visibility)
-	if err != nil {
-		return nil, fmt.Errorf("new visibility: %w", err)
-	}
-
 	id, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("generate workbook id: %w", err)
 	}
 	now := time.Now()
-	wb, err := domainworkbook.NewWorkbook(id.String(), input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, vis, lang, now, now)
+	wb, err := domainworkbook.NewWorkbook(id.String(), input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("new workbook: %w", err)
 	}
@@ -108,23 +103,17 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 	return output, nil
 }
 
-// resolveVisibility consults cocotola-auth for the SpaceType of the target space
-// and maps it to the canonical Workbook visibility ("public" / "private"). This
-// is the single source of truth for visibility — clients cannot override it.
-func (c *CreateWorkbookCommand) resolveVisibility(ctx context.Context, spaceID string) (string, error) {
+func (c *CreateWorkbookCommand) resolveVisibility(ctx context.Context, spaceID string) (domainworkbook.Visibility, error) {
 	spaceType, err := c.spaceTypeFetcher.FetchSpaceType(ctx, spaceID)
 	if err != nil {
-		return "", fmt.Errorf("fetch space type for space %s: %w", spaceID, err)
+		return domainworkbook.Visibility{}, fmt.Errorf("fetch space type for space %s: %w", spaceID, err)
 	}
 
-	switch spaceType {
-	case "public":
-		return domainworkbook.VisibilityPublic().Value(), nil
-	case "private":
-		return domainworkbook.VisibilityPrivate().Value(), nil
-	default:
-		return "", fmt.Errorf("unsupported space type %q: %w", spaceType, domain.ErrInvalidArgument)
+	visibility, err := domainworkbook.VisibilityFromSpaceType(spaceType)
+	if err != nil {
+		return domainworkbook.Visibility{}, fmt.Errorf("space %s: %w", spaceID, err)
 	}
+	return visibility, nil
 }
 
 func (c *CreateWorkbookCommand) authorizeCreateWorkbook(ctx context.Context, input *workbookservice.CreateWorkbookInput) error {

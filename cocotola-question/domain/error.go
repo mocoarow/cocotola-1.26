@@ -38,7 +38,7 @@ var ErrOwnedWorkbookListNotFound = errors.New("owned workbook list not found")
 // ErrSpaceNotFound is returned when a space lookup against cocotola-auth returns 404.
 var ErrSpaceNotFound = errors.New("space not found")
 
-// ErrInvalidSpaceType is returned when cocotola-auth returns an unknown SpaceType.
+// ErrInvalidSpaceType is returned for an unknown SpaceType.
 var ErrInvalidSpaceType = errors.New("invalid space type")
 
 // ErrInvalidMaxWorkbooks is returned when cocotola-auth returns a non-positive MaxWorkbooks.

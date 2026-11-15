@@ -191,7 +191,7 @@ func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) 
 func (r *WorkbookRepository) FindPublicByOrganizationIDAndLanguage(ctx context.Context, organizationID string, language string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).
 		Where("organizationID", "==", organizationID).
-		Where("visibility", "==", "public").
+		Where("visibility", "==", domainworkbook.VisibilityPublic().Value()).
 		Where("language", "==", language).
 		Documents(ctx)
 	defer iter.Stop()
