@@ -11,10 +11,14 @@ go_library(
 
 smart_go_test(
     name = "workbook_test",
-    srcs = ["workbook_s_test.go"],
+    srcs = [
+        "visibility_tag_drift_s_test.go",
+        "workbook_s_test.go",
+    ],
     deps = [
         ":workbook",
         "//cocotola-question/domain",
+        "//cocotola-question/domain/workbook",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],
