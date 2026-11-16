@@ -3,7 +3,10 @@ package sharing_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -13,6 +16,7 @@ import (
 	libcontroller "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller"
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	sharinghandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
@@ -54,7 +58,25 @@ func fakeAuthMiddleware(userID string, organizationID string) gin.HandlerFunc {
 	}
 }
 
-func initSharingRouter(ctx context.Context, t *testing.T, listSharedUsecase *MockListSharedUsecase, middleware ...gin.HandlerFunc) *gin.Engine {
+type sharingUsecases struct {
+	share      *MockShareWorkbookUsecase
+	listShared *MockListSharedUsecase
+	unshare    *MockUnshareUsecase
+	listPublic *MockListPublicUsecase
+}
+
+func newSharingUsecases(t *testing.T) sharingUsecases {
+	t.Helper()
+
+	return sharingUsecases{
+		share:      NewMockShareWorkbookUsecase(t),
+		listShared: NewMockListSharedUsecase(t),
+		unshare:    NewMockUnshareUsecase(t),
+		listPublic: NewMockListPublicUsecase(t),
+	}
+}
+
+func initSharingRouter(ctx context.Context, t *testing.T, usecases sharingUsecases, authMiddleware gin.HandlerFunc, middleware ...gin.HandlerFunc) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(ctx, serverConfig, domain.AppName)
@@ -62,16 +84,26 @@ func initSharingRouter(ctx context.Context, t *testing.T, listSharedUsecase *Moc
 	parent := router.Group("api").Group("v1")
 
 	sharinghandler.InitSharingRouter(
-		sharinghandler.NewShareWorkbookHandler(NewMockShareWorkbookUsecase(t)),
-		sharinghandler.NewListSharedHandler(listSharedUsecase),
-		sharinghandler.NewUnshareHandler(NewMockUnshareUsecase(t)),
-		sharinghandler.NewListPublicHandler(NewMockListPublicUsecase(t)),
+		sharinghandler.NewShareWorkbookHandler(usecases.share),
+		sharinghandler.NewListSharedHandler(usecases.listShared),
+		sharinghandler.NewUnshareHandler(usecases.unshare),
+		sharinghandler.NewListPublicHandler(usecases.listPublic),
 		parent,
-		fakeAuthMiddleware(fixtureUserID, fixtureOrganizationID),
+		authMiddleware,
 		middleware...,
 	)
 
 	return router
+}
+
+func serve(ctx context.Context, t *testing.T, r *gin.Engine, method string, path string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequestWithContext(ctx, method, path, nil)
+	require.NoError(t, err)
+	r.ServeHTTP(w, req)
+	return w
 }
 
 func readBytes(t *testing.T, b *bytes.Buffer) []byte {
@@ -79,4 +111,12 @@ func readBytes(t *testing.T, b *bytes.Buffer) []byte {
 	respBytes, err := io.ReadAll(b)
 	require.NoError(t, err)
 	return respBytes
+}
+
+func readErrorResponse(t *testing.T, w *httptest.ResponseRecorder) api.ErrorResponse {
+	t.Helper()
+
+	var resp api.ErrorResponse
+	require.NoError(t, json.Unmarshal(readBytes(t, w.Body), &resp))
+	return resp
 }
