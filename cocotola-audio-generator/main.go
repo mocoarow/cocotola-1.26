@@ -58,7 +58,7 @@ func run() (int, error) {
 		return 1, fmt.Errorf("parse audio encoding: %w", err)
 	}
 
-	tts, err := gateway.NewTTSClient(ctx, cfg.Audio.AudioEncoding, cfg.Audio.SampleRateHz)
+	tts, err := gateway.NewTTSClient(ctx, enc, cfg.Audio.SampleRateHz)
 	if err != nil {
 		return 1, fmt.Errorf("new tts client: %w", err)
 	}

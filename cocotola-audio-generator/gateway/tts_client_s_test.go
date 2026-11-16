@@ -48,3 +48,14 @@ func Test_ParseAudioEncoding_shouldReturnError_whenUnknownEncodingGiven(t *testi
 	require.ErrorContains(t, err, "FLAC")
 	assert.Equal(t, gateway.AudioEncoding{}, enc)
 }
+
+func Test_NewTTSClient_shouldReturnErrUnspecifiedAudioEncoding_whenEncodingIsZeroValue(t *testing.T) {
+	t.Parallel()
+
+	// when
+	client, err := gateway.NewTTSClient(t.Context(), gateway.AudioEncoding{}, 0)
+
+	// then
+	require.ErrorIs(t, err, gateway.ErrUnspecifiedAudioEncoding)
+	assert.Nil(t, client)
+}
