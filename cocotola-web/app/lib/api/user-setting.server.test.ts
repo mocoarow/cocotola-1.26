@@ -1,11 +1,23 @@
+import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getUserPreferences, updateUserLanguage } from "./user-setting.server";
+import { getUserPreferences, updateUserLanguage, updateUserTimezone } from "./user-setting.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 function fakeRequest(): Request {
   return new Request("http://localhost/some-loader", { method: "GET" });
+}
+
+function spyConsoleOutput(): () => string {
+  const spies = (["log", "info", "warn", "error", "debug"] as const).map((level) =>
+    vi.spyOn(console, level).mockImplementation(() => {}),
+  );
+  return () =>
+    spies
+      .flatMap((spy) => spy.mock.calls)
+      .map((args) => format(...args))
+      .join("\n");
 }
 
 describe("updateUserLanguage", () => {
@@ -96,6 +108,42 @@ describe("updateUserLanguage", () => {
     expect(resp.status).toBe(302);
     expect(resp.headers.get("Location")).toBe("/login");
     expect(resp.headers.get("Set-Cookie")).toMatch(/__cocotola_session/);
+  });
+
+  it("should not log the language value", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true, status: 204 });
+    const consoleOutput = spyConsoleOutput();
+
+    // when
+    await updateUserLanguage(fakeRequest(), "token", "sentinel-language");
+
+    // then
+    expect(consoleOutput()).not.toContain("sentinel-language");
+  });
+});
+
+describe("updateUserTimezone", () => {
+  beforeEach(() => {
+    vi.stubEnv("AUTH_BASE_URL", "http://localhost:8080");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    fetchMock.mockReset();
+  });
+
+  it("should not log the timezone value", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: true, status: 204 });
+    const consoleOutput = spyConsoleOutput();
+
+    // when
+    await updateUserTimezone(fakeRequest(), "token", "Sentinel/Timezone");
+
+    // then
+    expect(consoleOutput()).not.toContain("Sentinel/Timezone");
   });
 });
 

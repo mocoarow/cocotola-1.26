@@ -137,7 +137,7 @@ export async function updateUserLanguage(
   accessToken: string,
   language: string,
 ): Promise<void> {
-  console.info(`[user-setting] updateUserLanguage called: language=${language}`);
+  console.info(`[user-setting] updateUserLanguage called: languageLength=${language.length}`);
   await putUserSetting(
     request,
     accessToken,
@@ -171,7 +171,7 @@ export async function updateUserTimezone(
   accessToken: string,
   timezone: string,
 ): Promise<void> {
-  console.info(`[user-setting] updateUserTimezone called: timezone=${timezone}`);
+  console.info(`[user-setting] updateUserTimezone called: timezoneLength=${timezone.length}`);
   await putUserSetting(
     request,
     accessToken,
