@@ -9,12 +9,16 @@ go_library(
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question",
     visibility = ["//visibility:public"],
-    deps = ["//cocotola-question/domain"],
+    deps = [
+        "//cocotola-question/domain",
+        "//cocotola-question/domain/question",
+    ],
 )
 
 smart_go_test(
     name = "question_test",
     srcs = [
+        "audio_output_s_test.go",
         "audio_s_test.go",
         "question_s_test.go",
     ],

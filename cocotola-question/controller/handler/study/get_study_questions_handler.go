@@ -10,6 +10,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -23,12 +24,12 @@ type GetStudyQuestionsUsecase interface {
 // GetStudyQuestionsHandler handles the GET /workbook/:workbookId/study endpoint.
 type GetStudyQuestionsHandler struct {
 	usecase GetStudyQuestionsUsecase
-	audio   *AudioURLBuilder
+	audio   *handler.AudioURLBuilder
 	logger  *slog.Logger
 }
 
 // NewGetStudyQuestionsHandler returns a new GetStudyQuestionsHandler.
-func NewGetStudyQuestionsHandler(usecase GetStudyQuestionsUsecase, audio *AudioURLBuilder) *GetStudyQuestionsHandler {
+func NewGetStudyQuestionsHandler(usecase GetStudyQuestionsUsecase, audio *handler.AudioURLBuilder) *GetStudyQuestionsHandler {
 	return &GetStudyQuestionsHandler{
 		usecase: usecase,
 		audio:   audio,
@@ -119,7 +120,7 @@ func (h *GetStudyQuestionsHandler) GetStudyQuestions(c *gin.Context) {
 			Content:      q.Content,
 			Tags:         tags,
 			OrderIndex:   int32(q.OrderIndex),
-			Audio:        h.audio.audioForStudy(q.Audio),
+			Audio:        h.audio.QuestionAudio(q.Audio),
 		})
 	}
 

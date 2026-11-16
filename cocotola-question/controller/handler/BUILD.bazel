@@ -1,11 +1,28 @@
 load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "handler",
     srcs = [
+        "audio_url.go",
         "doc.go",
         "helper.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler",
     visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-question/api",
+        "//cocotola-question/service/question",
+    ],
+)
+
+smart_go_test(
+    name = "handler_test",
+    srcs = ["audio_url_s_test.go"],
+    deps = [
+        ":handler",
+        "//cocotola-question/api",
+        "//cocotola-question/service/question",
+        "@com_github_stretchr_testify//assert",
+    ],
 )

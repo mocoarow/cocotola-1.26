@@ -15,6 +15,7 @@ import (
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	studyhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -75,7 +76,7 @@ func initStudyRouterWithMiddleware(ctx context.Context, t *testing.T, getUsecase
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
-	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase, studyhandler.NewAudioURLBuilder(""))
+	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(getUsecase, handler.NewAudioURLBuilder(""))
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(summaryUsecase)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(recordUsecase)
 	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(deleteUsecase)

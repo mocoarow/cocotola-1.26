@@ -9,6 +9,7 @@ go_library(
     deps = [
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
+        "//cocotola-question/service/question",
     ],
 )
 

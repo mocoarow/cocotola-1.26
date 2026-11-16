@@ -7,6 +7,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
+	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
 
 // MaxExcludeIDsCount caps the size of the client-supplied resume set
@@ -119,22 +120,7 @@ type QuestionItem struct {
 	// Audio carries playable audio metadata when the audio batch has finished.
 	// Nil when no audio is ready (the typical state for a freshly created
 	// word_fill question).
-	Audio *QuestionItemAudio
-}
-
-// QuestionItemAudio mirrors the same shape as questionservice.AudioOutput but
-// avoids cross-package coupling: study items are independent of the question
-// CRUD response shape.
-type QuestionItemAudio struct {
-	Source *QuestionItemAudioRef
-	Target *QuestionItemAudioRef
-}
-
-// QuestionItemAudioRef carries the storage-relative path and metadata of a
-// single audio file. The handler turns Path into a public URL.
-type QuestionItemAudioRef struct {
-	Path        string
-	DurationSec float64
+	Audio *questionservice.AudioOutput
 }
 
 // GetStudyQuestionsOutput is the output for getting study questions.
