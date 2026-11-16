@@ -39,36 +39,6 @@ func toServiceItem(q *domainquestion.Question) questionservice.Item {
 		OrderIndex:   q.OrderIndex(),
 		CreatedAt:    q.CreatedAt(),
 		UpdatedAt:    q.UpdatedAt(),
-		Audio:        audioOutputFromQuestion(q),
+		Audio:        questionservice.AudioOutputFromRefs(q.ReadyAudioRefs()),
 	}
-}
-
-// audioOutputFromQuestion projects a question's ready audio refs into the
-// service-layer DTO. Returns nil when the audio is not yet ready.
-func audioOutputFromQuestion(q *domainquestion.Question) *questionservice.AudioOutput {
-	ag := q.AudioGeneration()
-	if ag == nil || !ag.Status().IsReady() {
-		return nil
-	}
-	refs := ag.Refs()
-	out := &questionservice.AudioOutput{
-		Source: nil,
-		Target: nil,
-	}
-	if ref, ok := refs[domainquestion.AudioLangSource]; ok {
-		out.Source = &questionservice.AudioRefOutput{
-			Path:        ref.Path(),
-			DurationSec: ref.DurationSec(),
-		}
-	}
-	if ref, ok := refs[domainquestion.AudioLangTarget]; ok {
-		out.Target = &questionservice.AudioRefOutput{
-			Path:        ref.Path(),
-			DurationSec: ref.DurationSec(),
-		}
-	}
-	if out.Source == nil && out.Target == nil {
-		return nil
-	}
-	return out
 }

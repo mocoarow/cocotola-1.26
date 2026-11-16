@@ -22,6 +22,7 @@ go_library(
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/study",
         "//cocotola-question/domain/workbook",
+        "//cocotola-question/service/question",
         "//cocotola-question/service/study",
     ],
 )

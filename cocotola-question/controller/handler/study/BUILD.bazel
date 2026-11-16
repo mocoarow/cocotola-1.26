@@ -4,7 +4,6 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "study",
     srcs = [
-        "audio_url.go",
         "delete_study_history_handler.go",
         "get_dashboard_handler.go",
         "get_study_questions_handler.go",
@@ -19,6 +18,7 @@ go_library(
         "//cocotola-lib/logging",
         "//cocotola-question/api",
         "//cocotola-question/controller",
+        "//cocotola-question/controller/handler",
         "//cocotola-question/service/study",
         "@com_github_gin_gonic_gin//:gin",
     ],
@@ -42,6 +42,7 @@ smart_go_test(
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
         "//cocotola-question/controller",
+        "//cocotola-question/controller/handler",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/service/study",

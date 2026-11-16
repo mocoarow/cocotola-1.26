@@ -229,6 +229,14 @@ func (q *Question) UpdatedAt() time.Time { return q.updatedAt }
 // AudioGeneration returns the shared audio-generation state (nil when unset); do not mutate it.
 func (q *Question) AudioGeneration() *AudioGeneration { return q.audioGeneration }
 
+// ReadyAudioRefs returns the audio refs keyed by language slot, or nil unless the audio is ready.
+func (q *Question) ReadyAudioRefs() map[string]AudioRef {
+	if q.audioGeneration == nil || !q.audioGeneration.status.IsReady() {
+		return nil
+	}
+	return q.audioGeneration.Refs()
+}
+
 // SetAudioGeneration replaces the audio-generation state.
 // Intended for repository hydration and audio-batch transitions only; the
 // question-edit usecase should use MarkAudioPending instead.

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 )
 
 // AddQuestionInput is the validated input for adding a question.
@@ -63,6 +64,26 @@ type AudioOutput struct {
 type AudioRefOutput struct {
 	Path        string
 	DurationSec float64
+}
+
+// AudioOutputFromRefs projects domain audio refs into an AudioOutput, or nil when no slot has a ref.
+func AudioOutputFromRefs(refs map[string]domainquestion.AudioRef) *AudioOutput {
+	out := &AudioOutput{
+		Source: audioRefOutput(refs, domainquestion.AudioLangSource),
+		Target: audioRefOutput(refs, domainquestion.AudioLangTarget),
+	}
+	if out.Source == nil && out.Target == nil {
+		return nil
+	}
+	return out
+}
+
+func audioRefOutput(refs map[string]domainquestion.AudioRef, slot string) *AudioRefOutput {
+	ref, ok := refs[slot]
+	if !ok {
+		return nil
+	}
+	return &AudioRefOutput{Path: ref.Path(), DurationSec: ref.DurationSec()}
 }
 
 // AddQuestionOutput is the output for an added question.

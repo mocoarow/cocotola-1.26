@@ -17,6 +17,7 @@ import (
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	questionhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
@@ -62,8 +63,8 @@ func initInternalAudioRouter(ctx context.Context, t *testing.T, usecase *MockAud
 	v1 := api.Group("v1")
 	internal := v1.Group("internal")
 
-	handler := questionhandler.NewAudioHandler(usecase)
-	questionhandler.InitInternalAudioRouter(handler, internal)
+	audioHandler := questionhandler.NewAudioHandler(usecase)
+	questionhandler.InitInternalAudioRouter(audioHandler, internal)
 
 	return router
 }
@@ -76,7 +77,7 @@ func initInternalQuestionRouter(ctx context.Context, t *testing.T, addUsecase *M
 	internal := router.Group("api").Group("v1").Group("internal")
 	internal.Use(fakeOperatorMiddleware(fixtureUserID, fixtureOrganizationID))
 
-	response := questionhandler.NewResponseBuilder("")
+	response := questionhandler.NewResponseBuilder(handler.NewAudioURLBuilder(""))
 	questionhandler.InitInternalQuestionRouter(
 		questionhandler.NewAddQuestionHandler(addUsecase, response),
 		questionhandler.NewListQuestionsHandler(NewMockListQuestionsUsecase(t), response),

@@ -550,6 +550,78 @@ func Test_Question_AudioGeneration_shouldReturnNil_whenUnset(t *testing.T) {
 	assert.Nil(t, q.AudioGeneration())
 }
 
+func Test_Question_ReadyAudioRefs_shouldReturnNil_whenAudioGenerationUnset(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	refs := q.ReadyAudioRefs()
+
+	// then
+	assert.Nil(t, refs)
+}
+
+func Test_Question_ReadyAudioRefs_shouldReturnNil_whenStatusIsNotReady(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "pending", status: question.AudioGenerationStatusPending()},
+		{name: "generating", status: question.AudioGenerationStatusGenerating()},
+		{name: "failed", status: question.AudioGenerationStatusFailed()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			q.SetAudioGeneration(fixtureAudioGenerationWithSourceRef(t, tt.status))
+
+			// when
+			refs := q.ReadyAudioRefs()
+
+			// then
+			assert.Nil(t, refs)
+		})
+	}
+}
+
+func Test_Question_ReadyAudioRefs_shouldReturnRefs_whenStatusIsReady(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGenerationWithSourceRef(t, question.AudioGenerationStatusReady()))
+
+	// when
+	refs := q.ReadyAudioRefs()
+
+	// then
+	expected, err := question.NewAudioRef("audio/questions/x/source.opus", 1.5, 100)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]question.AudioRef{question.AudioLangSource: expected}, refs)
+}
+
+func fixtureAudioGenerationWithSourceRef(t *testing.T, status question.AudioGenerationStatus) *question.AudioGeneration {
+	t.Helper()
+	ref, err := question.NewAudioRef("audio/questions/x/source.opus", 1.5, 100)
+	require.NoError(t, err)
+	ag, err := question.NewAudioGeneration(status, "hash-v1", map[string]question.AudioRef{question.AudioLangSource: ref}, time.Now(), 0, "")
+	require.NoError(t, err)
+	return ag
+}
+
 func Test_Question_MarkAudioPending_shouldSetPending_whenInitiallyNil(t *testing.T) {
 	t.Parallel()
 

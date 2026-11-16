@@ -13,6 +13,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health"
 	questionhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question"
 	sharinghandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing"
@@ -107,7 +108,8 @@ func Initialize(
 	deleteWorkbookHandler := workbookhandler.NewDeleteWorkbookHandler(workbookCommand)
 	workbookhandler.InitWorkbookRouter(createWorkbookHandler, getWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	questionResponseBuilder := questionhandler.NewResponseBuilder(questionConfig.AudioPublicBaseURL)
+	audioURLBuilder := handler.NewAudioURLBuilder(questionConfig.AudioPublicBaseURL)
+	questionResponseBuilder := questionhandler.NewResponseBuilder(audioURLBuilder)
 	addQuestionHandler := questionhandler.NewAddQuestionHandler(questionCommand, questionResponseBuilder)
 	getQuestionHandler := questionhandler.NewGetQuestionHandler(questionCommand, questionResponseBuilder)
 	listQuestionsHandler := questionhandler.NewListQuestionsHandler(questionCommand, questionResponseBuilder)
@@ -126,8 +128,7 @@ func Initialize(
 	listPublicHandler := sharinghandler.NewListPublicHandler(sharingCommand)
 	sharinghandler.InitSharingRouter(shareWorkbookHandler, listSharedHandler, unshareHandler, listPublicHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	studyAudioURLBuilder := studyhandler.NewAudioURLBuilder(questionConfig.AudioPublicBaseURL)
-	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand, studyAudioURLBuilder)
+	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand, audioURLBuilder)
 	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(studyCommand)
 	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
 	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(studyCommand)
