@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	texttospeech "cloud.google.com/go/texttospeech/apiv1"
@@ -16,15 +17,17 @@ type TTSClient struct {
 	sampleRateHz int32
 }
 
+// ErrUnspecifiedAudioEncoding is returned when NewTTSClient receives an AudioEncoding not obtained from ParseAudioEncoding.
+var ErrUnspecifiedAudioEncoding = errors.New("unspecified audio encoding")
+
 // NewTTSClient returns a TTS client. The caller owns the lifetime; call Close.
-func NewTTSClient(ctx context.Context, encoding string, sampleRateHz int) (*TTSClient, error) {
+func NewTTSClient(ctx context.Context, enc AudioEncoding, sampleRateHz int) (*TTSClient, error) {
+	if enc.TTSEncoding() == texttospeechpb.AudioEncoding_AUDIO_ENCODING_UNSPECIFIED {
+		return nil, ErrUnspecifiedAudioEncoding
+	}
 	client, err := texttospeech.NewClient(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("new texttospeech client: %w", err)
-	}
-	enc, err := ParseAudioEncoding(encoding)
-	if err != nil {
-		return nil, fmt.Errorf("parse audio encoding: %w", err)
 	}
 	return &TTSClient{
 		client:       client,
