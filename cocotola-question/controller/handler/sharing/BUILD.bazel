@@ -29,6 +29,8 @@ smart_go_test(
         "list_public_handler_s_test.go",
         "list_shared_handler_s_test.go",
         "mocks_test.go",
+        "share_workbook_handler_s_test.go",
+        "unshare_handler_s_test.go",
     ],
     deps = [
         ":sharing",

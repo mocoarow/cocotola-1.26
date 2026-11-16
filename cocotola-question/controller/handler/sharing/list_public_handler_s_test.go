@@ -2,9 +2,7 @@ package sharing_test
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -24,18 +22,12 @@ func Test_ListPublicHandler_ListPublic_shouldReturn400_whenUserLanguageIsInvalid
 		c.Set(controller.ContextFieldUserLanguage{}, "jpn")
 		c.Next()
 	}
-	r := initSharingRouter(ctx, t, NewMockListSharedUsecase(t), invalidLanguage)
-	w := httptest.NewRecorder()
+	r := initSharingRouter(ctx, t, newSharingUsecases(t), fakeAuthMiddleware(fixtureUserID, fixtureOrganizationID), invalidLanguage)
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/api/v1/workbook/public", nil)
-	require.NoError(t, err)
-	r.ServeHTTP(w, req)
-	respBytes := readBytes(t, w.Body)
+	w := serve(ctx, t, r, http.MethodGet, "/api/v1/workbook/public")
 
 	// then
 	require.Equal(t, http.StatusBadRequest, w.Code)
-	var resp api.ErrorResponse
-	require.NoError(t, json.Unmarshal(respBytes, &resp))
-	assert.Equal(t, api.ErrorResponse{Code: "invalid_request", Message: "Bad Request"}, resp)
+	assert.Equal(t, api.ErrorResponse{Code: "invalid_request", Message: "Bad Request"}, readErrorResponse(t, w))
 }

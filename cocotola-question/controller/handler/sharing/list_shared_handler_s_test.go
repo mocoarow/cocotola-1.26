@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -22,8 +21,8 @@ func Test_ListSharedHandler_ListShared_shouldReturnWorkbookDetails_whenUsecaseRe
 
 	// given
 	addedAt := time.Date(2026, 10, 1, 9, 0, 0, 0, time.UTC)
-	usecase := NewMockListSharedUsecase(t)
-	usecase.On("ListShared", mock.Anything, mock.Anything).
+	usecases := newSharingUsecases(t)
+	usecases.listShared.On("ListShared", mock.Anything, mock.Anything).
 		Return(&referenceservice.ListSharedOutput{References: []referenceservice.SharedItem{{
 			ReferenceID: "ref-1",
 			WorkbookID:  "wb-1",
@@ -32,13 +31,10 @@ func Test_ListSharedHandler_ListShared_shouldReturnWorkbookDetails_whenUsecaseRe
 			Language:    "en",
 			AddedAt:     addedAt,
 		}}}, nil).Once()
-	r := initSharingRouter(ctx, t, usecase)
-	w := httptest.NewRecorder()
+	r := initSharingRouter(ctx, t, usecases, fakeAuthMiddleware(fixtureUserID, fixtureOrganizationID))
 
 	// when
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "/api/v1/workbook/shared", nil)
-	require.NoError(t, err)
-	r.ServeHTTP(w, req)
+	w := serve(ctx, t, r, http.MethodGet, "/api/v1/workbook/shared")
 	respBytes := readBytes(t, w.Body)
 
 	// then
