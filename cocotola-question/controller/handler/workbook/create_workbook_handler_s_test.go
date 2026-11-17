@@ -15,7 +15,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
-const createWorkbookBody = `{"spaceId":"space-1","title":"CEFR B1","description":"desc","visibility":"public","language":"ja"}`
+const createWorkbookBody = `{"spaceId":"` + fixtureSpaceID + `","title":"CEFR B1","description":"desc","visibility":"public","language":"ja"}`
 
 func Test_CreateWorkbookHandler_CreateWorkbook_shouldReturn409_whenOwnedWorkbookLimitReached(t *testing.T) {
 	t.Parallel()

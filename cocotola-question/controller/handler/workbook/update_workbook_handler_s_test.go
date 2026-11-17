@@ -27,7 +27,7 @@ func serveUpdateWorkbook(ctx context.Context, t *testing.T, usecaseErr error) *h
 	r := initInternalWorkbookRouter(ctx, t, NewMockCreateWorkbookUsecase(t), updateUsecase)
 	w := httptest.NewRecorder()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, "/api/v1/internal/workbook/wb-1", strings.NewReader(updateWorkbookBody))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, "/api/v1/internal/workbook/"+fixtureWorkbookID, strings.NewReader(updateWorkbookBody))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
