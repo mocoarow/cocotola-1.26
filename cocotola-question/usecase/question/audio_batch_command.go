@@ -25,6 +25,12 @@ type staleGeneratingAudioFinder interface {
 	FindStaleGenerating(ctx context.Context, staleBefore time.Time, limit int) ([]domainquestion.Question, error)
 }
 
+// failedAudioFinder loads failed questions with the given failure count that
+// failed before failedBefore, so the reaper can retry them.
+type failedAudioFinder interface {
+	FindFailedAudio(ctx context.Context, failedAttempts int, failedBefore time.Time, limit int) ([]domainquestion.Question, error)
+}
+
 // AudioBatchCommand exposes the audio lifecycle operations driven by
 // cocotola-audio-generator. Racing batch instances lose with
 // ErrAudioConcurrentModification; callers skip and retry next run.
@@ -32,13 +38,14 @@ type AudioBatchCommand struct {
 	finder  questionFinder
 	pending pendingAudioFinder
 	stale   staleGeneratingAudioFinder
+	failed  failedAudioFinder
 	saver   questionSaver
 	config  UsecaseConfig
 }
 
 // NewAudioBatchCommand returns a new AudioBatchCommand.
-func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, saver questionSaver, config UsecaseConfig) *AudioBatchCommand {
-	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, saver: saver, config: config}
+func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, failed failedAudioFinder, saver questionSaver, config UsecaseConfig) *AudioBatchCommand {
+	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, failed: failed, saver: saver, config: config}
 }
 
 // ListPendingAudio returns up to input.Limit pending queue entries.
@@ -133,31 +140,62 @@ func (c *AudioBatchCommand) FailAudio(ctx context.Context, input *questionservic
 	return nil
 }
 
-// ReclaimStaleAudio re-queues questions stuck in generating beyond staleAfter;
+// ReclaimStaleAudio re-queues stale generating and retryable failed questions;
 // optimistic-lock losers are skipped because the work is idempotent.
 func (c *AudioBatchCommand) ReclaimStaleAudio(ctx context.Context, input *questionservice.ReclaimStaleAudioInput) (*questionservice.ReclaimStaleAudioOutput, error) {
 	now := c.config.Now()
-	staleBefore := now.Add(-input.StaleAfter)
-	questions, err := c.stale.FindStaleGenerating(ctx, staleBefore, input.Limit)
+	questions, err := c.stale.FindStaleGenerating(ctx, now.Add(-input.StaleAfter), input.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("find stale generating: %w", err)
 	}
-	reclaimed := 0
+	reclaimed, err := c.requeue(ctx, questions, func(q *domainquestion.Question) bool {
+		return q.ReclaimStaleAudio(now, input.StaleAfter)
+	})
+	if err != nil {
+		return &questionservice.ReclaimStaleAudioOutput{Reclaimed: reclaimed}, err
+	}
+	retried, err := c.retryFailedAudio(ctx, now, input.Limit)
+	return &questionservice.ReclaimStaleAudioOutput{Reclaimed: reclaimed + retried}, err
+}
+
+func (c *AudioBatchCommand) retryFailedAudio(ctx context.Context, now time.Time, limit int) (int, error) {
+	retried := 0
+	for attempts := 1; attempts < domainquestion.MaxAudioFailedAttempts && retried < limit; attempts++ {
+		failedBefore := now.Add(-domainquestion.AudioRetryBackoff(attempts))
+		questions, err := c.failed.FindFailedAudio(ctx, attempts, failedBefore, limit-retried)
+		if err != nil {
+			return retried, fmt.Errorf("find failed audio with %d attempts: %w", attempts, err)
+		}
+		n, err := c.requeue(ctx, questions, func(q *domainquestion.Question) bool {
+			return q.RetryFailedAudio(now)
+		})
+		retried += n
+		if err != nil {
+			return retried, err
+		}
+	}
+	return retried, nil
+}
+
+// requeue saves each question that transition moved back to pending and
+// returns how many were saved.
+func (c *AudioBatchCommand) requeue(ctx context.Context, questions []domainquestion.Question, transition func(*domainquestion.Question) bool) (int, error) {
+	requeued := 0
 	for i := range questions {
 		q := &questions[i]
-		if !q.ReclaimStaleAudio(now, input.StaleAfter) {
+		if !transition(q) {
 			continue
 		}
 		if err := c.saver.Save(ctx, q); err != nil {
 			if errors.Is(err, libversioned.ErrConcurrentModification) {
 				continue
 			}
-			return &questionservice.ReclaimStaleAudioOutput{Reclaimed: reclaimed}, fmt.Errorf("save reclaimed question %s: %w", q.ID(), err)
+			return requeued, fmt.Errorf("save requeued question %s: %w", q.ID(), err)
 		}
 
-		reclaimed++
+		requeued++
 	}
-	return &questionservice.ReclaimStaleAudioOutput{Reclaimed: reclaimed}, nil
+	return requeued, nil
 }
 
 // mapAudioSaveError translates the save-layer optimistic-lock error into the

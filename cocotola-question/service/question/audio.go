@@ -120,8 +120,7 @@ func NewFailAudioInput(workbookID, questionID, inputHash, reason string) (*FailA
 	return m, nil
 }
 
-// ReclaimStaleAudioInput is the input for the reaper that returns "generating"
-// items stuck longer than StaleAfter back to "pending" so they get retried.
+// ReclaimStaleAudioInput is the input for ReclaimStaleAudio.
 type ReclaimStaleAudioInput struct {
 	StaleAfter time.Duration `validate:"required"`
 	Limit      int           `validate:"required,gte=1,lte=200"`

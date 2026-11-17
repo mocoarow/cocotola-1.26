@@ -25,7 +25,21 @@ const (
 
 	// MaxAudioLastErrorLength is the rune limit of an audio failure reason.
 	MaxAudioLastErrorLength = 500
+
+	// MaxAudioFailedAttempts is the failure count at which a failed entry is no longer retried.
+	MaxAudioFailedAttempts = 8
+
+	audioRetryBaseBackoff = 5 * time.Minute
 )
+
+// AudioRetryBackoff returns how long a failed entry waits before being retried.
+func AudioRetryBackoff(failedAttempts int) time.Duration {
+	backoff := audioRetryBaseBackoff
+	for range min(failedAttempts, MaxAudioFailedAttempts) - 1 {
+		backoff *= 2
+	}
+	return backoff
+}
 
 // AudioGenerationStatus represents the lifecycle state of audio generation
 // for a single Question. Initial creation/edit places a question in pending;
@@ -169,8 +183,19 @@ func (a *AudioGeneration) UpdatedAt() time.Time { return a.updatedAt }
 // FailedAttempts returns the consecutive failure count.
 func (a *AudioGeneration) FailedAttempts() int { return a.failedAttempts }
 
-// LastError returns the last failure message (empty when status != failed).
+// LastError returns the last failure message.
 func (a *AudioGeneration) LastError() string { return a.lastError }
+
+func (a *AudioGeneration) requeued(now time.Time) *AudioGeneration {
+	return &AudioGeneration{
+		status:         AudioGenerationStatusPending(),
+		inputHash:      a.inputHash,
+		refs:           a.Refs(),
+		updatedAt:      now,
+		failedAttempts: a.failedAttempts,
+		lastError:      a.lastError,
+	}
+}
 
 func copyAudioRefs(refs map[string]AudioRef) map[string]AudioRef {
 	if refs == nil {
