@@ -1,6 +1,11 @@
 import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getUserPreferences, updateUserLanguage, updateUserTimezone } from "./user-setting.server";
+import {
+  getUserPreferences,
+  getUserPreferencesOrNull,
+  updateUserLanguage,
+  updateUserTimezone,
+} from "./user-setting.server";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -309,5 +314,66 @@ describe("getUserPreferences (response parser)", () => {
     expect(prefs.dailyGoal).toBe(10); // string → default
     expect(prefs.timezone).toBe("Asia/Tokyo"); // valid → kept
     expect(prefs.language).toBe("en"); // null → default
+  });
+});
+
+describe("getUserPreferencesOrNull", () => {
+  beforeEach(() => {
+    vi.stubEnv("AUTH_BASE_URL", "http://localhost:8080");
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+    fetchMock.mockReset();
+  });
+
+  it("should return the preferences when /auth/me succeeds", async () => {
+    // given
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ userId: "user-1", timezone: "America/Los_Angeles" }),
+    });
+
+    // when
+    const prefs = await getUserPreferencesOrNull(fakeRequest(), "token");
+
+    // then
+    expect(prefs?.userId).toBe("user-1");
+  });
+
+  it("should return null when /auth/me returns 503", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 503 });
+
+    // when
+    const prefs = await getUserPreferencesOrNull(fakeRequest(), "token");
+
+    // then
+    expect(prefs).toBeNull();
+  });
+
+  it("should return null when fetch rejects", async () => {
+    // given
+    fetchMock.mockRejectedValue(new TypeError("network"));
+
+    // when
+    const prefs = await getUserPreferencesOrNull(fakeRequest(), "token");
+
+    // then
+    expect(prefs).toBeNull();
+  });
+
+  it("should throw redirect Response to /login when /auth/me returns 401", async () => {
+    // given
+    fetchMock.mockResolvedValue({ ok: false, status: 401 });
+
+    // when
+    const caught = await getUserPreferencesOrNull(fakeRequest(), "token").catch((e: unknown) => e);
+
+    // then
+    expect((caught as Response).headers.get("Location")).toBe("/login");
   });
 });

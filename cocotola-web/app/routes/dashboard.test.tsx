@@ -20,6 +20,7 @@ vi.mock("~/lib/api/dashboard.server", () => ({
 // test starts to drift independently when the module grows.
 vi.mock("~/lib/api/user-setting.server", () => ({
   getUserPreferences: vi.fn(),
+  getUserPreferencesOrNull: vi.fn(),
   updateUserLanguage: vi.fn(),
   updateUserDailyGoal: vi.fn(),
   updateUserTimezone: vi.fn(),
