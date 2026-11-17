@@ -329,13 +329,22 @@ func (q *Question) ReclaimStaleAudio(now time.Time, staleAfter time.Duration) bo
 	if now.Sub(q.audioGeneration.updatedAt) < staleAfter {
 		return false
 	}
-	q.audioGeneration = &AudioGeneration{
-		status:         AudioGenerationStatusPending(),
-		inputHash:      q.audioGeneration.inputHash,
-		refs:           q.audioGeneration.Refs(),
-		updatedAt:      now,
-		failedAttempts: q.audioGeneration.failedAttempts,
-		lastError:      q.audioGeneration.lastError,
+	q.audioGeneration = q.audioGeneration.requeued(now)
+	return true
+}
+
+// RetryFailedAudio moves a retryable "failed" entry back to "pending"; true means persist.
+func (q *Question) RetryFailedAudio(now time.Time) bool {
+	ag := q.audioGeneration
+	if ag == nil || ag.status.Value() != AudioGenerationStatusFailed().Value() {
+		return false
 	}
+	if ag.failedAttempts >= MaxAudioFailedAttempts {
+		return false
+	}
+	if now.Sub(ag.updatedAt) < AudioRetryBackoff(ag.failedAttempts) {
+		return false
+	}
+	q.audioGeneration = ag.requeued(now)
 	return true
 }

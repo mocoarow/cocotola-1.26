@@ -1,6 +1,7 @@
 package question_test
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -357,4 +358,47 @@ func Test_ComputeWordFillAudioInputHash_shouldDeriveSameHash_whenBlanksAreEquiva
 
 	// then: filling the blank produces the same surface text TTS sees
 	assert.Equal(t, got1, got2)
+}
+
+func Test_AudioRetryBackoff_shouldDoubleFromFiveMinutes_whenFailedAttemptsIncrease(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		failedAttempts int
+		want           time.Duration
+	}{
+		{failedAttempts: 1, want: 5 * time.Minute},
+		{failedAttempts: 2, want: 10 * time.Minute},
+		{failedAttempts: 3, want: 20 * time.Minute},
+		{failedAttempts: 4, want: 40 * time.Minute},
+		{failedAttempts: 7, want: 320 * time.Minute},
+	}
+	for _, tt := range tests {
+		t.Run(strconv.Itoa(tt.failedAttempts), func(t *testing.T) {
+			t.Parallel()
+
+			// given, when
+			got := question.AudioRetryBackoff(tt.failedAttempts)
+
+			// then
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_MaxAudioFailedAttempts_shouldBeEight(t *testing.T) {
+	t.Parallel()
+
+	// given, when, then
+	assert.Equal(t, 8, question.MaxAudioFailedAttempts)
+}
+
+func Test_AudioRetryBackoff_shouldStayAtMaxAttemptsBackoff_whenFailedAttemptsExceedMax(t *testing.T) {
+	t.Parallel()
+
+	// given, when
+	got := question.AudioRetryBackoff(100)
+
+	// then
+	assert.Equal(t, question.AudioRetryBackoff(question.MaxAudioFailedAttempts), got)
 }

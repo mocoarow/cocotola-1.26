@@ -1049,3 +1049,146 @@ func Test_Question_ReclaimStaleAudio_shouldReturnTrueAndResetToPending_whenStale
 	assert.Equal(t, now, ag.UpdatedAt())
 	assert.Equal(t, 4, ag.FailedAttempts(), "failedAttempts must be preserved across reclaim")
 }
+
+func Test_Question_RetryFailedAudio_shouldReturnFalse_whenAudioGenerationIsNil(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+
+	// when
+	retried := q.RetryFailedAudio(time.Now())
+
+	// then
+	assert.False(t, retried)
+	assert.Nil(t, q.AudioGeneration())
+}
+
+func Test_Question_RetryFailedAudio_shouldReturnFalse_whenStatusIsNotFailed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status question.AudioGenerationStatus
+	}{
+		{name: "pending", status: question.AudioGenerationStatusPending()},
+		{name: "generating", status: question.AudioGenerationStatusGenerating()},
+		{name: "ready", status: question.AudioGenerationStatusReady()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given: backoff elapsed by clock but wrong status
+			a := validQuestionArgs()
+			q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+			require.NoError(t, err)
+			q.SetAudioGeneration(fixtureAudioGeneration(t, tt.status, "hash-v1", time.Now().Add(-24*time.Hour), 1))
+
+			// when
+			retried := q.RetryFailedAudio(time.Now())
+
+			// then
+			assert.False(t, retried)
+			assert.Equal(t, tt.status.Value(), q.AudioGeneration().Status().Value())
+		})
+	}
+}
+
+func Test_Question_RetryFailedAudio_shouldReturnFalse_whenBackoffNotElapsed(t *testing.T) {
+	t.Parallel()
+
+	// given: failed twice, updated just under the backoff ago
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	failedAt := now.Add(-question.AudioRetryBackoff(2) + time.Second)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusFailed(), "hash-v1", failedAt, 2))
+
+	// when
+	retried := q.RetryFailedAudio(now)
+
+	// then
+	assert.False(t, retried)
+	assert.Equal(t, "failed", q.AudioGeneration().Status().Value())
+}
+
+func Test_Question_RetryFailedAudio_shouldReturnFalse_whenAttemptsExhausted(t *testing.T) {
+	t.Parallel()
+
+	// given: failed the maximum number of times, long ago
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusFailed(), "hash-v1", time.Now().Add(-30*24*time.Hour), question.MaxAudioFailedAttempts))
+
+	// when
+	retried := q.RetryFailedAudio(time.Now())
+
+	// then
+	assert.False(t, retried)
+	assert.Equal(t, "failed", q.AudioGeneration().Status().Value())
+}
+
+func Test_Question_RetryFailedAudio_shouldReturnTrueAndResetToPending_whenBackoffElapsed(t *testing.T) {
+	t.Parallel()
+
+	// given: failed twice, updated exactly the backoff ago
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusFailed(), "hash-v1", now.Add(-question.AudioRetryBackoff(2)), 2))
+
+	// when
+	retried := q.RetryFailedAudio(now)
+
+	// then
+	assert.True(t, retried)
+	ag := q.AudioGeneration()
+	require.NotNil(t, ag)
+	assert.Equal(t, "pending", ag.Status().Value())
+	assert.Equal(t, "hash-v1", ag.InputHash())
+	assert.Equal(t, now, ag.UpdatedAt())
+}
+
+func Test_Question_RetryFailedAudio_shouldPreserveFailedAttempts_whenRetried(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	q.SetAudioGeneration(fixtureAudioGeneration(t, question.AudioGenerationStatusFailed(), "hash-v1", now.Add(-24*time.Hour), 3))
+
+	// when
+	retried := q.RetryFailedAudio(now)
+
+	// then: the next failure must continue counting toward MaxAudioFailedAttempts
+	require.True(t, retried)
+	assert.Equal(t, 3, q.AudioGeneration().FailedAttempts())
+}
+
+func Test_Question_RetryFailedAudio_shouldPreserveLastError_whenRetried(t *testing.T) {
+	t.Parallel()
+
+	// given
+	a := validQuestionArgs()
+	q, err := question.NewQuestion(contentjson.Parser{}, a.id, a.workbookID, a.qt, a.content, a.tags, a.orderIndex, a.createdAt, a.updatedAt)
+	require.NoError(t, err)
+	now := time.Now()
+	ag, err := question.NewAudioGeneration(question.AudioGenerationStatusFailed(), "hash-v1", nil, now.Add(-24*time.Hour), 1, "tts: 429 too many requests")
+	require.NoError(t, err)
+	q.SetAudioGeneration(ag)
+
+	// when
+	retried := q.RetryFailedAudio(now)
+
+	// then
+	require.True(t, retried)
+	assert.Equal(t, "tts: 429 too many requests", q.AudioGeneration().LastError())
+}

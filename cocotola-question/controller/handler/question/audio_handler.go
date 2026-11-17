@@ -233,9 +233,6 @@ type reclaimStaleAudioResponse struct {
 }
 
 // ReclaimStaleAudio handles POST /api/v1/internal/audio/questions/reclaim-stale.
-// The batch invokes this once per run to transition any "generating" entries
-// stuck longer than staleAfterSec back to "pending" (e.g. a previous worker
-// crashed before completing or failing them).
 func (h *AudioHandler) ReclaimStaleAudio(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req reclaimStaleAudioRequest

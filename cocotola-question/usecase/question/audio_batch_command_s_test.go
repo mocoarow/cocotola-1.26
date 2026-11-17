@@ -71,7 +71,7 @@ func Test_AudioBatchCommand_ListPendingAudio_shouldReturnItems_whenAllWordFill(t
 	pending.On("FindPendingAudio", mock.Anything, 10).Return([]domainquestion.Question{
 		newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusPending(), fixtureAudioInputHash, now, 0),
 	}, nil)
-	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, nil, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewListPendingAudioInput(10)
 	require.NoError(t, err)
 
@@ -99,7 +99,7 @@ func Test_AudioBatchCommand_ListPendingAudio_shouldSkipItem_whenQuestionTypeIsNo
 		newWordFillQuestionWithAudio(t, "q-wf", fixtureWorkbookID, domainquestion.AudioGenerationStatusPending(), fixtureAudioInputHash, now, 0),
 		newMultipleChoiceQuestionWithAudio(t, "q-mc", fixtureWorkbookID, domainquestion.AudioGenerationStatusPending(), fixtureAudioInputHash, now),
 	}, nil)
-	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, nil, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewListPendingAudioInput(10)
 	require.NoError(t, err)
 
@@ -121,7 +121,7 @@ func Test_AudioBatchCommand_ListPendingAudio_shouldSkipItem_whenAudioGenerationI
 	require.NoError(t, err)
 	pending := newMockpendingAudioFinder(t)
 	pending.On("FindPendingAudio", mock.Anything, 10).Return([]domainquestion.Question{*q}, nil)
-	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, nil, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewListPendingAudioInput(10)
 	require.NoError(t, err)
 
@@ -141,7 +141,7 @@ func Test_AudioBatchCommand_ListPendingAudio_shouldReturnError_whenFinderFails(t
 	finderErr := errors.New("firestore down")
 	pending := newMockpendingAudioFinder(t)
 	pending.On("FindPendingAudio", mock.Anything, 5).Return(nil, finderErr)
-	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, pending, nil, nil, nil, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewListPendingAudioInput(5)
 	require.NoError(t, err)
 
@@ -167,7 +167,7 @@ func Test_AudioBatchCommand_ClaimAudio_shouldTransitionToGenerating_whenPending(
 		return ag != nil && ag.Status().Value() == "generating" && ag.UpdatedAt().Equal(fixedNow)
 	})).Return(nil)
 	cfg := questionusecase.UsecaseConfig{ClockFunc: func() time.Time { return fixedNow }}
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, cfg)
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, cfg)
 	input, err := questionservice.NewClaimAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash)
 	require.NoError(t, err)
 
@@ -188,7 +188,7 @@ func Test_AudioBatchCommand_ClaimAudio_shouldReturnConcurrentModification_whenSa
 	finder.On("FindByID", mock.Anything, fixtureWorkbookID, "q-1").Return(&q, nil)
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewClaimAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash)
 	require.NoError(t, err)
 
@@ -207,7 +207,7 @@ func Test_AudioBatchCommand_ClaimAudio_shouldReturnError_whenStatusIsNotPending(
 	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusGenerating(), fixtureAudioInputHash, time.Now(), 0)
 	finder := newMockquestionFinder(t)
 	finder.On("FindByID", mock.Anything, fixtureWorkbookID, "q-1").Return(&q, nil)
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, nil, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewClaimAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash)
 	require.NoError(t, err)
 
@@ -233,7 +233,7 @@ func Test_AudioBatchCommand_CompleteAudio_shouldTransitionToReady_whenGenerating
 		return ag != nil && ag.Status().Value() == "ready" && ag.UpdatedAt().Equal(fixedNow)
 	})).Return(nil)
 	cfg := questionusecase.UsecaseConfig{ClockFunc: func() time.Time { return fixedNow }}
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, cfg)
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, cfg)
 	input, err := questionservice.NewCompleteAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash, map[string]questionservice.CompleteAudioRefInput{
 		domainquestion.AudioLangSource: {Path: "audio/questions/q-1/source.opus", DurationSec: 1.0, SizeBytes: 100},
 		domainquestion.AudioLangTarget: {Path: "audio/questions/q-1/target.opus", DurationSec: 2.0, SizeBytes: 200},
@@ -257,7 +257,7 @@ func Test_AudioBatchCommand_CompleteAudio_shouldReturnConcurrentModification_whe
 	finder.On("FindByID", mock.Anything, fixtureWorkbookID, "q-1").Return(&q, nil)
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewCompleteAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash, map[string]questionservice.CompleteAudioRefInput{
 		domainquestion.AudioLangSource: {Path: "audio/questions/q-1/source.opus", DurationSec: 1.0, SizeBytes: 100},
 	})
@@ -285,7 +285,7 @@ func Test_AudioBatchCommand_FailAudio_shouldTransitionToFailed_whenGenerating(t 
 		return ag != nil && ag.Status().Value() == "failed" && ag.LastError() == "tts: invalid voice" && ag.UpdatedAt().Equal(fixedNow)
 	})).Return(nil)
 	cfg := questionusecase.UsecaseConfig{ClockFunc: func() time.Time { return fixedNow }}
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, cfg)
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, cfg)
 	input, err := questionservice.NewFailAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash, "tts: invalid voice")
 	require.NoError(t, err)
 
@@ -306,7 +306,7 @@ func Test_AudioBatchCommand_FailAudio_shouldReturnConcurrentModification_whenSav
 	finder.On("FindByID", mock.Anything, fixtureWorkbookID, "q-1").Return(&q, nil)
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
-	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(finder, nil, nil, nil, saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewFailAudioInput(fixtureWorkbookID, "q-1", fixtureAudioInputHash, "boom")
 	require.NoError(t, err)
 
@@ -330,7 +330,7 @@ func Test_AudioBatchCommand_ReclaimStaleAudio_shouldReclaimAllStaleItems(t *test
 	finder.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return([]domainquestion.Question{q1, q2}, nil)
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.Anything).Return(nil).Twice()
-	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, newEmptyFailedAudioFinder(t), saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
 	require.NoError(t, err)
 
@@ -356,7 +356,7 @@ func Test_AudioBatchCommand_ReclaimStaleAudio_shouldSkipItem_whenSaveLosesRace(t
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(q *domainquestion.Question) bool { return q.ID() == "q-1" })).Return(libversioned.ErrConcurrentModification)
 	saver.On("Save", mock.Anything, mock.MatchedBy(func(q *domainquestion.Question) bool { return q.ID() == "q-2" })).Return(nil)
-	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, newEmptyFailedAudioFinder(t), saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
 	require.NoError(t, err)
 
@@ -381,7 +381,7 @@ func Test_AudioBatchCommand_ReclaimStaleAudio_shouldReturnError_whenSaveFailsFor
 	saveErr := errors.New("firestore unavailable")
 	saver := newMockquestionSaver(t)
 	saver.On("Save", mock.Anything, mock.Anything).Return(saveErr)
-	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, newEmptyFailedAudioFinder(t), saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
 	require.NoError(t, err)
 
@@ -404,7 +404,7 @@ func Test_AudioBatchCommand_ReclaimStaleAudio_shouldSkipItem_whenAudioGeneration
 	finder := newMockstaleGeneratingAudioFinder(t)
 	finder.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return([]domainquestion.Question{q}, nil)
 	saver := newMockquestionSaver(t)
-	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, saver, questionusecase.UsecaseConfig{})
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, finder, newEmptyFailedAudioFinder(t), saver, questionusecase.UsecaseConfig{})
 	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
 	require.NoError(t, err)
 
@@ -414,4 +414,170 @@ func Test_AudioBatchCommand_ReclaimStaleAudio_shouldSkipItem_whenAudioGeneration
 	// then: ReclaimStaleAudio domain method returns false → save is skipped, 0 reclaimed
 	require.NoError(t, err)
 	assert.Equal(t, 0, output.Reclaimed)
+}
+
+func newEmptyFailedAudioFinder(t *testing.T) *mockfailedAudioFinder {
+	t.Helper()
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil).Maybe()
+	return failed
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldRequeueFailedItem_whenBackoffElapsed(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: one failed item past its backoff, no stale generating items
+	now := time.Now()
+	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusFailed(), fixtureAudioInputHash, now.Add(-time.Hour), 1)
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return(nil, nil)
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, 1, mock.Anything, 50).Return([]domainquestion.Question{q}, nil)
+	failed.On("FindFailedAudio", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+	saver := newMockquestionSaver(t)
+	saver.On("Save", mock.Anything, mock.MatchedBy(func(saved *domainquestion.Question) bool {
+		return saved.ID() == "q-1" && saved.AudioGeneration().Status().IsPending()
+	})).Return(nil).Once()
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, saver, questionusecase.UsecaseConfig{})
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
+	require.NoError(t, err)
+
+	// when
+	output, err := cmd.ReclaimStaleAudio(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.Reclaimed)
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldQueryEachRetryableAttemptCountWithItsBackoff(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: exact expectations per attempt count; an unexpected count (e.g. the exhausted one) panics the mock
+	fixedNow := time.Date(2026, 11, 17, 12, 0, 0, 0, time.UTC)
+	cfg := questionusecase.UsecaseConfig{ClockFunc: func() time.Time { return fixedNow }}
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return(nil, nil)
+	failed := newMockfailedAudioFinder(t)
+
+	for attempts := 1; attempts < domainquestion.MaxAudioFailedAttempts; attempts++ {
+		failed.On("FindFailedAudio", mock.Anything, attempts, fixedNow.Add(-domainquestion.AudioRetryBackoff(attempts)), 50).Return(nil, nil).Once()
+	}
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, nil, cfg)
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
+	require.NoError(t, err)
+
+	// when
+	output, err := cmd.ReclaimStaleAudio(ctx, input)
+
+	// then: mock expectations (asserted on cleanup) pin the queried attempt counts
+	require.NoError(t, err)
+	assert.Equal(t, 0, output.Reclaimed)
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldNotExceedLimit_whenRequeueingFailedItems(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: limit 1 is consumed by the first attempt count, so later counts are not queried
+	now := time.Now()
+	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusFailed(), fixtureAudioInputHash, now.Add(-time.Hour), 1)
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 1).Return(nil, nil)
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, 1, mock.Anything, 1).Return([]domainquestion.Question{q}, nil).Once()
+	saver := newMockquestionSaver(t)
+	saver.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, saver, questionusecase.UsecaseConfig{})
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 1)
+	require.NoError(t, err)
+
+	// when
+	output, err := cmd.ReclaimStaleAudio(ctx, input)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.Reclaimed)
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldQueryRemainingLimit_whenEarlierAttemptCountRequeued(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: limit 2, one item requeued from the first attempt count; later counts must ask for only 1
+	now := time.Now()
+	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusFailed(), fixtureAudioInputHash, now.Add(-time.Hour), 1)
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 2).Return(nil, nil)
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, 1, mock.Anything, 2).Return([]domainquestion.Question{q}, nil).Once()
+
+	for attempts := 2; attempts < domainquestion.MaxAudioFailedAttempts; attempts++ {
+		failed.On("FindFailedAudio", mock.Anything, attempts, mock.Anything, 1).Return(nil, nil).Once()
+	}
+	saver := newMockquestionSaver(t)
+	saver.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, saver, questionusecase.UsecaseConfig{})
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 2)
+	require.NoError(t, err)
+
+	// when
+	output, err := cmd.ReclaimStaleAudio(ctx, input)
+
+	// then: mock expectations (asserted on cleanup) pin the remaining limit per query
+	require.NoError(t, err)
+	assert.Equal(t, 1, output.Reclaimed)
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldReturnStaleCount_whenFindFailedAudioFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: one stale item reclaimed, then the failed query errors
+	now := time.Now()
+	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusGenerating(), fixtureAudioInputHash, now.Add(-10*time.Minute), 0)
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return([]domainquestion.Question{q}, nil)
+	findErr := errors.New("firestore unavailable")
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, 1, mock.Anything, 50).Return(nil, findErr)
+	saver := newMockquestionSaver(t)
+	saver.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, saver, questionusecase.UsecaseConfig{})
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
+	require.NoError(t, err)
+
+	// when
+	output, err := cmd.ReclaimStaleAudio(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, findErr)
+	assert.Equal(t, 1, output.Reclaimed)
+}
+
+func Test_AudioBatchCommand_ReclaimStaleAudio_shouldReturnError_whenSaveFailsForFailedItem(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a retryable failed item whose save fails; later attempt counts have no expectations, so continuing the loop panics the mock
+	now := time.Now()
+	q := newWordFillQuestionWithAudio(t, "q-1", fixtureWorkbookID, domainquestion.AudioGenerationStatusFailed(), fixtureAudioInputHash, now.Add(-time.Hour), 1)
+	stale := newMockstaleGeneratingAudioFinder(t)
+	stale.On("FindStaleGenerating", mock.Anything, mock.Anything, 50).Return(nil, nil)
+	failed := newMockfailedAudioFinder(t)
+	failed.On("FindFailedAudio", mock.Anything, 1, mock.Anything, 50).Return([]domainquestion.Question{q}, nil).Once()
+	saveErr := errors.New("firestore unavailable")
+	saver := newMockquestionSaver(t)
+	saver.On("Save", mock.Anything, mock.Anything).Return(saveErr).Once()
+	cmd := questionusecase.NewAudioBatchCommand(nil, nil, stale, failed, saver, questionusecase.UsecaseConfig{})
+	input, err := questionservice.NewReclaimStaleAudioInput(time.Minute, 50)
+	require.NoError(t, err)
+
+	// when
+	_, err = cmd.ReclaimStaleAudio(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, saveErr)
 }

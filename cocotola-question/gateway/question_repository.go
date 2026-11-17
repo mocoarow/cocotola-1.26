@@ -298,6 +298,23 @@ func (r *QuestionRepository) FindStaleGenerating(ctx context.Context, staleBefor
 	return collectGroupQuestions(iter, "stale generating")
 }
 
+// FindFailedAudio returns up to limit failed questions with exactly
+// failedAttempts failures and audioGeneration.updatedAt older than failedBefore.
+// Matching one count keeps retry-exhausted entries from filling the limit.
+func (r *QuestionRepository) FindFailedAudio(ctx context.Context, failedAttempts int, failedBefore time.Time, limit int) ([]domainquestion.Question, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	iter := r.client.CollectionGroup(questionsSubCollection).
+		Where("audioGeneration.status", "==", domainquestion.AudioGenerationStatusFailed().Value()).
+		Where("audioGeneration.failedAttempts", "==", failedAttempts).
+		Where("audioGeneration.updatedAt", "<", failedBefore).
+		OrderBy("audioGeneration.updatedAt", firestore.Asc).
+		Limit(limit).
+		Documents(ctx)
+	return collectGroupQuestions(iter, "failed audio")
+}
+
 // collectGroupQuestions drains a collection-group query over question
 // documents, restoring each question's workbook ID from its parent path.
 func collectGroupQuestions(iter *firestore.DocumentIterator, label string) ([]domainquestion.Question, error) {

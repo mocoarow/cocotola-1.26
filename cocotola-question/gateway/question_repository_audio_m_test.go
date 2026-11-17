@@ -22,6 +22,11 @@ const (
 
 func newQuestionWithAudio(t *testing.T, repo *gateway.QuestionRepository, workbookID string, status domainquestion.AudioGenerationStatus, inputHash string, audioUpdatedAt time.Time) *domainquestion.Question {
 	t.Helper()
+	return newQuestionWithAudioAttempts(t, repo, workbookID, status, inputHash, 0, audioUpdatedAt)
+}
+
+func newQuestionWithAudioAttempts(t *testing.T, repo *gateway.QuestionRepository, workbookID string, status domainquestion.AudioGenerationStatus, inputHash string, failedAttempts int, audioUpdatedAt time.Time) *domainquestion.Question {
+	t.Helper()
 	ctx := context.Background()
 
 	id, err := uuid.NewV7()
@@ -30,7 +35,7 @@ func newQuestionWithAudio(t *testing.T, repo *gateway.QuestionRepository, workbo
 	q, err := domainquestion.NewQuestion(contentjson.Parser{}, id.String(), workbookID, domainquestion.TypeWordFill(), fixtureWordFillContentForGateway, []string{"lang:en"}, 0, now, now)
 	require.NoError(t, err)
 
-	ag, err := domainquestion.NewAudioGeneration(status, inputHash, nil, audioUpdatedAt, 0, "")
+	ag, err := domainquestion.NewAudioGeneration(status, inputHash, nil, audioUpdatedAt, failedAttempts, "")
 	require.NoError(t, err)
 	q.SetAudioGeneration(ag)
 
@@ -242,4 +247,52 @@ func Test_QuestionRepository_FindByID_shouldReturnTruncatedLastError_whenFailedW
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, strings.Repeat("あ", 500), loaded.AudioGeneration().LastError())
+}
+
+func Test_QuestionRepository_FindFailedAudio_shouldReturnOnlyDueItems_whenMixedStatusesAndAttemptsExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	now := time.Now()
+	failedBefore := now.Add(-30 * time.Minute)
+	workbookID := "test-wb-failed-" + uuid.NewString()
+	failed := domainquestion.AudioGenerationStatusFailed()
+	due := newQuestionWithAudioAttempts(t, repo, workbookID, failed, fixtureAudioInputHashA, 2, now.Add(-2*time.Hour))
+	_ = newQuestionWithAudioAttempts(t, repo, workbookID, failed, fixtureAudioInputHashA, 2, now.Add(-5*time.Minute))
+	_ = newQuestionWithAudioAttempts(t, repo, workbookID, failed, fixtureAudioInputHashA, 3, now.Add(-2*time.Hour))
+	_ = newQuestionWithAudioAttempts(t, repo, workbookID, domainquestion.AudioGenerationStatusGenerating(), fixtureAudioInputHashA, 2, now.Add(-2*time.Hour))
+	_ = newQuestionWithAudioAttempts(t, repo, workbookID, domainquestion.AudioGenerationStatusPending(), fixtureAudioInputHashA, 2, now.Add(-2*time.Hour))
+
+	// when
+	got, err := repo.FindFailedAudio(ctx, 2, failedBefore, 50)
+
+	// then
+	require.NoError(t, err)
+	var inWorkbook []domainquestion.Question
+	for _, q := range got {
+		if q.WorkbookID() == workbookID {
+			inWorkbook = append(inWorkbook, q)
+		}
+	}
+	require.Len(t, inWorkbook, 1)
+	assert.Equal(t, due.ID(), inWorkbook[0].ID())
+}
+
+func Test_QuestionRepository_FindFailedAudio_shouldReturnNil_whenLimitIsZero(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+
+	// when
+	got, err := repo.FindFailedAudio(ctx, 1, time.Now(), 0)
+
+	// then
+	require.NoError(t, err)
+	assert.Nil(t, got)
 }
