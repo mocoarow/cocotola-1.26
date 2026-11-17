@@ -20,7 +20,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
-import { getUserPreferences, type UserPreferences } from "~/lib/api/user-setting.server";
+import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks";
 
@@ -28,21 +28,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   console.info("[workbooks] loader called");
   const { accessToken } = await requireAuth(request);
 
-  // Layout-level loader: render the outlet even when /auth/me transiently
-  // fails (5xx) so the rest of the app stays reachable. The original
-  // implementation returned `{ user: null }` on non-401 errors; that
-  // graceful degradation was lost when this loader was refactored onto
-  // getUserPreferences, which throws Response for every non-2xx. Catch
-  // those Responses here and fall back to null — but propagate the 3xx
-  // Responses (the redirect("/login") that redirectOnUnauthorized fires
-  // on 401) so session expiry still takes the user to the login screen.
-  let user: UserPreferences | null = null;
-  try {
-    user = await getUserPreferences(request, accessToken);
-  } catch (e) {
-    if (e instanceof Response && e.status >= 300 && e.status < 400) throw e;
-    console.error("[workbooks] /auth/me failed (degraded render):", e);
-  }
+  const user = await getUserPreferencesOrNull(request, accessToken);
 
   if (user !== null) {
     // loginId is email-shaped PII; log only the opaque userId so server

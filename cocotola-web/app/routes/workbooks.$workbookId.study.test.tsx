@@ -17,6 +17,26 @@ vi.mock("~/lib/api/study.server", () => ({
   listStudyRecords: vi.fn(),
 }));
 
+vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/lib/api/workbook.server")>();
+  return {
+    WorkbookValidationError: actual.WorkbookValidationError,
+    listWorkbooks: vi.fn(),
+    createWorkbook: vi.fn(),
+    getWorkbook: vi.fn(),
+    updateWorkbook: vi.fn(),
+    deleteWorkbook: vi.fn(),
+  };
+});
+
+vi.mock("~/lib/api/user-setting.server", () => ({
+  getUserPreferences: vi.fn(),
+  getUserPreferencesOrNull: vi.fn(),
+  updateUserLanguage: vi.fn(),
+  updateUserDailyGoal: vi.fn(),
+  updateUserTimezone: vi.fn(),
+}));
+
 const fetcherSubmit = vi.hoisted(() => vi.fn());
 
 vi.mock("react-router", async (importOriginal) => {
@@ -24,7 +44,6 @@ vi.mock("react-router", async (importOriginal) => {
   return {
     ...actual,
     useLoaderData: vi.fn(),
-    useRouteLoaderData: vi.fn(),
     useNavigate: vi.fn(() => vi.fn()),
     useFetcher: vi.fn(() => ({
       state: "idle",
@@ -39,45 +58,37 @@ vi.mock("react-router", async (importOriginal) => {
   };
 });
 
-import { useLoaderData, useNavigate, useRouteLoaderData } from "react-router";
-import { recordAnswer } from "~/lib/api/study.server";
+import { useLoaderData, useNavigate } from "react-router";
+import { getStudyQuestions, recordAnswer } from "~/lib/api/study.server";
+import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
+import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { studySessionStorageKey } from "~/lib/study-session";
-import StudyPage, { action } from "./workbooks.$workbookId.study";
+import StudyPage, { action, loader, type StudyBackTarget } from "./workbooks.$workbookId.study";
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
-const mockedUseRouteLoaderData = vi.mocked(useRouteLoaderData);
 const mockedUseNavigate = vi.mocked(useNavigate);
 
 function setLoaderData(args: {
   workbookId: string;
-  workbookOwnerId: string;
   questions: Array<{
     questionId: string;
     questionType: string;
     content: string;
     orderIndex: number;
   }>;
-  currentUserId?: string | null;
+  currentUserId: string | null;
+  backTarget?: StudyBackTarget;
 }) {
   mockedUseLoaderData.mockReturnValue({
     workbookId: args.workbookId,
-    workbookOwnerId: args.workbookOwnerId,
+    currentUserId: args.currentUserId,
+    timezone: null,
+    backTarget: args.backTarget ?? "workbook",
     questions: args.questions,
     practice: false,
     excludeIds: [],
   });
-  mockedUseRouteLoaderData.mockReturnValue(
-    args.currentUserId === null
-      ? { user: null }
-      : {
-          user: {
-            userId: args.currentUserId ?? args.workbookOwnerId,
-            loginId: "u",
-            organizationName: "o",
-          },
-        },
-  );
 }
 
 describe("StudyPage", () => {
@@ -89,7 +100,6 @@ describe("StudyPage", () => {
     // the rerender path that calls mockReturnValue mid-test) cannot bleed
     // into a later test that forgets to call setLoaderData first.
     mockedUseLoaderData.mockReset();
-    mockedUseRouteLoaderData.mockReset();
     // Keep a working default for useNavigate — most tests don't override it
     // and would otherwise see `undefined` and crash inside the resume effect.
     mockedUseNavigate.mockReturnValue(vi.fn());
@@ -99,7 +109,6 @@ describe("StudyPage", () => {
   function setLoaderDataWithUnrenderableFirst(rest: Array<{ questionId: string; text: string }>) {
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         { questionId: "q-bad", questionType: "unknown_type", content: "{}", orderIndex: 0 },
         ...rest.map((q, i) => ({
@@ -183,7 +192,6 @@ describe("StudyPage", () => {
     const user = userEvent.setup();
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         {
           questionId: "q-1",
@@ -247,7 +255,6 @@ describe("StudyPage", () => {
     const user = userEvent.setup();
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         {
           questionId: "q-1",
@@ -284,7 +291,6 @@ describe("StudyPage", () => {
     const user = userEvent.setup();
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         {
           questionId: "q-1",
@@ -313,7 +319,6 @@ describe("StudyPage", () => {
     // given
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [],
       currentUserId: "owner-1",
     });
@@ -335,7 +340,6 @@ describe("StudyPage", () => {
     // given
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [],
       currentUserId: "owner-1",
     });
@@ -348,46 +352,25 @@ describe("StudyPage", () => {
     expect(cta).toHaveAttribute("href", "/workbooks/wb-1/study?practice=true");
   });
 
-  it("should send empty-state back link to public list when current user is not the owner", () => {
+  it.each([
+    ["workbook", "Back to Workbook", "/workbooks/wb-1"],
+    ["public", "Back to Public Workbooks", "/workbooks/public"],
+    ["workbooks", "Back to Workbooks", "/workbooks"],
+  ] as const)("should link the empty-state back button by backTarget %s", (backTarget, label, href) => {
     // given
-    setLoaderData({
-      workbookId: "wb-1",
-      workbookOwnerId: "owner-other",
-      questions: [],
-      currentUserId: "viewer-1",
-    });
+    setLoaderData({ workbookId: "wb-1", questions: [], currentUserId: "user-1", backTarget });
 
     // when
     render(<StudyPage />);
 
     // then
-    expect(screen.queryByText("Back to Workbook")).not.toBeInTheDocument();
-    const backLink = screen.getByText("Back to Public Workbooks").closest("a");
-    expect(backLink).toHaveAttribute("href", "/workbooks/public");
-  });
-
-  it("should treat unauthenticated session (no user) as non-owner", () => {
-    // given
-    setLoaderData({
-      workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
-      questions: [],
-      currentUserId: null,
-    });
-
-    // when
-    render(<StudyPage />);
-
-    // then
-    const backLink = screen.getByText("Back to Public Workbooks").closest("a");
-    expect(backLink).toHaveAttribute("href", "/workbooks/public");
+    expect(screen.getByText(label).closest("a")).toHaveAttribute("href", href);
   });
 
   it("should render page title and question count", () => {
     // given
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [],
       currentUserId: "owner-1",
     });
@@ -415,7 +398,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -446,7 +428,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -481,7 +462,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -523,7 +503,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -565,7 +544,6 @@ describe("StudyPage", () => {
 
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         {
           questionId: "q-1",
@@ -630,7 +608,6 @@ describe("StudyPage", () => {
 
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         { questionId: "q-1", questionType: "word_fill", content: wordFill("ALPHA"), orderIndex: 0 },
         { questionId: "q-2", questionType: "word_fill", content: wordFill("BETA"), orderIndex: 1 },
@@ -680,7 +657,6 @@ describe("StudyPage", () => {
 
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         { questionId: "q-1", questionType: "word_fill", content: wordFill("ALPHA"), orderIndex: 0 },
         { questionId: "q-2", questionType: "word_fill", content: wordFill("BETA"), orderIndex: 1 },
@@ -697,7 +673,9 @@ describe("StudyPage", () => {
     // the new excludeIds reflected in the URL.
     mockedUseLoaderData.mockReturnValue({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
+      currentUserId: "owner-1",
+      timezone: null,
+      backTarget: "workbook",
       questions: [
         { questionId: "q-3", questionType: "word_fill", content: wordFill("GAMMA"), orderIndex: 2 },
       ],
@@ -731,7 +709,6 @@ describe("StudyPage", () => {
 
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions: [
         {
           questionId: "q-2",
@@ -782,7 +759,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -840,7 +816,6 @@ describe("StudyPage", () => {
     ];
     setLoaderData({
       workbookId: "wb-1",
-      workbookOwnerId: "owner-1",
       questions,
       currentUserId: "owner-1",
     });
@@ -871,6 +846,131 @@ describe("StudyPage", () => {
 
     // then (session complete)
     expect(screen.getByText("Session Complete!")).toBeInTheDocument();
+  });
+});
+
+type LoaderArgs = Parameters<typeof loader>[0];
+
+describe("StudyPage loader", () => {
+  const preferences = {
+    userId: "user-1",
+    loginId: "u",
+    organizationName: "o",
+    language: "ja",
+    dailyGoal: 25,
+    timezone: "America/Los_Angeles",
+  };
+
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockResolvedValue({
+      accessToken: "test-token",
+      refreshToken: undefined,
+    });
+    vi.mocked(getStudyQuestions).mockResolvedValue({
+      questions: [],
+      totalDue: 0,
+      newCount: 0,
+      reviewCount: 0,
+    });
+    vi.mocked(getUserPreferencesOrNull).mockReset();
+  });
+
+  function givenWorkbookOwnedBy(ownerId: string) {
+    vi.mocked(getWorkbook).mockResolvedValue({
+      workbookId: "wb-1",
+      spaceId: "space-1",
+      ownerId,
+      organizationId: "org-1",
+      title: "t",
+      description: "",
+      visibility: "public",
+      language: "ja",
+      createdAt: "2026-11-01T00:00:00Z",
+      updatedAt: "2026-11-01T00:00:00Z",
+    });
+  }
+
+  function buildLoaderArgs(): LoaderArgs {
+    const request = new Request("http://localhost/workbooks/wb-1/study");
+    return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
+  }
+
+  it.each([
+    ["user-1", "workbook"],
+    ["owner-other", "public"],
+  ] as const)("should return backTarget for owner %s when the user is known", async (ownerId, expected) => {
+    // given
+    givenWorkbookOwnedBy(ownerId);
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.backTarget).toBe(expected);
+  });
+
+  it.each([
+    ["degraded /auth/me", null],
+    ["empty userId", { ...preferences, userId: "" }],
+  ])("should return the my-workbooks backTarget when %s", async (_, prefs) => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(prefs);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.backTarget).toBe("workbooks");
+  });
+
+  it("should return the current user id when /auth/me succeeds", async () => {
+    // given
+    givenWorkbookOwnedBy("owner-other");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.currentUserId).toBe("user-1");
+  });
+
+  it("should return a null user id when /auth/me is degraded", async () => {
+    // given
+    givenWorkbookOwnedBy("owner-other");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(null);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.currentUserId).toBeNull();
+  });
+
+  it("should return the user's timezone when /auth/me succeeds", async () => {
+    // given
+    givenWorkbookOwnedBy("owner-other");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.timezone).toBe("America/Los_Angeles");
+  });
+
+  it("should return a null timezone when /auth/me is degraded", async () => {
+    // given
+    givenWorkbookOwnedBy("owner-other");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(null);
+
+    // when
+    const result = await loader(buildLoaderArgs());
+
+    // then
+    expect(result.timezone).toBeNull();
   });
 });
 

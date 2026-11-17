@@ -66,6 +66,23 @@ export async function getUserPreferences(
 }
 
 /**
+ * Like getUserPreferences, but returns null when /auth/me fails so the page
+ * can still render. The 3xx redirect to /login (fired on 401) is rethrown.
+ */
+export async function getUserPreferencesOrNull(
+  request: Request,
+  accessToken: string,
+): Promise<UserPreferences | null> {
+  try {
+    return await getUserPreferences(request, accessToken);
+  } catch (e) {
+    if (e instanceof Response && e.status >= 300 && e.status < 400) throw e;
+    console.error("[user-setting] /auth/me failed (degraded render):", e);
+    return null;
+  }
+}
+
+/**
  * Validates each field's runtime type before threading it into a
  * UserPreferences value. `as Partial<UserPreferences>` would happily
  * pass `dailyGoal: "10"` (string) through `?? 10`, leaving a

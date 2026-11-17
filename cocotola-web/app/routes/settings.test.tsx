@@ -14,6 +14,7 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
 // that pulls a new helper into route scope) do not hit `undefined`.
 vi.mock("~/lib/api/user-setting.server", () => ({
   getUserPreferences: vi.fn(),
+  getUserPreferencesOrNull: vi.fn(),
   updateUserLanguage: vi.fn(),
   updateUserDailyGoal: vi.fn(),
   updateUserTimezone: vi.fn(),

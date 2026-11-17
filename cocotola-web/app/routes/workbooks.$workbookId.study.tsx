@@ -6,7 +6,6 @@ import {
   useFetcher,
   useLoaderData,
   useNavigate,
-  useRouteLoaderData,
 } from "react-router";
 import { ProgressBar } from "~/components/study/progress-bar";
 import { StudyQuestionShell } from "~/components/study/question-shell/study-question-shell";
@@ -20,6 +19,7 @@ import {
   recordAnswer,
   type StudyQuestion,
 } from "~/lib/api/study.server";
+import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import {
@@ -36,7 +36,6 @@ import {
   studyRemountKey,
 } from "~/lib/study-session";
 import type { Route } from "./+types/workbooks.$workbookId.study";
-import type { loader as workbooksLayoutLoader } from "./workbooks";
 
 // Default session size when the user lands without choosing one (e.g. the
 // study URL shared from another tab). The dialog on the workbook list always
@@ -53,17 +52,39 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // over the count cap) before we issue the API call. The server validates
   // again at the trust boundary.
   const excludeIds = clampExcludeIds(url.searchParams.getAll("excludeIds"));
-  const [workbook, data] = await Promise.all([
+  const [workbook, data, user] = await Promise.all([
     getWorkbook(accessToken, workbookId),
     getStudyQuestions(accessToken, workbookId, limit, practice, excludeIds),
+    getUserPreferencesOrNull(request, accessToken),
   ]);
+  const currentUserId = user === null || user.userId === "" ? null : user.userId;
   return {
     workbookId,
-    workbookOwnerId: workbook.ownerId,
+    currentUserId,
+    timezone: user?.timezone ?? null,
+    backTarget: resolveBackTarget(currentUserId, workbook.ownerId),
     questions: data.questions,
     practice,
     excludeIds,
   };
+}
+
+export type StudyBackTarget = "workbook" | "public" | "workbooks";
+
+function resolveBackTarget(currentUserId: string | null, ownerId: string): StudyBackTarget {
+  if (currentUserId === null) return "workbooks";
+  return currentUserId === ownerId ? "workbook" : "public";
+}
+
+function backLink(target: StudyBackTarget, workbookId: string): { url: string; labelKey: string } {
+  switch (target) {
+    case "workbook":
+      return { url: `/workbooks/${workbookId}`, labelKey: "workbooks.study.backToWorkbook" };
+    case "public":
+      return { url: "/workbooks/public", labelKey: "workbooks.study.backToPublic" };
+    case "workbooks":
+      return { url: "/workbooks", labelKey: "workbooks.detail.backToWorkbooks" };
+  }
 }
 
 function parseLimit(raw: string | null): number {
@@ -318,20 +339,10 @@ function StudySession({
 }
 
 export default function StudyPage() {
-  const { workbookId, workbookOwnerId, questions, practice, excludeIds } =
+  const { workbookId, currentUserId, timezone, backTarget, questions, practice, excludeIds } =
     useLoaderData<typeof loader>();
-  const layoutData = useRouteLoaderData<typeof workbooksLayoutLoader>("routes/workbooks");
   const { t } = useTranslation();
-
-  // Normalize undefined / "" to null at the boundary so downstream code only
-  // has to check for null when deciding whether the session helpers may run.
-  const rawUserId = layoutData?.user?.userId;
-  const currentUserId = rawUserId === undefined || rawUserId === "" ? null : rawUserId;
-  const isOwner = currentUserId === workbookOwnerId;
-  const backUrl = isOwner ? `/workbooks/${workbookId}` : "/workbooks/public";
-  const backLabel = isOwner
-    ? t("workbooks.study.backToWorkbook")
-    : t("workbooks.study.backToPublic");
+  const back = backLink(backTarget, workbookId);
 
   // Recompute only when the inputs change. excludeIds is a fresh array
   // reference on every loader rerun so the memo key naturally invalidates at
@@ -375,14 +386,14 @@ export default function StudyPage() {
         questions={questions}
         practice={practice}
         loaderExcludeIds={excludeIds}
-        backUrl={backUrl}
-        backLabel={backLabel}
+        backUrl={back.url}
+        backLabel={t(back.labelKey)}
         // `||` is intentional here (not `??`): an empty-string timezone
-        // from the parser is just as unusable as undefined, so both
+        // from the parser is just as unusable as null, so both
         // should fall through to the browser-detected default. Switching
         // to `??` would let `""` past the fallback and forward an
         // invalid X-Local-Timezone header on the next answer submit.
-        timezone={layoutData?.user?.timezone || detectBrowserTimezone()}
+        timezone={timezone || detectBrowserTimezone()}
       />
     </div>
   );
