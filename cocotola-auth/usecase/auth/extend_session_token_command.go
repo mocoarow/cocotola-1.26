@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
@@ -41,34 +40,15 @@ func (c *ExtendSessionTokenCommand) ExtendSessionToken(ctx context.Context, inpu
 	token, ok := c.cache.GetSessionToken(hash)
 	if !ok {
 		var err error
-		token, err = c.repo.FindByTokenHash(ctx, hash)
+		token, err = findWhitelistedSessionToken(ctx, c.repo, c.whitelistRepo, c.config.TokenWhitelistSize, hash)
 		if err != nil {
-			return fmt.Errorf("find session token: %w", err)
-		}
-
-		// Check whitelist before proceeding
-		entries, err := c.whitelistRepo.FindByUserID(ctx, token.UserID())
-		if err != nil {
-			return fmt.Errorf("find session token whitelist: %w", err)
-		}
-		whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
-		if err != nil {
-			return fmt.Errorf("new session token whitelist: %w", err)
-		}
-		if !whitelist.ContainsToken(token.ID()) {
-			return domain.ErrTokenNotFound
+			return err
 		}
 	}
 
-	if token.IsRevoked() {
-		return domain.ErrTokenRevoked
-	}
-	if token.IsExpired(now) {
-		return domain.ErrSessionExpired
-	}
 	maxTTL := time.Duration(c.config.SessionMaxTTLMin) * time.Minute
-	if token.IsAbsoluteExpired(now, maxTTL) {
-		return domain.ErrSessionExpired
+	if err := checkSessionTokenUsable(token, now, maxTTL); err != nil {
+		return err
 	}
 
 	slidingTTL := time.Duration(c.config.SessionTokenTTLMin) * time.Minute

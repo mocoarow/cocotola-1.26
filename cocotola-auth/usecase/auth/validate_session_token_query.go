@@ -5,18 +5,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 	authservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth"
 )
 
-type validateSessionTokenRepo interface {
-	FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error)
-}
-
 // ValidateSessionTokenQuery validates a raw session token and returns user info.
 type ValidateSessionTokenQuery struct {
-	repo          validateSessionTokenRepo
+	repo          sessionTokenFinder
 	whitelistRepo whitelistFinder
 	cache         sessionTokenCacheReadWriter
 	config        UsecaseConfig
@@ -24,7 +19,7 @@ type ValidateSessionTokenQuery struct {
 
 // NewValidateSessionTokenQuery returns a new ValidateSessionTokenQuery.
 func NewValidateSessionTokenQuery(
-	repo validateSessionTokenRepo,
+	repo sessionTokenFinder,
 	whitelistRepo whitelistFinder,
 	cache sessionTokenCacheReadWriter,
 	config UsecaseConfig,
@@ -45,36 +40,16 @@ func (q *ValidateSessionTokenQuery) ValidateSessionToken(ctx context.Context, in
 	token, ok := q.cache.GetSessionToken(hash)
 	if !ok {
 		var err error
-		token, err = q.repo.FindByTokenHash(ctx, hash)
+		token, err = findWhitelistedSessionToken(ctx, q.repo, q.whitelistRepo, q.config.TokenWhitelistSize, hash)
 		if err != nil {
-			return nil, fmt.Errorf("find session token: %w", err)
+			return nil, err
 		}
-
-		// Check whitelist before caching
-		entries, err := q.whitelistRepo.FindByUserID(ctx, token.UserID())
-		if err != nil {
-			return nil, fmt.Errorf("find session token whitelist: %w", err)
-		}
-		whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, q.config.TokenWhitelistSize)
-		if err != nil {
-			return nil, fmt.Errorf("new session token whitelist: %w", err)
-		}
-		if !whitelist.ContainsToken(token.ID()) {
-			return nil, domain.ErrTokenNotFound
-		}
-
 		q.cache.SetSessionToken(hash, token)
 	}
 
-	if token.IsRevoked() {
-		return nil, domain.ErrTokenRevoked
-	}
-	if token.IsExpired(now) {
-		return nil, domain.ErrSessionExpired
-	}
 	maxTTL := time.Duration(q.config.SessionMaxTTLMin) * time.Minute
-	if token.IsAbsoluteExpired(now, maxTTL) {
-		return nil, domain.ErrSessionExpired
+	if err := checkSessionTokenUsable(token, now, maxTTL); err != nil {
+		return nil, err
 	}
 
 	output, err := authservice.NewValidateSessionTokenOutput(token.UserID(), string(token.LoginID()), token.OrganizationName())

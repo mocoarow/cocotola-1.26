@@ -15,6 +15,7 @@ go_library(
         "refresh_access_token_command.go",
         "revoke_session_token_command.go",
         "revoke_token_command.go",
+        "session_token_lookup.go",
         "shared_interfaces.go",
         "supabase_exchange_query.go",
         "validate_access_token_query.go",
@@ -36,6 +37,7 @@ smart_go_test(
     srcs = [
         "create_session_token_command_s_test.go",
         "create_token_pair_command_s_test.go",
+        "extend_session_token_command_s_test.go",
         "fixtures_test.go",
         "mocks_test.go",
         "revoke_session_token_command_s_test.go",
