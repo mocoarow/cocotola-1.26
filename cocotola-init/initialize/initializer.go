@@ -45,63 +45,69 @@ func CocotolaOrganizationID() domain.OrganizationID {
 func Initialize(ctx context.Context, db *gorm.DB, seeder PublicWorkbookSeeder, ownerLoginID string, ownerPassword string) error {
 	logger := slog.Default()
 
-	// 1. Find or create "cocotola" organization
-	orgRepo := gateway.NewOrganizationRepository(db)
-	org, err := findOrCreateOrganization(ctx, orgRepo, logger)
-	if err != nil {
-		return fmt.Errorf("find or create organization: %w", err)
-	}
-
-	// 2. Create or find first owner user
-	appUserRepo := gateway.NewAppUserRepository(db)
-	hasher := gateway.NewBcryptHasher()
-	ownerUserID, err := findOrCreateOwner(ctx, appUserRepo, hasher, org.ID(), ownerLoginID, ownerPassword, logger)
-	if err != nil {
-		return fmt.Errorf("find or create owner: %w", err)
-	}
-
-	// 3. Update active user list
-	activeUserListRepo := gateway.NewActiveUserListRepository(db)
-	if err := addToActiveUserList(ctx, activeUserListRepo, org, ownerUserID, logger); err != nil {
-		return fmt.Errorf("add to active user list: %w", err)
-	}
-
-	// 4. Setup RBAC policies
 	rbacRepo, err := gateway.NewRBACRepository(db)
 	if err != nil {
 		return fmt.Errorf("new rbac repository: %w", err)
 	}
-	if err := setupRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
-		return fmt.Errorf("setup rbac policies: %w", err)
-	}
 
-	// 5. Assign admin group to first owner
-	if err := assignGroup(ctx, rbacRepo, org.ID(), ownerUserID, domainrbac.GroupAdmin(), logger); err != nil {
-		return fmt.Errorf("assign admin group: %w", err)
-	}
-
-	// 6. Create or find guest user
-	guestUserID, err := findOrCreateGuest(ctx, appUserRepo, org.ID(), logger)
+	users, err := bootstrapTenantUsers(ctx, db, rbacRepo, ownerLoginID, ownerPassword, logger)
 	if err != nil {
-		return fmt.Errorf("find or create guest: %w", err)
+		return fmt.Errorf("bootstrap tenant users: %w", err)
 	}
 
-	// 7. Add guest user to active user list
-	if err := addToActiveUserList(ctx, activeUserListRepo, org, guestUserID, logger); err != nil {
-		return fmt.Errorf("add guest to active user list: %w", err)
-	}
-
-	// 8. Setup system owner and public space
-	if err := setupSystemOwnerAndSpace(ctx, db, seeder, rbacRepo, org.ID(), logger); err != nil {
+	if err := setupSystemOwnerAndSpace(ctx, db, seeder, rbacRepo, users.orgID, logger); err != nil {
 		return fmt.Errorf("setup system owner and space: %w", err)
 	}
 
 	logger.InfoContext(ctx, "initialization completed successfully",
-		slog.String("organization_id", org.ID().String()),
-		slog.String("owner_user_id", ownerUserID.String()),
-		slog.String("guest_user_id", guestUserID.String()),
+		slog.String("organization_id", users.orgID.String()),
+		slog.String("owner_user_id", users.ownerUserID.String()),
+		slog.String("guest_user_id", users.guestUserID.String()),
 	)
 	return nil
+}
+
+type tenantUsers struct {
+	orgID       domain.OrganizationID
+	ownerUserID domain.AppUserID
+	guestUserID domain.AppUserID
+}
+
+func bootstrapTenantUsers(ctx context.Context, db *gorm.DB, rbacRepo *gateway.RBACRepository, ownerLoginID string, ownerPassword string, logger *slog.Logger) (tenantUsers, error) {
+	org, err := findOrCreateOrganization(ctx, gateway.NewOrganizationRepository(db), logger)
+	if err != nil {
+		return tenantUsers{}, fmt.Errorf("find or create organization: %w", err)
+	}
+
+	appUserRepo := gateway.NewAppUserRepository(db)
+	ownerUserID, err := findOrCreateOwner(ctx, appUserRepo, gateway.NewBcryptHasher(), org.ID(), ownerLoginID, ownerPassword, logger)
+	if err != nil {
+		return tenantUsers{}, fmt.Errorf("find or create owner: %w", err)
+	}
+
+	activeUserListRepo := gateway.NewActiveUserListRepository(db)
+	if err := addToActiveUserList(ctx, activeUserListRepo, org, ownerUserID, logger); err != nil {
+		return tenantUsers{}, fmt.Errorf("add to active user list: %w", err)
+	}
+
+	if err := setupRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
+		return tenantUsers{}, fmt.Errorf("setup rbac policies: %w", err)
+	}
+
+	if err := assignGroup(ctx, rbacRepo, org.ID(), ownerUserID, domainrbac.GroupAdmin(), logger); err != nil {
+		return tenantUsers{}, fmt.Errorf("assign admin group: %w", err)
+	}
+
+	guestUserID, err := findOrCreateGuest(ctx, appUserRepo, org.ID(), logger)
+	if err != nil {
+		return tenantUsers{}, fmt.Errorf("find or create guest: %w", err)
+	}
+
+	if err := addToActiveUserList(ctx, activeUserListRepo, org, guestUserID, logger); err != nil {
+		return tenantUsers{}, fmt.Errorf("add guest to active user list: %w", err)
+	}
+
+	return tenantUsers{orgID: org.ID(), ownerUserID: ownerUserID, guestUserID: guestUserID}, nil
 }
 
 // setupSystemOwnerAndSpace binds the system_owner group to the global
