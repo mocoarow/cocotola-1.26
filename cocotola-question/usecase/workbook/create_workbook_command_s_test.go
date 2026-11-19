@@ -269,52 +269,15 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenPolicyAdderFails(t *testin
 	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
 	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
 
+	listSaver := newMockownedWorkbookListSaver(t)
+	listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+
 	wbSaver := newMockworkbookSaver(t)
 	wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	policyErr := errors.New("auth service unavailable")
 	policyAdder := newMockpolicyAdder(t)
 	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), workbookResourceMatcher, domain.EffectAllow()).Return(policyErr)
-
-	spaceTypeFetcher := newMockspaceTypeFetcher(t)
-	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
-
-	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, nil, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
-	input := newCreateWorkbookInput(t)
-
-	// when
-	_, err = cmd.CreateWorkbook(ctx, input)
-
-	// then
-	require.ErrorIs(t, err, policyErr)
-}
-
-func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	spaceResource, err := domain.ResourceSpace(fixtureSpaceID)
-	require.NoError(t, err)
-
-	authChecker := newMockauthorizationChecker(t)
-	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), spaceResource).Return(true, nil)
-
-	ownedList, _ := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
-	listFinder := newMockownedWorkbookListFinder(t)
-	listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
-
-	listSaver := newMockownedWorkbookListSaver(t)
-	listSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
-
-	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
-	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
-
-	wbSaver := newMockworkbookSaver(t)
-	wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
-
-	policyAdder := newMockpolicyAdder(t)
-	expectAllWorkbookPolicies(policyAdder)
 
 	spaceTypeFetcher := newMockspaceTypeFetcher(t)
 	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
@@ -326,5 +289,152 @@ func Test_CreateWorkbookCommand_shouldReturnError_whenOwnedListSaveFails(t *test
 	_, err = cmd.CreateWorkbook(ctx, input)
 
 	// then
+	require.ErrorIs(t, err, policyErr)
+}
+
+type createWorkbookDeps struct {
+	authChecker      *mockauthorizationChecker
+	listFinder       *mockownedWorkbookListFinder
+	listSaver        *mockownedWorkbookListSaver
+	maxWbFetcher     *mockmaxWorkbooksFetcher
+	spaceTypeFetcher *mockspaceTypeFetcher
+	wbSaver          *mockworkbookSaver
+	policyAdder      *mockpolicyAdder
+}
+
+// newAllowedCreateWorkbookDeps prepares an authorized operator whose owned list is empty and under the limit.
+func newAllowedCreateWorkbookDeps(t *testing.T) *createWorkbookDeps {
+	t.Helper()
+	spaceResource, err := domain.ResourceSpace(fixtureSpaceID)
+	require.NoError(t, err)
+	ownedList, err := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
+	require.NoError(t, err)
+
+	deps := &createWorkbookDeps{
+		authChecker:      newMockauthorizationChecker(t),
+		listFinder:       newMockownedWorkbookListFinder(t),
+		listSaver:        newMockownedWorkbookListSaver(t),
+		maxWbFetcher:     newMockmaxWorkbooksFetcher(t),
+		spaceTypeFetcher: newMockspaceTypeFetcher(t),
+		wbSaver:          newMockworkbookSaver(t),
+		policyAdder:      newMockpolicyAdder(t),
+	}
+	deps.authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), spaceResource).Return(true, nil)
+	deps.spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePrivate(), nil)
+	deps.maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
+	deps.listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
+	return deps
+}
+
+func (d *createWorkbookDeps) command() *workbookusecase.CreateWorkbookCommand {
+	return workbookusecase.NewCreateWorkbookCommand(d.wbSaver, d.listFinder, d.listSaver, d.maxWbFetcher, d.spaceTypeFetcher, d.authChecker, d.policyAdder)
+}
+
+func Test_CreateWorkbookCommand_shouldReturnConcurrentModification_whenOwnedListReservationConflicts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
+	cmd := deps.command()
+
+	// when
+	_, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
 	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
+}
+
+func Test_CreateWorkbookCommand_shouldNotSaveWorkbook_whenOwnedListReservationConflicts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
+	cmd := deps.command()
+
+	// when
+	_, _ = cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
+	deps.wbSaver.AssertNotCalled(t, "Save", mock.Anything, mock.Anything)
+}
+
+func Test_CreateWorkbookCommand_shouldKeepReservation_whenWorkbookSaveFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	deps.wbSaver.On("Save", mock.Anything, mock.Anything).Return(errors.New("firestore unavailable"))
+	cmd := deps.command()
+
+	// when
+	_, _ = cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
+	deps.listSaver.AssertNumberOfCalls(t, "Save", 1)
+}
+
+func Test_CreateWorkbookCommand_shouldReserveCreatedWorkbookID_whenUnderLimit(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	var reserved []string
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Run(func(args mock.Arguments) {
+		list, ok := args.Get(1).(*domain.OwnedWorkbookList)
+		require.True(t, ok)
+		reserved = list.Entries()
+	}).Return(nil).Once()
+	deps.wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	expectAllWorkbookPolicies(deps.policyAdder)
+	cmd := deps.command()
+
+	// when
+	output, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{output.WorkbookID}, reserved)
+}
+
+func Test_CreateWorkbookCommand_shouldKeepReservation_whenPolicyGrantFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	deps.wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	deps.policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), workbookResourceMatcher, domain.EffectAllow()).Return(errors.New("auth service unavailable"))
+	cmd := deps.command()
+
+	// when
+	_, _ = cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
+	deps.listSaver.AssertNumberOfCalls(t, "Save", 1)
+}
+
+func Test_CreateWorkbookCommand_shouldReturnWorkbookSaveError_whenWorkbookSaveFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	deps := newAllowedCreateWorkbookDeps(t)
+	deps.listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	saveErr := errors.New("firestore unavailable")
+	deps.wbSaver.On("Save", mock.Anything, mock.Anything).Return(saveErr)
+	cmd := deps.command()
+
+	// when
+	_, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInput(t))
+
+	// then
+	require.ErrorIs(t, err, saveErr)
 }
