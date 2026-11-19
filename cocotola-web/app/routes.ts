@@ -7,13 +7,18 @@ export default [
   route("auth/callback", "routes/auth.callback.tsx"),
   route("logout", "routes/logout.tsx"),
   layout("routes/workbooks.tsx", [
-    route("dashboard", "routes/dashboard.tsx"),
-    route("settings", "routes/settings.tsx"),
-    route("workbooks", "routes/workbooks.index.tsx"),
-    route("workbooks/public", "routes/workbooks.public.tsx"),
-    route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
-    route("workbooks/:workbookId/study", "routes/workbooks.$workbookId.study.tsx"),
-    route("workbooks/:workbookId/study-summary", "routes/workbooks.$workbookId.study-summary.tsx"),
-    route("workbooks/:workbookId/debug-study", "routes/workbooks.$workbookId.debug-study.tsx"),
+    layout("routes/workbooks.content.tsx", [
+      route("dashboard", "routes/dashboard.tsx"),
+      route("settings", "routes/settings.tsx"),
+      route("workbooks", "routes/workbooks.index.tsx"),
+      route("workbooks/public", "routes/workbooks.public.tsx"),
+      route("workbooks/:workbookId", "routes/workbooks.$workbookId.tsx"),
+      route("workbooks/:workbookId/study", "routes/workbooks.$workbookId.study.tsx"),
+      route(
+        "workbooks/:workbookId/study-summary",
+        "routes/workbooks.$workbookId.study-summary.tsx",
+      ),
+      route("workbooks/:workbookId/debug-study", "routes/workbooks.$workbookId.debug-study.tsx"),
+    ]),
   ]),
 ] satisfies RouteConfig;

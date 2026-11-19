@@ -305,6 +305,30 @@
     "error": "エラー",
     "pageNotFound": "お探しのページが見つかりませんでした。"
   },
+  "routeErrors": {
+    "forbidden": {
+      "title": "アクセスできません",
+      "description": "このページを表示する権限がありません。"
+    },
+    "notFound": {
+      "title": "見つかりません",
+      "description": "お探しのページは削除されたか、存在しません。"
+    },
+    "conflict": {
+      "title": "他の操作と競合しました",
+      "description": "再読み込みして最新の状態からやり直してください。"
+    },
+    "server": {
+      "title": "サーバーでエラーが発生しました",
+      "description": "しばらくしてから再読み込みしてください。"
+    },
+    "unexpected": {
+      "title": "エラーが発生しました",
+      "description": "予期しないエラーが発生しました。"
+    },
+    "reload": "再読み込み",
+    "backToWorkbooks": "マイワークブックに戻る"
+  },
   "languages": {
     "ja": "日本語",
     "en": "英語",

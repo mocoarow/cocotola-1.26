@@ -305,6 +305,30 @@
     "error": "오류",
     "pageNotFound": "요청하신 페이지를 찾을 수 없습니다."
   },
+  "routeErrors": {
+    "forbidden": {
+      "title": "접근할 수 없습니다",
+      "description": "이 페이지를 볼 권한이 없습니다."
+    },
+    "notFound": {
+      "title": "찾을 수 없습니다",
+      "description": "찾으시는 페이지가 삭제되었거나 존재하지 않습니다."
+    },
+    "conflict": {
+      "title": "다른 작업과 충돌했습니다",
+      "description": "새로고침하여 최신 상태에서 다시 시도해 주세요."
+    },
+    "server": {
+      "title": "서버에서 오류가 발생했습니다",
+      "description": "잠시 후 새로고침해 주세요."
+    },
+    "unexpected": {
+      "title": "오류가 발생했습니다",
+      "description": "예기치 않은 오류가 발생했습니다."
+    },
+    "reload": "새로고침",
+    "backToWorkbooks": "내 워크북으로 돌아가기"
+  },
   "languages": {
     "ja": "일본어",
     "en": "영어",

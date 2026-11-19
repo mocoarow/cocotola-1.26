@@ -310,6 +310,30 @@
     "error": "Error",
     "pageNotFound": "The requested page could not be found."
   },
+  "routeErrors": {
+    "forbidden": {
+      "title": "Access denied",
+      "description": "You do not have permission to view this page."
+    },
+    "notFound": {
+      "title": "Not found",
+      "description": "The page you are looking for was removed or does not exist."
+    },
+    "conflict": {
+      "title": "Conflicting update",
+      "description": "Reload to start again from the latest state."
+    },
+    "server": {
+      "title": "Server error",
+      "description": "Please reload in a little while."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred."
+    },
+    "reload": "Reload",
+    "backToWorkbooks": "Back to My Workbooks"
+  },
   "languages": {
     "ja": "Japanese",
     "en": "English",
