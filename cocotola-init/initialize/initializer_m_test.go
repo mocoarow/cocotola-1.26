@@ -46,6 +46,70 @@ func newSucceedingSeeder(t *testing.T) *MockPublicWorkbookSeeder {
 	return seeder
 }
 
+func findInitializedUserID(ctx context.Context, t *testing.T, loginID string) domain.AppUserID {
+	t.Helper()
+	user, err := gateway.NewAppUserRepository(testDB).FindByLoginID(ctx, initialize.CocotolaOrganizationID(), domain.LoginID(loginID))
+	require.NoError(t, err)
+	return user.ID()
+}
+
+func findActiveUserList(ctx context.Context, t *testing.T) *domain.ActiveUserList {
+	t.Helper()
+	list, err := gateway.NewActiveUserListRepository(testDB).FindByOrganizationID(ctx, initialize.CocotolaOrganizationID())
+	require.NoError(t, err)
+	return list
+}
+
+func Test_Initialize_shouldCreateGuestUser_whenRun(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// when
+	require.NoError(t, runInitialize(ctx, t, newSucceedingSeeder(t)))
+
+	// then
+	_, err := gateway.NewAppUserRepository(testDB).FindByLoginID(ctx, initialize.CocotolaOrganizationID(), domain.LoginID(guestLoginID()))
+	require.NoError(t, err)
+}
+
+func Test_Initialize_shouldAddOwnerToActiveUserList_whenRun(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// when
+	require.NoError(t, runInitialize(ctx, t, newSucceedingSeeder(t)))
+
+	// then
+	ownerID := findInitializedUserID(ctx, t, initializeOwnerLoginID)
+	assert.True(t, findActiveUserList(ctx, t).Contains(ownerID))
+}
+
+func Test_Initialize_shouldAddGuestToActiveUserList_whenRun(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// when
+	require.NoError(t, runInitialize(ctx, t, newSucceedingSeeder(t)))
+
+	// then
+	guestID := findInitializedUserID(ctx, t, guestLoginID())
+	assert.True(t, findActiveUserList(ctx, t).Contains(guestID))
+}
+
+func Test_Initialize_shouldAllowAdminActionToOwner_whenRun(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// when
+	require.NoError(t, runInitialize(ctx, t, newSucceedingSeeder(t)))
+
+	// then
+	ownerID := findInitializedUserID(ctx, t, initializeOwnerLoginID)
+	allowed, err := newRBACRepository(t).Enforce(initialize.CocotolaOrganizationID(), ownerID, domainrbac.ActionCreateUser(), domainrbac.ResourceAny())
+	require.NoError(t, err)
+	assert.True(t, allowed)
+}
+
 func Test_Initialize_shouldSucceed_whenRunAgain(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
