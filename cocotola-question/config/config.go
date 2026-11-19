@@ -29,9 +29,10 @@ type QuestionConfig struct {
 
 // AuthClientConfig holds configuration for the auth service HTTP client.
 type AuthClientConfig struct {
-	BaseURL    string `yaml:"baseUrl" validate:"required"`
-	APIKey     string `yaml:"apiKey" validate:"required"`
-	TimeoutSec int    `yaml:"timeoutSec" validate:"required,gte=1"`
+	BaseURL                string `yaml:"baseUrl" validate:"required"`
+	APIKey                 string `yaml:"apiKey" validate:"required"`
+	TimeoutSec             int    `yaml:"timeoutSec" validate:"required,gte=1"`
+	OrgResolverCacheTTLMin int    `yaml:"orgResolverCacheTtlMin" validate:"gte=0"`
 }
 
 // Config holds all configuration for the standalone cocotola-question service.

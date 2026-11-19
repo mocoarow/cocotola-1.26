@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
 )
@@ -70,6 +71,39 @@ func Test_ExpandEnvWithDefaults_shouldReturnDefaultWithColonDash_whenDefaultCont
 
 	// then
 	assert.Equal(t, "value:-with:-separators", result)
+}
+
+func setRequiredConfigEnv(t *testing.T) {
+	t.Helper()
+	t.Setenv("QUESTION_API_KEY", "question-api-key")
+	t.Setenv("AUTH_API_KEY", "auth-api-key")
+	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "test-project")
+}
+
+func Test_LoadConfig_shouldUseDefaultOrgResolverCacheTTL_whenEnvIsNotSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("ORG_RESOLVER_CACHE_TTL_MIN", "")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 60, cfg.Auth.OrgResolverCacheTTLMin)
+}
+
+func Test_LoadConfig_shouldDisableOrgResolverCache_whenEnvIsZero(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("ORG_RESOLVER_CACHE_TTL_MIN", "0")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, cfg.Auth.OrgResolverCacheTTLMin)
 }
 
 func Test_ExpandEnvWithDefaults_shouldReturnEnvValue_whenEnvIsSetAndNoDefault(t *testing.T) {
