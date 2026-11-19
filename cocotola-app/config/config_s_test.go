@@ -47,3 +47,29 @@ func Test_LoadConfig_shouldDisableOrgResolverCache_whenEnvIsZero(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, cfg.App.AuthClient.OrgResolverCacheTTLMin)
 }
+
+func Test_LoadConfig_shouldUseDefaultMeCacheTTL_whenEnvIsNotSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("APP_AUTH_CLIENT_ME_CACHE_TTL_SEC", "")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 90, cfg.App.AuthClient.MeCacheTTLSec)
+}
+
+func Test_LoadConfig_shouldDisableMeCache_whenEnvIsZero(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("APP_AUTH_CLIENT_ME_CACHE_TTL_SEC", "0")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, cfg.App.AuthClient.MeCacheTTLSec)
+}

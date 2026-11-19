@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -107,9 +108,14 @@ type getMeResponse struct {
 
 // NewAuthMiddleware returns a Gin middleware that validates requests
 // by forwarding the Authorization header to cocotola-auth's /api/v1/auth/me endpoint.
-func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerFunc {
+func NewAuthMiddleware(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration) gin.HandlerFunc {
+	return newAuthMiddleware(authBaseURL, httpClient, meCacheTTL, time.Now)
+}
+
+func newAuthMiddleware(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration, now func() time.Time) gin.HandlerFunc {
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "QuestionAuthMiddleware"))
 	meURL := authBaseURL + "/api/v1/auth/me"
+	cache := newAuthMeCache(meCacheTTL, now)
 
 	return func(c *gin.Context) {
 		ctx := c.Request.Context()
@@ -122,39 +128,13 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 			return
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
-		if err != nil {
-			logger.ErrorContext(ctx, "create request", slog.Any("error", err))
-			c.Status(http.StatusInternalServerError)
-			c.Abort()
-			return
-		}
-		req.Header.Set("Authorization", authorization)
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			logger.ErrorContext(ctx, "call auth service", slog.Any("error", err))
-			c.Status(http.StatusBadGateway)
-			c.Abort()
-			return
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
+		me, ok := cache.get(authorization)
+		if !ok {
+			me, ok = fetchMe(ctx, c, logger, httpClient, meURL, authorization)
+			if !ok {
+				return
 			}
-		}()
-
-		if resp.StatusCode != http.StatusOK {
-			abortOnAuthStatus(ctx, c, logger, resp.StatusCode)
-			return
-		}
-
-		var me getMeResponse
-		if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(&me); err != nil {
-			logger.ErrorContext(ctx, "decode auth response", slog.Any("error", err))
-			c.Status(http.StatusInternalServerError)
-			c.Abort()
-			return
+			cache.set(authorization, me)
 		}
 
 		c.Set(controller.ContextFieldUserID{}, me.UserID)
@@ -162,6 +142,45 @@ func NewAuthMiddleware(authBaseURL string, httpClient *http.Client) gin.HandlerF
 		c.Set(controller.ContextFieldUserLanguage{}, me.Language)
 		c.Next()
 	}
+}
+
+// fetchMe calls /auth/me and aborts c with the matching status when it fails.
+func fetchMe(ctx context.Context, c *gin.Context, logger *slog.Logger, httpClient *http.Client, meURL string, authorization string) (getMeResponse, bool) {
+	var me getMeResponse
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
+	if err != nil {
+		logger.ErrorContext(ctx, "create request", slog.Any("error", err))
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return me, false
+	}
+	req.Header.Set("Authorization", authorization)
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		logger.ErrorContext(ctx, "call auth service", slog.Any("error", err))
+		c.Status(http.StatusBadGateway)
+		c.Abort()
+		return me, false
+	}
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		abortOnAuthStatus(ctx, c, logger, resp.StatusCode)
+		return me, false
+	}
+
+	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(&me); err != nil {
+		logger.ErrorContext(ctx, "decode auth response", slog.Any("error", err))
+		c.Status(http.StatusInternalServerError)
+		c.Abort()
+		return me, false
+	}
+	return me, true
 }
 
 func abortOnAuthStatus(ctx context.Context, c *gin.Context, logger *slog.Logger, status int) {

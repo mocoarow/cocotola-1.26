@@ -2,7 +2,10 @@ package gateway
 
 import (
 	"context"
+	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Test-only re-exports of unexported identifiers used by the external
@@ -22,4 +25,8 @@ const OrganizationIDCacheMaxEntries = organizationIDCacheMaxEntries
 
 func NewCachedOrganizationResolverWithClock(resolver func(ctx context.Context, name string) (string, error), ttl time.Duration, now func() time.Time) func(ctx context.Context, name string) (string, error) {
 	return newCachedOrganizationResolver(resolver, ttl, now)
+}
+
+func NewAuthMiddlewareWithClock(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration, now func() time.Time) gin.HandlerFunc {
+	return newAuthMiddleware(authBaseURL, httpClient, meCacheTTL, now)
 }

@@ -106,6 +106,32 @@ func Test_LoadConfig_shouldDisableOrgResolverCache_whenEnvIsZero(t *testing.T) {
 	assert.Equal(t, 0, cfg.Auth.OrgResolverCacheTTLMin)
 }
 
+func Test_LoadConfig_shouldUseDefaultMeCacheTTL_whenEnvIsNotSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("AUTH_ME_CACHE_TTL_SEC", "")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 90, cfg.Auth.MeCacheTTLSec)
+}
+
+func Test_LoadConfig_shouldDisableMeCache_whenEnvIsZero(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("AUTH_ME_CACHE_TTL_SEC", "0")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 0, cfg.Auth.MeCacheTTLSec)
+}
+
 func Test_ExpandEnvWithDefaults_shouldReturnEnvValue_whenEnvIsSetAndNoDefault(t *testing.T) {
 	// given
 	t.Setenv("COCOTOLA_TEST_PLAIN_VAR", "plain_value")
