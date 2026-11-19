@@ -24,5 +24,6 @@ smart_go_test(
     deps = [
         ":config",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

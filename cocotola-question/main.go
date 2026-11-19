@@ -71,7 +71,9 @@ func run() (int, error) {
 	authzChecker := gateway.NewAuthServiceAuthorizationChecker(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
 
 	// organization resolver (resolves org name to ID via cocotola-auth internal API)
-	orgResolver := gateway.AuthServiceOrganizationResolver(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)
+	orgResolver := gateway.NewCachedOrganizationResolver(
+		gateway.AuthServiceOrganizationResolver(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient),
+		time.Duration(cfg.Auth.OrgResolverCacheTTLMin)*time.Minute)
 
 	// max workbooks fetcher (fetches user setting via cocotola-auth internal API)
 	maxWbFetcher := gateway.NewAuthServiceMaxWorkbooksFetcher(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)

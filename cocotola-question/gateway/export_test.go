@@ -1,5 +1,10 @@
 package gateway
 
+import (
+	"context"
+	"time"
+)
+
 // Test-only re-exports of unexported identifiers used by the external
 // gateway_test package. Confined to *_test.go so it does not affect
 // the public API.
@@ -11,4 +16,10 @@ type (
 
 func DeleteStudyRecordDocs(iter StudyRecordIter, bw StudyRecordBulkDeleter) error {
 	return deleteStudyRecordDocs(iter, bw)
+}
+
+const OrganizationIDCacheMaxEntries = organizationIDCacheMaxEntries
+
+func NewCachedOrganizationResolverWithClock(resolver func(ctx context.Context, name string) (string, error), ttl time.Duration, now func() time.Time) func(ctx context.Context, name string) (string, error) {
+	return newCachedOrganizationResolver(resolver, ttl, now)
 }
