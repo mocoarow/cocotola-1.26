@@ -69,28 +69,16 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("save question: %w", err)
 	}
 
-	if err := c.saveActiveList(ctx, input.WorkbookID, q.ID()); err != nil {
+	if err := updateActiveList(ctx, c.activeListFinder, c.activeListSaver, input.WorkbookID, func(l *domain.ActiveQuestionList) error {
+		return l.Add(q.ID())
+	}); err != nil {
 		slog.ErrorContext(ctx, "active question list save failed after question creation",
 			slog.String("question_id", q.ID()),
 			slog.String("workbook_id", input.WorkbookID),
 			slog.Any("error", err),
 		)
-		return nil, fmt.Errorf("save active question list: %w", err)
+		return nil, fmt.Errorf("add question %s to active list: %w", q.ID(), err)
 	}
 
 	return &questionservice.AddQuestionOutput{Item: toServiceItem(q)}, nil
-}
-
-func (c *AddQuestionCommand) saveActiveList(ctx context.Context, workbookID string, questionID string) error {
-	activeList, err := c.activeListFinder.FindByWorkbookID(ctx, workbookID)
-	if err != nil {
-		return fmt.Errorf("find active question list: %w", err)
-	}
-	if err := activeList.Add(questionID); err != nil {
-		return fmt.Errorf("add to active question list: %w", err)
-	}
-	if err := c.activeListSaver.Save(ctx, activeList); err != nil {
-		return fmt.Errorf("save active question list: %w", err)
-	}
-	return nil
 }
