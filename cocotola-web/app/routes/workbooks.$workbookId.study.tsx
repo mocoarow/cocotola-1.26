@@ -28,6 +28,7 @@ import {
   isValidIanaTimezoneShape,
   isValidLocalDateKey,
 } from "~/lib/format/local-date";
+import { isConflictOrServerError } from "~/lib/route-error";
 import { parseAnswerPayload } from "~/lib/study/answer-payload";
 import {
   appendAnsweredId,
@@ -41,6 +42,8 @@ import type { Route } from "./+types/workbooks.$workbookId.study";
 // study URL shared from another tab). The dialog on the workbook list always
 // supplies an explicit `?limit=N` so this only applies to direct navigation.
 const DEFAULT_STUDY_LIMIT = 20;
+
+const ANSWER_NOT_SAVED_ERROR_KEY = "workbooks.study.errors.answerNotSaved";
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const { accessToken } = await requireAuth(request);
@@ -134,14 +137,22 @@ export async function action({ request, params }: Route.ActionArgs) {
     throw new Response("Invalid request parameters", { status: 400 });
   }
 
-  const result = await recordAnswer(
-    accessToken,
-    workbookId,
-    questionId,
-    payload,
-    parseAnswerLocale(formData),
-  );
-  return { ok: true, result };
+  try {
+    const result = await recordAnswer(
+      accessToken,
+      workbookId,
+      questionId,
+      payload,
+      parseAnswerLocale(formData),
+    );
+    return { ok: true, result };
+  } catch (error) {
+    if (error instanceof Response && isConflictOrServerError(error.status)) {
+      console.warn(`[study action] answer not saved: status=${error.status}`);
+      return { ok: false, errorKey: ANSWER_NOT_SAVED_ERROR_KEY };
+    }
+    throw error;
+  }
 }
 
 /**
@@ -196,7 +207,7 @@ function StudySession({
   timezone: string;
 }) {
   const { t } = useTranslation();
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<typeof action>();
   const navigate = useNavigate();
   const [queue, setQueue] = useState<StudyQuestion[]>(() => questions);
   const [correctCount, setCorrectCount] = useState(0);
@@ -321,10 +332,21 @@ function StudySession({
   }
 
   const cardKey = `${question.questionId}-${attemptCounts[question.questionId] ?? 0}`;
+  const answerErrorKey = fetcher.data?.ok === false ? fetcher.data.errorKey : undefined;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <ProgressBar current={correctCount} total={questions.length} />
+
+      {answerErrorKey && (
+        <p
+          role="alert"
+          data-testid="study-answer-error"
+          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          {t(answerErrorKey)}
+        </p>
+      )}
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <StudyQuestionShell

@@ -2,6 +2,7 @@ import { ActivityIcon, BookOpenIcon, GlobeIcon, LogOutIcon, SettingsIcon } from 
 import { useTranslation } from "react-i18next";
 import { Form, Link, Outlet, useLoaderData, useLocation } from "react-router";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
+import { RouteErrorView } from "~/components/route-error-view";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import {
@@ -20,7 +21,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
-import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
+import { getUserPreferencesOrNull, type UserPreferences } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks";
 
@@ -69,13 +70,35 @@ const navItems = [
 
 export default function WorkbooksLayout() {
   const { user } = useLoaderData<typeof loader>();
+  return (
+    <WorkbooksShell user={user}>
+      <Outlet />
+    </WorkbooksShell>
+  );
+}
+
+export function ErrorBoundary({ error, loaderData }: Route.ErrorBoundaryProps) {
+  return (
+    <WorkbooksShell user={loaderData?.user ?? null}>
+      <RouteErrorView error={error} />
+    </WorkbooksShell>
+  );
+}
+
+function WorkbooksShell({
+  user,
+  children,
+}: {
+  user: UserPreferences | null;
+  children: React.ReactNode;
+}) {
   const location = useLocation();
   const { t } = useTranslation();
 
   return (
     <ConfirmDialogProvider>
       <SidebarProvider>
-        <Sidebar>
+        <Sidebar data-testid="workbooks-sidebar">
           <SidebarHeader>
             <Link to="/workbooks" className="flex items-center gap-2 px-2 py-1">
               <BookOpenIcon className="size-5" />
@@ -125,7 +148,9 @@ export default function WorkbooksLayout() {
             {user && (
               <div className="flex items-center justify-between gap-2 px-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{user.loginId}</p>
+                  <p className="truncate text-sm font-medium" data-testid="workbooks-user-login-id">
+                    {user.loginId}
+                  </p>
                   <p className="truncate text-xs text-muted-foreground">{user.organizationName}</p>
                 </div>
                 <Form method="post" action="/logout">
@@ -143,9 +168,7 @@ export default function WorkbooksLayout() {
             <SidebarTrigger />
             <Separator orientation="vertical" className="mx-1 h-4" />
           </header>
-          <div className="flex-1 overflow-auto p-6">
-            <Outlet />
-          </div>
+          <div className="flex-1 overflow-auto p-6">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </ConfirmDialogProvider>

@@ -203,6 +203,9 @@
       "description": "{{count}} questions to study",
       "noQuestions": "No questions due for study right now.",
       "resuming": "Resuming your study session…",
+      "errors": {
+        "answerNotSaved": "Your last answer could not be saved. You can keep studying."
+      },
       "backToWorkbook": "Back to Workbook",
       "backToPublic": "Back to Public Workbooks",
       "blankInput": "Blank {{number}}",
@@ -306,6 +309,30 @@
     "notFound": "404",
     "error": "Error",
     "pageNotFound": "The requested page could not be found."
+  },
+  "routeErrors": {
+    "reload": "Reload",
+    "backToWorkbooks": "Back to My Workbooks",
+    "forbidden": {
+      "title": "Access denied",
+      "description": "You do not have permission to view this page."
+    },
+    "notFound": {
+      "title": "Not found",
+      "description": "The page you are looking for was deleted or does not exist."
+    },
+    "conflict": {
+      "title": "Conflicting update",
+      "description": "The same data was updated at the same time. Reload and try again."
+    },
+    "server": {
+      "title": "Server problem",
+      "description": "Please wait a moment and reload."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Please reload."
+    }
   },
   "languages": {
     "ja": "Japanese",
