@@ -3,7 +3,6 @@ package workbook
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -84,16 +83,16 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("new workbook: %w", err)
 	}
 
+	if err := c.reserveOwnedListSlot(ctx, ownedList, wb.ID(), maxWorkbooks); err != nil {
+		return nil, fmt.Errorf("reserve owned list slot: %w", err)
+	}
+
 	if err := c.workbookRepo.Save(ctx, wb); err != nil {
-		return nil, fmt.Errorf("save workbook: %w", err)
+		return nil, fmt.Errorf("save workbook %s: %w", wb.ID(), err)
 	}
 
 	if err := c.grantWorkbookPolicies(ctx, input.OrganizationID, input.OperatorID, wb.ID()); err != nil {
 		return nil, fmt.Errorf("grant workbook policies: %w", err)
-	}
-
-	if err := c.saveOwnedList(ctx, ownedList, wb.ID(), input.OperatorID, maxWorkbooks); err != nil {
-		return nil, fmt.Errorf("save owned list: %w", err)
 	}
 
 	output, err := workbookservice.NewCreateWorkbookOutput(wb.ID(), wb.SpaceID(), wb.OwnerID(), wb.OrganizationID(), wb.Title(), wb.Description(), wb.Visibility().Value(), wb.Language().Value(), wb.CreatedAt(), wb.UpdatedAt())
@@ -149,18 +148,11 @@ func (c *CreateWorkbookCommand) loadOwnedListWithLimit(ctx context.Context, oper
 	return ownedList, maxWorkbooks, nil
 }
 
-// saveOwnedList adds the workbook to the owned list and persists it.
-// A failure leaves an orphaned workbook by design (cross-aggregate eventual consistency).
-func (c *CreateWorkbookCommand) saveOwnedList(ctx context.Context, ownedList *domain.OwnedWorkbookList, workbookID, operatorID string, maxWorkbooks int) error {
+func (c *CreateWorkbookCommand) reserveOwnedListSlot(ctx context.Context, ownedList *domain.OwnedWorkbookList, workbookID string, maxWorkbooks int) error {
 	if err := ownedList.Add(workbookID, maxWorkbooks); err != nil {
 		return fmt.Errorf("add to owned workbook list: %w", err)
 	}
 	if err := c.ownedListSaver.Save(ctx, ownedList); err != nil {
-		slog.ErrorContext(ctx, "owned list save failed after workbook creation",
-			slog.String("workbook_id", workbookID),
-			slog.String("owner_id", operatorID),
-			slog.Any("error", err),
-		)
 		return fmt.Errorf("save owned workbook list: %w", err)
 	}
 	return nil
