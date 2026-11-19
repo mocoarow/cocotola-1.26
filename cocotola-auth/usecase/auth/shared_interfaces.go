@@ -31,6 +31,10 @@ type whitelistFinder interface {
 	FindByUserID(ctx context.Context, userID domain.AppUserID) ([]domaintoken.WhitelistEntry, error)
 }
 
+type sessionTokenFinder interface {
+	FindByTokenHash(ctx context.Context, hash string) (*domaintoken.SessionToken, error)
+}
+
 type sessionTokenCacheReadWriter interface {
 	GetSessionToken(hash string) (*domaintoken.SessionToken, bool)
 	SetSessionToken(hash string, token *domaintoken.SessionToken)
