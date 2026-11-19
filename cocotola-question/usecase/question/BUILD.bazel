@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "question",
     srcs = [
+        "active_question_list.go",
         "add_question_command.go",
         "audio.go",
         "audio_batch_command.go",
@@ -30,16 +31,18 @@ go_library(
 smart_go_test(
     name = "question_test",
     srcs = [
+        "active_question_list_s_test.go",
         "add_question_command_s_test.go",
         "audio_batch_command_s_test.go",
         "delete_question_command_s_test.go",
+        "export_test.go",
         "get_question_query_s_test.go",
         "list_questions_query_s_test.go",
         "mocks_test.go",
         "update_question_command_s_test.go",
     ],
+    embed = [":question"],
     deps = [
-        ":question",
         "//cocotola-lib/domain/versioned",
         "//cocotola-question/contentjson",
         "//cocotola-question/domain",

@@ -46,26 +46,17 @@ func (c *DeleteQuestionCommand) DeleteQuestion(ctx context.Context, input *quest
 	}
 
 	// Remove from active question list (eventual consistency).
-	if err := c.removeFromActiveList(ctx, input.WorkbookID, input.QuestionID); err != nil {
+	if err := updateActiveList(ctx, c.activeListFinder, c.activeListSaver, input.WorkbookID, func(l *domain.ActiveQuestionList) error {
+		l.Remove(input.QuestionID)
+		return nil
+	}); err != nil {
 		slog.ErrorContext(ctx, "active question list save failed after question deletion",
 			slog.String("question_id", input.QuestionID),
 			slog.String("workbook_id", input.WorkbookID),
 			slog.Any("error", err),
 		)
-		return fmt.Errorf("save active question list: %w", err)
+		return fmt.Errorf("remove question %s from active list: %w", input.QuestionID, err)
 	}
 
-	return nil
-}
-
-func (c *DeleteQuestionCommand) removeFromActiveList(ctx context.Context, workbookID string, questionID string) error {
-	activeList, err := c.activeListFinder.FindByWorkbookID(ctx, workbookID)
-	if err != nil {
-		return fmt.Errorf("find active question list: %w", err)
-	}
-	activeList.Remove(questionID)
-	if err := c.activeListSaver.Save(ctx, activeList); err != nil {
-		return fmt.Errorf("save active question list: %w", err)
-	}
 	return nil
 }
