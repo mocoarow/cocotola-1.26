@@ -203,6 +203,9 @@
       "description": "{{count}} questions to study",
       "noQuestions": "No questions due for study right now.",
       "resuming": "Resuming your study session…",
+      "errors": {
+        "recordFailed": "Some of your answers could not be recorded."
+      },
       "backToWorkbook": "Back to Workbook",
       "backToPublic": "Back to Public Workbooks",
       "blankInput": "Blank {{number}}",

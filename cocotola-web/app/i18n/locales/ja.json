@@ -203,6 +203,9 @@
       "description": "{{count}}問の問題があります",
       "noQuestions": "現在、学習する問題はありません。",
       "resuming": "学習セッションを再開しています…",
+      "errors": {
+        "recordFailed": "回答の一部を記録できませんでした。"
+      },
       "backToWorkbook": "ワークブックに戻る",
       "backToPublic": "公開ワークブックに戻る",
       "blankInput": "空欄 {{number}}",

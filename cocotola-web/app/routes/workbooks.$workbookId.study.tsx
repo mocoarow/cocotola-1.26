@@ -134,14 +134,28 @@ export async function action({ request, params }: Route.ActionArgs) {
     throw new Response("Invalid request parameters", { status: 400 });
   }
 
-  const result = await recordAnswer(
-    accessToken,
-    workbookId,
-    questionId,
-    payload,
-    parseAnswerLocale(formData),
-  );
-  return { ok: true, result };
+  try {
+    const result = await recordAnswer(
+      accessToken,
+      workbookId,
+      questionId,
+      payload,
+      parseAnswerLocale(formData),
+    );
+    return { ok: true, result };
+  } catch (error) {
+    if (isRecoverableRecordFailure(error)) {
+      console.warn(`[study action] record answer failed: status=${error.status}`);
+      return { ok: false, errorKey: RECORD_FAILED_ERROR_KEY };
+    }
+    throw error;
+  }
+}
+
+const RECORD_FAILED_ERROR_KEY = "workbooks.study.errors.recordFailed";
+
+function isRecoverableRecordFailure(error: unknown): error is Response {
+  return error instanceof Response && (error.status === 409 || error.status >= 500);
 }
 
 /**
@@ -161,6 +175,37 @@ function parseAnswerLocale(formData: FormData): AnswerLocaleHeaders | undefined 
 }
 
 type Phase = "studying" | "done";
+
+function isRecordFailure(data: unknown): data is { ok: false; errorKey: string } {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "ok" in data &&
+    data.ok === false &&
+    "errorKey" in data &&
+    typeof data.errorKey === "string"
+  );
+}
+
+function useStickyRecordFailure(data: unknown): boolean {
+  const [seenData, setSeenData] = useState(data);
+  const [failed, setFailed] = useState(() => isRecordFailure(data));
+  if (data !== seenData) {
+    setSeenData(data);
+    if (isRecordFailure(data)) setFailed(true);
+  }
+  return failed;
+}
+
+function RecordErrorAlert({ failed }: { failed: boolean }) {
+  const { t } = useTranslation();
+  if (!failed) return null;
+  return (
+    <p role="alert" data-testid="study-record-error" className="text-sm text-destructive">
+      {t(RECORD_FAILED_ERROR_KEY)}
+    </p>
+  );
+}
 
 function StudyResumePlaceholder() {
   const { t } = useTranslation();
@@ -197,6 +242,7 @@ function StudySession({
 }) {
   const { t } = useTranslation();
   const fetcher = useFetcher();
+  const recordFailed = useStickyRecordFailure(fetcher.data);
   const navigate = useNavigate();
   const [queue, setQueue] = useState<StudyQuestion[]>(() => questions);
   const [correctCount, setCorrectCount] = useState(0);
@@ -250,12 +296,15 @@ function StudySession({
 
   if (phase === "done") {
     return (
-      <StudyResult
-        correctCount={correctCount}
-        incorrectCount={incorrectCount}
-        backUrl={backUrl}
-        backLabel={backLabel}
-      />
+      <>
+        <RecordErrorAlert failed={recordFailed} />
+        <StudyResult
+          correctCount={correctCount}
+          incorrectCount={incorrectCount}
+          backUrl={backUrl}
+          backLabel={backLabel}
+        />
+      </>
     );
   }
 
@@ -325,6 +374,7 @@ function StudySession({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <ProgressBar current={correctCount} total={questions.length} />
+      <RecordErrorAlert failed={recordFailed} />
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
         <StudyQuestionShell

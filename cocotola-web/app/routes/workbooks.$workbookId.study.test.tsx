@@ -58,7 +58,7 @@ vi.mock("react-router", async (importOriginal) => {
   };
 });
 
-import { useLoaderData, useNavigate } from "react-router";
+import { useFetcher, useLoaderData, useNavigate } from "react-router";
 import { getStudyQuestions, recordAnswer } from "~/lib/api/study.server";
 import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
@@ -68,6 +68,28 @@ import StudyPage, { action, loader, type StudyBackTarget } from "./workbooks.$wo
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseNavigate = vi.mocked(useNavigate);
+const mockedUseFetcher = vi.mocked(useFetcher);
+
+function fetcherWithData(data: unknown) {
+  return {
+    state: "idle",
+    submit: fetcherSubmit,
+    Form: "form",
+    data,
+  } as unknown as ReturnType<typeof useFetcher>;
+}
+
+function multipleChoiceQuestion(questionId: string, questionText: string) {
+  return {
+    questionId,
+    questionType: "multiple_choice",
+    content: JSON.stringify({
+      questionText,
+      choices: [{ id: "c", text: "C", isCorrect: true }],
+    }),
+    orderIndex: 0,
+  };
+}
 
 function setLoaderData(args: {
   workbookId: string;
@@ -103,6 +125,7 @@ describe("StudyPage", () => {
     // Keep a working default for useNavigate — most tests don't override it
     // and would otherwise see `undefined` and crash inside the resume effect.
     mockedUseNavigate.mockReturnValue(vi.fn());
+    mockedUseFetcher.mockReturnValue(fetcherWithData(undefined));
     fetcherSubmit.mockReset();
   });
 
@@ -313,6 +336,100 @@ describe("StudyPage", () => {
     // then
     const submitted = fetcherSubmit.mock.calls[0]?.[0] as Record<string, string>;
     expect(JSON.parse(submitted.answer)).toEqual({ type: "word_fill", correct: true });
+  });
+
+  it("should alert when recording the answer failed", () => {
+    // given
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [multipleChoiceQuestion("q-1", "Q1")],
+      currentUserId: "owner-1",
+    });
+    mockedUseFetcher.mockReturnValue(
+      fetcherWithData({ ok: false, errorKey: "workbooks.study.errors.recordFailed" }),
+    );
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    expect(screen.getByTestId("study-record-error")).toBeInTheDocument();
+  });
+
+  it("should still show the question when recording the answer failed", () => {
+    // given
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [multipleChoiceQuestion("q-1", "Q1")],
+      currentUserId: "owner-1",
+    });
+    mockedUseFetcher.mockReturnValue(
+      fetcherWithData({ ok: false, errorKey: "workbooks.study.errors.recordFailed" }),
+    );
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    expect(screen.getByText("Q1")).toBeInTheDocument();
+  });
+
+  it("should alert on the result screen when recording the last answer failed", async () => {
+    // given
+    const user = userEvent.setup();
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [multipleChoiceQuestion("q-1", "Q1")],
+      currentUserId: "owner-1",
+    });
+    mockedUseFetcher.mockReturnValue(
+      fetcherWithData({ ok: false, errorKey: "workbooks.study.errors.recordFailed" }),
+    );
+    render(<StudyPage />);
+
+    // when
+    await user.click(screen.getByText("C"));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // then
+    expect(screen.getByTestId("study-record-error")).toBeInTheDocument();
+  });
+
+  it("should keep alerting after a later answer is recorded", () => {
+    // given
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [multipleChoiceQuestion("q-1", "Q1")],
+      currentUserId: "owner-1",
+    });
+    mockedUseFetcher.mockReturnValue(
+      fetcherWithData({ ok: false, errorKey: "workbooks.study.errors.recordFailed" }),
+    );
+    const { rerender } = render(<StudyPage />);
+
+    // when
+    mockedUseFetcher.mockReturnValue(fetcherWithData({ ok: true }));
+    rerender(<StudyPage />);
+
+    // then
+    expect(screen.getByTestId("study-record-error")).toBeInTheDocument();
+  });
+
+  it("should not alert when the answer was recorded", () => {
+    // given
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [multipleChoiceQuestion("q-1", "Q1")],
+      currentUserId: "owner-1",
+    });
+    mockedUseFetcher.mockReturnValue(fetcherWithData({ ok: true }));
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    expect(screen.queryByTestId("study-record-error")).not.toBeInTheDocument();
   });
 
   it("should render empty state when no questions", () => {
@@ -1039,6 +1156,41 @@ describe("StudyPage action", () => {
 
     // when / then
     await expect(action(args)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it.each([
+    409, 500, 503,
+  ])("should return the record-failed error key when recording responds %i", async (status) => {
+    // given
+    vi.mocked(recordAnswer).mockRejectedValue(new Response(null, { status }));
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    const result = await action(args);
+
+    // then
+    expect(result).toEqual({ ok: false, errorKey: "workbooks.study.errors.recordFailed" });
+  });
+
+  it.each([
+    400, 401, 403, 404, 499,
+  ])("should rethrow when recording responds %i", async (status) => {
+    // given
+    vi.mocked(recordAnswer).mockRejectedValue(new Response(null, { status }));
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when / then
+    await expect(action(args)).rejects.toMatchObject({ status });
+  });
+
+  it("should rethrow when recording fails with a non-Response error", async () => {
+    // given
+    const failure = new Error("network down");
+    vi.mocked(recordAnswer).mockRejectedValue(failure);
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when / then
+    await expect(action(args)).rejects.toBe(failure);
   });
 
   it("should skip validation and recording when practice mode", async () => {
