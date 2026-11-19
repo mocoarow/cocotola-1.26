@@ -31,6 +31,7 @@ smart_go_test(
     srcs = [
         "active_group_list_s_test.go",
         "active_user_list_s_test.go",
+        "event_s_test.go",
         "ids_s_test.go",
         "organization_s_test.go",
         "user_setting_s_test.go",
