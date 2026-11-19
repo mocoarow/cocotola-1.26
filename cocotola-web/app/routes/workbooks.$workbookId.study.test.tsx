@@ -38,6 +38,7 @@ vi.mock("~/lib/api/user-setting.server", () => ({
 }));
 
 const fetcherSubmit = vi.hoisted(() => vi.fn());
+const fetcherState = vi.hoisted(() => ({ data: undefined as unknown }));
 
 vi.mock("react-router", async (importOriginal) => {
   const actual = await importOriginal<typeof import("react-router")>();
@@ -49,6 +50,7 @@ vi.mock("react-router", async (importOriginal) => {
       state: "idle",
       submit: fetcherSubmit,
       Form: "form",
+      data: fetcherState.data,
     })),
     Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
       <a href={to} {...props}>
@@ -104,6 +106,49 @@ describe("StudyPage", () => {
     // and would otherwise see `undefined` and crash inside the resume effect.
     mockedUseNavigate.mockReturnValue(vi.fn());
     fetcherSubmit.mockReset();
+    fetcherState.data = undefined;
+  });
+
+  function setSingleMultipleChoiceQuestion() {
+    setLoaderData({
+      workbookId: "wb-1",
+      questions: [
+        {
+          questionId: "q-1",
+          questionType: "multiple_choice",
+          content: JSON.stringify({
+            questionText: "Pick",
+            choices: [{ id: "c", text: "C", isCorrect: true }],
+          }),
+          orderIndex: 0,
+        },
+      ],
+      currentUserId: "owner-1",
+    });
+  }
+
+  it("should show the answer error notice when the answer was not saved", () => {
+    // given
+    fetcherState.data = { ok: false, errorKey: "workbooks.study.errors.answerNotSaved" };
+    setSingleMultipleChoiceQuestion();
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    expect(screen.getByTestId("study-answer-error")).toBeInTheDocument();
+  });
+
+  it("should not show the answer error notice when the answer was saved", () => {
+    // given
+    fetcherState.data = { ok: true, result: {} };
+    setSingleMultipleChoiceQuestion();
+
+    // when
+    render(<StudyPage />);
+
+    // then
+    expect(screen.queryByTestId("study-answer-error")).not.toBeInTheDocument();
   });
 
   function setLoaderDataWithUnrenderableFirst(rest: Array<{ questionId: string; text: string }>) {
@@ -1039,6 +1084,39 @@ describe("StudyPage action", () => {
 
     // when / then
     await expect(action(args)).rejects.toMatchObject({ status: 400 });
+  });
+
+  it.each([
+    409, 500, 503,
+  ])("should return ok false with an error key when recording fails with %i", async (status) => {
+    // given
+    vi.mocked(recordAnswer).mockRejectedValue(new Response("", { status }));
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    const result = await action(args);
+
+    // then
+    expect(result).toEqual({ ok: false, errorKey: "workbooks.study.errors.answerNotSaved" });
+  });
+
+  it.each([401, 403, 404])("should rethrow when recording fails with %i", async (status) => {
+    // given
+    vi.mocked(recordAnswer).mockRejectedValue(new Response("", { status }));
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when / then
+    await expect(action(args)).rejects.toMatchObject({ status });
+  });
+
+  it("should rethrow when recording fails with a non-Response error", async () => {
+    // given
+    const failure = new TypeError("fetch failed");
+    vi.mocked(recordAnswer).mockRejectedValue(failure);
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when / then
+    await expect(action(args)).rejects.toBe(failure);
   });
 
   it("should skip validation and recording when practice mode", async () => {

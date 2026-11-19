@@ -203,6 +203,9 @@
       "description": "{{count}}問の問題があります",
       "noQuestions": "現在、学習する問題はありません。",
       "resuming": "学習セッションを再開しています…",
+      "errors": {
+        "answerNotSaved": "直前の回答を保存できませんでした。学習はこのまま続けられます。"
+      },
       "backToWorkbook": "ワークブックに戻る",
       "backToPublic": "公開ワークブックに戻る",
       "blankInput": "空欄 {{number}}",
@@ -301,6 +304,30 @@
     "notFound": "404",
     "error": "エラー",
     "pageNotFound": "お探しのページが見つかりませんでした。"
+  },
+  "routeErrors": {
+    "reload": "再読み込み",
+    "backToWorkbooks": "マイワークブックに戻る",
+    "forbidden": {
+      "title": "アクセスできません",
+      "description": "このページを表示する権限がありません。"
+    },
+    "notFound": {
+      "title": "見つかりません",
+      "description": "お探しのページは削除されたか、存在しません。"
+    },
+    "conflict": {
+      "title": "他の操作と競合しました",
+      "description": "同じデータが同時に更新されました。再読み込みしてからもう一度お試しください。"
+    },
+    "server": {
+      "title": "サーバーで問題が発生しました",
+      "description": "しばらく待ってから再読み込みしてください。"
+    },
+    "unexpected": {
+      "title": "エラーが発生しました",
+      "description": "予期しないエラーが発生しました。再読み込みしてください。"
+    }
   },
   "languages": {
     "ja": "日本語",
