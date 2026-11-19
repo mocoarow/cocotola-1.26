@@ -33,6 +33,7 @@ type AuthClientConfig struct {
 	APIKey                 string `yaml:"apiKey" validate:"required"`
 	TimeoutSec             int    `yaml:"timeoutSec" validate:"required,gte=1"`
 	OrgResolverCacheTTLMin int    `yaml:"orgResolverCacheTtlMin" validate:"gte=0"`
+	MeCacheTTLSec          int    `yaml:"meCacheTtlSec" validate:"gte=0"`
 }
 
 // Config holds all configuration for the standalone cocotola-question service.

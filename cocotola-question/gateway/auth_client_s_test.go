@@ -472,7 +472,7 @@ func setupAuthMiddlewareRouter(t *testing.T, authStatus int) *gin.Engine {
 	t.Cleanup(server.Close)
 
 	r := gin.New()
-	r.Use(gateway.NewAuthMiddleware(server.URL, server.Client()))
+	r.Use(gateway.NewAuthMiddleware(server.URL, server.Client(), 0))
 	r.GET("/protected", func(c *gin.Context) {
 		c.String(http.StatusOK, c.GetString(controller.ContextFieldUserID{}))
 	})

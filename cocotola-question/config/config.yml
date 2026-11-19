@@ -50,3 +50,4 @@ auth:
   apiKey: ${AUTH_API_KEY}
   timeoutSec: ${AUTH_TIMEOUT_SEC:-10}
   orgResolverCacheTtlMin: ${ORG_RESOLVER_CACHE_TTL_MIN:-60}
+  meCacheTtlSec: ${AUTH_ME_CACHE_TTL_SEC:-90}

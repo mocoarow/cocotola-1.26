@@ -39,7 +39,7 @@ func setupQuestionRouter(t *testing.T) *gin.Engine {
 			APIKey:             testAPIKey,
 			AudioPublicBaseURL: "https://storage.example.com/audio",
 		},
-		gateway.NewAuthMiddleware("http://127.0.0.1:0", http.DefaultClient),
+		gateway.NewAuthMiddleware("http://127.0.0.1:0", http.DefaultClient, 0),
 		middleware.NewAPIKeyMiddleware(testAPIKey),
 		nil, nil, nil, nil, nil,
 	)

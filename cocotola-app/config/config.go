@@ -23,6 +23,7 @@ type AuthClientConfig struct {
 	BaseURL                string `yaml:"baseUrl" validate:"required"`
 	TimeoutSec             int    `yaml:"timeoutSec" validate:"required,gte=1,lte=300"`
 	OrgResolverCacheTTLMin int    `yaml:"orgResolverCacheTtlMin" validate:"gte=0"`
+	MeCacheTTLSec          int    `yaml:"meCacheTtlSec" validate:"gte=0"`
 }
 
 // AppConfig holds application-level configuration for included microservices.

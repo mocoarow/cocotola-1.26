@@ -89,7 +89,7 @@ func run() (int, error) {
 		return 1, fmt.Errorf("create auth HTTP client: %w", err)
 	}
 
-	authMiddleware := questiongateway.NewAuthMiddleware(authClientBaseURL, httpClient)
+	authMiddleware := questiongateway.NewAuthMiddleware(authClientBaseURL, httpClient, time.Duration(cfg.App.AuthClient.MeCacheTTLSec)*time.Second)
 	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
 	orgResolver := questiongateway.NewCachedOrganizationResolver(
 		questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient),

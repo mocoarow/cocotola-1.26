@@ -65,7 +65,7 @@ func run() (int, error) {
 	}
 
 	// auth middleware (validates tokens via cocotola-auth API)
-	authMiddleware := gateway.NewAuthMiddleware(cfg.Auth.BaseURL, httpClient)
+	authMiddleware := gateway.NewAuthMiddleware(cfg.Auth.BaseURL, httpClient, time.Duration(cfg.Auth.MeCacheTTLSec)*time.Second)
 
 	// authorization checker (checks RBAC via cocotola-auth internal API)
 	authzChecker := gateway.NewAuthServiceAuthorizationChecker(cfg.Auth.BaseURL, cfg.Auth.APIKey, httpClient)

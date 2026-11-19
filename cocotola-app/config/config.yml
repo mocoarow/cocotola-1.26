@@ -8,6 +8,7 @@ app:
     baseUrl: ${APP_AUTH_CLIENT_BASE_URL:-http://localhost:8000}
     timeoutSec: ${APP_AUTH_CLIENT_TIMEOUT_SEC:-10}
     orgResolverCacheTtlMin: ${APP_AUTH_CLIENT_ORG_RESOLVER_CACHE_TTL_MIN:-60}
+    meCacheTtlSec: ${APP_AUTH_CLIENT_ME_CACHE_TTL_SEC:-90}
   auth:
     signingKey: ${APP_AUTH_SIGNING_KEY}
     accessTokenTtlMin: ${APP_AUTH_ACCESS_TOKEN_TTL_MIN:-60}

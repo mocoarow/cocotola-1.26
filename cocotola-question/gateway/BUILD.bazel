@@ -6,6 +6,7 @@ go_library(
     srcs = [
         "active_question_list_repository.go",
         "auth_client.go",
+        "auth_me_cache.go",
         "doc.go",
         "firestore_client.go",
         "health_repository.go",
@@ -45,6 +46,7 @@ smart_go_test(
     srcs = [
         "active_question_list_repository_m_test.go",
         "auth_client_s_test.go",
+        "auth_me_cache_s_test.go",
         "export_test.go",
         "organization_resolver_cache_s_test.go",
         "owned_workbook_list_repository_m_test.go",
