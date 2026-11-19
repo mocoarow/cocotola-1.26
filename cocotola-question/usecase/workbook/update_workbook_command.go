@@ -28,6 +28,11 @@ func NewUpdateWorkbookCommand(workbookFinder workbookFinder, workbookSaver workb
 
 // UpdateWorkbook updates an existing workbook.
 func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workbookservice.UpdateWorkbookInput) (*workbookservice.UpdateWorkbookOutput, error) {
+	wb, err := c.workbookFinder.FindByID(ctx, input.WorkbookID)
+	if err != nil {
+		return nil, fmt.Errorf("find workbook: %w", err)
+	}
+
 	resource, err := domain.ResourceWorkbook(input.WorkbookID)
 	if err != nil {
 		return nil, fmt.Errorf("resource workbook: %w", err)
@@ -38,11 +43,6 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 	}
 	if !allowed {
 		return nil, domain.ErrForbidden
-	}
-
-	wb, err := c.workbookFinder.FindByID(ctx, input.WorkbookID)
-	if err != nil {
-		return nil, fmt.Errorf("find workbook: %w", err)
 	}
 
 	if wb.OwnerID() != input.OperatorID {

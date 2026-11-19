@@ -37,6 +37,11 @@ func NewDeleteWorkbookCommand(
 
 // DeleteWorkbook deletes a workbook.
 func (c *DeleteWorkbookCommand) DeleteWorkbook(ctx context.Context, input *workbookservice.DeleteWorkbookInput) error {
+	wb, err := c.workbookFinder.FindByID(ctx, input.WorkbookID)
+	if err != nil {
+		return fmt.Errorf("find workbook: %w", err)
+	}
+
 	resource, err := domain.ResourceWorkbook(input.WorkbookID)
 	if err != nil {
 		return fmt.Errorf("resource workbook: %w", err)
@@ -47,11 +52,6 @@ func (c *DeleteWorkbookCommand) DeleteWorkbook(ctx context.Context, input *workb
 	}
 	if !allowed {
 		return domain.ErrForbidden
-	}
-
-	wb, err := c.workbookFinder.FindByID(ctx, input.WorkbookID)
-	if err != nil {
-		return fmt.Errorf("find workbook: %w", err)
 	}
 
 	if wb.OwnerID() != input.OperatorID {

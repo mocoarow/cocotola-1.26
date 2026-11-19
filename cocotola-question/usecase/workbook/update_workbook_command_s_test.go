@@ -144,3 +144,45 @@ func Test_UpdateWorkbookCommand_shouldReturnForbidden_whenOperatorIsNotOwner(t *
 	// then
 	require.ErrorIs(t, err, domain.ErrForbidden)
 }
+
+func Test_UpdateWorkbookCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateWorkbook(), wbResource).Return(false, nil)
+
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newOwnedFixtureWorkbook(), nil)
+
+	cmd := workbookusecase.NewUpdateWorkbookCommand(wbFinder, nil, authChecker)
+
+	// when
+	_, err = cmd.UpdateWorkbook(ctx, newUpdateWorkbookInput(t, "en"))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrForbidden)
+}
+
+func Test_UpdateWorkbookCommand_shouldReturnWorkbookNotFound_whenWorkbookDoesNotExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newMockauthorizationChecker(t)
+
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(nil, domain.ErrWorkbookNotFound)
+
+	cmd := workbookusecase.NewUpdateWorkbookCommand(wbFinder, nil, authChecker)
+
+	// when
+	_, err := cmd.UpdateWorkbook(ctx, newUpdateWorkbookInput(t, "en"))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
+}
