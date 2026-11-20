@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -20,15 +19,17 @@ type AddQuestionCommand struct {
 	activeListFinder activeQuestionListFinder
 	activeListSaver  activeQuestionListSaver
 	authChecker      authorizationChecker
+	parser           contentParser
 }
 
 // NewAddQuestionCommand returns a new AddQuestionCommand.
-func NewAddQuestionCommand(questionRepo questionSaver, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker) *AddQuestionCommand {
+func NewAddQuestionCommand(questionRepo questionSaver, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker, parser contentParser) *AddQuestionCommand {
 	return &AddQuestionCommand{
 		questionRepo:     questionRepo,
 		activeListFinder: activeListFinder,
 		activeListSaver:  activeListSaver,
 		authChecker:      authChecker,
+		parser:           parser,
 	}
 }
 
@@ -56,12 +57,12 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("generate question id: %w", err)
 	}
 	now := time.Now()
-	q, err := domainquestion.NewQuestion(contentjson.Parser{}, id.String(), input.WorkbookID, qt, input.Content, input.Tags, input.OrderIndex, now, now)
+	q, err := domainquestion.NewQuestion(c.parser, id.String(), input.WorkbookID, qt, input.Content, input.Tags, input.OrderIndex, now, now)
 	if err != nil {
 		return nil, fmt.Errorf("new question: %w", err)
 	}
 
-	if err := markAudioPendingIfWordFill(q, now); err != nil {
+	if err := markAudioPendingIfWordFill(c.parser, q, now); err != nil {
 		return nil, fmt.Errorf("mark audio pending: %w", err)
 	}
 

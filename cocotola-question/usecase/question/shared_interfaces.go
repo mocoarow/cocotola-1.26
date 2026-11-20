@@ -36,3 +36,7 @@ type activeQuestionListSaver interface {
 type authorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }
+
+type contentParser interface {
+	domainquestion.ContentParser
+}

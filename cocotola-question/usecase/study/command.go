@@ -69,12 +69,13 @@ func NewCommand(
 	workbookRepo workbookFinder,
 	authChecker authorizationChecker,
 	dailyStatsRepo dailyStatsRepository,
+	parser answerContentParser,
 	config UsecaseConfig,
 ) *Command {
 	return &Command{
 		GetStudyQuestionsQuery:    NewGetStudyQuestionsQuery(studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, config),
 		GetStudySummaryQuery:      NewGetStudySummaryQuery(studyRecordRepo, activeListRepo, workbookRepo, authChecker, config),
-		RecordAnswerCommand:       NewRecordAnswerCommand(studyRecordRepo, studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, dailyStatsRepo, config),
+		RecordAnswerCommand:       NewRecordAnswerCommand(studyRecordRepo, studyRecordRepo, activeListRepo, questionRepo, workbookRepo, authChecker, dailyStatsRepo, parser, config),
 		DeleteStudyHistoryCommand: NewDeleteStudyHistoryCommand(studyRecordRepo, workbookRepo, authChecker),
 		ListStudyRecordsQuery:     NewListStudyRecordsQuery(studyRecordRepo, workbookRepo, authChecker),
 		GetDashboardQuery:         NewGetDashboardQuery(dailyStatsRepo),
