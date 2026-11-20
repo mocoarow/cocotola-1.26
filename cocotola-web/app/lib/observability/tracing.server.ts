@@ -25,9 +25,7 @@ export async function withSpan<T>(
       span.setAttributes(attributes);
     }
     try {
-      const result = await fn(span);
-      span.setStatus({ code: SpanStatusCode.OK });
-      return result;
+      return await fn(span);
     } catch (error) {
       span.setStatus({
         code: SpanStatusCode.ERROR,
