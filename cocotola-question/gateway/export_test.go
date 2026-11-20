@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Test-only re-exports of unexported identifiers used by the external
@@ -27,6 +25,6 @@ func NewCachedOrganizationResolverWithClock(resolver func(ctx context.Context, n
 	return newCachedOrganizationResolver(resolver, ttl, now)
 }
 
-func NewAuthMiddlewareWithClock(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration, now func() time.Time) gin.HandlerFunc {
-	return newAuthMiddleware(authBaseURL, httpClient, meCacheTTL, now)
+func NewAuthServiceMeFetcherWithClock(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration, now func() time.Time) *AuthServiceMeFetcher {
+	return newAuthServiceMeFetcher(authBaseURL, httpClient, meCacheTTL, now)
 }

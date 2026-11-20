@@ -41,6 +41,12 @@ var ErrSpaceNotFound = errors.New("space not found")
 // ErrInvalidSpaceType is returned for an unknown SpaceType.
 var ErrInvalidSpaceType = errors.New("invalid space type")
 
+// ErrUnauthenticated is returned when cocotola-auth rejects the caller's credentials.
+var ErrUnauthenticated = errors.New("unauthenticated")
+
+// ErrAuthServiceUnavailable marks a cocotola-auth failure that is not caused by the caller's credentials.
+var ErrAuthServiceUnavailable = errors.New("auth service unavailable")
+
 // ErrInvalidMaxWorkbooks is returned when cocotola-auth returns a non-positive MaxWorkbooks.
 var ErrInvalidMaxWorkbooks = errors.New("invalid max workbooks")
 

@@ -42,34 +42,29 @@ func run() (int, error) {
 
 	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, appName+"-main"))
 
-	// init log
 	shutdownLog, err := libgateway.InitLog(ctx, cfg.Log, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init log: %w", err)
 	}
 	defer shutdownLog()
 
-	// init tracer
 	shutdownTrace, err := libgateway.InitTracerProvider(ctx, cfg.Trace, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init trace: %w", err)
 	}
 	defer shutdownTrace()
 
-	// init db
 	dbConn, shutdownDB, err := libgateway.InitDB(ctx, cfg.DB, cfg.Log, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init db: %w", err)
 	}
 	defer shutdownDB()
 
-	// init gin
 	router, err := libhandler.InitRootRouterGroup(ctx, cfg.Server, appName)
 	if err != nil {
 		return 1, fmt.Errorf("init router: %w", err)
 	}
 
-	// initialize auth module
 	authResult, err := authinit.Initialize(ctx, router, dbConn.DB, cfg.App.Auth)
 	if err != nil {
 		return 1, fmt.Errorf("initialize auth: %w", err)
@@ -89,7 +84,7 @@ func run() (int, error) {
 		return 1, fmt.Errorf("create auth HTTP client: %w", err)
 	}
 
-	authMiddleware := questiongateway.NewAuthMiddleware(authClientBaseURL, httpClient, time.Duration(cfg.App.AuthClient.MeCacheTTLSec)*time.Second)
+	authMiddleware := questionmiddleware.NewAuthMiddleware(questiongateway.NewAuthServiceMeFetcher(authClientBaseURL, httpClient, time.Duration(cfg.App.AuthClient.MeCacheTTLSec)*time.Second))
 	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
 	orgResolver := questiongateway.NewCachedOrganizationResolver(
 		questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient),
@@ -101,14 +96,12 @@ func run() (int, error) {
 	// internal API key middleware (protects /api/v1/internal endpoints)
 	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.App.Question.APIKey)
 
-	// initialize question module
 	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)
 	if err != nil {
 		return 1, fmt.Errorf("initialize question: %w", err)
 	}
 	defer questionCleanup()
 
-	// run
 	timeouts := cfg.Server.HTTPServerTimeouts()
 	result := libprocess.Run(ctx,
 		libcontroller.WithWebServerProcess(router, cfg.Server.HTTPPort, timeouts),

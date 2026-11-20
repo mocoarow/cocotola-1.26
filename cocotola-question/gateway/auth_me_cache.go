@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
 const (
@@ -17,19 +19,19 @@ const (
 type authMeCache struct {
 	ttl     time.Duration
 	now     func() time.Time
-	entries *ttlCache[getMeResponse]
+	entries *ttlCache[domain.AuthenticatedUser]
 }
 
 func newAuthMeCache(ttl time.Duration, now func() time.Time) *authMeCache {
 	return &authMeCache{
 		ttl:     ttl,
 		now:     now,
-		entries: newTTLCache[getMeResponse](authMeCacheMaxEntries, now),
+		entries: newTTLCache[domain.AuthenticatedUser](authMeCacheMaxEntries, now),
 	}
 }
 
-func (c *authMeCache) get(authorization string) (getMeResponse, bool) {
-	var me getMeResponse
+func (c *authMeCache) get(authorization string) (domain.AuthenticatedUser, bool) {
+	var me domain.AuthenticatedUser
 	if c.ttl <= 0 {
 		return me, false
 	}
@@ -42,7 +44,7 @@ func (c *authMeCache) get(authorization string) (getMeResponse, bool) {
 
 // set must be called only after cocotola-auth accepted authorization:
 // the JWT exp is read without verifying the signature.
-func (c *authMeCache) set(authorization string, me getMeResponse) {
+func (c *authMeCache) set(authorization string, me domain.AuthenticatedUser) {
 	if c.ttl <= 0 {
 		return
 	}
