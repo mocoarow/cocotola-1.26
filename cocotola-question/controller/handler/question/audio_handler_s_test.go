@@ -375,6 +375,39 @@ func Test_AudioHandler_ReclaimStaleAudio_shouldUseDefaults_whenBodyIsEmpty(t *te
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
+func Test_AudioHandler_ReclaimStaleAudio_shouldReturn400_whenBodyIsMalformed(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "invalid JSON", body: `{"staleAfterSec":`},
+		{name: "wrong type", body: `{"staleAfterSec":"600"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given: no usecase expectation, so a call fails the test
+			usecase := NewMockAudioBatchUsecase(t)
+			r := initInternalAudioRouter(ctx, t, usecase)
+			w := httptest.NewRecorder()
+
+			// when
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, audioInternalBase+"/reclaim-stale", strings.NewReader(tt.body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			r.ServeHTTP(w, req)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorCode(t, readBytes(t, w.Body), "invalid_request")
+		})
+	}
+}
+
 func Test_AudioHandler_ReclaimStaleAudio_shouldReturn400_whenStaleAfterSecBelowMin(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
