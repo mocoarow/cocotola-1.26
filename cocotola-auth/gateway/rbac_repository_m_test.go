@@ -135,47 +135,9 @@ func Test_RBACRepository_AssignGroupToUser_shouldInheritPolicies_whenGroupHasPol
 	}
 }
 
-func Test_RBACRepository_AddObjectGroupingPolicy_shouldInheritAccess_whenResourceHasParent(t *testing.T) {
-	t.Parallel()
-	// given
-	ctx := context.Background()
-	rbacRepo, err := gateway.NewRBACRepository(testDB)
-	require.NoError(t, err)
-
-	orgID := randOrgID(t)
-	aliceID := randAppUserID(t)
-
-	readerGroup := mustGroup(t, fmt.Sprintf("org:%s,reader", orgID.String()))
-	data1 := mustResource(t, fmt.Sprintf("org:%s,data:1", orgID.String()))
-	child1 := mustResource(t, fmt.Sprintf("org:%s,child:1", orgID.String()))
-
-	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
-	require.NoError(t, rbacRepo.AddObjectGroupingPolicy(ctx, orgID, child1, data1))
-
-	tests := []struct {
-		resource domainrbac.Resource
-		want     bool
-	}{
-		{resource: data1, want: true},
-		{resource: child1, want: true},
-	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s,want:%v", tt.resource.Value(), tt.want), func(t *testing.T) {
-			t.Parallel()
-			ok, err := rbacRepo.Enforce(orgID, aliceID, domainrbac.ActionViewUser(), tt.resource)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, ok)
-		})
-	}
-}
-
 func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *testing.T) {
 	t.Parallel()
 	// given
-	// hierarchy: data:1 / data:2 / data:3 / data:4 / data:5
-	// allow on data:2, deny on data:4
-	// result: data:1=no, data:2=yes, data:3=yes, data:4=no, data:5=no
 	ctx := context.Background()
 	rbacRepo, err := gateway.NewRBACRepository(testDB)
 	require.NoError(t, err)
@@ -183,39 +145,18 @@ func Test_RBACRepository_AddPolicy_shouldDenyOverrideAllow_whenBothExist(t *test
 	orgID := randOrgID(t)
 	aliceID := randAppUserID(t)
 	readerGroup := mustGroup(t, fmt.Sprintf("org:%s,reader", orgID.String()))
-
-	resources := make([]domainrbac.Resource, 5)
-	for i := range 5 {
-		resources[i] = mustResource(t, fmt.Sprintf("org:%s,data:%d", orgID.String(), i+1))
-	}
+	data1 := mustResource(t, fmt.Sprintf("org:%s,data:1", orgID.String()))
 
 	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, aliceID, readerGroup))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), resources[1], domainrbac.EffectAllow()))
-	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), resources[3], domainrbac.EffectDeny()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectAllow()))
+	require.NoError(t, rbacRepo.AddPolicy(ctx, orgID, readerGroup, domainrbac.ActionViewUser(), data1, domainrbac.EffectDeny()))
 
-	// Build hierarchy: data:2 is child of data:1, data:3 of data:2, etc.
-	for i := 1; i < 5; i++ {
-		require.NoError(t, rbacRepo.AddObjectGroupingPolicy(ctx, orgID, resources[i], resources[i-1]))
-	}
+	// when
+	ok, err := rbacRepo.Enforce(orgID, aliceID, domainrbac.ActionViewUser(), data1)
 
-	tests := []struct {
-		resource domainrbac.Resource
-		want     bool
-	}{
-		{resource: resources[0], want: false},
-		{resource: resources[1], want: true},
-		{resource: resources[2], want: true},
-		{resource: resources[3], want: false},
-		{resource: resources[4], want: false},
-	}
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%s,want:%v", tt.resource.Value(), tt.want), func(t *testing.T) {
-			t.Parallel()
-			ok, err := rbacRepo.Enforce(orgID, aliceID, domainrbac.ActionViewUser(), tt.resource)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, ok)
-		})
-	}
+	// then
+	require.NoError(t, err)
+	assert.False(t, ok)
 }
 
 func randSpaceID(t *testing.T) domain.SpaceID {

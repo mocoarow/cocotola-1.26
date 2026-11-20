@@ -137,28 +137,6 @@ func (r *RBACRepository) AddPolicyForUser(_ context.Context, organizationID doma
 	return nil
 }
 
-// AddObjectGroupingPolicy adds a parent-child relationship between resources.
-func (r *RBACRepository) AddObjectGroupingPolicy(_ context.Context, organizationID domain.OrganizationID, child domainrbac.Resource, parent domainrbac.Resource) error {
-	dom := formatDomain(organizationID)
-
-	if _, err := r.enforcer.AddNamedGroupingPolicy("g2", child.Value(), parent.Value(), dom); err != nil {
-		return fmt.Errorf("add object grouping policy: %w", err)
-	}
-
-	return nil
-}
-
-// RemoveObjectGroupingPolicy removes a parent-child relationship between resources.
-func (r *RBACRepository) RemoveObjectGroupingPolicy(_ context.Context, organizationID domain.OrganizationID, child domainrbac.Resource, parent domainrbac.Resource) error {
-	dom := formatDomain(organizationID)
-
-	if _, err := r.enforcer.RemoveNamedGroupingPolicy("g2", child.Value(), parent.Value(), dom); err != nil {
-		return fmt.Errorf("remove object grouping policy: %w", err)
-	}
-
-	return nil
-}
-
 // Enforce checks whether a subject is allowed to perform an action on a resource.
 func (r *RBACRepository) Enforce(organizationID domain.OrganizationID, userID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource) (bool, error) {
 	dom := formatDomain(organizationID)
