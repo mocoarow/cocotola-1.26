@@ -31,6 +31,7 @@ smart_go_test(
         "mocks_test.go",
         "public_space_finder_m_test.go",
         "rbac_setup_m_test.go",
+        "rbac_space_s_test.go",
         "workbook_policy_ensurer_m_test.go",
     ],
     embed = [":initialize"],

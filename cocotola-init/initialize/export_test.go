@@ -21,6 +21,9 @@ var FindOrCreateOrganization = findOrCreateOrganization
 // AddToActiveUserList exposes addToActiveUserList to the external initialize_test package.
 var AddToActiveUserList = addToActiveUserList
 
+// FindOrCreatePublicSpace exposes findOrCreatePublicSpace to the external initialize_test package.
+var FindOrCreatePublicSpace = findOrCreatePublicSpace
+
 // FindOrCreateOwner exposes findOrCreateOwner to the external initialize_test package.
 var FindOrCreateOwner = findOrCreateOwner
 
