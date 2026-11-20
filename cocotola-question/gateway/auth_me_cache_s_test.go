@@ -10,11 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 )
 
@@ -40,13 +38,8 @@ func newMeAuthServer(t *testing.T, status int) *meAuthServer {
 	return s
 }
 
-func (s *meAuthServer) router(ttl time.Duration, clock *testClock) *gin.Engine {
-	r := gin.New()
-	r.Use(gateway.NewAuthMiddlewareWithClock(s.url, s.client, ttl, clock.now))
-	r.GET("/protected", func(c *gin.Context) {
-		c.String(http.StatusOK, c.GetString(controller.ContextFieldUserID{}))
-	})
-	return r
+func (s *meAuthServer) fetcher(ttl time.Duration, clock *testClock) *gateway.AuthServiceMeFetcher {
+	return gateway.NewAuthServiceMeFetcherWithClock(s.url, s.client, ttl, clock.now)
 }
 
 func bearerJWT(t *testing.T, subject string, exp time.Time) string {
@@ -61,149 +54,153 @@ func bearerJWT(t *testing.T, subject string, exp time.Time) string {
 	return "Bearer " + header + "." + payload + ".signature"
 }
 
-func serveWithAuthorization(t *testing.T, r *gin.Engine, authorization string) *httptest.ResponseRecorder {
-	t.Helper()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/protected", nil)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", authorization)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
-}
-
-func Test_NewAuthMiddleware_shouldNotCallAuth_whenSameTokenIsWithinTTL(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldNotCallAuth_whenSameTokenIsWithinTTL(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
+	fetcher := server.fetcher(testMeCacheTTL, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(time.Hour))
-	serveWithAuthorization(t, r, token)
+	_, err := fetcher.FetchMe(context.Background(), token)
+	require.NoError(t, err)
 	clock.advance(testMeCacheTTL - time.Second)
 
 	// when
-	serveWithAuthorization(t, r, token)
+	_, err = fetcher.FetchMe(context.Background(), token)
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(1), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldSetUserIDFromCache_whenSameTokenIsWithinTTL(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldReturnCachedUser_whenSameTokenIsWithinTTL(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
+	fetcher := server.fetcher(testMeCacheTTL, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(time.Hour))
-	serveWithAuthorization(t, r, token)
+	_, err := fetcher.FetchMe(context.Background(), token)
+	require.NoError(t, err)
 
 	// when
-	w := serveWithAuthorization(t, r, token)
+	me, err := fetcher.FetchMe(context.Background(), token)
 
 	// then
-	assert.Equal(t, "user-42", w.Body.String())
+	require.NoError(t, err)
+	assert.Equal(t, "user-42", me.UserID)
 }
 
-func Test_NewAuthMiddleware_shouldCallAuthAgain_whenTTLElapsed(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuthAgain_whenTTLElapsed(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
+	fetcher := server.fetcher(testMeCacheTTL, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(time.Hour))
-	serveWithAuthorization(t, r, token)
+	_, err := fetcher.FetchMe(context.Background(), token)
+	require.NoError(t, err)
 	clock.advance(testMeCacheTTL)
 
 	// when
-	serveWithAuthorization(t, r, token)
+	_, err = fetcher.FetchMe(context.Background(), token)
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldCallAuthAgain_whenTokenExpiresBeforeTTL(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuthAgain_whenTokenExpiresBeforeTTL(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
+	fetcher := server.fetcher(testMeCacheTTL, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(30*time.Second))
-	serveWithAuthorization(t, r, token)
+	_, err := fetcher.FetchMe(context.Background(), token)
+	require.NoError(t, err)
 	clock.advance(30 * time.Second)
 
 	// when
-	serveWithAuthorization(t, r, token)
+	_, err = fetcher.FetchMe(context.Background(), token)
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldCallAuthEveryTime_whenTokenHasNoExp(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuthEveryTime_whenTokenHasNoExp(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
-	serveWithAuthorization(t, r, "Bearer opaque-token")
+	fetcher := server.fetcher(testMeCacheTTL, clock)
+	_, err := fetcher.FetchMe(context.Background(), "Bearer opaque-token")
+	require.NoError(t, err)
 
 	// when
-	serveWithAuthorization(t, r, "Bearer opaque-token")
+	_, err = fetcher.FetchMe(context.Background(), "Bearer opaque-token")
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldCallAuthEveryTime_whenAuthReturns401(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuthEveryTime_whenAuthReturns401(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusUnauthorized)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
+	fetcher := server.fetcher(testMeCacheTTL, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(time.Hour))
-	serveWithAuthorization(t, r, token)
+	_, _ = fetcher.FetchMe(context.Background(), token)
 
 	// when
-	serveWithAuthorization(t, r, token)
+	_, _ = fetcher.FetchMe(context.Background(), token)
 
 	// then
 	assert.Equal(t, int64(2), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldCallAuthEveryTime_whenTTLIsZero(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuthEveryTime_whenTTLIsZero(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(0, clock)
+	fetcher := server.fetcher(0, clock)
 	token := bearerJWT(t, "user-42", clock.now().Add(time.Hour))
-	serveWithAuthorization(t, r, token)
+	_, err := fetcher.FetchMe(context.Background(), token)
+	require.NoError(t, err)
 
 	// when
-	serveWithAuthorization(t, r, token)
+	_, err = fetcher.FetchMe(context.Background(), token)
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), server.calls.Load())
 }
 
-func Test_NewAuthMiddleware_shouldCallAuth_whenAnotherTokenIsCached(t *testing.T) {
+func Test_AuthServiceMeFetcher_FetchMe_shouldCallAuth_whenAnotherTokenIsCached(t *testing.T) {
 	t.Parallel()
 
 	// given
 	server := newMeAuthServer(t, http.StatusOK)
 	clock := newTestClock()
-	r := server.router(testMeCacheTTL, clock)
-	serveWithAuthorization(t, r, bearerJWT(t, "user-42", clock.now().Add(time.Hour)))
+	fetcher := server.fetcher(testMeCacheTTL, clock)
+	_, err := fetcher.FetchMe(context.Background(), bearerJWT(t, "user-42", clock.now().Add(time.Hour)))
+	require.NoError(t, err)
 
 	// when
-	serveWithAuthorization(t, r, bearerJWT(t, "user-43", clock.now().Add(time.Hour)))
+	_, err = fetcher.FetchMe(context.Background(), bearerJWT(t, "user-43", clock.now().Add(time.Hour)))
 
 	// then
+	require.NoError(t, err)
 	assert.Equal(t, int64(2), server.calls.Load())
 }

@@ -120,6 +120,25 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user
+  question-gateway: &question-gateway
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/initialize
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware
   audio-domain: &audio-domain
     - net/http
     - net/url
@@ -218,6 +237,7 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson": {forbiddenPackages: *question-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway": {forbiddenPackages: *question-gateway}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}

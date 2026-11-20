@@ -5,6 +5,7 @@ go_library(
     name = "domain",
     srcs = [
         "active_question_list.go",
+        "authenticated_user.go",
         "const.go",
         "doc.go",
         "error.go",

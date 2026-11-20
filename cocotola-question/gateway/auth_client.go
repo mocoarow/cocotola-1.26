@@ -9,11 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"time"
 
-	"github.com/gin-gonic/gin"
-
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -24,9 +20,11 @@ const (
 	maxResponseBodySize = 1 << 20 // 1 MB
 	// maxErrorBodySize limits the size of error response bodies read from auth service.
 	maxErrorBodySize = 512
+
+	serviceAuthHeader = "X-Service-Api-Key"
 )
 
-// authServiceClient is a base HTTP client for calling cocotola-auth internal APIs.
+// authServiceClient is a base HTTP client for calling cocotola-auth APIs.
 type authServiceClient struct {
 	authBaseURL string
 	apiKey      string
@@ -46,20 +44,27 @@ func newAuthServiceClient(authBaseURL string, apiKey string, httpClient *http.Cl
 
 // do sends a request to the auth service and passes the response to handle.
 func (c *authServiceClient) do(ctx context.Context, method string, reqURL string, body io.Reader, handle func(*http.Response) error) error {
+	header := http.Header{}
+	if c.apiKey != "" {
+		header.Set(serviceAuthHeader, c.apiKey)
+	}
+	if body != nil {
+		header.Set("Content-Type", "application/json")
+	}
+
+	return c.send(ctx, method, reqURL, header, body, handle)
+}
+
+func (c *authServiceClient) send(ctx context.Context, method string, reqURL string, header http.Header, body io.Reader, handle func(*http.Response) error) error {
 	req, err := http.NewRequestWithContext(ctx, method, reqURL, body)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}
-	if c.apiKey != "" {
-		req.Header.Set("X-Service-Api-Key", c.apiKey)
-	}
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
+	req.Header = header
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("call auth service: %w", err)
+		return fmt.Errorf("call auth service: %w: %w", domain.ErrAuthServiceUnavailable, err)
 	}
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
@@ -96,102 +101,6 @@ func decodeJSON(resp *http.Response, result any) error {
 	}
 
 	return nil
-}
-
-// getMeResponse represents the response from cocotola-auth GET /api/v1/auth/me.
-type getMeResponse struct {
-	UserID           string `json:"userId"`
-	LoginID          string `json:"loginId"`
-	OrganizationName string `json:"organizationName"`
-	Language         string `json:"language"`
-}
-
-// NewAuthMiddleware returns a Gin middleware that validates requests
-// by forwarding the Authorization header to cocotola-auth's /api/v1/auth/me endpoint.
-func NewAuthMiddleware(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration) gin.HandlerFunc {
-	return newAuthMiddleware(authBaseURL, httpClient, meCacheTTL, time.Now)
-}
-
-func newAuthMiddleware(authBaseURL string, httpClient *http.Client, meCacheTTL time.Duration, now func() time.Time) gin.HandlerFunc {
-	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "QuestionAuthMiddleware"))
-	meURL := authBaseURL + "/api/v1/auth/me"
-	cache := newAuthMeCache(meCacheTTL, now)
-
-	return func(c *gin.Context) {
-		ctx := c.Request.Context()
-
-		authorization := c.GetHeader("Authorization")
-		if authorization == "" {
-			logger.InfoContext(ctx, "no Authorization header")
-			c.Status(http.StatusUnauthorized)
-			c.Abort()
-			return
-		}
-
-		me, ok := cache.get(authorization)
-		if !ok {
-			me, ok = fetchMe(ctx, c, logger, httpClient, meURL, authorization)
-			if !ok {
-				return
-			}
-			cache.set(authorization, me)
-		}
-
-		c.Set(controller.ContextFieldUserID{}, me.UserID)
-		c.Set(controller.ContextFieldOrganizationName{}, me.OrganizationName)
-		c.Set(controller.ContextFieldUserLanguage{}, me.Language)
-		c.Next()
-	}
-}
-
-// fetchMe calls /auth/me and aborts c with the matching status when it fails.
-func fetchMe(ctx context.Context, c *gin.Context, logger *slog.Logger, httpClient *http.Client, meURL string, authorization string) (getMeResponse, bool) {
-	var me getMeResponse
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, meURL, nil)
-	if err != nil {
-		logger.ErrorContext(ctx, "create request", slog.Any("error", err))
-		c.Status(http.StatusInternalServerError)
-		c.Abort()
-		return me, false
-	}
-	req.Header.Set("Authorization", authorization)
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		logger.ErrorContext(ctx, "call auth service", slog.Any("error", err))
-		c.Status(http.StatusBadGateway)
-		c.Abort()
-		return me, false
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.ErrorContext(ctx, "close response body", slog.Any("error", err))
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		abortOnAuthStatus(ctx, c, logger, resp.StatusCode)
-		return me, false
-	}
-
-	if err := json.NewDecoder(io.LimitReader(resp.Body, maxResponseBodySize)).Decode(&me); err != nil {
-		logger.ErrorContext(ctx, "decode auth response", slog.Any("error", err))
-		c.Status(http.StatusInternalServerError)
-		c.Abort()
-		return me, false
-	}
-	return me, true
-}
-
-func abortOnAuthStatus(ctx context.Context, c *gin.Context, logger *slog.Logger, status int) {
-	if status == http.StatusUnauthorized {
-		logger.InfoContext(ctx, "auth service rejected credentials", slog.Int("status", status))
-		c.Status(http.StatusUnauthorized)
-	} else {
-		logger.ErrorContext(ctx, "auth service returned unexpected status", slog.Int("status", status))
-		c.Status(http.StatusBadGateway)
-	}
-	c.Abort()
 }
 
 // AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves

@@ -5,6 +5,7 @@ go_library(
     name = "middleware",
     srcs = [
         "api_key_middleware.go",
+        "auth_middleware.go",
         "doc.go",
         "trace.go",
     ],
@@ -21,13 +22,18 @@ go_library(
 
 smart_go_test(
     name = "middleware_test",
-    srcs = ["api_key_middleware_s_test.go"],
+    srcs = [
+        "api_key_middleware_s_test.go",
+        "auth_middleware_s_test.go",
+        "mocks_test.go",
+    ],
     deps = [
         ":middleware",
         "//cocotola-question/controller",
         "//cocotola-question/domain",
         "@com_github_gin_gonic_gin//:gin",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",
     ],
 )
