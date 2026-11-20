@@ -2,6 +2,7 @@ package study_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/api"
 	studyservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/study"
 )
 
@@ -34,16 +36,19 @@ func Test_GetDashboardHandler_shouldReturn200_whenValid(t *testing.T) {
 	usecase.On("GetDashboard", mock.Anything, mock.MatchedBy(func(in *studyservice.GetDashboardInput) bool {
 		return in.OperatorID == fixtureUserID && in.OrganizationID == fixtureOrganizationID && in.Days == 7 && in.TodayDateKey == "2026-06-14"
 	})).Return(&studyservice.GetDashboardOutput{
-		From:          "2026-06-08",
-		To:            "2026-06-14",
-		Days:          []studyservice.DashboardDailyItem{{Date: "2026-06-14", AnsweredCount: 3, CorrectCount: 2}},
-		CurrentStreak: 1,
-		LongestStreak: 4,
-		TodayCount:    3,
-		TodayCorrect:  2,
-		ActiveDays:    1,
-		TotalAnswered: 3,
-		TotalCorrect:  2,
+		From: "2026-06-08",
+		To:   "2026-06-14",
+		Days: []studyservice.DashboardDailyItem{
+			{Date: "2026-06-13", AnsweredCount: 4, CorrectCount: 1},
+			{Date: "2026-06-14", AnsweredCount: 8, CorrectCount: 6},
+		},
+		CurrentStreak: 2,
+		LongestStreak: 5,
+		TodayCount:    8,
+		TodayCorrect:  6,
+		ActiveDays:    3,
+		TotalAnswered: 12,
+		TotalCorrect:  7,
 	}, nil)
 
 	r := initDashboardRouter(ctx, t, usecase, fakeAuthMiddleware(fixtureUserID, "org1"), fakeOrgResolverMiddleware(fixtureOrganizationID))
@@ -54,21 +59,24 @@ func Test_GetDashboardHandler_shouldReturn200_whenValid(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	// then
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	respBytes := readBytes(t, w.Body)
-	jsonObj := parseJSON(t, respBytes)
-	current := parseExpr(t, "$.currentStreak").Get(jsonObj)
-	require.Len(t, current, 1)
-	assert.EqualValues(t, 1, current[0])
-
-	longest := parseExpr(t, "$.longestStreak").Get(jsonObj)
-	require.Len(t, longest, 1)
-	assert.EqualValues(t, 4, longest[0])
-
-	from := parseExpr(t, "$.from").Get(jsonObj)
-	require.Len(t, from, 1)
-	assert.Equal(t, "2026-06-08", from[0])
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp api.GetDashboardResponse
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	assert.Equal(t, api.GetDashboardResponse{
+		From: "2026-06-08",
+		To:   "2026-06-14",
+		Days: []api.DashboardDailyItem{
+			{Date: "2026-06-13", AnsweredCount: 4, CorrectCount: 1},
+			{Date: "2026-06-14", AnsweredCount: 8, CorrectCount: 6},
+		},
+		CurrentStreak: 2,
+		LongestStreak: 5,
+		TodayCount:    8,
+		TodayCorrect:  6,
+		ActiveDays:    3,
+		TotalAnswered: 12,
+		TotalCorrect:  7,
+	}, resp)
 }
 
 func Test_GetDashboardHandler_shouldDefaultDaysTo365_whenQueryAbsent(t *testing.T) {

@@ -41,6 +41,7 @@ smart_go_test(
         ":study",
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
+        "//cocotola-question/api",
         "//cocotola-question/controller",
         "//cocotola-question/controller/handler",
         "//cocotola-question/domain",
