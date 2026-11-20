@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	domainstudy "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
@@ -26,6 +25,7 @@ type RecordAnswerCommand struct {
 	workbookRepo          workbookFinder
 	authChecker           authorizationChecker
 	dailyStatsIncrementer dailyStatsIncrementer
+	parser                answerContentParser
 	config                UsecaseConfig
 	logger                *slog.Logger
 }
@@ -39,6 +39,7 @@ func NewRecordAnswerCommand(
 	workbookRepo workbookFinder,
 	authChecker authorizationChecker,
 	dailyStatsIncrementer dailyStatsIncrementer,
+	parser answerContentParser,
 	config UsecaseConfig,
 ) *RecordAnswerCommand {
 	return &RecordAnswerCommand{
@@ -49,6 +50,7 @@ func NewRecordAnswerCommand(
 		workbookRepo:          workbookRepo,
 		authChecker:           authChecker,
 		dailyStatsIncrementer: dailyStatsIncrementer,
+		parser:                parser,
 		config:                config,
 		logger:                slog.Default().With(slog.String(liblogging.LoggerNameKey, "RecordAnswerCommand")),
 	}
@@ -78,24 +80,24 @@ func (c *RecordAnswerCommand) checkStudyAuthorization(ctx context.Context, input
 
 // evaluateAnswer computes correctness per question type; word_fill trusts the client's boolean.
 // Each type requires its own answer field only; other combinations return ErrInvalidArgument.
-func evaluateAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
+func evaluateAnswer(parser answerContentParser, q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
 	switch q.QuestionType().Value() {
 	case domainquestion.TypeMultipleChoice().Value():
-		return evaluateMultipleChoiceAnswer(q, input)
+		return evaluateMultipleChoiceAnswer(parser, q, input)
 	case domainquestion.TypeWordFill().Value():
 		return evaluateWordFillAnswer(input)
 	case domainquestion.TypeOrdering().Value():
-		return evaluateOrderingAnswer(q, input)
+		return evaluateOrderingAnswer(parser, q, input)
 	default:
 		return false, fmt.Errorf("unsupported question type %q: %w", q.QuestionType().Value(), domain.ErrInvalidArgument)
 	}
 }
 
-func evaluateMultipleChoiceAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
+func evaluateMultipleChoiceAnswer(parser answerContentParser, q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
 	if input.SelectedChoiceIDs == nil || input.Correct != nil || input.Regions != nil {
 		return false, fmt.Errorf("multiple_choice requires selectedChoiceIds only: %w", domain.ErrInvalidArgument)
 	}
-	mc, err := contentjson.Parser{}.ParseMultipleChoice(q.Content())
+	mc, err := parser.ParseMultipleChoice(q.Content())
 	if err != nil {
 		return false, fmt.Errorf("parse multiple_choice content: %w", err)
 	}
@@ -113,11 +115,11 @@ func evaluateWordFillAnswer(input *studyservice.RecordAnswerInput) (bool, error)
 	return *input.Correct, nil
 }
 
-func evaluateOrderingAnswer(q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
+func evaluateOrderingAnswer(parser answerContentParser, q *domainquestion.Question, input *studyservice.RecordAnswerInput) (bool, error) {
 	if input.Regions == nil || input.Correct != nil || input.SelectedChoiceIDs != nil {
 		return false, fmt.Errorf("ordering requires regions only: %w", domain.ErrInvalidArgument)
 	}
-	oc, err := contentjson.Parser{}.ParseOrdering(q.Content())
+	oc, err := parser.ParseOrdering(q.Content())
 	if err != nil {
 		return false, fmt.Errorf("parse ordering content: %w", err)
 	}
@@ -170,7 +172,7 @@ func (c *RecordAnswerCommand) RecordAnswer(ctx context.Context, input *studyserv
 		return nil, fmt.Errorf("find question: %w", err)
 	}
 
-	correct, err := evaluateAnswer(q, input)
+	correct, err := evaluateAnswer(c.parser, q, input)
 	if err != nil {
 		return nil, fmt.Errorf("evaluate answer: %w", err)
 	}

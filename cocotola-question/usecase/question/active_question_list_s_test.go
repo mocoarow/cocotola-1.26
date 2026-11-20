@@ -10,6 +10,7 @@ import (
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 )
@@ -50,7 +51,7 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenActiveListSaveConflictsOnce(t
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
 
-	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()))
+	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
 
 	// when
 	_, err := cmd.AddQuestion(ctx, newAddQuestionInput(t))
@@ -73,7 +74,7 @@ func Test_AddQuestionCommand_shouldSaveRereadActiveList_whenActiveListSaveConfli
 		return l.Version() == 2 && l.Size() == 2 && l.Contains(fixtureOtherQuestionID)
 	})).Return(nil).Once()
 
-	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()))
+	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
 
 	// when
 	_, err := cmd.AddQuestion(ctx, newAddQuestionInput(t))
@@ -92,7 +93,7 @@ func Test_AddQuestionCommand_shouldReturnConcurrentModification_whenActiveListKe
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 
-	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()))
+	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
 
 	// when
 	_, err := cmd.AddQuestion(ctx, newAddQuestionInput(t))
@@ -111,7 +112,7 @@ func Test_AddQuestionCommand_shouldStopRetrying_whenActiveListSaveAttemptsAreExh
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 
-	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()))
+	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
 
 	// when
 	_, _ = cmd.AddQuestion(ctx, newAddQuestionInput(t))
@@ -131,7 +132,7 @@ func Test_AddQuestionCommand_shouldNotRetry_whenActiveListSaveFailsWithOtherErro
 	saveErr := errors.New("firestore unavailable")
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(saveErr)
 
-	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()))
+	cmd := questionusecase.NewAddQuestionCommand(acceptingQuestionSaver(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
 
 	// when
 	_, _ = cmd.AddQuestion(ctx, newAddQuestionInput(t))

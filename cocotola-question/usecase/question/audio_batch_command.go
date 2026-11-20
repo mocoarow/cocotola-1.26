@@ -8,7 +8,6 @@ import (
 	"time"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -40,12 +39,13 @@ type AudioBatchCommand struct {
 	stale   staleGeneratingAudioFinder
 	failed  failedAudioFinder
 	saver   questionSaver
+	parser  contentParser
 	config  UsecaseConfig
 }
 
 // NewAudioBatchCommand returns a new AudioBatchCommand.
-func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, failed failedAudioFinder, saver questionSaver, config UsecaseConfig) *AudioBatchCommand {
-	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, failed: failed, saver: saver, config: config}
+func NewAudioBatchCommand(finder questionFinder, pending pendingAudioFinder, stale staleGeneratingAudioFinder, failed failedAudioFinder, saver questionSaver, parser contentParser, config UsecaseConfig) *AudioBatchCommand {
+	return &AudioBatchCommand{finder: finder, pending: pending, stale: stale, failed: failed, saver: saver, parser: parser, config: config}
 }
 
 // ListPendingAudio returns up to input.Limit pending queue entries.
@@ -65,7 +65,7 @@ func (c *AudioBatchCommand) ListPendingAudio(ctx context.Context, input *questio
 			logSkippedNonWordFill(ctx, q)
 			continue
 		}
-		content, err := contentjson.Parser{}.ParseWordFill(q.Content())
+		content, err := c.parser.ParseWordFill(q.Content())
 		if err != nil {
 			return nil, fmt.Errorf("parse word_fill content for question %s: %w", q.ID(), err)
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
@@ -65,7 +66,7 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(questionSaver, activeListFinder, activeListSaver, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(questionSaver, activeListFinder, activeListSaver, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -91,7 +92,7 @@ func Test_AddQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) 
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -113,7 +114,7 @@ func Test_AddQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker)
+	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -121,4 +122,29 @@ func Test_AddQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 
 	// then
 	require.ErrorIs(t, err, authErr)
+}
+
+func Test_AddQuestionCommand_shouldReturnError_whenInjectedParserFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	wbResource, err := domain.ResourceWorkbook(fixtureWorkbookID)
+	require.NoError(t, err)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(true, nil)
+
+	parseErr := errors.New("parse failed")
+	parser := newMockcontentParser(t)
+	parser.On("ParseWordFill", fixtureWordFillContent).Return(nil, parseErr)
+
+	cmd := questionusecase.NewAddQuestionCommand(newMockquestionSaver(t), newMockactiveQuestionListFinder(t), newMockactiveQuestionListSaver(t), authChecker, parser)
+	input := newAddQuestionInput(t)
+
+	// when
+	_, err = cmd.AddQuestion(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, parseErr)
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
@@ -15,14 +14,16 @@ type UpdateQuestionCommand struct {
 	questionFinder questionFinder
 	questionSaver  questionSaver
 	authChecker    authorizationChecker
+	parser         contentParser
 }
 
 // NewUpdateQuestionCommand returns a new UpdateQuestionCommand.
-func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver questionSaver, authChecker authorizationChecker) *UpdateQuestionCommand {
+func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver questionSaver, authChecker authorizationChecker, parser contentParser) *UpdateQuestionCommand {
 	return &UpdateQuestionCommand{
 		questionFinder: questionFinder,
 		questionSaver:  questionSaver,
 		authChecker:    authChecker,
+		parser:         parser,
 	}
 }
 
@@ -46,11 +47,11 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 	}
 
 	now := time.Now()
-	if err := q.Edit(contentjson.Parser{}, input.Content, input.Tags, input.OrderIndex, now); err != nil {
+	if err := q.Edit(c.parser, input.Content, input.Tags, input.OrderIndex, now); err != nil {
 		return nil, fmt.Errorf("edit question: %w", err)
 	}
 
-	if err := markAudioPendingIfWordFill(q, now); err != nil {
+	if err := markAudioPendingIfWordFill(c.parser, q, now); err != nil {
 		return nil, fmt.Errorf("mark audio pending: %w", err)
 	}
 

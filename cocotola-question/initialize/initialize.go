@@ -12,6 +12,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler"
 	healthhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health"
@@ -89,10 +90,11 @@ func Initialize(
 	orgResolverMiddleware := newOrganizationResolverMiddleware(orgResolver, logger)
 
 	// usecase layer
+	contentParser := contentjson.Parser{}
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
-	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo)
+	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo, contentParser)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, workbookRepo, authzChecker)
-	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, studyusecase.UsecaseConfig{
+	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, contentParser, studyusecase.UsecaseConfig{
 		ClockFunc:   nil,
 		ShuffleFunc: nil,
 	})
@@ -117,7 +119,7 @@ func Initialize(
 	deleteQuestionHandler := questionhandler.NewDeleteQuestionHandler(questionCommand)
 	questionhandler.InitQuestionRouter(addQuestionHandler, getQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, parent, authMiddleware, orgResolverMiddleware)
 
-	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo, questionRepo, questionusecase.UsecaseConfig{
+	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo, questionRepo, contentParser, questionusecase.UsecaseConfig{
 		ClockFunc: nil,
 	})
 	audioHandler := questionhandler.NewAudioHandler(audioBatchCommand)

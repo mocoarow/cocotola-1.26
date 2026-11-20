@@ -54,3 +54,8 @@ type workbookFinder interface {
 type authorizationChecker interface {
 	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
 }
+
+type answerContentParser interface {
+	ParseMultipleChoice(raw string) (*domainquestion.MultipleChoiceContent, error)
+	ParseOrdering(raw string) (*domainquestion.OrderingContent, error)
+}

@@ -4,20 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	domainquestion "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question"
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
 
 // markAudioPendingIfWordFill queues word_fill audio generation; safe on every
 // save because MarkAudioPending ignores an unchanged inputHash.
-func markAudioPendingIfWordFill(q *domainquestion.Question, now time.Time) error {
+func markAudioPendingIfWordFill(parser contentParser, q *domainquestion.Question, now time.Time) error {
 	if q.QuestionType().Value() != domainquestion.TypeWordFill().Value() {
 		return nil
 	}
 	c := q.WordFillContentParsed()
 	if c == nil {
-		parsed, err := contentjson.Parser{}.ParseWordFill(q.Content())
+		parsed, err := parser.ParseWordFill(q.Content())
 		if err != nil {
 			return fmt.Errorf("parse word_fill content: %w", err)
 		}
