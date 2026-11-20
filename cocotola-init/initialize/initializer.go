@@ -22,6 +22,24 @@ type PublicWorkbookSeeder interface {
 	SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error
 }
 
+// OrganizationRepository finds and saves organizations.
+type OrganizationRepository interface {
+	FindByName(ctx context.Context, name string) (*domain.Organization, error)
+	Save(ctx context.Context, org *domain.Organization) error
+}
+
+// AppUserRepository finds and saves app users.
+type AppUserRepository interface {
+	FindByLoginID(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID) (*domainuser.AppUser, error)
+	Save(ctx context.Context, user *domainuser.AppUser) error
+}
+
+// ActiveUserListRepository finds and saves an organization's active user list.
+type ActiveUserListRepository interface {
+	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveUserList, error)
+	Save(ctx context.Context, list *domain.ActiveUserList) error
+}
+
 const (
 	organizationName = "cocotola"
 	// CocotolaOrganizationIDString is the well-known UUID of the "cocotola" tenant
@@ -141,7 +159,7 @@ func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWor
 	return nil
 }
 
-func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRepository, logger *slog.Logger) (*domain.Organization, error) {
+func findOrCreateOrganization(ctx context.Context, repo OrganizationRepository, logger *slog.Logger) (*domain.Organization, error) {
 	org, err := repo.FindByName(ctx, organizationName)
 	if err == nil {
 		logger.InfoContext(ctx, "organization already exists",
@@ -170,7 +188,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	return org, nil
 }
 
-func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, loginID string, rawPassword string, logger *slog.Logger) (domain.AppUserID, error) {
+func findOrCreateOwner(ctx context.Context, repo AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, loginID string, rawPassword string, logger *slog.Logger) (domain.AppUserID, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(loginID))
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
@@ -198,7 +216,7 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 	return user.ID(), nil
 }
 
-func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
+func findOrCreateGuest(ctx context.Context, repo AppUserRepository, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
 	guestLoginID := domainuser.NewGuestLoginID(organizationName)
 
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(guestLoginID))
@@ -223,7 +241,7 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 	return user.ID(), nil
 }
 
-func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
+func addToActiveUserList(ctx context.Context, repo ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
 	list, err := repo.FindByOrganizationID(ctx, org.ID())
 	if err != nil {
 		return fmt.Errorf("find active user list: %w", err)
