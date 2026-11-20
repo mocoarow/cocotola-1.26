@@ -1,3 +1,5 @@
+import { SpanStatusCode } from "@opentelemetry/api";
+import { isServerErrorStatus } from "~/lib/http-status";
 import { withSpan } from "~/lib/observability/tracing.server";
 import { getIdToken } from "./id-token.server";
 
@@ -25,31 +27,21 @@ export async function fetchWithIdToken(
   return withSpan(
     `backend ${method}`,
     async (span) => {
-      console.info(
-        `[fetch] fetchWithIdToken called: audience=${audience}, method=${method}, url=${url}`,
-      );
-
       const idToken = await getIdToken(audience);
 
       let response: Response;
       if (idToken) {
         const headers = new Headers(init?.headers);
         headers.set("X-Serverless-Authorization", `Bearer ${idToken}`);
-        console.info(
-          `[fetch] X-Serverless-Authorization header set (token length=${idToken.length})`,
-        );
-
-        const headerKeys = [...headers.keys()].join(", ");
-        console.info(`[fetch] request headers: ${headerKeys}`);
-
         response = await fetch(url, { ...init, headers });
       } else {
-        console.info("[fetch] no ID token attached (local/test mode)");
         response = await fetch(url, init);
       }
 
-      console.info(`[fetch] response: status=${response.status}, url=${url}`);
       span.setAttribute("http.response.status_code", response.status);
+      if (isServerErrorStatus(response.status)) {
+        span.setStatus({ code: SpanStatusCode.ERROR });
+      }
       return response;
     },
     {
