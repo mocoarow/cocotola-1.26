@@ -18,6 +18,11 @@ packages:
   github.com/mocoarow/cocotola-1.26/cocotola-init/initialize:
     interfaces:
       PublicWorkbookSeeder:
+      OrganizationRepository:
+      AppUserRepository:
+      ActiveUserListRepository:
+      RBACRepository:
+      SpaceRepository:
   github.com/mocoarow/cocotola-1.26/cocotola-init/seed:
     interfaces:
       WorkbookAPIClient:

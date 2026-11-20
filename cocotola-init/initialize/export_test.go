@@ -15,6 +15,15 @@ var AssignGroup = assignGroup
 // OrganizationName exposes organizationName to the external initialize_test package.
 const OrganizationName = organizationName
 
+// FindOrCreateOrganization exposes findOrCreateOrganization to the external initialize_test package.
+var FindOrCreateOrganization = findOrCreateOrganization
+
+// AddToActiveUserList exposes addToActiveUserList to the external initialize_test package.
+var AddToActiveUserList = addToActiveUserList
+
+// FindOrCreatePublicSpace exposes findOrCreatePublicSpace to the external initialize_test package.
+var FindOrCreatePublicSpace = findOrCreatePublicSpace
+
 // FindOrCreateOwner exposes findOrCreateOwner to the external initialize_test package.
 var FindOrCreateOwner = findOrCreateOwner
 

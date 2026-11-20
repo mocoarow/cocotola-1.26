@@ -22,6 +22,36 @@ type PublicWorkbookSeeder interface {
 	SeedPublicWorkbooks(ctx context.Context, organizationID, publicSpaceID string) error
 }
 
+// OrganizationRepository finds and saves organizations.
+type OrganizationRepository interface {
+	FindByName(ctx context.Context, name string) (*domain.Organization, error)
+	Save(ctx context.Context, org *domain.Organization) error
+}
+
+// AppUserRepository finds and saves app users.
+type AppUserRepository interface {
+	FindByLoginID(ctx context.Context, organizationID domain.OrganizationID, loginID domain.LoginID) (*domainuser.AppUser, error)
+	Save(ctx context.Context, user *domainuser.AppUser) error
+}
+
+// ActiveUserListRepository finds and saves an organization's active user list.
+type ActiveUserListRepository interface {
+	FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveUserList, error)
+	Save(ctx context.Context, list *domain.ActiveUserList) error
+}
+
+// RBACRepository adds group policies and assigns groups to users.
+type RBACRepository interface {
+	AddPolicy(ctx context.Context, organizationID domain.OrganizationID, group domainrbac.Group, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error
+	AssignGroupToUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, group domainrbac.Group) error
+}
+
+// SpaceRepository finds and saves spaces.
+type SpaceRepository interface {
+	FindByKeyName(ctx context.Context, organizationID domain.OrganizationID, keyName string) (*domainspace.Space, error)
+	Save(ctx context.Context, space *domainspace.Space) error
+}
+
 const (
 	organizationName = "cocotola"
 	// CocotolaOrganizationIDString is the well-known UUID of the "cocotola" tenant
@@ -141,7 +171,7 @@ func setupSystemOwnerAndSpace(ctx context.Context, db *gorm.DB, seeder PublicWor
 	return nil
 }
 
-func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRepository, logger *slog.Logger) (*domain.Organization, error) {
+func findOrCreateOrganization(ctx context.Context, repo OrganizationRepository, logger *slog.Logger) (*domain.Organization, error) {
 	org, err := repo.FindByName(ctx, organizationName)
 	if err == nil {
 		logger.InfoContext(ctx, "organization already exists",
@@ -170,7 +200,7 @@ func findOrCreateOrganization(ctx context.Context, repo *gateway.OrganizationRep
 	return org, nil
 }
 
-func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, loginID string, rawPassword string, logger *slog.Logger) (domain.AppUserID, error) {
+func findOrCreateOwner(ctx context.Context, repo AppUserRepository, hasher domainuser.PasswordHasher, orgID domain.OrganizationID, loginID string, rawPassword string, logger *slog.Logger) (domain.AppUserID, error) {
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(loginID))
 	if err == nil {
 		logger.InfoContext(ctx, "owner user already exists",
@@ -198,7 +228,7 @@ func findOrCreateOwner(ctx context.Context, repo *gateway.AppUserRepository, has
 	return user.ID(), nil
 }
 
-func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
+func findOrCreateGuest(ctx context.Context, repo AppUserRepository, orgID domain.OrganizationID, logger *slog.Logger) (domain.AppUserID, error) {
 	guestLoginID := domainuser.NewGuestLoginID(organizationName)
 
 	user, err := repo.FindByLoginID(ctx, orgID, domain.LoginID(guestLoginID))
@@ -223,7 +253,7 @@ func findOrCreateGuest(ctx context.Context, repo *gateway.AppUserRepository, org
 	return user.ID(), nil
 }
 
-func addToActiveUserList(ctx context.Context, repo *gateway.ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
+func addToActiveUserList(ctx context.Context, repo ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
 	list, err := repo.FindByOrganizationID(ctx, org.ID())
 	if err != nil {
 		return fmt.Errorf("find active user list: %w", err)
@@ -264,17 +294,17 @@ func adminActions() []domainrbac.Action {
 	}
 }
 
-func setupRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
+func setupRBACPolicies(ctx context.Context, repo RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupAdmin(), domainrbac.ResourceAny(), adminActions(), logger)
 }
 
-func setupSystemOwnerRBACPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
+func setupSystemOwnerRBACPolicies(ctx context.Context, repo RBACRepository, orgID domain.OrganizationID, logger *slog.Logger) error {
 	actions := append(adminActions(), domainrbac.ActionCreateOrganization())
 
 	return addGroupPolicies(ctx, repo, orgID, domainrbac.GroupSystemOwner(), domainrbac.ResourceAny(), actions, logger)
 }
 
-func addGroupPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, group domainrbac.Group, resource domainrbac.Resource, actions []domainrbac.Action, logger *slog.Logger) error {
+func addGroupPolicies(ctx context.Context, repo RBACRepository, orgID domain.OrganizationID, group domainrbac.Group, resource domainrbac.Resource, actions []domainrbac.Action, logger *slog.Logger) error {
 	for _, action := range actions {
 		if err := repo.AddPolicy(ctx, orgID, group, action, resource, domainrbac.EffectAllow()); err != nil {
 			return fmt.Errorf("add %s policy %s on %s: %w", group.Value(), action.Value(), resource.Value(), err)
@@ -290,7 +320,7 @@ func addGroupPolicies(ctx context.Context, repo *gateway.RBACRepository, orgID d
 	return nil
 }
 
-func assignGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, group domainrbac.Group, logger *slog.Logger) error {
+func assignGroup(ctx context.Context, repo RBACRepository, orgID domain.OrganizationID, userID domain.AppUserID, group domainrbac.Group, logger *slog.Logger) error {
 	if err := repo.AssignGroupToUser(ctx, orgID, userID, group); err != nil {
 		return fmt.Errorf("user %s: %w", userID.String(), err)
 	}
@@ -303,7 +333,7 @@ func assignGroup(ctx context.Context, repo *gateway.RBACRepository, orgID domain
 	return nil
 }
 
-func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository, orgID domain.OrganizationID, systemOwnerID domain.AppUserID, logger *slog.Logger) (*domainspace.Space, error) {
+func findOrCreatePublicSpace(ctx context.Context, repo SpaceRepository, orgID domain.OrganizationID, systemOwnerID domain.AppUserID, logger *slog.Logger) (*domainspace.Space, error) {
 	keyName := domainspace.PublicSpaceKeyName(organizationName)
 
 	existing, err := repo.FindByKeyName(ctx, orgID, keyName)
@@ -327,7 +357,7 @@ func findOrCreatePublicSpace(ctx context.Context, repo *gateway.SpaceRepository,
 	return s, nil
 }
 
-func grantPublicSpacePoliciesToSystemOwner(ctx context.Context, repo *gateway.RBACRepository, orgID domain.OrganizationID, publicSpaceID domain.SpaceID, logger *slog.Logger) error {
+func grantPublicSpacePoliciesToSystemOwner(ctx context.Context, repo RBACRepository, orgID domain.OrganizationID, publicSpaceID domain.SpaceID, logger *slog.Logger) error {
 	actions := []domainrbac.Action{
 		domainrbac.ActionCreateWorkbook(),
 		domainrbac.ActionViewWorkbook(),
