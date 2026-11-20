@@ -2,6 +2,8 @@ package question
 
 import (
 	"context"
+	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -236,8 +238,11 @@ type reclaimStaleAudioResponse struct {
 func (h *AudioHandler) ReclaimStaleAudio(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req reclaimStaleAudioRequest
-	// Empty body is allowed: defaults are applied below.
-	_ = c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		h.logger.WarnContext(ctx, "invalid reclaim stale audio request", slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "invalid request body"))
+		return
+	}
 
 	staleSec := req.StaleAfterSec
 	if staleSec <= 0 {
