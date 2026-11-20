@@ -45,28 +45,40 @@ func NewGetDashboardHandler(usecase GetDashboardUsecase) *GetDashboardHandler {
 func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 	ctx := c.Request.Context()
 
+	input, ok := h.parseDashboardInput(ctx, c)
+	if !ok {
+		return
+	}
+
+	output, err := h.usecase.GetDashboard(ctx, input)
+	if err != nil {
+		controller.HandleError(ctx, h.logger, c, "get dashboard", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, newGetDashboardResponse(output))
+}
+
+func (h *GetDashboardHandler) parseDashboardInput(ctx context.Context, c *gin.Context) (*studyservice.GetDashboardInput, bool) {
 	userID := c.GetString(controller.ContextFieldUserID{})
 	if userID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid user ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
-		return
+		return nil, false
 	}
 
 	organizationID := c.GetString(controller.ContextFieldOrganizationID{})
 	if organizationID == "" {
 		h.logger.WarnContext(ctx, "unauthorized: missing or invalid organization ID")
 		c.JSON(http.StatusUnauthorized, controller.NewErrorResponse("unauthorized", http.StatusText(http.StatusUnauthorized)))
-		return
+		return nil, false
 	}
 
 	days, ok := h.parseDays(ctx, c)
 	if !ok {
-		return
+		return nil, false
 	}
 
-	// Field-level pre-checks so the 400 body tells the client exactly
-	// which input failed. The downstream NewGetDashboardInput validator
-	// would otherwise funnel every cause through the same generic message.
 	// X-Local-Timezone is read by /workbook/.../answer (the write side
 	// persists it on each bucket) but is intentionally not consumed here:
 	// the dashboard window is computed purely from the user-local
@@ -76,7 +88,7 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 	if todayKey == "" {
 		h.logger.WarnContext(ctx, "missing X-Local-Date header")
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "X-Local-Date header is required"))
-		return
+		return nil, false
 	}
 
 	input, err := studyservice.NewGetDashboardInput(studyservice.GetDashboardInputParams{
@@ -87,15 +99,12 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 	})
 	if err != nil {
 		controller.HandleError(ctx, h.logger, c, "new get dashboard input", err)
-		return
+		return nil, false
 	}
+	return input, true
+}
 
-	output, err := h.usecase.GetDashboard(ctx, input)
-	if err != nil {
-		controller.HandleError(ctx, h.logger, c, "get dashboard", err)
-		return
-	}
-
+func newGetDashboardResponse(output *studyservice.GetDashboardOutput) api.GetDashboardResponse {
 	items := make([]api.DashboardDailyItem, 0, len(output.Days))
 	for _, d := range output.Days {
 		items = append(items, api.DashboardDailyItem{
@@ -105,7 +114,7 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, api.GetDashboardResponse{
+	return api.GetDashboardResponse{
 		From:          output.From,
 		To:            output.To,
 		Days:          items,
@@ -116,7 +125,7 @@ func (h *GetDashboardHandler) GetDashboard(c *gin.Context) {
 		ActiveDays:    int32(output.ActiveDays),
 		TotalAnswered: int32(output.TotalAnswered),
 		TotalCorrect:  int32(output.TotalCorrect),
-	})
+	}
 }
 
 func (h *GetDashboardHandler) parseDays(ctx context.Context, c *gin.Context) (int, bool) {
