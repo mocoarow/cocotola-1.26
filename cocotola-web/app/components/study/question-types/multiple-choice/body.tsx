@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BodyProps } from "~/components/study/question-shell/types";
 import { shuffle } from "~/components/study/question-types/shuffle";
@@ -23,10 +23,17 @@ function choiceStyle(
   return { variant: isSelected ? "destructive" : "outline", className: "" };
 }
 
+function isPlainEnter(event: KeyboardEvent<HTMLButtonElement>): boolean {
+  return (
+    event.key === "Enter" && !event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey
+  );
+}
+
 export function MultipleChoiceBody({
   content,
   phase,
   onDraftChange,
+  onCommit,
 }: BodyProps<"multiple_choice", MultipleChoiceContent>) {
   const { t } = useTranslation();
   const [choices] = useState(() => {
@@ -47,6 +54,13 @@ export function MultipleChoiceBody({
       : new Set([...selectedIds, choice.id]);
     setSelectedIds(next);
     onDraftChange(toMultipleChoiceDraft(next, correctIds));
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    if (!isPlainEnter(event)) return;
+    event.preventDefault();
+    const draft = toMultipleChoiceDraft(selectedIds, correctIds);
+    if (draft !== null) onCommit(draft);
   }
 
   return (
@@ -70,6 +84,7 @@ export function MultipleChoiceBody({
               variant={variant}
               className={`w-full justify-start text-left ${className}`}
               onClick={() => toggle(choice)}
+              onKeyDown={handleKeyDown}
               aria-pressed={isSelected}
               disabled={revealed}
             >
