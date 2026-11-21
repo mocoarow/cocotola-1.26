@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -112,15 +111,11 @@ func (r *WorkbookRepository) FindByID(ctx context.Context, id string) (*domainwo
 		}
 		return nil, fmt.Errorf("find workbook by id: %w", err)
 	}
-	var record workbookRecord
-	if err := doc.DataTo(&record); err != nil {
-		return nil, fmt.Errorf("decode workbook: %w", err)
-	}
-	wb, err := toWorkbookDomain(doc.Ref.ID, &record)
+	wb, err := decodeWorkbookDoc(doc)
 	if err != nil {
-		return nil, fmt.Errorf("convert workbook domain: %w", err)
+		return nil, fmt.Errorf("find workbook %s: %w", id, err)
 	}
-	return wb, nil
+	return &wb, nil
 }
 
 // FindByIDs returns the workbooks for the given IDs. Missing IDs are skipped.
@@ -144,43 +139,33 @@ func (r *WorkbookRepository) FindByIDs(ctx context.Context, ids []string) ([]dom
 		if !doc.Exists() {
 			continue
 		}
-		var record workbookRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode workbook: %w", err)
-		}
-		wb, err := toWorkbookDomain(doc.Ref.ID, &record)
+		wb, err := decodeWorkbookDoc(doc)
 		if err != nil {
-			return nil, fmt.Errorf("convert workbook domain: %w", err)
+			return nil, fmt.Errorf("find workbooks by ids: document %s: %w", doc.Ref.ID, err)
 		}
-		workbooks = append(workbooks, *wb)
+		workbooks = append(workbooks, wb)
 	}
 	return workbooks, nil
+}
+
+func decodeWorkbookDoc(doc *firestore.DocumentSnapshot) (domainworkbook.Workbook, error) {
+	var record workbookRecord
+	if err := doc.DataTo(&record); err != nil {
+		return domainworkbook.Workbook{}, fmt.Errorf("decode workbook: %w", err)
+	}
+	wb, err := toWorkbookDomain(doc.Ref.ID, &record)
+	if err != nil {
+		return domainworkbook.Workbook{}, fmt.Errorf("convert workbook domain: %w", err)
+	}
+	return *wb, nil
 }
 
 // FindBySpaceID returns all workbooks for the given space.
 func (r *WorkbookRepository) FindBySpaceID(ctx context.Context, spaceID string) ([]domainworkbook.Workbook, error) {
 	iter := r.client.Collection(workbooksCollection).Where("spaceID", "==", spaceID).Documents(ctx)
-	defer iter.Stop()
-
-	var workbooks []domainworkbook.Workbook
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate workbooks: %w", err)
-		}
-		var record workbookRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode workbook: %w", err)
-		}
-		wb, err := toWorkbookDomain(doc.Ref.ID, &record)
-		if err != nil {
-			return nil, fmt.Errorf("convert workbook domain: %w", err)
-		}
-		workbooks = append(workbooks, *wb)
+	workbooks, err := collectDocs(iter, decodeWorkbookDoc)
+	if err != nil {
+		return nil, fmt.Errorf("find workbooks by space %s: %w", spaceID, err)
 	}
 	return workbooks, nil
 }
@@ -194,27 +179,9 @@ func (r *WorkbookRepository) FindPublicByOrganizationIDAndLanguage(ctx context.C
 		Where("visibility", "==", domainworkbook.VisibilityPublic().Value()).
 		Where("language", "==", language).
 		Documents(ctx)
-	defer iter.Stop()
-
-	var workbooks []domainworkbook.Workbook
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate public workbooks: %w", err)
-		}
-		var record workbookRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode workbook: %w", err)
-		}
-		wb, err := toWorkbookDomain(doc.Ref.ID, &record)
-		if err != nil {
-			return nil, fmt.Errorf("convert workbook domain: %w", err)
-		}
-		workbooks = append(workbooks, *wb)
+	workbooks, err := collectDocs(iter, decodeWorkbookDoc)
+	if err != nil {
+		return nil, fmt.Errorf("find public workbooks for organization %s: %w", organizationID, err)
 	}
 	return workbooks, nil
 }

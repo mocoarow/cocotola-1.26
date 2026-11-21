@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -184,43 +183,35 @@ func (r *QuestionRepository) FindByID(ctx context.Context, workbookID string, qu
 		}
 		return nil, fmt.Errorf("find question by id: %w", err)
 	}
-	var record questionRecord
-	if err := doc.DataTo(&record); err != nil {
-		return nil, fmt.Errorf("decode question: %w", err)
-	}
-	q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
+	q, err := decodeQuestionDoc(doc, workbookID)
 	if err != nil {
-		return nil, fmt.Errorf("convert question domain: %w", err)
+		return nil, fmt.Errorf("find question %s: %w", questionID, err)
 	}
-	return q, nil
+	return &q, nil
 }
 
 // FindByWorkbookID returns all questions for the given workbook, ordered by orderIndex.
 func (r *QuestionRepository) FindByWorkbookID(ctx context.Context, workbookID string) ([]domainquestion.Question, error) {
 	iter := r.questionsCol(workbookID).OrderBy("orderIndex", firestore.Asc).Documents(ctx)
-	defer iter.Stop()
-
-	var questions []domainquestion.Question
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate questions: %w", err)
-		}
-		var record questionRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode question: %w", err)
-		}
-		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
-		if err != nil {
-			return nil, fmt.Errorf("convert question domain: %w", err)
-		}
-		questions = append(questions, *q)
+	questions, err := collectDocs(iter, func(doc *firestore.DocumentSnapshot) (domainquestion.Question, error) {
+		return decodeQuestionDoc(doc, workbookID)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("find questions by workbook %s: %w", workbookID, err)
 	}
 	return questions, nil
+}
+
+func decodeQuestionDoc(doc *firestore.DocumentSnapshot, workbookID string) (domainquestion.Question, error) {
+	var record questionRecord
+	if err := doc.DataTo(&record); err != nil {
+		return domainquestion.Question{}, fmt.Errorf("decode question: %w", err)
+	}
+	q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
+	if err != nil {
+		return domainquestion.Question{}, fmt.Errorf("convert question domain: %w", err)
+	}
+	return *q, nil
 }
 
 // FindByIDs returns questions matching the given IDs within a workbook.
@@ -245,15 +236,11 @@ func (r *QuestionRepository) FindByIDs(ctx context.Context, workbookID string, q
 		if !doc.Exists() {
 			continue
 		}
-		var record questionRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode question: %w", err)
-		}
-		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
+		q, err := decodeQuestionDoc(doc, workbookID)
 		if err != nil {
-			return nil, fmt.Errorf("convert question domain: %w", err)
+			return nil, fmt.Errorf("find questions by ids: document %s: %w", doc.Ref.ID, err)
 		}
-		questions = append(questions, *q)
+		questions = append(questions, q)
 	}
 	return questions, nil
 }
@@ -318,31 +305,15 @@ func (r *QuestionRepository) FindFailedAudio(ctx context.Context, failedAttempts
 // collectGroupQuestions drains a collection-group query over question
 // documents, restoring each question's workbook ID from its parent path.
 func collectGroupQuestions(iter *firestore.DocumentIterator, label string) ([]domainquestion.Question, error) {
-	defer iter.Stop()
-
-	var questions []domainquestion.Question
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate %s: %w", label, err)
-		}
+	questions, err := collectDocs(iter, func(doc *firestore.DocumentSnapshot) (domainquestion.Question, error) {
 		workbookID, ok := workbookIDFromQuestionRef(doc.Ref)
 		if !ok {
-			return nil, fmt.Errorf("question doc %s has unexpected parent path", doc.Ref.Path)
+			return domainquestion.Question{}, fmt.Errorf("unexpected parent path %s", doc.Ref.Path)
 		}
-		var record questionRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode question: %w", err)
-		}
-		q, err := toQuestionDomain(doc.Ref.ID, workbookID, &record)
-		if err != nil {
-			return nil, fmt.Errorf("convert question domain: %w", err)
-		}
-		questions = append(questions, *q)
+		return decodeQuestionDoc(doc, workbookID)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("find %s: %w", label, err)
 	}
 	return questions, nil
 }
