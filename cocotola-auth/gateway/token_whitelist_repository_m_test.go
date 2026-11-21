@@ -314,3 +314,30 @@ func Test_SessionTokenWhitelistRepository_Save_shouldKeepEntriesOfWinner_whenLos
 	// then
 	assert.ElementsMatch(t, ids[:2], whitelistEntryIDs(findWhitelist(ctx, t, repo, userID)))
 }
+
+func Test_SessionTokenWhitelistRepository_Save_shouldKeepEntriesOfBoth_whenLoserRetriesAfterConflict(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	userID := setupOpaqueTokenUser(ctx, t, tx, "whitelist-both")
+	repo := gateway.NewSessionTokenWhitelistRepository(tx)
+	ids := saveSessionTokenIDs(ctx, t, tx, userID, 3)
+	saveWhitelistWith(ctx, t, repo, userID, ids[0])
+	first := findWhitelist(ctx, t, repo, userID)
+	second := findWhitelist(ctx, t, repo, userID)
+	require.NoError(t, first.Add(whitelistEntryAt(ids[1], 1), whitelistMaxSize))
+	require.NoError(t, repo.Save(ctx, first))
+	require.NoError(t, second.Add(whitelistEntryAt(ids[2], 2), whitelistMaxSize))
+	require.ErrorIs(t, repo.Save(ctx, second), libversioned.ErrConcurrentModification)
+	reread := findWhitelist(ctx, t, repo, userID)
+	require.NoError(t, reread.Add(whitelistEntryAt(ids[2], 2), whitelistMaxSize))
+
+	// when
+	err := repo.Save(ctx, reread)
+
+	// then
+	require.NoError(t, err)
+	assert.ElementsMatch(t, ids, whitelistEntryIDs(findWhitelist(ctx, t, repo, userID)))
+}

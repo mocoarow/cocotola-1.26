@@ -118,7 +118,7 @@ func bootstrapTenantUsers(ctx context.Context, db *gorm.DB, rbacRepo *gateway.RB
 
 	activeUserListRepo := gateway.NewActiveUserListRepository(db)
 	if err := addToActiveUserList(ctx, activeUserListRepo, org, ownerUserID, logger); err != nil {
-		return tenantUsers{}, fmt.Errorf("add to active user list: %w", err)
+		return tenantUsers{}, fmt.Errorf("owner: %w", err)
 	}
 
 	if err := setupRBACPolicies(ctx, rbacRepo, org.ID(), logger); err != nil {
@@ -135,7 +135,7 @@ func bootstrapTenantUsers(ctx context.Context, db *gorm.DB, rbacRepo *gateway.RB
 	}
 
 	if err := addToActiveUserList(ctx, activeUserListRepo, org, guestUserID, logger); err != nil {
-		return tenantUsers{}, fmt.Errorf("add guest to active user list: %w", err)
+		return tenantUsers{}, fmt.Errorf("guest: %w", err)
 	}
 
 	return tenantUsers{orgID: org.ID(), ownerUserID: ownerUserID, guestUserID: guestUserID}, nil
@@ -273,7 +273,7 @@ func addToActiveUserList(ctx context.Context, repo ActiveUserListRepository, org
 		return nil
 	}
 	if err != nil {
-		return fmt.Errorf("user %s: %w", userID, err)
+		return fmt.Errorf("add user %s to active user list: %w", userID, err)
 	}
 
 	logger.InfoContext(ctx, "user added to active user list", slog.String("user_id", userID.String()))

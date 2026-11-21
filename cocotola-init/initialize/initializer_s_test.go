@@ -424,6 +424,23 @@ func Test_addToActiveUserList_shouldSucceed_whenSaveConflictsOnce(t *testing.T) 
 	require.NoError(t, err)
 }
 
+func Test_addToActiveUserList_shouldRereadList_whenSaveConflicts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	org := existingOrganization(t, spaciousActiveUserLimit)
+	repo := freshActiveUserListRepository(t, org.ID())
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
+
+	// when
+	_ = initialize.AddToActiveUserList(ctx, repo, org, generateAppUserID(t), discardLogger())
+
+	// then
+	repo.AssertNumberOfCalls(t, "FindByOrganizationID", 2)
+}
+
 func Test_addToActiveUserList_shouldStopRetrying_whenSaveAttemptsAreExhausted(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

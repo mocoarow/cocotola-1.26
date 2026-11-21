@@ -76,6 +76,22 @@ func Test_ActiveUserListHandler_Handle_shouldSucceed_whenSaveConflictsOnce(t *te
 	require.NoError(t, err)
 }
 
+func Test_ActiveUserListHandler_Handle_shouldRereadList_whenSaveConflicts(t *testing.T) {
+	t.Parallel()
+
+	// given
+	handler, activeUserRepoMock := newRetryingActiveUserListHandler(t)
+	activeUserRepoMock.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
+	activeUserRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
+	event := domain.NewAppUserCreated(fixtureAppUserID, fixtureOrgID, "user@example.com", time.Now())
+
+	// when
+	_ = handler.Handle(context.Background(), event)
+
+	// then
+	activeUserRepoMock.AssertNumberOfCalls(t, "FindByOrganizationID", 2)
+}
+
 func Test_ActiveUserListHandler_Handle_shouldStopRetrying_whenSaveAttemptsAreExhausted(t *testing.T) {
 	t.Parallel()
 

@@ -211,3 +211,30 @@ func Test_ActiveUserListRepository_Save_shouldCreateRootRow_whenRootRowIsMissing
 	require.NoError(t, err)
 	assert.Equal(t, 1, findActiveUserList(ctx, t, repo, orgID).Version())
 }
+
+func Test_ActiveUserListRepository_Save_shouldKeepEntriesOfBoth_whenLoserRetriesAfterConflict(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "activeuser-both-org")
+	userIDs := setupUsers(ctx, t, tx, orgID, "activeuser-both-org", 3)
+	repo := gateway.NewActiveUserListRepository(tx)
+	saveActiveUsers(ctx, t, repo, orgID, userIDs[0])
+	first := findActiveUserList(ctx, t, repo, orgID)
+	second := findActiveUserList(ctx, t, repo, orgID)
+	require.NoError(t, first.Add(userIDs[1], activeListLimit))
+	require.NoError(t, repo.Save(ctx, first))
+	require.NoError(t, second.Add(userIDs[2], activeListLimit))
+	require.ErrorIs(t, repo.Save(ctx, second), libversioned.ErrConcurrentModification)
+	reread := findActiveUserList(ctx, t, repo, orgID)
+	require.NoError(t, reread.Add(userIDs[2], activeListLimit))
+
+	// when
+	err := repo.Save(ctx, reread)
+
+	// then
+	require.NoError(t, err)
+	assert.ElementsMatch(t, userIDs, findActiveUserList(ctx, t, repo, orgID).Entries())
+}
