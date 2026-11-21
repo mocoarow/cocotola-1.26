@@ -1,14 +1,6 @@
 import { redirectOnUnauthorized } from "~/lib/auth/session.server";
 
-import { fetchWithIdToken } from "./fetch.server";
-
-function getAuthUrl(): string {
-  const url = process.env.AUTH_BASE_URL;
-  if (!url) {
-    throw new Error("AUTH_BASE_URL environment variable is required");
-  }
-  return url;
-}
+import { fetchWithIdToken, getAuthUrl } from "./fetch.server";
 
 /**
  * Shape returned by GET /api/v1/auth/me. Keeping the type next to the only

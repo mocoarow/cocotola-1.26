@@ -1,4 +1,4 @@
-import { fetchWithIdToken } from "./fetch.server";
+import { fetchWithIdToken, getAuthUrl } from "./fetch.server";
 
 export type Space = {
   spaceId: string;
@@ -17,10 +17,7 @@ type ListSpacesResponse = {
 export async function listSpaces(accessToken: string): Promise<Space[]> {
   console.info("[space] listSpaces called");
 
-  const authUrl = process.env.AUTH_BASE_URL;
-  if (!authUrl) {
-    throw new Error("AUTH_BASE_URL environment variable is required");
-  }
+  const authUrl = getAuthUrl();
 
   const url = `${authUrl}/api/v1/auth/space`;
   console.info(`[space] fetching spaces: url=${url}`);
