@@ -11,8 +11,6 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
 
@@ -32,7 +30,7 @@ var (
 
 // PublicSpaceFinder finds an organization's public space.
 type PublicSpaceFinder interface {
-	FindPublicSpaceID(ctx context.Context, organizationID domain.OrganizationID) (domain.SpaceID, error)
+	FindPublicSpaceID(ctx context.Context, organizationID string) (string, error)
 }
 
 // CSVWorkbookLoader loads the workbooks to import.
@@ -47,7 +45,7 @@ type WorkbookSeeder interface {
 
 // Importer imports CSV workbooks into an organization's public space.
 type Importer struct {
-	organizationID domain.OrganizationID
+	organizationID string
 	finder         PublicSpaceFinder
 	loader         CSVWorkbookLoader
 	seeder         WorkbookSeeder
@@ -56,7 +54,7 @@ type Importer struct {
 }
 
 // NewImporter returns an Importer for organizationID.
-func NewImporter(organizationID domain.OrganizationID, finder PublicSpaceFinder, loader CSVWorkbookLoader, seeder WorkbookSeeder) *Importer {
+func NewImporter(organizationID string, finder PublicSpaceFinder, loader CSVWorkbookLoader, seeder WorkbookSeeder) *Importer {
 	return &Importer{
 		organizationID: organizationID,
 		finder:         finder,
@@ -96,7 +94,7 @@ func (im *Importer) run(ctx context.Context, span trace.Span) error {
 	for _, l := range loaded {
 		seeds = append(seeds, l.Seed)
 	}
-	outputs, err := im.seeder.SeedWorkbooks(ctx, im.organizationID.String(), spaceID.String(), seeds)
+	outputs, err := im.seeder.SeedWorkbooks(ctx, im.organizationID, spaceID, seeds)
 	if err != nil {
 		return fmt.Errorf("seed workbooks: %w", err)
 	}

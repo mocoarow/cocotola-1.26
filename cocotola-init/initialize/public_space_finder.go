@@ -26,13 +26,17 @@ func NewPublicSpaceFinder(db *gorm.DB) *PublicSpaceFinder {
 
 // FindPublicSpaceID returns the ID of the organization's public space,
 // ignoring deleted spaces.
-func (f *PublicSpaceFinder) FindPublicSpaceID(ctx context.Context, organizationID domain.OrganizationID) (domain.SpaceID, error) {
-	space, err := f.repo.FindPublicByOrganizationID(ctx, organizationID)
+func (f *PublicSpaceFinder) FindPublicSpaceID(ctx context.Context, organizationID string) (string, error) {
+	orgID, err := domain.ParseOrganizationID(organizationID)
+	if err != nil {
+		return "", fmt.Errorf("parse organization id %q: %w", organizationID, err)
+	}
+	space, err := f.repo.FindPublicByOrganizationID(ctx, orgID)
 	if errors.Is(err, domain.ErrSpaceNotFound) {
-		return domain.SpaceID{}, fmt.Errorf("organization %s: %w", organizationID, ErrPublicSpaceNotFound)
+		return "", fmt.Errorf("organization %s: %w", orgID, ErrPublicSpaceNotFound)
 	}
 	if err != nil {
-		return domain.SpaceID{}, fmt.Errorf("find public space of organization %s: %w", organizationID, err)
+		return "", fmt.Errorf("find public space of organization %s: %w", orgID, err)
 	}
-	return space.ID(), nil
+	return space.ID().String(), nil
 }

@@ -52,11 +52,25 @@ func Test_PublicSpaceFinder_FindPublicSpaceID_shouldReturnSpaceID_whenPublicSpac
 	finder := initialize.NewPublicSpaceFinder(testDB)
 
 	// when
-	got, err := finder.FindPublicSpaceID(ctx, orgID)
+	got, err := finder.FindPublicSpaceID(ctx, orgID.String())
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, space.ID(), got)
+	assert.Equal(t, space.ID().String(), got)
+}
+
+func Test_PublicSpaceFinder_FindPublicSpaceID_shouldReturnErrInvalidArgument_whenOrganizationIDIsInvalid(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	finder := initialize.NewPublicSpaceFinder(testDB)
+
+	// when
+	_, err := finder.FindPublicSpaceID(ctx, "not-a-uuid")
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }
 
 func Test_PublicSpaceFinder_FindPublicSpaceID_shouldReturnErrPublicSpaceNotFound_whenSpaceMissing(t *testing.T) {
@@ -67,7 +81,7 @@ func Test_PublicSpaceFinder_FindPublicSpaceID_shouldReturnErrPublicSpaceNotFound
 	finder := initialize.NewPublicSpaceFinder(testDB)
 
 	// when
-	_, err := finder.FindPublicSpaceID(ctx, randOrgID(t))
+	_, err := finder.FindPublicSpaceID(ctx, randOrgID(t).String())
 
 	// then
 	require.ErrorIs(t, err, initialize.ErrPublicSpaceNotFound)
@@ -84,7 +98,7 @@ func Test_PublicSpaceFinder_FindPublicSpaceID_shouldReturnErrPublicSpaceNotFound
 	finder := initialize.NewPublicSpaceFinder(testDB)
 
 	// when
-	_, err := finder.FindPublicSpaceID(ctx, orgID)
+	_, err := finder.FindPublicSpaceID(ctx, orgID.String())
 
 	// then
 	require.ErrorIs(t, err, initialize.ErrPublicSpaceNotFound)
