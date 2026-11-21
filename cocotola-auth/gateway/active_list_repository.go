@@ -12,43 +12,9 @@ import (
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
-type activeListRootRecord struct {
-	OrganizationID string    `gorm:"column:organization_id;primaryKey"`
-	Version        int       `gorm:"column:version"`
-	CreatedAt      time.Time `gorm:"column:created_at;->"`
-	UpdatedAt      time.Time `gorm:"column:updated_at;->"`
-}
-
-func (r *activeListRootRecord) GetVersion() int { return r.Version }
-
-func findActiveListVersion(ctx context.Context, db *gorm.DB, rootTable string, organizationID domain.OrganizationID) (int, error) {
-	var roots []activeListRootRecord
-	if err := db.WithContext(ctx).Table(rootTable).Where("organization_id = ?", organizationID.String()).Find(&roots).Error; err != nil {
-		return 0, fmt.Errorf("find %s of organization %s: %w", rootTable, organizationID, err)
-	}
-	if len(roots) == 0 {
-		return 0, nil
-	}
-	return roots[0].Version, nil
-}
-
 func saveActiveList[R schema.Tabler](ctx context.Context, db *gorm.DB, rootTable string, list libversioned.Entity, organizationID string, records []R) error {
-	if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		root := activeListRootRecord{OrganizationID: organizationID, Version: list.Version() + 1, CreatedAt: time.Time{}, UpdatedAt: time.Time{}}
-		if err := saveVersionedRoot(ctx, tx, rootTable, list, &root, map[string]any{"organization_id": organizationID}); err != nil {
-			return err
-		}
-		if err := tx.Where("organization_id = ?", organizationID).Delete(new(R)).Error; err != nil {
-			return fmt.Errorf("delete members: %w", err)
-		}
-		if len(records) == 0 {
-			return nil
-		}
-		if err := tx.Create(&records).Error; err != nil {
-			return fmt.Errorf("insert members: %w", err)
-		}
-		return nil
-	}); err != nil {
+	root := newOrganizationRootRecord(organizationID, list)
+	if err := saveVersionedMembers(ctx, db, rootTable, list, root, organizationIDColumn, organizationID, records); err != nil {
 		return fmt.Errorf("save active list of organization %s: %w", organizationID, err)
 	}
 	return nil
@@ -76,7 +42,7 @@ func NewActiveGroupListRepository(db *gorm.DB) *ActiveGroupListRepository {
 
 // FindByOrganizationID returns the active group list for the given organization.
 func (r *ActiveGroupListRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveGroupList, error) {
-	version, err := findActiveListVersion(ctx, r.db, activeGroupListTable, organizationID)
+	version, err := findRootVersion(ctx, r.db, activeGroupListTable, organizationIDColumn, organizationID.String())
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +93,7 @@ func NewActiveUserListRepository(db *gorm.DB) *ActiveUserListRepository {
 
 // FindByOrganizationID returns the active user list for the given organization.
 func (r *ActiveUserListRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domain.ActiveUserList, error) {
-	version, err := findActiveListVersion(ctx, r.db, activeUserListTable, organizationID)
+	version, err := findRootVersion(ctx, r.db, activeUserListTable, organizationIDColumn, organizationID.String())
 	if err != nil {
 		return nil, err
 	}

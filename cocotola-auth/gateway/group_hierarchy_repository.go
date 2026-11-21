@@ -23,6 +23,8 @@ func (groupNGroupRecord) TableName() string {
 	return "group_n_group"
 }
 
+const groupNGroupRootTable = "group_n_group_root"
+
 // GroupHierarchyRepository implements group hierarchy persistence using GORM.
 type GroupHierarchyRepository struct {
 	db *gorm.DB
@@ -35,8 +37,13 @@ func NewGroupHierarchyRepository(db *gorm.DB) *GroupHierarchyRepository {
 
 // FindByOrganizationID returns the group hierarchy for the given organization.
 func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, organizationID domain.OrganizationID) (*domaingroup.Hierarchy, error) {
+	version, err := findRootVersion(ctx, r.db, groupNGroupRootTable, organizationIDColumn, organizationID.String())
+	if err != nil {
+		return nil, err
+	}
+
 	var records []groupNGroupRecord
-	if err := r.db.WithContext(ctx).Where("organization_id = ?", organizationID.String()).Find(&records).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where(organizationIDColumn+" = ?", organizationID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find group hierarchy by organization id: %w", err)
 	}
 
@@ -57,10 +64,11 @@ func (r *GroupHierarchyRepository) FindByOrganizationID(ctx context.Context, org
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct group hierarchy: %w", err)
 	}
+	hierarchy.SetVersion(version)
 	return hierarchy, nil
 }
 
-// Save persists the group hierarchy by replacing all entries for the organization.
+// Save persists the group hierarchy with an optimistic lock on its root row.
 func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domaingroup.Hierarchy) error {
 	edges := hierarchy.Edges()
 	orgIDStr := hierarchy.OrganizationID().String()
@@ -75,6 +83,9 @@ func (r *GroupHierarchyRepository) Save(ctx context.Context, hierarchy *domaingr
 			CreatedBy:      systemUserID,
 		}
 	}
-	return replaceRecords(ctx, r.db, "organization_id = ?", orgIDStr,
-		records, "group hierarchy entries")
+	root := newOrganizationRootRecord(orgIDStr, hierarchy)
+	if err := saveVersionedMembers(ctx, r.db, groupNGroupRootTable, hierarchy, root, organizationIDColumn, orgIDStr, records); err != nil {
+		return fmt.Errorf("save group hierarchy of organization %s: %w", orgIDStr, err)
+	}
+	return nil
 }
