@@ -10,23 +10,24 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	authzservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/authz"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// UserPolicyAdder adds per-user RBAC policies.
-type UserPolicyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID, action domainrbac.Action, resource domainrbac.Resource, effect domainrbac.Effect) error
+// PolicyAdder adds per-user RBAC policies.
+type PolicyAdder interface {
+	AddPolicy(ctx context.Context, input *authzservice.AddPolicyInput) error
 }
 
 // AddPolicyHandler handles POST /auth/authz/policy.
 type AddPolicyHandler struct {
-	policyAdder UserPolicyAdder
+	policyAdder PolicyAdder
 	logger      *slog.Logger
 }
 
 // NewAddPolicyHandler returns a new AddPolicyHandler.
-func NewAddPolicyHandler(policyAdder UserPolicyAdder) *AddPolicyHandler {
+func NewAddPolicyHandler(policyAdder PolicyAdder) *AddPolicyHandler {
 	return &AddPolicyHandler{
 		policyAdder: policyAdder,
 		logger:      slog.Default().With(slog.String(liblogging.LoggerNameKey, "AddPolicyHandler")),
@@ -42,15 +43,7 @@ type addPolicyRequest struct {
 	Effect   string `json:"effect"`
 }
 
-type addPolicyParams struct {
-	orgID    domain.OrganizationID
-	userID   domain.AppUserID
-	action   domainrbac.Action
-	resource domainrbac.Resource
-	effect   domainrbac.Effect
-}
-
-func (h *AddPolicyHandler) parseRequest(ctx context.Context, c *gin.Context) (*addPolicyParams, bool) {
+func (h *AddPolicyHandler) bindRequest(ctx context.Context, c *gin.Context) (*addPolicyRequest, bool) {
 	var req addPolicyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.WarnContext(ctx, "invalid request body", slog.Any("error", err))
@@ -64,6 +57,10 @@ func (h *AddPolicyHandler) parseRequest(ctx context.Context, c *gin.Context) (*a
 		return nil, false
 	}
 
+	return &req, true
+}
+
+func (h *AddPolicyHandler) newInput(ctx context.Context, c *gin.Context, req *addPolicyRequest) (*authzservice.AddPolicyInput, bool) {
 	orgID, err := domain.ParseOrganizationID(req.Org)
 	if err != nil {
 		h.logger.WarnContext(ctx, "invalid org parameter", slog.String("org", req.Org))
@@ -99,25 +96,24 @@ func (h *AddPolicyHandler) parseRequest(ctx context.Context, c *gin.Context) (*a
 		return nil, false
 	}
 
-	return &addPolicyParams{
-		orgID:    orgID,
-		userID:   userID,
-		action:   action,
-		resource: resource,
-		effect:   effect,
-	}, true
+	return authzservice.NewAddPolicyInput(orgID, userID, action, resource, effect), true
 }
 
 // AddPolicy handles POST /auth/authz/policy.
 func (h *AddPolicyHandler) AddPolicy(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	params, ok := h.parseRequest(ctx, c)
+	req, ok := h.bindRequest(ctx, c)
 	if !ok {
 		return
 	}
 
-	if err := h.policyAdder.AddPolicyForUser(ctx, params.orgID, params.userID, params.action, params.resource, params.effect); err != nil {
+	input, ok := h.newInput(ctx, c, req)
+	if !ok {
+		return
+	}
+
+	if err := h.policyAdder.AddPolicy(ctx, input); err != nil {
 		h.logger.ErrorContext(ctx, "add policy", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 		return

@@ -15,12 +15,13 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domainrbac "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac"
+	authzservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/authz"
 
 	authzhandler "github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz"
 	libhandler "github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler"
 )
 
-func initPolicyRouter(_ context.Context, t *testing.T, policyAdder *MockUserPolicyAdder) *gin.Engine {
+func initPolicyRouter(_ context.Context, t *testing.T, policyAdder *MockPolicyAdder) *gin.Engine {
 	t.Helper()
 
 	router, err := libhandler.InitRootRouterGroup(context.Background(), serverConfig, domain.AppName)
@@ -35,22 +36,26 @@ func initPolicyRouter(_ context.Context, t *testing.T, policyAdder *MockUserPoli
 	return router
 }
 
-func Test_AddPolicyHandler_shouldReturn204_whenPolicyAdded(t *testing.T) {
+func Test_AddPolicyHandler_shouldReturn204AndPassRequestValuesToCommand_whenRequestIsValid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
 	wbResource, err := domainrbac.ResourceWorkbook("wb-1")
 	require.NoError(t, err)
-	policyAdder := NewMockUserPolicyAdder(t)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrgID, fixtureAppUserID,
-		domainrbac.ActionCreateQuestion(), wbResource, domainrbac.EffectAllow(),
-	).Return(nil)
+	policyAdder := NewMockPolicyAdder(t)
+	policyAdder.On("AddPolicy", mock.Anything, &authzservice.AddPolicyInput{
+		OrganizationID: fixtureOrgID,
+		AppUserID:      fixtureAppUserID,
+		Action:         domainrbac.ActionCreateQuestion(),
+		Resource:       wbResource,
+		Effect:         domainrbac.EffectDeny(),
+	}).Return(nil)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
 	// when
-	body := `{"org":"` + fixtureOrgID.String() + `","user":"` + fixtureAppUserID.String() + `","action":"create_question","resource":"workbook:wb-1","effect":"allow"}`
+	body := `{"org":"` + fixtureOrgID.String() + `","user":"` + fixtureAppUserID.String() + `","action":"create_question","resource":"workbook:wb-1","effect":"deny"}`
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/internal/auth/authz/policy", strings.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
@@ -65,7 +70,7 @@ func Test_AddPolicyHandler_shouldReturn400_whenBodyMalformed(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	policyAdder := NewMockUserPolicyAdder(t)
+	policyAdder := NewMockPolicyAdder(t)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
@@ -86,7 +91,7 @@ func Test_AddPolicyHandler_shouldReturn400_whenRequiredFieldsMissing(t *testing.
 	ctx := context.Background()
 
 	// given
-	policyAdder := NewMockUserPolicyAdder(t)
+	policyAdder := NewMockPolicyAdder(t)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
@@ -108,7 +113,7 @@ func Test_AddPolicyHandler_shouldReturn400_whenOrgNotUUID(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	policyAdder := NewMockUserPolicyAdder(t)
+	policyAdder := NewMockPolicyAdder(t)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
@@ -130,7 +135,7 @@ func Test_AddPolicyHandler_shouldReturn400_whenEffectInvalid(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	policyAdder := NewMockUserPolicyAdder(t)
+	policyAdder := NewMockPolicyAdder(t)
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
@@ -147,17 +152,13 @@ func Test_AddPolicyHandler_shouldReturn400_whenEffectInvalid(t *testing.T) {
 	validateErrorResponse(t, respBytes, "bad_request", "effect must be 'allow' or 'deny'")
 }
 
-func Test_AddPolicyHandler_shouldReturn500_whenPolicyAdderFails(t *testing.T) {
+func Test_AddPolicyHandler_shouldReturn500_whenCommandFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	wbResource, err := domainrbac.ResourceWorkbook("wb-1")
-	require.NoError(t, err)
-	policyAdder := NewMockUserPolicyAdder(t)
-	policyAdder.On("AddPolicyForUser", mock.Anything, fixtureOrgID, fixtureAppUserID,
-		domainrbac.ActionCreateQuestion(), wbResource, domainrbac.EffectAllow(),
-	).Return(errors.New("db error"))
+	policyAdder := NewMockPolicyAdder(t)
+	policyAdder.On("AddPolicy", mock.Anything, mock.Anything).Return(errors.New("db error"))
 	r := initPolicyRouter(ctx, t, policyAdder)
 	w := httptest.NewRecorder()
 
@@ -167,7 +168,9 @@ func Test_AddPolicyHandler_shouldReturn500_whenPolicyAdderFails(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
 
 	// then
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	validateErrorResponse(t, respBytes, "internal_server_error", http.StatusText(http.StatusInternalServerError))
 }

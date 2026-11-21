@@ -10,6 +10,7 @@ type Command struct {
 	*RevokeSessionTokenCommand
 	*RefreshAccessTokenCommand
 	*RevokeTokenCommand
+	*SupabaseExchangeCommand
 }
 
 // NewCommand returns a new Command with the given dependencies.
@@ -23,6 +24,14 @@ func NewCommand(
 	jwtManager JWTManager,
 	tokenCache TokenCache,
 	config UsecaseConfig,
+	supabaseVerifier SupabaseVerifier,
+	providerFinder AppUserProviderFinder,
+	providerSaver AppUserProviderSaver,
+	appUserByIDFinder AppUserByIDFinder,
+	appUserByLoginIDFinder AppUserByLoginIDFinder,
+	appUserSaver AppUserSaver,
+	organizationFinder OrganizationFinder,
+	publisher domain.EventPublisher,
 ) *Command {
 	return &Command{
 		CreateSessionTokenCommand: NewCreateSessionTokenCommand(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
@@ -31,6 +40,7 @@ func NewCommand(
 		RevokeSessionTokenCommand: NewRevokeSessionTokenCommand(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		RefreshAccessTokenCommand: NewRefreshAccessTokenCommand(refreshTokenRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 		RevokeTokenCommand:        NewRevokeTokenCommand(refreshTokenRepo, accessTokenRepo, refreshTokenWhitelistRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		SupabaseExchangeCommand:   NewSupabaseExchangeCommand(supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 	}
 }
 
@@ -65,7 +75,7 @@ func NewUsecase(
 	publisher domain.EventPublisher,
 ) *Usecase {
 	return &Usecase{
-		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
-		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 	}
 }

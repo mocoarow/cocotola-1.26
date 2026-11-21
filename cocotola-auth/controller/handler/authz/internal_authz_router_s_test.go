@@ -63,7 +63,7 @@ func Test_InitInternalAuthzRouter_shouldRegisterRoute(t *testing.T) {
 
 			// given
 			checkHandler := authzhandler.NewCheckHandler(NewMockAuthorizationChecker(t))
-			addPolicyHandler := authzhandler.NewAddPolicyHandler(NewMockUserPolicyAdder(t))
+			addPolicyHandler := authzhandler.NewAddPolicyHandler(NewMockPolicyAdder(t))
 
 			// when
 			routes := registeredRoutes(t, func(internalAuthV1 gin.IRouter) {

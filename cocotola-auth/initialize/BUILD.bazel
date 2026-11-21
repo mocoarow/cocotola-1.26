@@ -19,6 +19,7 @@ go_library(
         "//cocotola-auth/domain",
         "//cocotola-auth/gateway",
         "//cocotola-auth/usecase/auth",
+        "//cocotola-auth/usecase/authz",
         "//cocotola-auth/usecase/event",
         "//cocotola-auth/usecase/group",
         "//cocotola-auth/usecase/space",
