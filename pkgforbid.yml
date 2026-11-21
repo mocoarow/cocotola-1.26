@@ -38,6 +38,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting
   auth-usecase: &auth-usecase
     - net/http
     - database/sql
@@ -216,12 +217,14 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/domain": {forbiddenPackages: *question-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question": {forbiddenPackages: *question-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference": {forbiddenPackages: *question-domain}

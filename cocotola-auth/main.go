@@ -33,6 +33,7 @@ import (
 	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
 	spaceusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space"
 	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
+	usersettingusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting"
 )
 
 const eventBusBufferSize = 100
@@ -196,7 +197,7 @@ func run() (int, error) {
 
 	authV1 := v1.Group("auth")
 
-	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
+	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, usersettingusecase.NewUpdateUserSettingCommand(userSettingRepo))
 
 	// organization lookup (external, auth-protected)
 	{

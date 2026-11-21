@@ -81,7 +81,7 @@ func (h *GetMeHandler) GetMe(c *gin.Context) {
 }
 
 func (h *GetMeHandler) resolvePreferences(ctx context.Context, userID domain.AppUserID) (userPreferences, error) {
-	setting, err := handler.LoadOrInitUserSetting(ctx, h.settingFinder, userID)
+	setting, err := domain.LoadOrInitUserSetting(ctx, h.settingFinder, userID)
 	if err != nil {
 		return userPreferences{}, fmt.Errorf("load or init user setting %s: %w", userID, err)
 	}

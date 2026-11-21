@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
@@ -58,7 +57,7 @@ func (h *FindUserSettingHandler) FindUserSetting(c *gin.Context) {
 		return
 	}
 
-	setting, err := handler.LoadOrInitUserSetting(ctx, h.settingFinder, appUserID)
+	setting, err := domain.LoadOrInitUserSetting(ctx, h.settingFinder, appUserID)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "load user setting", slog.Any("error", err))
 		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
@@ -92,14 +91,14 @@ func InitUserSettingRouter(
 func WireExternalUserSettingHandlers(
 	parentRouterGroup gin.IRouter,
 	authMiddleware gin.HandlerFunc,
-	settingSaver userSettingFinderSaver,
+	updater userSettingUpdater,
 	middleware ...gin.HandlerFunc,
 ) {
 	settingGroup := parentRouterGroup.Group("user-setting")
 	settingGroup.Use(authMiddleware)
 	settingGroup.Use(middleware...)
 
-	settingGroup.PUT("/language", NewUpdateLanguageHandler(settingSaver).UpdateLanguage)
-	settingGroup.PUT("/daily-goal", NewUpdateDailyGoalHandler(settingSaver).UpdateDailyGoal)
-	settingGroup.PUT("/timezone", NewUpdateTimezoneHandler(settingSaver).UpdateTimezone)
+	settingGroup.PUT("/language", NewUpdateLanguageHandler(updater).UpdateLanguage)
+	settingGroup.PUT("/daily-goal", NewUpdateDailyGoalHandler(updater).UpdateDailyGoal)
+	settingGroup.PUT("/timezone", NewUpdateTimezoneHandler(updater).UpdateTimezone)
 }

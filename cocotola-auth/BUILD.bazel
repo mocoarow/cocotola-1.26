@@ -25,6 +25,7 @@ go_library(
         "//cocotola-auth/usecase/group",
         "//cocotola-auth/usecase/space",
         "//cocotola-auth/usecase/user",
+        "//cocotola-auth/usecase/usersetting",
         "//cocotola-lib/controller",
         "//cocotola-lib/controller/handler",
         "//cocotola-lib/gateway",

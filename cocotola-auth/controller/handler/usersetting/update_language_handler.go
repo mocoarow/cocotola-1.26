@@ -8,13 +8,8 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
 )
-
-// userSettingFinderSaver is the persistence dependency of every user-setting update handler.
-type userSettingFinderSaver interface {
-	FindByAppUserID(ctx context.Context, appUserID domain.AppUserID) (*domain.UserSetting, error)
-	Save(ctx context.Context, setting *domain.UserSetting) error
-}
 
 // UpdateLanguageHandler updates the authenticated user's preferred UI language.
 type UpdateLanguageHandler struct {
@@ -22,20 +17,25 @@ type UpdateLanguageHandler struct {
 }
 
 // NewUpdateLanguageHandler returns a new UpdateLanguageHandler.
-func NewUpdateLanguageHandler(settingSaver userSettingFinderSaver) *UpdateLanguageHandler {
-	return &UpdateLanguageHandler{newUpdateRunner("UpdateLanguageHandler", settingSaver)}
+func NewUpdateLanguageHandler(updater userSettingUpdater) *UpdateLanguageHandler {
+	return &UpdateLanguageHandler{newUpdateRunner("UpdateLanguageHandler", updater)}
 }
 
 // UpdateLanguage handles PUT /auth/user-setting/language.
 func (h *UpdateLanguageHandler) UpdateLanguage(c *gin.Context) {
 	h.run(c, updateConfig{
-		bindRequest: func(c *gin.Context) (changeFn, error) {
+		bindRequest: func(c *gin.Context, appUserID domain.AppUserID) (applyFn, error) {
 			var req api.UpdateUserLanguageRequest
 			if err := c.ShouldBindJSON(&req); err != nil {
 				return nil, fmt.Errorf("decode update language request: %w", err)
 			}
 
-			return func(s *domain.UserSetting) error { return s.ChangeLanguage(string(req.Language)) }, nil
+			input, err := usersettingservice.NewUpdateLanguageInput(appUserID, string(req.Language))
+			if err != nil {
+				return nil, fmt.Errorf("new update language input: %w", err)
+			}
+
+			return func(ctx context.Context) error { return h.updater.UpdateLanguage(ctx, input) }, nil
 		},
 		invalidBindLog:   "invalid update language request",
 		invalidChangeLog: "change language",

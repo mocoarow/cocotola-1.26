@@ -1,0 +1,33 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "usersetting",
+    srcs = [
+        "doc.go",
+        "update_user_setting_command.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/usersetting",
+    ],
+)
+
+smart_go_test(
+    name = "usersetting_test",
+    srcs = [
+        "mocks_test.go",
+        "update_user_setting_command_s_test.go",
+    ],
+    deps = [
+        ":usersetting",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/service/usersetting",
+        "//cocotola-lib/domain/versioned",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//mock",
+        "@com_github_stretchr_testify//require",
+    ],
+)

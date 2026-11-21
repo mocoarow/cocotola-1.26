@@ -11,16 +11,24 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
-// changeFn applies a field-specific update to a UserSetting in place.
-type changeFn func(*domain.UserSetting) error
+// userSettingUpdater is the command dependency of every user-setting update handler.
+type userSettingUpdater interface {
+	UpdateLanguage(ctx context.Context, input *usersettingservice.UpdateLanguageInput) error
+	UpdateDailyGoal(ctx context.Context, input *usersettingservice.UpdateDailyGoalInput) error
+	UpdateTimezone(ctx context.Context, input *usersettingservice.UpdateTimezoneInput) error
+}
 
-// bindFn parses the per-endpoint request payload into a changeFn.
-type bindFn func(c *gin.Context) (changeFn, error)
+// applyFn runs the bound update command.
+type applyFn func(ctx context.Context) error
+
+// bindFn parses the per-endpoint request payload into an applyFn.
+type bindFn func(c *gin.Context, appUserID domain.AppUserID) (applyFn, error)
 
 // updateConfig holds the per-handler pieces plugged into updateRunner.run.
 type updateConfig struct {
@@ -30,21 +38,21 @@ type updateConfig struct {
 	invalidChangeMsg string
 }
 
-// updateRunner is the shared bind / load / mutate / save scaffold embedded by every update handler.
+// updateRunner is the shared bind / apply / respond scaffold embedded by every update handler.
 type updateRunner struct {
-	settingSaver userSettingFinderSaver
-	logger       *slog.Logger
+	updater userSettingUpdater
+	logger  *slog.Logger
 }
 
 // newUpdateRunner returns an updateRunner whose logger is named handlerName.
-func newUpdateRunner(handlerName string, saver userSettingFinderSaver) updateRunner {
+func newUpdateRunner(handlerName string, updater userSettingUpdater) updateRunner {
 	return updateRunner{
-		settingSaver: saver,
-		logger:       slog.Default().With(slog.String(liblogging.LoggerNameKey, handlerName)),
+		updater: updater,
+		logger:  slog.Default().With(slog.String(liblogging.LoggerNameKey, handlerName)),
 	}
 }
 
-// run executes the bind / load / mutate / save flow.
+// run executes the bind / apply / respond flow.
 func (r updateRunner) run(c *gin.Context, cfg updateConfig) {
 	ctx := c.Request.Context()
 
@@ -56,7 +64,7 @@ func (r updateRunner) run(c *gin.Context, cfg updateConfig) {
 		return
 	}
 
-	change, err := cfg.bindRequest(c)
+	apply, err := cfg.bindRequest(c, userID)
 	if err != nil {
 		r.logger.WarnContext(ctx, cfg.invalidBindLog, slog.Any("error", err))
 		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", "request body is invalid"))
@@ -64,50 +72,25 @@ func (r updateRunner) run(c *gin.Context, cfg updateConfig) {
 		return
 	}
 
-	setting, err := handler.LoadOrInitUserSetting(ctx, r.settingSaver, userID)
-	if err != nil {
-		r.logger.ErrorContext(ctx, "load user setting", slog.Any("error", err))
-		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-
-		return
-	}
-
-	if err := change(setting); err != nil {
-		r.logger.WarnContext(ctx, cfg.invalidChangeLog, slog.Any("error", err))
-		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", cfg.invalidChangeMsg))
-
-		return
-	}
-
-	if writeSaveError(ctx, r.logger, c, r.settingSaver.Save(ctx, setting)) {
-		return
-	}
-
-	c.Status(http.StatusNoContent)
+	r.writeResult(ctx, c, cfg, apply(ctx))
 }
 
-// writeSaveError writes the HTTP response for a Save error and reports whether it wrote one.
-func writeSaveError(ctx context.Context, logger *slog.Logger, c *gin.Context, err error) bool {
-	if err == nil {
-		return false
-	}
-
-	if errors.Is(err, libversioned.ErrConcurrentModification) {
-		logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
+// writeResult writes the HTTP response for the result of an update command.
+func (r updateRunner) writeResult(ctx context.Context, c *gin.Context, cfg updateConfig, err error) {
+	switch {
+	case err == nil:
+		c.Status(http.StatusNoContent)
+	case errors.Is(err, usersettingservice.ErrInvalidValue):
+		r.logger.WarnContext(ctx, cfg.invalidChangeLog, slog.Any("error", err))
+		c.JSON(http.StatusBadRequest, controller.NewErrorResponse("invalid_request", cfg.invalidChangeMsg))
+	case errors.Is(err, libversioned.ErrConcurrentModification):
+		r.logger.WarnContext(ctx, "concurrent modification", slog.Any("error", err))
 		c.JSON(http.StatusConflict, controller.NewErrorResponse("conflict", "user setting was modified concurrently"))
-
-		return true
-	}
-
-	if errors.Is(err, domain.ErrUserSettingNotFound) {
-		logger.WarnContext(ctx, "user setting not found", slog.Any("error", err))
+	case errors.Is(err, domain.ErrUserSettingNotFound):
+		r.logger.WarnContext(ctx, "user setting not found", slog.Any("error", err))
 		c.JSON(http.StatusNotFound, controller.NewErrorResponse("user_setting_not_found", "user setting not found"))
-
-		return true
+	default:
+		r.logger.ErrorContext(ctx, "update user setting", slog.Any("error", err))
+		c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
 	}
-
-	logger.ErrorContext(ctx, "save user setting", slog.Any("error", err))
-	c.JSON(http.StatusInternalServerError, controller.NewErrorResponse("internal_server_error", http.StatusText(http.StatusInternalServerError)))
-
-	return true
 }

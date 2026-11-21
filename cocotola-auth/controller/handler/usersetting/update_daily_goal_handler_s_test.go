@@ -3,6 +3,7 @@ package usersetting_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,7 +13,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
 )
 
 const updateDailyGoalURL = "/api/v1/auth/user-setting/daily-goal"
@@ -25,41 +26,14 @@ func newDailyGoalRequest(ctx context.Context, t *testing.T, body string) *http.R
 	return req
 }
 
-func Test_UpdateDailyGoalHandler_shouldReturn204_whenSettingExists(t *testing.T) {
+func Test_UpdateDailyGoalHandler_shouldPassUserIDAndDailyGoalToCommand_whenRequestIsValid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	existing.SetVersion(3)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.DailyGoal() == 25 && s.Version() == 3
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newDailyGoalRequest(ctx, t, `{"dailyGoal":25}`)
-	r.ServeHTTP(w, req)
-
-	// then
-	assert.Equal(t, http.StatusNoContent, w.Code)
-}
-
-func Test_UpdateDailyGoalHandler_shouldCreateDefault_whenSettingNotFound(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, domain.ErrUserSettingNotFound)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.DailyGoal() == 25 && s.Version() == 0
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateDailyGoal", mock.Anything, &usersettingservice.UpdateDailyGoalInput{AppUserID: fixtureAppUserID, DailyGoal: 25}).Return(nil)
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
@@ -75,9 +49,9 @@ func Test_UpdateDailyGoalHandler_shouldReturn401_whenUserIDMissing(t *testing.T)
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingFinderSaver(t)
+	updater := newMockuserSettingUpdater(t)
 	noopMiddleware := func(c *gin.Context) { c.Next() }
-	r := initExternalUserSettingRouter(ctx, t, saver, noopMiddleware)
+	r := initExternalUserSettingRouter(ctx, t, updater, noopMiddleware)
 	w := httptest.NewRecorder()
 
 	// when
@@ -108,8 +82,8 @@ func Test_UpdateDailyGoalHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 			t.Parallel()
 
 			// given
-			saver := newMockuserSettingFinderSaver(t)
-			r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+			updater := newMockuserSettingUpdater(t)
+			r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 			w := httptest.NewRecorder()
 
 			// when
@@ -119,7 +93,27 @@ func Test_UpdateDailyGoalHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 
 			// then
 			assert.Equal(t, http.StatusBadRequest, w.Code)
-			assert.Contains(t, string(respBytes), "invalid_request")
+			validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
 		})
 	}
+}
+
+func Test_UpdateDailyGoalHandler_shouldReturn400_whenCommandRejectsValue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateDailyGoal", mock.Anything, mock.Anything).Return(fmt.Errorf("change: %w", usersettingservice.ErrInvalidValue))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
+	w := httptest.NewRecorder()
+
+	// when
+	req := newDailyGoalRequest(ctx, t, `{"dailyGoal":25}`)
+	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
+
+	// then
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	validateErrorResponse(t, respBytes, "invalid_request", "daily goal is invalid")
 }

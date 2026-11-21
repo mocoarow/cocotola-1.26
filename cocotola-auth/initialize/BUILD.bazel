@@ -23,6 +23,7 @@ go_library(
         "//cocotola-auth/usecase/group",
         "//cocotola-auth/usecase/space",
         "//cocotola-auth/usecase/user",
+        "//cocotola-auth/usecase/usersetting",
         "//cocotola-lib/logging",
         "//cocotola-lib/process",
         "@com_github_gin_gonic_gin//:gin",
