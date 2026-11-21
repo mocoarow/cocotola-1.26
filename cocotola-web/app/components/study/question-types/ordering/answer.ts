@@ -12,12 +12,17 @@ export function chipSegmentIndices(segments: readonly OrderingSegment[]): number
   return segments.flatMap((s, i) => (s.type === "chip" ? [i] : []));
 }
 
-export function computeRegions(segments: readonly OrderingSegment[]): string[][] {
+function regionSegmentIndices(segments: readonly OrderingSegment[]): number[][] {
   return segments.flatMap((s, i) => {
     if (s.type !== "chip" || (i > 0 && segments[i - 1].type === "chip")) return [];
     const end = segments.findIndex((t, j) => j > i && t.type !== "chip");
-    return [segments.slice(i, end === -1 ? undefined : end).map((t) => t.text)];
+    const length = (end === -1 ? segments.length : end) - i;
+    return [Array.from({ length }, (_, k) => i + k)];
   });
+}
+
+export function computeRegions(segments: readonly OrderingSegment[]): string[][] {
+  return regionSegmentIndices(segments).map((region) => region.map((i) => segments[i].text));
 }
 
 export function evaluateRegions(
@@ -34,22 +39,22 @@ export function evaluateRegions(
   );
 }
 
-function answerRegions(segments: readonly OrderingSegment[], slots: Slots): string[][] | null {
-  const placed = slots.filter((chip): chip is number => chip !== null);
-  if (placed.length !== slots.length) return null;
+// Empty slots are left out, so an answer with an empty slot never matches the correct regions.
+function answerRegions(segments: readonly OrderingSegment[], slots: Slots): string[][] {
   const chips = chipSegmentIndices(segments);
-  const answered = segments.map((s, i) =>
-    s.type === "chip" ? { ...s, text: segments[placed[chips.indexOf(i)]].text } : s,
+  return regionSegmentIndices(segments).map((region) =>
+    region.flatMap((i) => {
+      const chip = slots[chips.indexOf(i)];
+      return chip === null ? [] : [segments[chip].text];
+    }),
   );
-  return computeRegions(answered);
 }
 
 export function toOrderingDraft(
   segments: readonly OrderingSegment[],
   slots: Slots,
-): AnswerDraft<"ordering"> | null {
+): AnswerDraft<"ordering"> {
   const regions = answerRegions(segments, slots);
-  if (regions === null) return null;
   return {
     correct: evaluateRegions(segments, regions),
     payload: { type: "ordering", regions },

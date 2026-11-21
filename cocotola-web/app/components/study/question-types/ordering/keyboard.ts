@@ -27,7 +27,8 @@ export type KeyAction =
   | { kind: "ignore" }
   | { kind: "stay" }
   | { kind: "move"; to: ChipFocus }
-  | { kind: "edit"; edit: SlotEdit };
+  | { kind: "edit"; edit: SlotEdit }
+  | { kind: "submit" };
 
 const AREA_SWITCHES: ReadonlyMap<string, { from: ChipArea; to: ChipArea }> = new Map([
   ["ArrowUp", { from: "pool", to: "slot" }],
@@ -104,6 +105,7 @@ export function keyAction(
   memory: FocusMemory,
 ): KeyAction {
   if (input.ctrlKey || input.altKey || input.metaKey) return { kind: "ignore" };
+  if (input.key === "Enter") return input.shiftKey ? { kind: "ignore" } : { kind: "submit" };
   if (input.key === "Backspace") return returnLast(areas);
   const step = SLOT_STEPS.get(input.key);
   if (input.shiftKey && from.area === "slot" && step !== undefined)

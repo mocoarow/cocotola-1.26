@@ -352,8 +352,38 @@ describe("keyAction with Shift + an arrow in the answer area", () => {
   }
 });
 
+describe("keyAction for Enter", () => {
+  const tests = [
+    { area: "pool" as const, chip: 5 },
+    { area: "slot" as const, chip: 2 },
+  ];
+  for (const tt of tests) {
+    it(`should submit with Enter in the ${tt.area} area`, () => {
+      // given / when
+      const action = keyAction(press("Enter"), tt, AREAS, {});
+
+      // then
+      expect(action).toEqual({ kind: "submit" });
+    });
+  }
+
+  const modifierTests = [
+    { name: "Shift+Enter", modifiers: { shiftKey: true } },
+    { name: "Ctrl+Enter", modifiers: { ctrlKey: true } },
+  ];
+  for (const tt of modifierTests) {
+    it(`should ignore ${tt.name}`, () => {
+      // given / when
+      const action = keyAction(press("Enter", tt.modifiers), { area: "pool", chip: 5 }, AREAS, {});
+
+      // then
+      expect(action).toEqual({ kind: "ignore" });
+    });
+  }
+});
+
 describe("keyAction for other keys", () => {
-  const tests = [{ key: "Enter" }, { key: " " }, { key: "Tab" }, { key: "a" }];
+  const tests = [{ key: " " }, { key: "Tab" }, { key: "a" }];
   for (const tt of tests) {
     it(`should ignore ${JSON.stringify(tt.key)}`, () => {
       // given / when
