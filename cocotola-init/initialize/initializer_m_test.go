@@ -163,9 +163,9 @@ func Test_Initialize_shouldSeedPublicWorkbooksIntoPublicSpace_whenRun(t *testing
 	require.NoError(t, runInitialize(ctx, t, seeder))
 
 	// then
-	spaceID, err := initialize.NewPublicSpaceFinder(testDB).FindPublicSpaceID(ctx, initialize.CocotolaOrganizationID())
+	spaceID, err := initialize.NewPublicSpaceFinder(testDB).FindPublicSpaceID(ctx, initialize.CocotolaOrganizationIDString)
 	require.NoError(t, err)
-	seeder.AssertCalled(t, "SeedPublicWorkbooks", mock.Anything, initialize.CocotolaOrganizationIDString, spaceID.String())
+	seeder.AssertCalled(t, "SeedPublicWorkbooks", mock.Anything, initialize.CocotolaOrganizationIDString, spaceID)
 }
 
 func Test_Initialize_shouldReturnSeederError_whenSeederFails(t *testing.T) {

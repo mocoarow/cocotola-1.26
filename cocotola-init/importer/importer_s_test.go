@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/importer"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
@@ -43,8 +41,7 @@ func indexRange(first, last int32) []int32 {
 func newImporter(t *testing.T, loaded []seed.CSVWorkbookSeed, outputs []seed.WorkbookOutput) *importer.Importer {
 	t.Helper()
 	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, domain.MustParseOrganizationID(testOrganizationID)).
-		Return(domain.MustParseSpaceID(testSpaceID), nil)
+	finder.EXPECT().FindPublicSpaceID(mock.Anything, testOrganizationID).Return(testSpaceID, nil)
 	loader := NewMockCSVWorkbookLoader(t)
 	loader.EXPECT().Load(mock.Anything).Return(loaded, nil)
 	seeds := make([]seed.PublicWorkbookSeed, 0, len(loaded))
@@ -53,7 +50,7 @@ func newImporter(t *testing.T, loaded []seed.CSVWorkbookSeed, outputs []seed.Wor
 	}
 	seeder := NewMockWorkbookSeeder(t)
 	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, seeds).Return(outputs, nil)
-	return importer.NewImporter(domain.MustParseOrganizationID(testOrganizationID), finder, loader, seeder)
+	return importer.NewImporter(testOrganizationID, finder, loader, seeder)
 }
 
 func Test_Importer_Run_shouldSeedLoadedWorkbooksIntoPublicSpace_whenSpaceExists(t *testing.T) {
@@ -76,8 +73,8 @@ func Test_Importer_Run_shouldReturnError_whenPublicSpaceLookupFails(t *testing.T
 	// given: loader and seeder must not be called
 	findErr := errors.New("public space not found")
 	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(domain.SpaceID{}, findErr)
-	im := importer.NewImporter(domain.MustParseOrganizationID(testOrganizationID), finder, NewMockCSVWorkbookLoader(t), NewMockWorkbookSeeder(t))
+	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return("", findErr)
+	im := importer.NewImporter(testOrganizationID, finder, NewMockCSVWorkbookLoader(t), NewMockWorkbookSeeder(t))
 
 	// when
 	err := im.Run(context.Background())
@@ -92,10 +89,10 @@ func Test_Importer_Run_shouldReturnError_whenLoadFails(t *testing.T) {
 	// given: the seeder must not be called
 	loadErr := errors.New("object not found")
 	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(domain.MustParseSpaceID(testSpaceID), nil)
+	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(testSpaceID, nil)
 	loader := NewMockCSVWorkbookLoader(t)
 	loader.EXPECT().Load(mock.Anything).Return(nil, loadErr)
-	im := importer.NewImporter(domain.MustParseOrganizationID(testOrganizationID), finder, loader, NewMockWorkbookSeeder(t))
+	im := importer.NewImporter(testOrganizationID, finder, loader, NewMockWorkbookSeeder(t))
 
 	// when
 	err := im.Run(context.Background())
@@ -110,12 +107,12 @@ func Test_Importer_Run_shouldReturnError_whenSeedFails(t *testing.T) {
 	// given
 	seedErr := errors.New("status 500")
 	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(domain.MustParseSpaceID(testSpaceID), nil)
+	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(testSpaceID, nil)
 	loader := NewMockCSVWorkbookLoader(t)
 	loader.EXPECT().Load(mock.Anything).Return([]seed.CSVWorkbookSeed{loadedWorkbook(testSeedKey)}, nil)
 	seeder := NewMockWorkbookSeeder(t)
 	seeder.EXPECT().SeedWorkbooks(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, seedErr)
-	im := importer.NewImporter(domain.MustParseOrganizationID(testOrganizationID), finder, loader, seeder)
+	im := importer.NewImporter(testOrganizationID, finder, loader, seeder)
 
 	// when
 	err := im.Run(context.Background())

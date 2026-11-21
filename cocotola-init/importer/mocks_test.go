@@ -7,7 +7,6 @@ package importer_test
 import (
 	"context"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -40,24 +39,24 @@ func (_m *MockPublicSpaceFinder) EXPECT() *MockPublicSpaceFinder_Expecter {
 }
 
 // FindPublicSpaceID provides a mock function for the type MockPublicSpaceFinder
-func (_mock *MockPublicSpaceFinder) FindPublicSpaceID(ctx context.Context, organizationID domain.OrganizationID) (domain.SpaceID, error) {
+func (_mock *MockPublicSpaceFinder) FindPublicSpaceID(ctx context.Context, organizationID string) (string, error) {
 	ret := _mock.Called(ctx, organizationID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindPublicSpaceID")
 	}
 
-	var r0 domain.SpaceID
+	var r0 string
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID) (domain.SpaceID, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) (string, error)); ok {
 		return returnFunc(ctx, organizationID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.OrganizationID) domain.SpaceID); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) string); ok {
 		r0 = returnFunc(ctx, organizationID)
 	} else {
-		r0 = ret.Get(0).(domain.SpaceID)
+		r0 = ret.Get(0).(string)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.OrganizationID) error); ok {
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string) error); ok {
 		r1 = returnFunc(ctx, organizationID)
 	} else {
 		r1 = ret.Error(1)
@@ -72,20 +71,20 @@ type MockPublicSpaceFinder_FindPublicSpaceID_Call struct {
 
 // FindPublicSpaceID is a helper method to define mock.On call
 //   - ctx context.Context
-//   - organizationID domain.OrganizationID
+//   - organizationID string
 func (_e *MockPublicSpaceFinder_Expecter) FindPublicSpaceID(ctx interface{}, organizationID interface{}) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
 	return &MockPublicSpaceFinder_FindPublicSpaceID_Call{Call: _e.mock.On("FindPublicSpaceID", ctx, organizationID)}
 }
 
-func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Run(run func(ctx context.Context, organizationID domain.OrganizationID)) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
+func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Run(run func(ctx context.Context, organizationID string)) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 domain.OrganizationID
+		var arg1 string
 		if args[1] != nil {
-			arg1 = args[1].(domain.OrganizationID)
+			arg1 = args[1].(string)
 		}
 		run(
 			arg0,
@@ -95,12 +94,12 @@ func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Return(v domain.SpaceID, err error) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
-	_c.Call.Return(v, err)
+func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Return(s string, err error) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
+	_c.Call.Return(s, err)
 	return _c
 }
 
-func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) RunAndReturn(run func(ctx context.Context, organizationID domain.OrganizationID) (domain.SpaceID, error)) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
+func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) RunAndReturn(run func(ctx context.Context, organizationID string) (string, error)) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
 	_c.Call.Return(run)
 	return _c
 }

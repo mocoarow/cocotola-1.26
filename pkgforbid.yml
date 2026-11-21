@@ -152,7 +152,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
     - github.com/mocoarow/cocotola-1.26/cocotola-question/config
     - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
-  init-seed: &init-seed
+  init-core: &init-core
     - database/sql
     - gorm.io/gorm
     - gorm.io/gorm/clause
@@ -330,7 +330,8 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study": {forbiddenPackages: *question-controller}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook": {forbiddenPackages: *question-controller}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware": {forbiddenPackages: *question-controller}
-  "github.com/mocoarow/cocotola-1.26/cocotola-init/seed": {forbiddenPackages: *init-seed}
+  "github.com/mocoarow/cocotola-1.26/cocotola-init/importer": {forbiddenPackages: *init-core}
+  "github.com/mocoarow/cocotola-1.26/cocotola-init/seed": {forbiddenPackages: *init-core}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}
