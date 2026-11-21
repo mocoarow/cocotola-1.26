@@ -25,9 +25,9 @@ import { getUserPreferencesOrNull, type UserPreferences } from "~/lib/api/user-s
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   console.info("[workbooks] loader called");
-  const { accessToken } = await requireAuth(request);
+  const { accessToken } = requireAuth(context);
 
   const user = await getUserPreferencesOrNull(request, accessToken);
 

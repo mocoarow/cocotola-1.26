@@ -145,10 +145,7 @@ function buildActionArgs(formEntries: Record<string, string>): ActionArgs {
 
 describe("WorkbookDetail action", () => {
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: undefined,
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
   });
 
   afterEach(() => {

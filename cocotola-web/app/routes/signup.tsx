@@ -3,13 +3,13 @@ import { Form, redirect, useActionData } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { exchangeSupabaseToken } from "~/lib/api/auth.server";
+import { authContext } from "~/lib/auth/refresh-middleware.server";
 import { commitSession, getSession } from "~/lib/auth/session.server";
 import { createSupabaseServerClient } from "~/lib/supabase/server";
 import type { Route } from "./+types/signup";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request);
-  if (session.get("accessToken")) {
+export async function loader({ context }: Route.LoaderArgs) {
+  if (context.get(authContext)) {
     return redirect("/");
   }
   return null;

@@ -18,9 +18,11 @@ function getSessionSecret(): string {
   return secret;
 }
 
+export const SESSION_COOKIE_NAME = "__cocotola_session";
+
 const sessionStorage = createCookieSessionStorage<SessionData>({
   cookie: {
-    name: "__cocotola_session",
+    name: SESSION_COOKIE_NAME,
     httpOnly: true,
     path: "/",
     sameSite: "lax",

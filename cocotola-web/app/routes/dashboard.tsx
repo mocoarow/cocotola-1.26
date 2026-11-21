@@ -26,8 +26,8 @@ import type { Route } from "./+types/dashboard";
  * pointed at /dashboard would render the React Router error boundary
  * instead of being redirected back to the login screen.
  */
-export async function loader({ request }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
   const prefs = await getUserPreferences(request, accessToken);
   const todayKey = getLocalDateKey(prefs.timezone);
   // Omitting `days` so the function default (DEFAULT_DASHBOARD_DAYS in

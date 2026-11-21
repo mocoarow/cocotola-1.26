@@ -6,8 +6,8 @@ export function meta(_args: Route.MetaArgs) {
   return [{ title: "Cocotola" }, { name: "description", content: "Cocotola - Learning Platform" }];
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-  await requireAuth(request);
+export async function loader({ context }: Route.LoaderArgs) {
+  requireAuth(context);
   throw redirect("/workbooks");
 }
 

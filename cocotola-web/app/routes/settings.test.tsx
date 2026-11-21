@@ -336,10 +336,7 @@ describe("settings action", () => {
   }
 
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: "test-refresh",
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
     vi.mocked(updateUserLanguage).mockResolvedValue(undefined);
     vi.mocked(updateUserDailyGoal).mockResolvedValue(undefined);
     vi.mocked(updateUserTimezone).mockResolvedValue(undefined);

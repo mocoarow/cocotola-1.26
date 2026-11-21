@@ -9,11 +9,11 @@ import type { Route } from "./+types/workbooks.$workbookId.debug-study";
 // effectively unreachable; the navigation button in `workbooks.$workbookId`
 // is also hidden behind `import.meta.env.DEV` so production users can't see
 // the URL in the UI to begin with.
-export async function loader({ request, params }: Route.LoaderArgs) {
+export async function loader({ params, context }: Route.LoaderArgs) {
   if (process.env.NODE_ENV === "production") {
     throw new Response("Not Found", { status: 404 });
   }
-  const { accessToken } = await requireAuth(request);
+  const { accessToken } = requireAuth(context);
   const { workbookId } = params;
   const { records } = await listStudyRecords(accessToken, workbookId);
   return { workbookId, records };

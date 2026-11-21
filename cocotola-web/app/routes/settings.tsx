@@ -22,8 +22,8 @@ import type { Route } from "./+types/settings";
  * the 401-redirect-to-login contract stay in sync with routes/workbooks.tsx
  * and routes/dashboard.tsx.
  */
-export async function loader({ request }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
   const prefs = await getUserPreferences(request, accessToken);
   return {
     loginId: prefs.loginId,
@@ -127,8 +127,8 @@ async function handleStudyIntent(request: Request, accessToken: string, formData
   };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function action({ request, context }: Route.ActionArgs) {
+  const { accessToken } = requireAuth(context);
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
 

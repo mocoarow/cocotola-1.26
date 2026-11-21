@@ -2,14 +2,13 @@ import { useTranslation } from "react-i18next";
 import { redirect } from "react-router";
 import { Button } from "~/components/ui/button";
 import { writeLoginProbe } from "~/lib/auth/login-probe";
-import { getSession } from "~/lib/auth/session.server";
+import { authContext } from "~/lib/auth/refresh-middleware.server";
 import { createSupabaseBrowserClient } from "~/lib/supabase/client";
 import type { Route } from "./+types/login";
 
-export async function loader({ request }: Route.LoaderArgs) {
+export async function loader({ context }: Route.LoaderArgs) {
   console.info("[login] loader called");
-  const session = await getSession(request);
-  if (session.get("accessToken")) {
+  if (context.get(authContext)) {
     console.info("[login] user already authenticated, redirecting to /");
     return redirect("/");
   }
