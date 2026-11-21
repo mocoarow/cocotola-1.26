@@ -92,7 +92,7 @@ func Initialize(
 	// usecase layer
 	contentParser := contentjson.Parser{}
 	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
-	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo, contentParser)
+	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo, contentParser)
 	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, workbookRepo, authzChecker)
 	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, contentParser, studyusecase.UsecaseConfig{
 		ClockFunc:   nil,
