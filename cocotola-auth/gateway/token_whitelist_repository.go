@@ -58,13 +58,12 @@ func NewSessionTokenWhitelistRepository(db *gorm.DB) *SessionTokenWhitelistRepos
 
 // FindByUserID returns the whitelist of the given user. A user without a saved whitelist gets an empty one at version 0.
 func (r *tokenWhitelistRepository) FindByUserID(ctx context.Context, userID domain.AppUserID) (*domaintoken.Whitelist, error) {
-	db := r.db.WithContext(ctx)
-	var roots []tokenWhitelistRootRecord
-	if err := db.Table(r.rootTable).Where("user_id = ?", userID.String()).Find(&roots).Error; err != nil {
-		return nil, fmt.Errorf("find %s of user %s: %w", r.rootTable, userID, err)
+	version, err := findRootVersion(ctx, r.db, r.rootTable, userIDColumn, userID.String())
+	if err != nil {
+		return nil, err
 	}
 	var records []tokenWhitelistRecord
-	if err := db.Table(r.table).Where("user_id = ?", userID.String()).Find(&records).Error; err != nil {
+	if err := r.db.WithContext(ctx).Table(r.table).Where(userIDColumn+" = ?", userID.String()).Find(&records).Error; err != nil {
 		return nil, fmt.Errorf("find %s of user %s: %w", r.table, userID, err)
 	}
 
@@ -76,9 +75,7 @@ func (r *tokenWhitelistRepository) FindByUserID(ctx context.Context, userID doma
 	if err != nil {
 		return nil, fmt.Errorf("reconstruct whitelist of user %s: %w", userID, err)
 	}
-	if len(roots) > 0 {
-		whitelist.SetVersion(roots[0].Version)
-	}
+	whitelist.SetVersion(version)
 	return whitelist, nil
 }
 
@@ -87,7 +84,7 @@ func (r *tokenWhitelistRepository) Save(ctx context.Context, whitelist *domainto
 	userID := whitelist.UserID().String()
 	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		root := tokenWhitelistRootRecord{UserID: userID, Version: whitelist.Version() + 1, CreatedAt: time.Time{}, UpdatedAt: time.Time{}}
-		if err := saveVersionedRoot(ctx, tx, r.rootTable, whitelist, &root, map[string]any{"user_id": userID}); err != nil {
+		if err := saveVersionedRoot(ctx, tx, r.rootTable, whitelist, &root, map[string]any{userIDColumn: userID}); err != nil {
 			return err
 		}
 		return r.replaceEntries(tx, userID, whitelist.Entries())
@@ -98,7 +95,7 @@ func (r *tokenWhitelistRepository) Save(ctx context.Context, whitelist *domainto
 }
 
 func (r *tokenWhitelistRepository) replaceEntries(tx *gorm.DB, userID string, entries []domaintoken.WhitelistEntry) error {
-	if err := tx.Table(r.table).Where("user_id = ?", userID).Delete(new(tokenWhitelistRecord)).Error; err != nil {
+	if err := tx.Table(r.table).Where(userIDColumn+" = ?", userID).Delete(new(tokenWhitelistRecord)).Error; err != nil {
 		return fmt.Errorf("delete %s: %w", r.table, err)
 	}
 	if len(entries) == 0 {

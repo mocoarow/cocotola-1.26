@@ -51,7 +51,6 @@ go_library(
         "@com_github_golang_jwt_jwt_v5//:jwt",
         "@com_github_micahparks_keyfunc_v3//:keyfunc",
         "@io_gorm_gorm//:gorm",
-        "@io_gorm_gorm//clause",
         "@io_gorm_gorm//schema",
         "@org_golang_x_crypto//bcrypt",
     ],

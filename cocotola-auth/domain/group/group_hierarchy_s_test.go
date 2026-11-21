@@ -257,3 +257,29 @@ func Test_GroupHierarchy_Edges_shouldReturnDefensiveCopy(t *testing.T) {
 	// then
 	assert.Equal(t, fixtureHierGroupID1, h.Edges()[0].ParentGroupID())
 }
+
+func Test_GroupHierarchy_Version_shouldReturnZero_whenNew(t *testing.T) {
+	t.Parallel()
+
+	// given
+	h, _ := group.NewHierarchy(fixtureOrgID, nil)
+
+	// when
+	version := h.Version()
+
+	// then
+	assert.Equal(t, 0, version)
+}
+
+func Test_GroupHierarchy_SetVersion_shouldUpdateVersion(t *testing.T) {
+	t.Parallel()
+
+	// given
+	h, _ := group.NewHierarchy(fixtureOrgID, nil)
+
+	// when
+	h.SetVersion(4)
+
+	// then
+	assert.Equal(t, 4, h.Version())
+}

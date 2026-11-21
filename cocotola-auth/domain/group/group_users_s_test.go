@@ -108,3 +108,29 @@ func Test_GroupUsers_Add_shouldSucceed_whenAddingToEmptyGroup(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, g.Size())
 }
+
+func Test_GroupUsers_Version_shouldReturnZero_whenNew(t *testing.T) {
+	t.Parallel()
+
+	// given
+	g, _ := group.NewUsers(fixtureGroupID1, nil)
+
+	// when
+	version := g.Version()
+
+	// then
+	assert.Equal(t, 0, version)
+}
+
+func Test_GroupUsers_SetVersion_shouldUpdateVersion(t *testing.T) {
+	t.Parallel()
+
+	// given
+	g, _ := group.NewUsers(fixtureGroupID1, nil)
+
+	// when
+	g.SetVersion(4)
+
+	// then
+	assert.Equal(t, 4, g.Version())
+}

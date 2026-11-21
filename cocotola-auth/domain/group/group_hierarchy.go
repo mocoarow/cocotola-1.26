@@ -46,6 +46,7 @@ func (e HierarchyEdge) ChildGroupID() domain.GroupID { return e.childGroupID }
 type Hierarchy struct {
 	organizationID domain.OrganizationID
 	edges          []HierarchyEdge
+	version        int
 }
 
 // NewHierarchy creates a validated GroupHierarchy.
@@ -58,11 +59,18 @@ func NewHierarchy(organizationID domain.OrganizationID, edges []HierarchyEdge) (
 	return &Hierarchy{
 		organizationID: organizationID,
 		edges:          copied,
+		version:        0,
 	}, nil
 }
 
 // OrganizationID returns the organization ID.
 func (h *Hierarchy) OrganizationID() domain.OrganizationID { return h.organizationID }
+
+// Version returns the persisted version (0 = not yet saved).
+func (h *Hierarchy) Version() int { return h.version }
+
+// SetVersion sets the persisted version on a reconstituted aggregate.
+func (h *Hierarchy) SetVersion(version int) { h.version = version }
 
 // Edges returns a defensive copy of the current edges.
 func (h *Hierarchy) Edges() []HierarchyEdge {
