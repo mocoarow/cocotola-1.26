@@ -3,7 +3,6 @@ package question
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,23 +12,25 @@ import (
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
 
+// questionCreator persists a new question together with its entry in the
+// workbook's active question list.
+type questionCreator interface {
+	Create(ctx context.Context, q *domainquestion.Question) error
+}
+
 // AddQuestionCommand handles adding a question to a workbook.
 type AddQuestionCommand struct {
-	questionRepo     questionSaver
-	activeListFinder activeQuestionListFinder
-	activeListSaver  activeQuestionListSaver
-	authChecker      authorizationChecker
-	parser           contentParser
+	questionRepo questionCreator
+	authChecker  authorizationChecker
+	parser       contentParser
 }
 
 // NewAddQuestionCommand returns a new AddQuestionCommand.
-func NewAddQuestionCommand(questionRepo questionSaver, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker, parser contentParser) *AddQuestionCommand {
+func NewAddQuestionCommand(questionRepo questionCreator, authChecker authorizationChecker, parser contentParser) *AddQuestionCommand {
 	return &AddQuestionCommand{
-		questionRepo:     questionRepo,
-		activeListFinder: activeListFinder,
-		activeListSaver:  activeListSaver,
-		authChecker:      authChecker,
-		parser:           parser,
+		questionRepo: questionRepo,
+		authChecker:  authChecker,
+		parser:       parser,
 	}
 }
 
@@ -66,19 +67,8 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("mark audio pending: %w", err)
 	}
 
-	if err := c.questionRepo.Save(ctx, q); err != nil {
-		return nil, fmt.Errorf("save question: %w", err)
-	}
-
-	if err := updateActiveList(ctx, c.activeListFinder, c.activeListSaver, input.WorkbookID, func(l *domain.ActiveQuestionList) error {
-		return l.Add(q.ID())
-	}); err != nil {
-		slog.ErrorContext(ctx, "active question list save failed after question creation",
-			slog.String("question_id", q.ID()),
-			slog.String("workbook_id", input.WorkbookID),
-			slog.Any("error", err),
-		)
-		return nil, fmt.Errorf("add question %s to active list: %w", q.ID(), err)
+	if err := c.questionRepo.Create(ctx, q); err != nil {
+		return nil, fmt.Errorf("create question in workbook %s: %w", input.WorkbookID, err)
 	}
 
 	return &questionservice.AddQuestionOutput{Item: toServiceItem(q)}, nil

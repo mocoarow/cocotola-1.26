@@ -52,6 +52,7 @@ smart_go_test(
         "organization_resolver_cache_s_test.go",
         "owned_workbook_list_repository_m_test.go",
         "question_repository_audio_m_test.go",
+        "question_repository_create_m_test.go",
         "question_repository_m_test.go",
         "reference_repository_m_test.go",
         "study_daily_stats_repository_m_test.go",
