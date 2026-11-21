@@ -28,6 +28,7 @@ import (
 	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
 	spaceusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space"
 	userusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user"
+	usersettingusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting"
 
 	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 	libprocess "github.com/mocoarow/cocotola-1.26/cocotola-lib/process"
@@ -161,7 +162,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 
 	authV1 := v1.Group("auth")
 
-	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, userSettingRepo)
+	usersettinghandler.WireExternalUserSettingHandlers(authV1, authMiddleware, usersettingusecase.NewUpdateUserSettingCommand(userSettingRepo))
 
 	groupCommand := groupusecase.NewCommand(groupRepo, orgRepo, eventBus, authzChecker)
 	createGroupHandler := grouphandler.NewCreateGroupHandler(groupCommand)

@@ -12,9 +12,9 @@ require-template-schema-exists: true
 template: testify
 template-schema: '{{.Template}}.schema.json'
 packages:
-  github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler:
-    config:
-      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/domain:
+    interfaces:
+      UserSettingFinder:
   github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware:
     config:
       all: true
@@ -49,6 +49,9 @@ packages:
     config:
       all: true
   github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user:
+    config:
+      all: true
+  github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting:
     config:
       all: true
   github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user:

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -15,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
+
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
@@ -28,41 +31,14 @@ func newAuthedRequest(ctx context.Context, t *testing.T, body string) *http.Requ
 	return req
 }
 
-func Test_UpdateLanguageHandler_shouldReturn204_whenSettingExists(t *testing.T) {
+func Test_UpdateLanguageHandler_shouldPassUserIDAndLanguageToCommand_whenRequestIsValid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	existing.SetVersion(7)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.Language() == "ja" && s.Version() == 7
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newAuthedRequest(ctx, t, `{"language":"ja"}`)
-	r.ServeHTTP(w, req)
-
-	// then
-	assert.Equal(t, http.StatusNoContent, w.Code)
-}
-
-func Test_UpdateLanguageHandler_shouldCreateDefault_whenSettingNotFound(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, domain.ErrUserSettingNotFound)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.Language() == "ja" && s.Version() == 0
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateLanguage", mock.Anything, &usersettingservice.UpdateLanguageInput{AppUserID: fixtureAppUserID, Language: "ja"}).Return(nil)
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
@@ -78,9 +54,9 @@ func Test_UpdateLanguageHandler_shouldReturn401_whenUserIDMissing(t *testing.T) 
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingFinderSaver(t)
+	updater := newMockuserSettingUpdater(t)
 	noopMiddleware := func(c *gin.Context) { c.Next() }
-	r := initExternalUserSettingRouter(ctx, t, saver, noopMiddleware)
+	r := initExternalUserSettingRouter(ctx, t, updater, noopMiddleware)
 	w := httptest.NewRecorder()
 
 	// when
@@ -97,74 +73,54 @@ func Test_UpdateLanguageHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
+	tests := []struct {
+		name string
+		body string
+	}{
+		{name: "notJSON", body: `not-json`},
+		{name: "missingField", body: `{}`},
+		{name: "wrongLength", body: `{"language":"jpn"}`},
+		{name: "outsideWhitelist", body: `{"language":"fr"}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			updater := newMockuserSettingUpdater(t)
+			r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
+			w := httptest.NewRecorder()
+
+			// when
+			req := newAuthedRequest(ctx, t, tt.body)
+			r.ServeHTTP(w, req)
+			respBytes := readBytes(t, w.Body)
+
+			// then
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+			validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
+		})
+	}
+}
+
+func Test_UpdateLanguageHandler_shouldReturn400_whenCommandRejectsValue(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
 	// given
-	saver := newMockuserSettingFinderSaver(t)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateLanguage", mock.Anything, mock.Anything).Return(fmt.Errorf("change: %w", usersettingservice.ErrInvalidValue))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
-	req := newAuthedRequest(ctx, t, `not-json`)
+	req := newAuthedRequest(ctx, t, `{"language":"ja"}`)
 	r.ServeHTTP(w, req)
 	respBytes := readBytes(t, w.Body)
 
 	// then
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
-}
-
-func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageMissing(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newAuthedRequest(ctx, t, `{}`)
-	r.ServeHTTP(w, req)
-	respBytes := readBytes(t, w.Body)
-
-	// then
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
-}
-
-func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageWrongLength(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when (3-letter code rejected by binding:"len=2")
-	req := newAuthedRequest(ctx, t, `{"language":"jpn"}`)
-	r.ServeHTTP(w, req)
-
-	// then
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-}
-
-func Test_UpdateLanguageHandler_shouldReturn400_whenLanguageOutsideWhitelist(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newAuthedRequest(ctx, t, `{"language":"fr"}`)
-	r.ServeHTTP(w, req)
-	respBytes := readBytes(t, w.Body)
-
-	// then
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
+	validateErrorResponse(t, respBytes, "invalid_request", "language is invalid")
 }
 
 func Test_UpdateLanguageHandler_shouldReturn409_whenConcurrentModification(t *testing.T) {
@@ -172,12 +128,9 @@ func Test_UpdateLanguageHandler_shouldReturn409_whenConcurrentModification(t *te
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateLanguage", mock.Anything, mock.Anything).Return(fmt.Errorf("save: %w", libversioned.ErrConcurrentModification))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
@@ -194,14 +147,10 @@ func Test_UpdateLanguageHandler_shouldReturn404_whenSettingDeletedConcurrently(t
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: caller loaded a setting at version 7, but the row was deleted before save
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	existing.SetVersion(7)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.Anything).Return(domain.ErrUserSettingNotFound)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	// given
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateLanguage", mock.Anything, mock.Anything).Return(fmt.Errorf("save: %w", domain.ErrUserSettingNotFound))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
@@ -214,43 +163,24 @@ func Test_UpdateLanguageHandler_shouldReturn404_whenSettingDeletedConcurrently(t
 	validateErrorResponse(t, respBytes, "user_setting_not_found", "user setting not found")
 }
 
-func Test_UpdateLanguageHandler_shouldReturn500_whenFindFailsUnexpectedly(t *testing.T) {
+func Test_UpdateLanguageHandler_shouldReturn500_whenCommandFailsUnexpectedly(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, errors.New("db connection lost"))
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateLanguage", mock.Anything, mock.Anything).Return(errors.New("db connection lost"))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
 	req := newAuthedRequest(ctx, t, `{"language":"ja"}`)
 	r.ServeHTTP(w, req)
+	respBytes := readBytes(t, w.Body)
 
 	// then
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-}
-
-func Test_UpdateLanguageHandler_shouldReturn500_whenSaveFailsUnexpectedly(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.Anything).Return(errors.New("db connection lost"))
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newAuthedRequest(ctx, t, `{"language":"ja"}`)
-	r.ServeHTTP(w, req)
-
-	// then
-	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	validateErrorResponse(t, respBytes, "internal_server_error", http.StatusText(http.StatusInternalServerError))
 }
 
 func Test_UpdateLanguageHandler_shouldRouteOnlyToPUT(t *testing.T) {
@@ -258,8 +188,8 @@ func Test_UpdateLanguageHandler_shouldRouteOnlyToPUT(t *testing.T) {
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingFinderSaver(t)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when (POST is not registered)

@@ -1,6 +1,7 @@
 package usersetting
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/api"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
 )
 
 var errTimezoneDisallowedChars = errors.New("timezone contains characters outside the allowed set")
@@ -22,14 +24,14 @@ type UpdateTimezoneHandler struct {
 }
 
 // NewUpdateTimezoneHandler returns a new UpdateTimezoneHandler.
-func NewUpdateTimezoneHandler(settingSaver userSettingFinderSaver) *UpdateTimezoneHandler {
-	return &UpdateTimezoneHandler{newUpdateRunner("UpdateTimezoneHandler", settingSaver)}
+func NewUpdateTimezoneHandler(updater userSettingUpdater) *UpdateTimezoneHandler {
+	return &UpdateTimezoneHandler{newUpdateRunner("UpdateTimezoneHandler", updater)}
 }
 
 // UpdateTimezone handles PUT /auth/user-setting/timezone.
 func (h *UpdateTimezoneHandler) UpdateTimezone(c *gin.Context) {
 	h.run(c, updateConfig{
-		bindRequest: func(c *gin.Context) (changeFn, error) {
+		bindRequest: func(c *gin.Context, appUserID domain.AppUserID) (applyFn, error) {
 			var req api.UpdateUserTimezoneRequest
 			if err := c.ShouldBindJSON(&req); err != nil {
 				return nil, fmt.Errorf("decode update timezone request: %w", err)
@@ -39,7 +41,12 @@ func (h *UpdateTimezoneHandler) UpdateTimezone(c *gin.Context) {
 				return nil, errTimezoneDisallowedChars
 			}
 
-			return func(s *domain.UserSetting) error { return s.ChangeTimezone(req.Timezone) }, nil
+			input, err := usersettingservice.NewUpdateTimezoneInput(appUserID, req.Timezone)
+			if err != nil {
+				return nil, fmt.Errorf("new update timezone input: %w", err)
+			}
+
+			return func(ctx context.Context) error { return h.updater.UpdateTimezone(ctx, input) }, nil
 		},
 		invalidBindLog:   "invalid update timezone request",
 		invalidChangeLog: "change timezone",

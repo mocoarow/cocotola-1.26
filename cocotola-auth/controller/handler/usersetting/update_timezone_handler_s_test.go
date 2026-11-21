@@ -3,6 +3,7 @@ package usersetting_test
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,7 +14,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	usersettingservice "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting"
 )
 
 const updateTimezoneURL = "/api/v1/auth/user-setting/timezone"
@@ -26,45 +27,18 @@ func newTimezoneRequest(ctx context.Context, t *testing.T, body string) *http.Re
 	return req
 }
 
-func Test_UpdateTimezoneHandler_shouldReturn204_whenSettingExists(t *testing.T) {
+func Test_UpdateTimezoneHandler_shouldPassUserIDAndTimezoneToCommand_whenRequestIsValid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	existing.SetVersion(2)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.Timezone() == "America/Los_Angeles" && s.Version() == 2
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateTimezone", mock.Anything, &usersettingservice.UpdateTimezoneInput{AppUserID: fixtureAppUserID, Timezone: "America/Los_Angeles"}).Return(nil)
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
 	req := newTimezoneRequest(ctx, t, `{"timezone":"America/Los_Angeles"}`)
-	r.ServeHTTP(w, req)
-
-	// then
-	assert.Equal(t, http.StatusNoContent, w.Code)
-}
-
-func Test_UpdateTimezoneHandler_shouldCreateDefault_whenSettingNotFound(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(nil, domain.ErrUserSettingNotFound)
-	saver.On("Save", mock.Anything, mock.MatchedBy(func(s *domain.UserSetting) bool {
-		return s.AppUserID() == fixtureAppUserID && s.Timezone() == "UTC" && s.Version() == 0
-	})).Return(nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
-	w := httptest.NewRecorder()
-
-	// when
-	req := newTimezoneRequest(ctx, t, `{"timezone":"UTC"}`)
 	r.ServeHTTP(w, req)
 
 	// then
@@ -76,9 +50,9 @@ func Test_UpdateTimezoneHandler_shouldReturn401_whenUserIDMissing(t *testing.T) 
 	ctx := context.Background()
 
 	// given
-	saver := newMockuserSettingFinderSaver(t)
+	updater := newMockuserSettingUpdater(t)
 	noopMiddleware := func(c *gin.Context) { c.Next() }
-	r := initExternalUserSettingRouter(ctx, t, saver, noopMiddleware)
+	r := initExternalUserSettingRouter(ctx, t, updater, noopMiddleware)
 	w := httptest.NewRecorder()
 
 	// when
@@ -112,8 +86,8 @@ func Test_UpdateTimezoneHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 			t.Parallel()
 
 			// given
-			saver := newMockuserSettingFinderSaver(t)
-			r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+			updater := newMockuserSettingUpdater(t)
+			r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 			w := httptest.NewRecorder()
 
 			// when
@@ -123,21 +97,19 @@ func Test_UpdateTimezoneHandler_shouldReturn400_whenBodyInvalid(t *testing.T) {
 
 			// then
 			assert.Equal(t, http.StatusBadRequest, w.Code)
-			assert.Contains(t, string(respBytes), "invalid_request")
+			validateErrorResponse(t, respBytes, "invalid_request", "request body is invalid")
 		})
 	}
 }
 
-func Test_UpdateTimezoneHandler_shouldReturn400_whenTimezoneIsNotResolvable(t *testing.T) {
+func Test_UpdateTimezoneHandler_shouldReturn400_whenCommandRejectsValue(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	existing, err := domain.NewUserSetting(fixtureAppUserID, 5, "en", 10, "Asia/Tokyo")
-	require.NoError(t, err)
-	saver := newMockuserSettingFinderSaver(t)
-	saver.On("FindByAppUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
-	r := initExternalUserSettingRouter(ctx, t, saver, fakeAuthMiddleware(fixtureAppUserID))
+	updater := newMockuserSettingUpdater(t)
+	updater.On("UpdateTimezone", mock.Anything, mock.Anything).Return(fmt.Errorf("change: %w", usersettingservice.ErrInvalidValue))
+	r := initExternalUserSettingRouter(ctx, t, updater, fakeAuthMiddleware(fixtureAppUserID))
 	w := httptest.NewRecorder()
 
 	// when
@@ -147,5 +119,5 @@ func Test_UpdateTimezoneHandler_shouldReturn400_whenTimezoneIsNotResolvable(t *t
 
 	// then
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Contains(t, string(respBytes), "invalid_request")
+	validateErrorResponse(t, respBytes, "invalid_request", "timezone is invalid")
 }
