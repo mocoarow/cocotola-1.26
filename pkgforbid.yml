@@ -34,6 +34,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/authz
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space
@@ -186,15 +187,19 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/authz
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/authz
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/usersetting
     - github.com/mocoarow/cocotola-1.26/cocotola-question/config
     - github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
@@ -295,12 +300,14 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth": {forbiddenPackages: *auth-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/authz": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/usersetting": {forbiddenPackages: *auth-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth": {forbiddenPackages: *auth-usecase}
+  "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/authz": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group": {forbiddenPackages: *auth-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space": {forbiddenPackages: *auth-usecase}

@@ -24,6 +24,7 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	authusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth"
+	authzusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/authz"
 	eventusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event"
 	groupusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group"
 	spaceusecase "github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space"
@@ -156,7 +157,7 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	// internal auth routes (organization, authz, user-setting)
 	internalAuthV1 := internalV1.Group("auth")
 	orghandler.InitOrganizationRouter(findOrgHandler, internalAuthV1)
-	addPolicyHandler := authzhandler.NewAddPolicyHandler(rbacRepo)
+	addPolicyHandler := authzhandler.NewAddPolicyHandler(authzusecase.NewAddPolicyCommand(rbacRepo))
 	authzhandler.InitInternalAuthzRouter(authzCheckHandler, addPolicyHandler, internalAuthV1)
 	usersettinghandler.InitUserSettingRouter(findUserSettingHandler, internalAuthV1)
 

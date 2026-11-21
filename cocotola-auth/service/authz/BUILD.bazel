@@ -1,0 +1,25 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "authz",
+    srcs = ["authz.go"],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/service/authz",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+    ],
+)
+
+smart_go_test(
+    name = "authz_test",
+    srcs = ["authz_s_test.go"],
+    deps = [
+        ":authz",
+        "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
