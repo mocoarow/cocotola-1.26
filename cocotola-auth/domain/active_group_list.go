@@ -17,7 +17,7 @@ func NewActiveGroupList(organizationID OrganizationID, entries []GroupID) (*Acti
 	if organizationID.IsZero() {
 		return nil, fmt.Errorf("active group list organization id must not be zero: %w", ErrInvalidArgument)
 	}
-	return &ActiveGroupList{activeListBase[GroupID]{idset.New[OrganizationID, GroupID](organizationID, entries)}}, nil
+	return &ActiveGroupList{activeListBase[GroupID]{set: idset.New[OrganizationID, GroupID](organizationID, entries), version: 0}}, nil
 }
 
 // Add adds a group ID to the list. Returns ErrActiveGroupLimitReached if the list is at capacity,

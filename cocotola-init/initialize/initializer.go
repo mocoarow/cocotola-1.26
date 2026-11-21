@@ -14,6 +14,7 @@ import (
 	domainspace "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space"
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ"
 )
 
 // PublicWorkbookSeeder seeds public workbooks (and their questions) into
@@ -254,21 +255,25 @@ func findOrCreateGuest(ctx context.Context, repo AppUserRepository, orgID domain
 }
 
 func addToActiveUserList(ctx context.Context, repo ActiveUserListRepository, org *domain.Organization, userID domain.AppUserID, logger *slog.Logger) error {
-	list, err := repo.FindByOrganizationID(ctx, org.ID())
-	if err != nil {
-		return fmt.Errorf("find active user list: %w", err)
-	}
-
-	if err := list.Add(userID, org.MaxActiveUsers()); err != nil {
-		if errors.Is(err, domain.ErrDuplicateEntry) {
-			logger.InfoContext(ctx, "user already in active user list", slog.String("user_id", userID.String()))
-			return nil
+	err := occ.Retry(func() error {
+		list, err := repo.FindByOrganizationID(ctx, org.ID())
+		if err != nil {
+			return fmt.Errorf("find: %w", err)
 		}
-		return fmt.Errorf("add user to active list: %w", err)
+		if err := list.Add(userID, org.MaxActiveUsers()); err != nil {
+			return fmt.Errorf("add: %w", err)
+		}
+		if err := repo.Save(ctx, list); err != nil {
+			return fmt.Errorf("save: %w", err)
+		}
+		return nil
+	})
+	if errors.Is(err, domain.ErrDuplicateEntry) {
+		logger.InfoContext(ctx, "user already in active user list", slog.String("user_id", userID.String()))
+		return nil
 	}
-
-	if err := repo.Save(ctx, list); err != nil {
-		return fmt.Errorf("save active user list: %w", err)
+	if err != nil {
+		return fmt.Errorf("user %s: %w", userID, err)
 	}
 
 	logger.InfoContext(ctx, "user added to active user list", slog.String("user_id", userID.String()))

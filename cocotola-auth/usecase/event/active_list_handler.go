@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ"
 )
 
 // activeList is the interface that both ActiveUserList and ActiveGroupList satisfy.
@@ -36,17 +37,20 @@ func handleActiveListEvent[T any, E any, L activeList[T, E]](
 		return fmt.Errorf("find organization %s: %w", organizationID.String(), err)
 	}
 
-	list, err := repo.FindByOrganizationID(ctx, organizationID)
-	if err != nil {
-		return fmt.Errorf("find active %s list: %w", entityLabel, err)
-	}
-
-	if err := L(list).Add(entityID, maxFn(org)); err != nil {
-		return fmt.Errorf("add to active %s list: %w", entityLabel, err)
-	}
-
-	if err := repo.Save(ctx, list); err != nil {
-		return fmt.Errorf("save active %s list: %w", entityLabel, err)
+	if err := occ.Retry(func() error {
+		list, err := repo.FindByOrganizationID(ctx, organizationID)
+		if err != nil {
+			return fmt.Errorf("find: %w", err)
+		}
+		if err := L(list).Add(entityID, maxFn(org)); err != nil {
+			return fmt.Errorf("add: %w", err)
+		}
+		if err := repo.Save(ctx, list); err != nil {
+			return fmt.Errorf("save: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("update active %s list of organization %s: %w", entityLabel, organizationID, err)
 	}
 
 	logger.InfoContext(ctx, fmt.Sprintf("added %s to active %s list", entityLabel, entityLabel),

@@ -11,9 +11,26 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 )
 
-func Test_ActiveGroupListRepository_Save_shouldInsertEntries_whenListIsNotEmpty(t *testing.T) {
+func findActiveGroupList(ctx context.Context, t *testing.T, repo *gateway.ActiveGroupListRepository, orgID domain.OrganizationID) *domain.ActiveGroupList {
+	t.Helper()
+	list, err := repo.FindByOrganizationID(ctx, orgID)
+	require.NoError(t, err)
+	return list
+}
+
+func saveActiveGroups(ctx context.Context, t *testing.T, repo *gateway.ActiveGroupListRepository, orgID domain.OrganizationID, groupIDs ...domain.GroupID) {
+	t.Helper()
+	list := findActiveGroupList(ctx, t, repo, orgID)
+	for _, id := range groupIDs {
+		require.NoError(t, list.Add(id, activeListLimit))
+	}
+	require.NoError(t, repo.Save(ctx, list))
+}
+
+func Test_ActiveGroupListRepository_Save_shouldPersistEntries_whenFoundAgain(t *testing.T) {
 	t.Parallel()
 	// given
 	ctx := context.Background()
@@ -22,39 +39,12 @@ func Test_ActiveGroupListRepository_Save_shouldInsertEntries_whenListIsNotEmpty(
 	orgID := setupOrganization(ctx, t, tx, "activegroup-save-org")
 	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-save-org", 2)
 	repo := gateway.NewActiveGroupListRepository(tx)
-	list, err := domain.NewActiveGroupList(orgID, groupIDs)
-	require.NoError(t, err)
 
 	// when
-	err = repo.Save(ctx, list)
+	saveActiveGroups(ctx, t, repo, orgID, groupIDs...)
 
 	// then
-	require.NoError(t, err)
-}
-
-func Test_ActiveGroupListRepository_FindByOrganizationID_shouldReturnList_whenEntriesExist(t *testing.T) {
-	t.Parallel()
-	// given
-	ctx := context.Background()
-	tx := testDB.Begin()
-	defer tx.Rollback()
-	orgID := setupOrganization(ctx, t, tx, "activegroup-find-org")
-	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-find-org", 3)
-	repo := gateway.NewActiveGroupListRepository(tx)
-	list, err := domain.NewActiveGroupList(orgID, groupIDs)
-	require.NoError(t, err)
-	require.NoError(t, repo.Save(ctx, list))
-
-	// when
-	found, err := repo.FindByOrganizationID(ctx, orgID)
-
-	// then
-	require.NoError(t, err)
-	assert.True(t, orgID.Equal(found.OrganizationID()))
-	assert.Equal(t, 3, found.Size())
-	for _, id := range groupIDs {
-		assert.True(t, found.Contains(id))
-	}
+	assert.ElementsMatch(t, groupIDs, findActiveGroupList(ctx, t, repo, orgID).Entries())
 }
 
 func Test_ActiveGroupListRepository_FindByOrganizationID_shouldReturnEmptyList_whenNoEntries(t *testing.T) {
@@ -67,36 +57,93 @@ func Test_ActiveGroupListRepository_FindByOrganizationID_shouldReturnEmptyList_w
 	repo := gateway.NewActiveGroupListRepository(tx)
 
 	// when
-	found, err := repo.FindByOrganizationID(ctx, orgID)
+	found := findActiveGroupList(ctx, t, repo, orgID)
 
 	// then
-	require.NoError(t, err)
 	assert.Equal(t, 0, found.Size())
 }
 
-func Test_ActiveGroupListRepository_Save_shouldReplaceEntries_whenCalledTwice(t *testing.T) {
+func Test_ActiveGroupListRepository_FindByOrganizationID_shouldReturnSavedVersion_whenSavedTwice(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "activegroup-version-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-version-org", 2)
+	repo := gateway.NewActiveGroupListRepository(tx)
+	saveActiveGroups(ctx, t, repo, orgID, groupIDs[0])
+	saveActiveGroups(ctx, t, repo, orgID, groupIDs[1])
+
+	// when
+	found := findActiveGroupList(ctx, t, repo, orgID)
+
+	// then
+	assert.Equal(t, 2, found.Version())
+}
+
+func Test_ActiveGroupListRepository_Save_shouldReplaceEntries_whenEntryIsRemoved(t *testing.T) {
 	t.Parallel()
 	// given
 	ctx := context.Background()
 	tx := testDB.Begin()
 	defer tx.Rollback()
 	orgID := setupOrganization(ctx, t, tx, "activegroup-replace-org")
-	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-replace-org", 3)
+	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-replace-org", 2)
 	repo := gateway.NewActiveGroupListRepository(tx)
+	saveActiveGroups(ctx, t, repo, orgID, groupIDs...)
+	list := findActiveGroupList(ctx, t, repo, orgID)
+	list.Remove(groupIDs[0])
 
-	list1, err := domain.NewActiveGroupList(orgID, groupIDs)
-	require.NoError(t, err)
-	require.NoError(t, repo.Save(ctx, list1))
-
-	// when: save with only the first group
-	list2, err := domain.NewActiveGroupList(orgID, groupIDs[:1])
-	require.NoError(t, err)
-	err = repo.Save(ctx, list2)
+	// when
+	err := repo.Save(ctx, list)
 
 	// then
 	require.NoError(t, err)
-	found, err := repo.FindByOrganizationID(ctx, orgID)
-	require.NoError(t, err)
-	assert.Equal(t, 1, found.Size())
-	assert.True(t, found.Contains(groupIDs[0]))
+	assert.Equal(t, groupIDs[1:], findActiveGroupList(ctx, t, repo, orgID).Entries())
+}
+
+func Test_ActiveGroupListRepository_Save_shouldReturnErrConcurrentModification_whenRootIsCreatedConcurrently(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "activegroup-first-save-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-first-save-org", 2)
+	repo := gateway.NewActiveGroupListRepository(tx)
+	first := findActiveGroupList(ctx, t, repo, orgID)
+	second := findActiveGroupList(ctx, t, repo, orgID)
+	require.NoError(t, first.Add(groupIDs[0], activeListLimit))
+	require.NoError(t, repo.Save(ctx, first))
+	require.NoError(t, second.Add(groupIDs[1], activeListLimit))
+
+	// when
+	err := repo.Save(ctx, second)
+
+	// then
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
+}
+
+func Test_ActiveGroupListRepository_Save_shouldReturnErrConcurrentModification_whenVersionIsStale(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	tx := testDB.Begin()
+	defer tx.Rollback()
+	orgID := setupOrganization(ctx, t, tx, "activegroup-stale-org")
+	groupIDs := setupGroups(ctx, t, tx, orgID, "activegroup-stale-org", 3)
+	repo := gateway.NewActiveGroupListRepository(tx)
+	saveActiveGroups(ctx, t, repo, orgID, groupIDs[0])
+	first := findActiveGroupList(ctx, t, repo, orgID)
+	second := findActiveGroupList(ctx, t, repo, orgID)
+	require.NoError(t, first.Add(groupIDs[1], activeListLimit))
+	require.NoError(t, repo.Save(ctx, first))
+	require.NoError(t, second.Add(groupIDs[2], activeListLimit))
+
+	// when
+	err := repo.Save(ctx, second)
+
+	// then
+	require.ErrorIs(t, err, libversioned.ErrConcurrentModification)
 }

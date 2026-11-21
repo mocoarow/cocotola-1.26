@@ -17,7 +17,7 @@ func NewActiveUserList(organizationID OrganizationID, entries []AppUserID) (*Act
 	if organizationID.IsZero() {
 		return nil, fmt.Errorf("active user list organization id must not be zero: %w", ErrInvalidArgument)
 	}
-	return &ActiveUserList{activeListBase[AppUserID]{idset.New[OrganizationID, AppUserID](organizationID, entries)}}, nil
+	return &ActiveUserList{activeListBase[AppUserID]{set: idset.New[OrganizationID, AppUserID](organizationID, entries), version: 0}}, nil
 }
 
 // Add adds a user ID to the list. Returns ErrActiveUserLimitReached if the list is at capacity,

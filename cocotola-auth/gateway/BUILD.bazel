@@ -29,6 +29,7 @@ go_library(
         "token_whitelist_repository.go",
         "user_authenticator.go",
         "user_setting_repository.go",
+        "versioned_root.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway",
     visibility = ["//visibility:public"],
@@ -51,6 +52,7 @@ go_library(
         "@com_github_micahparks_keyfunc_v3//:keyfunc",
         "@io_gorm_gorm//:gorm",
         "@io_gorm_gorm//clause",
+        "@io_gorm_gorm//schema",
         "@org_golang_x_crypto//bcrypt",
     ],
 )

@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -10,8 +9,6 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
 	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
-	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
-	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave"
 )
 
 type tokenWhitelistRootRecord struct {
@@ -90,20 +87,8 @@ func (r *tokenWhitelistRepository) Save(ctx context.Context, whitelist *domainto
 	userID := whitelist.UserID().String()
 	if err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		root := tokenWhitelistRootRecord{UserID: userID, Version: whitelist.Version() + 1, CreatedAt: time.Time{}, UpdatedAt: time.Time{}}
-		err := gormsave.SaveVersioned(ctx, gormsave.SaveArgs[*tokenWhitelistRootRecord]{
-			DB:           tx.Table(r.rootTable),
-			Entity:       whitelist,
-			Record:       &root,
-			PK:           map[string]any{"user_id": userID},
-			Updates:      map[string]any{"updated_at": gorm.Expr("CURRENT_TIMESTAMP")},
-			EntityName:   r.rootTable,
-			OmitOnInsert: nil,
-		})
-		if errors.Is(err, gorm.ErrDuplicatedKey) {
-			return fmt.Errorf("insert %s: %w", r.rootTable, libversioned.ErrConcurrentModification)
-		}
-		if err != nil {
-			return fmt.Errorf("save %s: %w", r.rootTable, err)
+		if err := saveVersionedRoot(ctx, tx, r.rootTable, whitelist, &root, map[string]any{"user_id": userID}); err != nil {
+			return err
 		}
 		return r.replaceEntries(tx, userID, whitelist.Entries())
 	}); err != nil {
