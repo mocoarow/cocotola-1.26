@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
@@ -118,7 +119,7 @@ func Test_AddQuestionCommand_shouldStopRetrying_whenActiveListSaveAttemptsAreExh
 	_, _ = cmd.AddQuestion(ctx, newAddQuestionInput(t))
 
 	// then
-	activeListSaver.AssertNumberOfCalls(t, "Save", questionusecase.MaxActiveListSaveAttempts)
+	activeListSaver.AssertNumberOfCalls(t, "Save", occ.MaxAttempts)
 }
 
 func Test_AddQuestionCommand_shouldNotRetry_whenActiveListSaveFailsWithOtherError(t *testing.T) {

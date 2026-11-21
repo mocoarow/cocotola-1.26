@@ -19,6 +19,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-lib/domain/versioned",
+        "//cocotola-lib/usecase/occ",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "//cocotola-question/domain/workbook",
@@ -34,7 +35,6 @@ smart_go_test(
         "add_question_command_s_test.go",
         "audio_batch_command_s_test.go",
         "delete_question_command_s_test.go",
-        "export_test.go",
         "get_question_query_s_test.go",
         "list_questions_query_s_test.go",
         "mocks_test.go",
@@ -43,6 +43,7 @@ smart_go_test(
     embed = [":question"],
     deps = [
         "//cocotola-lib/domain/versioned",
+        "//cocotola-lib/usecase/occ",
         "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",

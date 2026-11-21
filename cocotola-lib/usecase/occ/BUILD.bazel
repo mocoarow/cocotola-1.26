@@ -1,0 +1,24 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "occ",
+    srcs = [
+        "doc.go",
+        "occ.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ",
+    visibility = ["//visibility:public"],
+    deps = ["//cocotola-lib/domain/versioned"],
+)
+
+smart_go_test(
+    name = "occ_test",
+    srcs = ["occ_s_test.go"],
+    deps = [
+        ":occ",
+        "//cocotola-lib/domain/versioned",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
