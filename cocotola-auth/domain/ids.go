@@ -9,565 +9,214 @@ import (
 	libdomain "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain"
 )
 
-// OrganizationID is the value-object identifier for an Organization aggregate.
-// It wraps uuid.UUID so that the Go compiler prevents accidental mixing with
-// other ID types (AppUserID, GroupID, ...) and raw strings.
-type OrganizationID struct {
+type idKind interface {
+	label() string
+}
+
+type (
+	organizationKind    struct{}
+	appUserKind         struct{}
+	groupKind           struct{}
+	spaceKind           struct{}
+	appUserProviderKind struct{}
+)
+
+func (organizationKind) label() string    { return "organization id" }
+func (appUserKind) label() string         { return "app user id" }
+func (groupKind) label() string           { return "group id" }
+func (spaceKind) label() string           { return "space id" }
+func (appUserProviderKind) label() string { return "app user provider id" }
+
+// ID is a UUID-backed value-object identifier. Each kind K is a distinct type,
+// so the compiler prevents mixing e.g. an OrganizationID with an AppUserID.
+type ID[K idKind] struct {
 	value uuid.UUID
 }
 
-// NewOrganizationIDV7 generates a fresh UUIDv7-based OrganizationID.
-func NewOrganizationIDV7() (OrganizationID, error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return OrganizationID{}, fmt.Errorf("generate organization id: %w", err)
-	}
-	return OrganizationID{value: u}, nil
+// OrganizationID is the value-object identifier for an Organization aggregate.
+type OrganizationID = ID[organizationKind]
+
+// AppUserID is the value-object identifier for an AppUser aggregate.
+type AppUserID = ID[appUserKind]
+
+// GroupID is the value-object identifier for a Group aggregate.
+type GroupID = ID[groupKind]
+
+// SpaceID is the value-object identifier for a Space aggregate.
+type SpaceID = ID[spaceKind]
+
+// AppUserProviderID is the value-object identifier for an AppUserProvider entity.
+type AppUserProviderID = ID[appUserProviderKind]
+
+func kindLabel[K idKind]() string {
+	var k K
+	return k.label()
 }
 
-// ParseOrganizationID parses a string into an OrganizationID.
-func ParseOrganizationID(s string) (OrganizationID, error) {
+func newIDV7[K idKind]() (ID[K], error) {
+	u, err := uuid.NewV7()
+	if err != nil {
+		return ID[K]{}, fmt.Errorf("generate %s: %w", kindLabel[K](), err)
+	}
+	return ID[K]{value: u}, nil
+}
+
+func parseID[K idKind](s string) (ID[K], error) {
 	if s == "" {
-		return OrganizationID{}, fmt.Errorf("organization id must not be empty: %w", ErrInvalidArgument)
+		return ID[K]{}, fmt.Errorf("%s must not be empty: %w", kindLabel[K](), ErrInvalidArgument)
 	}
 	u, err := uuid.Parse(s)
 	if err != nil {
-		return OrganizationID{}, fmt.Errorf("parse organization id: %w: %w", err, ErrInvalidArgument)
+		return ID[K]{}, fmt.Errorf("parse %s: %w: %w", kindLabel[K](), err, ErrInvalidArgument)
 	}
-	return OrganizationID{value: u}, nil
+	return ID[K]{value: u}, nil
 }
 
-// MustParseOrganizationID parses a string into an OrganizationID and panics on error.
-// Intended for tests and hard-coded constants only.
-func MustParseOrganizationID(s string) OrganizationID {
-	id, err := ParseOrganizationID(s)
+func mustParseID[K idKind](s string) ID[K] {
+	id, err := parseID[K](s)
 	if err != nil {
 		panic(err)
 	}
 	return id
 }
+
+func newIDFromUUID[K idKind](u uuid.UUID) (ID[K], error) {
+	if u == uuid.Nil {
+		return ID[K]{}, fmt.Errorf("%s must not be zero: %w", kindLabel[K](), ErrInvalidArgument)
+	}
+	return ID[K]{value: u}, nil
+}
+
+// UUID returns the underlying uuid.UUID value.
+func (id ID[K]) UUID() uuid.UUID { return id.value }
+
+// String returns the canonical string representation.
+func (id ID[K]) String() string { return id.value.String() }
+
+// IsZero reports whether the ID has its zero value.
+func (id ID[K]) IsZero() bool { return id.value == uuid.Nil }
+
+// Equal reports whether two IDs are equal.
+func (id ID[K]) Equal(other ID[K]) bool { return id.value == other.value }
+
+// MarshalJSON encodes the ID as a JSON string.
+func (id ID[K]) MarshalJSON() ([]byte, error) {
+	return []byte(`"` + id.String() + `"`), nil
+}
+
+// UnmarshalJSON decodes a JSON string into the ID.
+func (id *ID[K]) UnmarshalJSON(data []byte) error {
+	s := string(data)
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		s = s[1 : len(s)-1]
+	}
+
+	parsed, err := parseID[K](s)
+	if err != nil {
+		return fmt.Errorf("unmarshal %s: %w", kindLabel[K](), err)
+	}
+
+	*id = parsed
+
+	return nil
+}
+
+// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
+func (id ID[K]) Value() (driver.Value, error) {
+	return id.String(), nil
+}
+
+// Scan implements sql.Scanner so drivers can load the ID back.
+func (id *ID[K]) Scan(src any) error {
+	if src == nil {
+		*id = ID[K]{value: uuid.Nil}
+
+		return nil
+	}
+
+	var s string
+
+	switch v := src.(type) {
+	case string:
+		s = v
+	case []byte:
+		s = string(v)
+	default:
+		return fmt.Errorf("scan %s: unsupported type %T: %w", kindLabel[K](), src, ErrInvalidArgument)
+	}
+
+	parsed, err := parseID[K](s)
+	if err != nil {
+		return fmt.Errorf("scan %s: %w", kindLabel[K](), err)
+	}
+
+	*id = parsed
+
+	return nil
+}
+
+// NewOrganizationIDV7 generates a fresh UUIDv7-based OrganizationID.
+func NewOrganizationIDV7() (OrganizationID, error) { return newIDV7[organizationKind]() }
+
+// ParseOrganizationID parses a string into an OrganizationID.
+func ParseOrganizationID(s string) (OrganizationID, error) { return parseID[organizationKind](s) }
+
+// MustParseOrganizationID parses a string into an OrganizationID and panics on error.
+// Intended for tests and hard-coded constants only.
+func MustParseOrganizationID(s string) OrganizationID { return mustParseID[organizationKind](s) }
 
 // NewOrganizationIDFromUUID wraps an existing uuid.UUID. Returns an error if the
 // input is the zero UUID.
 func NewOrganizationIDFromUUID(u uuid.UUID) (OrganizationID, error) {
-	if u == uuid.Nil {
-		return OrganizationID{}, fmt.Errorf("organization id must not be zero: %w", ErrInvalidArgument)
-	}
-	return OrganizationID{value: u}, nil
-}
-
-// UUID returns the underlying uuid.UUID value.
-func (id OrganizationID) UUID() uuid.UUID { return id.value }
-
-// String returns the canonical string representation.
-func (id OrganizationID) String() string { return id.value.String() }
-
-// IsZero reports whether the ID has its zero value.
-func (id OrganizationID) IsZero() bool { return id.value == uuid.Nil }
-
-// Equal reports whether two IDs are equal.
-func (id OrganizationID) Equal(other OrganizationID) bool { return id.value == other.value }
-
-// MarshalJSON encodes the ID as a JSON string.
-func (id OrganizationID) MarshalJSON() ([]byte, error) {
-	s := `"` + id.String() + `"`
-
-	return []byte(s), nil
-}
-
-// UnmarshalJSON decodes a JSON string into an OrganizationID.
-func (id *OrganizationID) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
-	}
-
-	parsed, err := ParseOrganizationID(s)
-	if err != nil {
-		return fmt.Errorf("unmarshal organization id: %w", err)
-	}
-
-	*id = parsed
-
-	return nil
-}
-
-// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
-func (id OrganizationID) Value() (driver.Value, error) {
-	return id.String(), nil
-}
-
-// Scan implements sql.Scanner so drivers can load the ID back.
-func (id *OrganizationID) Scan(src any) error {
-	if src == nil {
-		*id = OrganizationID{value: uuid.Nil}
-
-		return nil
-	}
-
-	switch v := src.(type) {
-	case string:
-		parsed, err := ParseOrganizationID(v)
-		if err != nil {
-			return fmt.Errorf("scan organization id: %w", err)
-		}
-		*id = parsed
-		return nil
-	case []byte:
-		parsed, err := ParseOrganizationID(string(v))
-		if err != nil {
-			return fmt.Errorf("scan organization id: %w", err)
-		}
-		*id = parsed
-		return nil
-	default:
-		return fmt.Errorf("scan organization id: unsupported type %T: %w", src, ErrInvalidArgument)
-	}
-}
-
-// AppUserID is the value-object identifier for an AppUser aggregate.
-type AppUserID struct {
-	value uuid.UUID
+	return newIDFromUUID[organizationKind](u)
 }
 
 // NewAppUserIDV7 generates a fresh UUIDv7-based AppUserID.
-func NewAppUserIDV7() (AppUserID, error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return AppUserID{}, fmt.Errorf("generate app user id: %w", err)
-	}
-	return AppUserID{value: u}, nil
-}
+func NewAppUserIDV7() (AppUserID, error) { return newIDV7[appUserKind]() }
 
 // ParseAppUserID parses a string into an AppUserID.
-func ParseAppUserID(s string) (AppUserID, error) {
-	if s == "" {
-		return AppUserID{}, fmt.Errorf("app user id must not be empty: %w", ErrInvalidArgument)
-	}
-	u, err := uuid.Parse(s)
-	if err != nil {
-		return AppUserID{}, fmt.Errorf("parse app user id: %w: %w", err, ErrInvalidArgument)
-	}
-	return AppUserID{value: u}, nil
-}
+func ParseAppUserID(s string) (AppUserID, error) { return parseID[appUserKind](s) }
 
 // MustParseAppUserID parses a string into an AppUserID and panics on error.
 // Intended for tests and hard-coded constants only.
-func MustParseAppUserID(s string) AppUserID {
-	id, err := ParseAppUserID(s)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
+func MustParseAppUserID(s string) AppUserID { return mustParseID[appUserKind](s) }
 
 // NewAppUserIDFromUUID wraps an existing uuid.UUID. Returns an error if the
 // input is the zero UUID.
-func NewAppUserIDFromUUID(u uuid.UUID) (AppUserID, error) {
-	if u == uuid.Nil {
-		return AppUserID{}, fmt.Errorf("app user id must not be zero: %w", ErrInvalidArgument)
-	}
-	return AppUserID{value: u}, nil
-}
-
-// UUID returns the underlying uuid.UUID value.
-func (id AppUserID) UUID() uuid.UUID { return id.value }
-
-// String returns the canonical string representation.
-func (id AppUserID) String() string { return id.value.String() }
-
-// IsZero reports whether the ID has its zero value.
-func (id AppUserID) IsZero() bool { return id.value == uuid.Nil }
-
-// Equal reports whether two IDs are equal.
-func (id AppUserID) Equal(other AppUserID) bool { return id.value == other.value }
-
-// MarshalJSON encodes the ID as a JSON string.
-func (id AppUserID) MarshalJSON() ([]byte, error) {
-	s := `"` + id.String() + `"`
-
-	return []byte(s), nil
-}
-
-// UnmarshalJSON decodes a JSON string into an AppUserID.
-func (id *AppUserID) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
-	}
-
-	parsed, err := ParseAppUserID(s)
-	if err != nil {
-		return fmt.Errorf("unmarshal app user id: %w", err)
-	}
-
-	*id = parsed
-
-	return nil
-}
-
-// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
-func (id AppUserID) Value() (driver.Value, error) {
-	return id.String(), nil
-}
-
-// Scan implements sql.Scanner so drivers can load the ID back.
-func (id *AppUserID) Scan(src any) error {
-	if src == nil {
-		*id = AppUserID{value: uuid.Nil}
-
-		return nil
-	}
-
-	switch v := src.(type) {
-	case string:
-		parsed, err := ParseAppUserID(v)
-		if err != nil {
-			return fmt.Errorf("scan app user id: %w", err)
-		}
-		*id = parsed
-		return nil
-	case []byte:
-		parsed, err := ParseAppUserID(string(v))
-		if err != nil {
-			return fmt.Errorf("scan app user id: %w", err)
-		}
-		*id = parsed
-		return nil
-	default:
-		return fmt.Errorf("scan app user id: unsupported type %T: %w", src, ErrInvalidArgument)
-	}
-}
-
-// GroupID is the value-object identifier for a Group aggregate.
-type GroupID struct {
-	value uuid.UUID
-}
+func NewAppUserIDFromUUID(u uuid.UUID) (AppUserID, error) { return newIDFromUUID[appUserKind](u) }
 
 // NewGroupIDV7 generates a fresh UUIDv7-based GroupID.
-func NewGroupIDV7() (GroupID, error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return GroupID{}, fmt.Errorf("generate group id: %w", err)
-	}
-
-	return GroupID{value: u}, nil
-}
+func NewGroupIDV7() (GroupID, error) { return newIDV7[groupKind]() }
 
 // ParseGroupID parses a string into a GroupID.
-func ParseGroupID(s string) (GroupID, error) {
-	if s == "" {
-		return GroupID{}, fmt.Errorf("group id must not be empty: %w", ErrInvalidArgument)
-	}
-
-	u, err := uuid.Parse(s)
-	if err != nil {
-		return GroupID{}, fmt.Errorf("parse group id: %w: %w", err, ErrInvalidArgument)
-	}
-
-	return GroupID{value: u}, nil
-}
+func ParseGroupID(s string) (GroupID, error) { return parseID[groupKind](s) }
 
 // MustParseGroupID parses a string into a GroupID and panics on error.
 // Intended for tests and hard-coded constants only.
-func MustParseGroupID(s string) GroupID {
-	id, err := ParseGroupID(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return id
-}
-
-// UUID returns the underlying uuid.UUID value.
-func (id GroupID) UUID() uuid.UUID { return id.value }
-
-// String returns the canonical string representation.
-func (id GroupID) String() string { return id.value.String() }
-
-// IsZero reports whether the ID has its zero value.
-func (id GroupID) IsZero() bool { return id.value == uuid.Nil }
-
-// Equal reports whether two IDs are equal.
-func (id GroupID) Equal(other GroupID) bool { return id.value == other.value }
-
-// MarshalJSON encodes the ID as a JSON string.
-func (id GroupID) MarshalJSON() ([]byte, error) {
-	s := `"` + id.String() + `"`
-
-	return []byte(s), nil
-}
-
-// UnmarshalJSON decodes a JSON string into a GroupID.
-func (id *GroupID) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
-	}
-
-	parsed, err := ParseGroupID(s)
-	if err != nil {
-		return fmt.Errorf("unmarshal group id: %w", err)
-	}
-
-	*id = parsed
-
-	return nil
-}
-
-// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
-func (id GroupID) Value() (driver.Value, error) {
-	return id.String(), nil
-}
-
-// Scan implements sql.Scanner so drivers can load the ID back.
-func (id *GroupID) Scan(src any) error {
-	if src == nil {
-		*id = GroupID{value: uuid.Nil}
-
-		return nil
-	}
-
-	switch v := src.(type) {
-	case string:
-		parsed, err := ParseGroupID(v)
-		if err != nil {
-			return fmt.Errorf("scan group id: %w", err)
-		}
-
-		*id = parsed
-
-		return nil
-	case []byte:
-		parsed, err := ParseGroupID(string(v))
-		if err != nil {
-			return fmt.Errorf("scan group id: %w", err)
-		}
-
-		*id = parsed
-
-		return nil
-	default:
-		return fmt.Errorf("scan group id: unsupported type %T: %w", src, ErrInvalidArgument)
-	}
-}
-
-// SpaceID is the value-object identifier for a Space aggregate.
-type SpaceID struct {
-	value uuid.UUID
-}
+func MustParseGroupID(s string) GroupID { return mustParseID[groupKind](s) }
 
 // NewSpaceIDV7 generates a fresh UUIDv7-based SpaceID.
-func NewSpaceIDV7() (SpaceID, error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return SpaceID{}, fmt.Errorf("generate space id: %w", err)
-	}
-
-	return SpaceID{value: u}, nil
-}
+func NewSpaceIDV7() (SpaceID, error) { return newIDV7[spaceKind]() }
 
 // ParseSpaceID parses a string into a SpaceID.
-func ParseSpaceID(s string) (SpaceID, error) {
-	if s == "" {
-		return SpaceID{}, fmt.Errorf("space id must not be empty: %w", ErrInvalidArgument)
-	}
-
-	u, err := uuid.Parse(s)
-	if err != nil {
-		return SpaceID{}, fmt.Errorf("parse space id: %w: %w", err, ErrInvalidArgument)
-	}
-
-	return SpaceID{value: u}, nil
-}
+func ParseSpaceID(s string) (SpaceID, error) { return parseID[spaceKind](s) }
 
 // MustParseSpaceID parses a string into a SpaceID and panics on error.
 // Intended for tests and hard-coded constants only.
-func MustParseSpaceID(s string) SpaceID {
-	id, err := ParseSpaceID(s)
-	if err != nil {
-		panic(err)
-	}
-
-	return id
-}
-
-// UUID returns the underlying uuid.UUID value.
-func (id SpaceID) UUID() uuid.UUID { return id.value }
-
-// String returns the canonical string representation.
-func (id SpaceID) String() string { return id.value.String() }
-
-// IsZero reports whether the ID has its zero value.
-func (id SpaceID) IsZero() bool { return id.value == uuid.Nil }
-
-// Equal reports whether two IDs are equal.
-func (id SpaceID) Equal(other SpaceID) bool { return id.value == other.value }
-
-// MarshalJSON encodes the ID as a JSON string.
-func (id SpaceID) MarshalJSON() ([]byte, error) {
-	s := `"` + id.String() + `"`
-
-	return []byte(s), nil
-}
-
-// UnmarshalJSON decodes a JSON string into a SpaceID.
-func (id *SpaceID) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
-	}
-
-	parsed, err := ParseSpaceID(s)
-	if err != nil {
-		return fmt.Errorf("unmarshal space id: %w", err)
-	}
-
-	*id = parsed
-
-	return nil
-}
-
-// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
-func (id SpaceID) Value() (driver.Value, error) {
-	return id.String(), nil
-}
-
-// Scan implements sql.Scanner so drivers can load the ID back.
-func (id *SpaceID) Scan(src any) error {
-	if src == nil {
-		*id = SpaceID{value: uuid.Nil}
-
-		return nil
-	}
-
-	switch v := src.(type) {
-	case string:
-		parsed, err := ParseSpaceID(v)
-		if err != nil {
-			return fmt.Errorf("scan space id: %w", err)
-		}
-
-		*id = parsed
-
-		return nil
-	case []byte:
-		parsed, err := ParseSpaceID(string(v))
-		if err != nil {
-			return fmt.Errorf("scan space id: %w", err)
-		}
-
-		*id = parsed
-
-		return nil
-	default:
-		return fmt.Errorf("scan space id: unsupported type %T: %w", src, ErrInvalidArgument)
-	}
-}
-
-// AppUserProviderID is the value-object identifier for an AppUserProvider entity.
-type AppUserProviderID struct {
-	value uuid.UUID
-}
+func MustParseSpaceID(s string) SpaceID { return mustParseID[spaceKind](s) }
 
 // NewAppUserProviderIDV7 generates a fresh UUIDv7-based AppUserProviderID.
-func NewAppUserProviderIDV7() (AppUserProviderID, error) {
-	u, err := uuid.NewV7()
-	if err != nil {
-		return AppUserProviderID{}, fmt.Errorf("generate app user provider id: %w", err)
-	}
-	return AppUserProviderID{value: u}, nil
-}
+func NewAppUserProviderIDV7() (AppUserProviderID, error) { return newIDV7[appUserProviderKind]() }
 
 // ParseAppUserProviderID parses a string into an AppUserProviderID.
 func ParseAppUserProviderID(s string) (AppUserProviderID, error) {
-	if s == "" {
-		return AppUserProviderID{}, fmt.Errorf("app user provider id must not be empty: %w", ErrInvalidArgument)
-	}
-	u, err := uuid.Parse(s)
-	if err != nil {
-		return AppUserProviderID{}, fmt.Errorf("parse app user provider id: %w: %w", err, ErrInvalidArgument)
-	}
-	return AppUserProviderID{value: u}, nil
+	return parseID[appUserProviderKind](s)
 }
 
 // MustParseAppUserProviderID parses a string into an AppUserProviderID and panics on error.
 // Intended for tests and hard-coded constants only.
 func MustParseAppUserProviderID(s string) AppUserProviderID {
-	id, err := ParseAppUserProviderID(s)
-	if err != nil {
-		panic(err)
-	}
-	return id
-}
-
-// UUID returns the underlying uuid.UUID value.
-func (id AppUserProviderID) UUID() uuid.UUID { return id.value }
-
-// String returns the canonical string representation.
-func (id AppUserProviderID) String() string { return id.value.String() }
-
-// IsZero reports whether the ID has its zero value.
-func (id AppUserProviderID) IsZero() bool { return id.value == uuid.Nil }
-
-// Equal reports whether two IDs are equal.
-func (id AppUserProviderID) Equal(other AppUserProviderID) bool { return id.value == other.value }
-
-// MarshalJSON encodes the ID as a JSON string.
-func (id AppUserProviderID) MarshalJSON() ([]byte, error) {
-	s := `"` + id.String() + `"`
-
-	return []byte(s), nil
-}
-
-// UnmarshalJSON decodes a JSON string into an AppUserProviderID.
-func (id *AppUserProviderID) UnmarshalJSON(data []byte) error {
-	s := string(data)
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		s = s[1 : len(s)-1]
-	}
-
-	parsed, err := ParseAppUserProviderID(s)
-	if err != nil {
-		return fmt.Errorf("unmarshal app user provider id: %w", err)
-	}
-
-	*id = parsed
-
-	return nil
-}
-
-// Value implements driver.Valuer so GORM/sql drivers can persist the ID as a string.
-func (id AppUserProviderID) Value() (driver.Value, error) {
-	return id.String(), nil
-}
-
-// Scan implements sql.Scanner so drivers can load the ID back.
-func (id *AppUserProviderID) Scan(src any) error {
-	if src == nil {
-		*id = AppUserProviderID{value: uuid.Nil}
-
-		return nil
-	}
-
-	switch v := src.(type) {
-	case string:
-		parsed, err := ParseAppUserProviderID(v)
-		if err != nil {
-			return fmt.Errorf("scan app user provider id: %w", err)
-		}
-		*id = parsed
-		return nil
-	case []byte:
-		parsed, err := ParseAppUserProviderID(string(v))
-		if err != nil {
-			return fmt.Errorf("scan app user provider id: %w", err)
-		}
-		*id = parsed
-		return nil
-	default:
-		return fmt.Errorf("scan app user provider id: unsupported type %T: %w", src, ErrInvalidArgument)
-	}
+	return mustParseID[appUserProviderKind](s)
 }
 
 // Well-known bootstrap IDs used by seed SQL. These must match the constants in

@@ -95,8 +95,8 @@ func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Run(run func(ctx context
 	return _c
 }
 
-func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Return(spaceID domain.SpaceID, err error) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
-	_c.Call.Return(spaceID, err)
+func (_c *MockPublicSpaceFinder_FindPublicSpaceID_Call) Return(v domain.SpaceID, err error) *MockPublicSpaceFinder_FindPublicSpaceID_Call {
+	_c.Call.Return(v, err)
 	return _c
 }
 
