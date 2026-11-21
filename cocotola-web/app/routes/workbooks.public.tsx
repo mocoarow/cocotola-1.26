@@ -16,8 +16,8 @@ import { requireAuth } from "~/lib/auth/require-auth.server";
 import { formatDate } from "~/lib/format/date";
 import type { Route } from "./+types/workbooks.public";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
 
   const [workbooks, references] = await Promise.all([
     listPublicWorkbooks(accessToken),
@@ -42,8 +42,8 @@ async function callTolerantly(
   }
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function action({ request, context }: Route.ActionArgs) {
+  const { accessToken } = requireAuth(context);
   const formData = await request.formData();
   const intent = formData.get("intent");
 

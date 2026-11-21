@@ -907,10 +907,7 @@ describe("StudyPage loader", () => {
   };
 
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: undefined,
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
     vi.mocked(getStudyQuestions).mockResolvedValue({
       questions: [],
       totalDue: 0,
@@ -1023,10 +1020,7 @@ type ActionArgs = Parameters<typeof action>[0];
 
 describe("StudyPage action", () => {
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: undefined,
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
     vi.mocked(recordAnswer).mockReset();
     vi.mocked(recordAnswer).mockResolvedValue({
       nextDueAt: "2026-11-03T00:00:00Z",

@@ -339,10 +339,7 @@ type ActionArgs = Parameters<typeof action>[0];
 
 describe("WorkbooksIndex loader", () => {
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: undefined,
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
   });
 
   afterEach(() => {
@@ -392,10 +389,7 @@ describe("WorkbooksIndex loader", () => {
 
 describe("WorkbooksIndex action", () => {
   beforeEach(() => {
-    vi.mocked(requireAuth).mockResolvedValue({
-      accessToken: "test-token",
-      refreshToken: undefined,
-    });
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
   });
 
   afterEach(() => {

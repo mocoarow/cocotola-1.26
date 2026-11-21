@@ -42,8 +42,8 @@ import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId";
 
-export async function loader({ request, params }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ params, context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
   const { workbookId } = params;
   const [workbook, questions] = await Promise.all([
     getWorkbook(accessToken, workbookId),
@@ -94,8 +94,8 @@ async function handleUpdateTitleIntent(
   return { ok: true };
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function action({ request, params, context }: Route.ActionArgs) {
+  const { accessToken } = requireAuth(context);
   const { workbookId } = params;
   const formData = await request.formData();
   const intent = formData.get("intent");

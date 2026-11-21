@@ -45,8 +45,8 @@ const DEFAULT_STUDY_LIMIT = 20;
 
 const ANSWER_NOT_SAVED_ERROR_KEY = "workbooks.study.errors.answerNotSaved";
 
-export async function loader({ request, params }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ request, params, context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
   const { workbookId } = params;
   const url = new URL(request.url);
   const practice = url.searchParams.get("practice") === "true";
@@ -111,8 +111,8 @@ export function shouldRevalidate({
   return defaultShouldRevalidate;
 }
 
-export async function action({ request, params }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function action({ request, params, context }: Route.ActionArgs) {
+  const { accessToken } = requireAuth(context);
   const { workbookId } = params;
   const formData = await request.formData();
   const intent = formData.get("intent");

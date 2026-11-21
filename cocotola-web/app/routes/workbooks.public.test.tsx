@@ -314,7 +314,7 @@ function buildActionArgs(request: Request): ActionArgs {
 
 describe("WorkbooksPublic loader", () => {
   beforeEach(() => {
-    mockedRequireAuth.mockResolvedValue({ accessToken: "test-token", refreshToken: undefined });
+    mockedRequireAuth.mockReturnValue({ accessToken: "test-token" });
   });
 
   afterEach(() => {
@@ -351,7 +351,7 @@ describe("WorkbooksPublic loader", () => {
 
 describe("WorkbooksPublic action", () => {
   beforeEach(() => {
-    mockedRequireAuth.mockResolvedValue({ accessToken: "test-token", refreshToken: undefined });
+    mockedRequireAuth.mockReturnValue({ accessToken: "test-token" });
   });
 
   afterEach(() => {

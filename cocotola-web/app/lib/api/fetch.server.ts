@@ -11,6 +11,14 @@ export function getQuestionUrl(): string {
   return url;
 }
 
+export function getAuthUrl(): string {
+  const url = process.env.AUTH_BASE_URL;
+  if (!url) {
+    throw new Error("AUTH_BASE_URL environment variable is required");
+  }
+  return url;
+}
+
 /**
  * fetch wrapper that attaches a Google Cloud ID Token
  * when running on Cloud Run (APP_ENV is not "local" or "test").

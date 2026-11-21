@@ -49,8 +49,8 @@ async function listPrivateWorkbooks(
   return { workbooks, spaceId: privateSpace.spaceId };
 }
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function loader({ context }: Route.LoaderArgs) {
+  const { accessToken } = requireAuth(context);
 
   const [{ workbooks, spaceId }, addedWorkbooks] = await Promise.all([
     listPrivateWorkbooks(accessToken),
@@ -99,8 +99,8 @@ async function handleCreateIntent(accessToken: string, formData: FormData) {
   return { ok: true };
 }
 
-export async function action({ request }: Route.ActionArgs) {
-  const { accessToken } = await requireAuth(request);
+export async function action({ request, context }: Route.ActionArgs) {
+  const { accessToken } = requireAuth(context);
   const formData = await request.formData();
   const intent = formData.get("intent");
 

@@ -1,13 +1,10 @@
-import { redirect } from "react-router";
-import { getSession } from "./session.server";
+import { type RouterContextProvider, redirect } from "react-router";
+import { authContext } from "./refresh-middleware.server";
 
-export async function requireAuth(request: Request) {
-  const session = await getSession(request);
-  const accessToken = session.get("accessToken");
-
-  if (!accessToken) {
+export function requireAuth(context: Readonly<RouterContextProvider>): { accessToken: string } {
+  const auth = context.get(authContext);
+  if (!auth) {
     throw redirect("/login");
   }
-
-  return { accessToken, refreshToken: session.get("refreshToken") };
+  return auth;
 }
