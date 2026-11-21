@@ -299,14 +299,19 @@ describe("ordering question keyboard", () => {
     it("should update the answer to be sent", async () => {
       // given
       const user = userEvent.setup();
-      renderQuestion(makeContent(THREE_CHIPS));
+      const onAnswer = renderQuestion(makeContent(THREE_CHIPS));
       await tapChips(user, ["are", "kind", "you"]);
 
       // when
       await user.keyboard("{Backspace}");
+      await user.click(screen.getByRole("button", { name: "Check" }));
+      await user.click(screen.getByRole("button", { name: "Next" }));
 
       // then
-      expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
+      expect(onAnswer).toHaveBeenCalledWith({
+        correct: false,
+        payload: { type: "ordering", regions: [["are", "kind"]] },
+      });
     });
 
     it("should leave the pool as it is when the answer area is empty", async () => {
@@ -484,6 +489,81 @@ describe("ordering question keyboard", () => {
         correct: false,
         payload: { type: "ordering", regions: [["kind", "are", "you"]] },
       });
+    });
+  });
+
+  describe("Enter", () => {
+    it("should check the answer with Enter on a pool chip", async () => {
+      // given
+      const user = userEvent.setup();
+      renderQuestion(makeContent(THREE_CHIPS));
+      await user.tab();
+
+      // when
+      await user.keyboard("{Enter}");
+
+      // then
+      expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+    });
+
+    it("should check the answer with Enter on an answer chip", async () => {
+      // given
+      const user = userEvent.setup();
+      renderQuestion(makeContent(THREE_CHIPS));
+      await tapChips(user, ["are"]);
+      focusChip(answerArea(), "Are");
+
+      // when
+      await user.keyboard("{Enter}");
+
+      // then
+      expect(screen.getByRole("button", { name: "Next" })).toBeInTheDocument();
+    });
+
+    it("should send the placed chip texts when checked with Enter", async () => {
+      // given
+      const user = userEvent.setup();
+      const onAnswer = renderQuestion(makeContent(THREE_CHIPS));
+      await tapChips(user, ["you", "are"]);
+      focusChip(pool(), "kind");
+
+      // when
+      await user.keyboard("{Enter}");
+      await user.click(screen.getByRole("button", { name: "Next" }));
+
+      // then
+      expect(onAnswer).toHaveBeenCalledWith({
+        correct: false,
+        payload: { type: "ordering", regions: [["you", "are"]] },
+      });
+    });
+
+    it("should not place the focused chip with Enter", async () => {
+      // given
+      const user = userEvent.setup();
+      renderQuestion(makeContent(THREE_CHIPS));
+      await tapChips(user, ["you", "are"]);
+      focusChip(pool(), "kind");
+
+      // when
+      await user.keyboard("{Enter}");
+
+      // then
+      const placed = within(revealedAnswer()).getAllByText(/^(Correct position|Wrong position)$/);
+      expect(placed).toHaveLength(2);
+    });
+
+    it("should prevent the default action", () => {
+      // given
+      renderQuestion(makeContent(THREE_CHIPS));
+
+      // when
+      const notPrevented = fireEvent.keyDown(within(pool()).getByRole("button", { name: "are" }), {
+        key: "Enter",
+      });
+
+      // then
+      expect(notPrevented).toBe(false);
     });
   });
 

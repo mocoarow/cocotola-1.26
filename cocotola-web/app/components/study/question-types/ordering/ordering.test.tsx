@@ -105,8 +105,8 @@ describe("ordering question", () => {
 
     // when
     await user.tab();
-    await user.keyboard("{Enter}");
-    await user.keyboard("{Enter}");
+    await user.keyboard(" ");
+    await user.keyboard(" ");
     await user.keyboard(" ");
 
     // then
@@ -150,49 +150,45 @@ describe("ordering question", () => {
     expect(within(pool()).getByRole("button", { name: "kind" })).toHaveFocus();
   });
 
-  it("should keep Check disabled before any chip is placed", () => {
+  it("should enable Check before any chip is placed", () => {
     // given / when
     renderQuestion(makeContent(THREE_CHIPS));
-
-    // then
-    expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
-  });
-
-  it("should keep Check disabled while a slot is empty", async () => {
-    // given
-    const user = userEvent.setup();
-    renderQuestion(makeContent(THREE_CHIPS));
-
-    // when
-    await tapChips(user, ["you", "are"]);
-
-    // then
-    expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
-  });
-
-  it("should enable Check when every slot is filled", async () => {
-    // given
-    const user = userEvent.setup();
-    renderQuestion(makeContent(THREE_CHIPS));
-
-    // when
-    await tapChips(user, ["you", "are", "kind"]);
 
     // then
     expect(screen.getByRole("button", { name: "Check" })).toBeEnabled();
   });
 
-  it("should disable Check again when a chip is returned after filling every slot", async () => {
+  it("should send empty regions and false when checked before any chip is placed", async () => {
     // given
     const user = userEvent.setup();
-    renderQuestion(makeContent(THREE_CHIPS));
-    await tapChips(user, ["you", "are", "kind"]);
+    const onAnswer = renderQuestion(makeContent(THREE_CHIPS));
 
     // when
-    await user.click(within(answerArea()).getByRole("button", { name: "kind" }));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
 
     // then
-    expect(screen.getByRole("button", { name: "Check" })).toBeDisabled();
+    expect(onAnswer).toHaveBeenCalledWith({
+      correct: false,
+      payload: { type: "ordering", regions: [[]] },
+    });
+  });
+
+  it("should send the placed chip texts and false when checked with an empty slot", async () => {
+    // given
+    const user = userEvent.setup();
+    const onAnswer = renderQuestion(makeContent(THREE_CHIPS));
+    await tapChips(user, ["you", "are"]);
+
+    // when
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    // then
+    expect(onAnswer).toHaveBeenCalledWith({
+      correct: false,
+      payload: { type: "ordering", regions: [["you", "are"]] },
+    });
   });
 
   it("should send the stored chip texts by region and true when the order is correct", async () => {

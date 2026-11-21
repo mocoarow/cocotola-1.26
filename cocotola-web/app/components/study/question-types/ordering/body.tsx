@@ -66,14 +66,19 @@ function KeyboardHelp({ id }: { id: string }) {
   );
 }
 
+type OrderingBodyProps = BodyProps<"ordering", OrderingContent>;
+
 function useOrderingSlots(
   segments: readonly OrderingSegment[],
-  onDraftChange: BodyProps<"ordering", OrderingContent>["onDraftChange"],
+  onDraftChange: OrderingBodyProps["onDraftChange"],
+  onCommit: OrderingBodyProps["onCommit"],
 ) {
   const [order] = useState(() => shuffleChips(segments));
   const [slots, setSlots] = useState<Slots>(() => emptySlots(order.length));
   const poolChips = order.filter((chip) => !slots.includes(chip));
-  const chipFocus = useChipFocus(chipAreas(poolChips, slots), handleEdit);
+  const chipFocus = useChipFocus(chipAreas(poolChips, slots), handleEdit, () =>
+    onCommit(toOrderingDraft(segments, slots)),
+  );
 
   function update(next: Slots) {
     setSlots(next);
@@ -116,14 +121,10 @@ function useOrderingSlots(
   return { slots, poolChips, chipFocus, handlePoolTap, handleSlotTap, handleDragEnd };
 }
 
-export function OrderingBody({
-  content,
-  phase,
-  onDraftChange,
-}: BodyProps<"ordering", OrderingContent>) {
+export function OrderingBody({ content, phase, onDraftChange, onCommit }: OrderingBodyProps) {
   const { segments, lang } = content.target;
   const { slots, poolChips, chipFocus, handlePoolTap, handleSlotTap, handleDragEnd } =
-    useOrderingSlots(segments, onDraftChange);
+    useOrderingSlots(segments, onDraftChange, onCommit);
   const sensors = useOrderingSensors();
   const helpId = useId();
   const revealed = phase === "revealed";

@@ -86,7 +86,29 @@ describe("parseOrderingContent", () => {
 describe("toOrderingDraft", () => {
   const segments = [chip("I"), chip("am"), fixed("."), chip("you"), chip("are")];
 
-  it("should return null when a slot is empty", () => {
+  it("should send the placed chip texts without the empty slots", () => {
+    // given
+    const slots = [null, 1, 3, null];
+
+    // when
+    const draft = toOrderingDraft(segments, slots);
+
+    // then
+    expect(draft.payload).toEqual({ type: "ordering", regions: [["am"], ["you"]] });
+  });
+
+  it("should send an empty region for each region when no chip is placed", () => {
+    // given
+    const slots = [null, null, null, null];
+
+    // when
+    const draft = toOrderingDraft(segments, slots);
+
+    // then
+    expect(draft.payload).toEqual({ type: "ordering", regions: [[], []] });
+  });
+
+  it("should be incorrect when a slot is empty", () => {
     // given
     const slots = [0, 1, 3, null];
 
@@ -94,7 +116,7 @@ describe("toOrderingDraft", () => {
     const draft = toOrderingDraft(segments, slots);
 
     // then
-    expect(draft).toBeNull();
+    expect(draft.correct).toBe(false);
   });
 
   it("should send the placed chip texts by region when every slot is filled", () => {
