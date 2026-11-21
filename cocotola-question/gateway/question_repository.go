@@ -174,6 +174,46 @@ func (r *QuestionRepository) Save(ctx context.Context, q *domainquestion.Questio
 	return nil
 }
 
+// Create inserts a new question and adds its ID to the workbook's active
+// question list in one transaction. An existing question with the same ID, or
+// contention that outlasts the transaction retries, is reported as
+// libversioned.ErrConcurrentModification.
+func (r *QuestionRepository) Create(ctx context.Context, q *domainquestion.Question) error {
+	if q.Version() != 0 {
+		return fmt.Errorf("create question %s: version %d is not new: %w", q.ID(), q.Version(), domain.ErrInvalidArgument)
+	}
+	questionRef := r.questionsCol(q.WorkbookID()).Doc(q.ID())
+	listRef := activeQuestionListDoc(r.client, q.WorkbookID())
+	record := toQuestionRecord(q, 1)
+
+	err := r.client.RunTransaction(ctx, func(_ context.Context, tx *firestore.Transaction) error {
+		snap, err := tx.Get(listRef)
+		list, err := toActiveQuestionList(q.WorkbookID(), snap, err)
+		if err != nil {
+			return fmt.Errorf("find active question list: %w", err)
+		}
+		if err := list.Add(q.ID()); err != nil {
+			return fmt.Errorf("add to active question list: %w", err)
+		}
+		if err := tx.Create(questionRef, &record); err != nil {
+			return fmt.Errorf("create question doc: %w", err)
+		}
+		listRecord := toNextActiveQuestionListRecord(list)
+		if err := tx.Set(listRef, &listRecord); err != nil {
+			return fmt.Errorf("set active question list doc: %w", err)
+		}
+		return nil
+	})
+	if code := status.Code(err); code == codes.AlreadyExists || code == codes.Aborted {
+		return fmt.Errorf("create question %s: %w: %w", q.ID(), libversioned.ErrConcurrentModification, err)
+	}
+	if err != nil {
+		return fmt.Errorf("create question %s: %w", q.ID(), err)
+	}
+	q.SetVersion(1)
+	return nil
+}
+
 // FindByID looks up a question by workbook ID and question ID.
 func (r *QuestionRepository) FindByID(ctx context.Context, workbookID string, questionID string) (*domainquestion.Question, error) {
 	doc, err := r.questionsCol(workbookID).Doc(questionID).Get(ctx)

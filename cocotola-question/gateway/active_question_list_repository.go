@@ -22,6 +22,13 @@ func (r *activeQuestionListRecord) GetVersion() int {
 	return r.Version
 }
 
+func toNextActiveQuestionListRecord(list *domain.ActiveQuestionList) activeQuestionListRecord {
+	return activeQuestionListRecord{
+		QuestionIDs: list.Entries(),
+		Version:     list.Version() + 1,
+	}
+}
+
 // ActiveQuestionListRepository manages active question list persistence in Firestore.
 type ActiveQuestionListRepository struct {
 	client *firestore.Client
@@ -32,13 +39,23 @@ func NewActiveQuestionListRepository(client *firestore.Client) *ActiveQuestionLi
 	return &ActiveQuestionListRepository{client: client}
 }
 
+func activeQuestionListDoc(client *firestore.Client, workbookID string) *firestore.DocumentRef {
+	return client.Collection(activeQuestionListsCollection).Doc(workbookID)
+}
+
 func (r *ActiveQuestionListRepository) listDoc(workbookID string) *firestore.DocumentRef {
-	return r.client.Collection(activeQuestionListsCollection).Doc(workbookID)
+	return activeQuestionListDoc(r.client, workbookID)
 }
 
 // FindByWorkbookID returns the active question list for the given workbook.
 func (r *ActiveQuestionListRepository) FindByWorkbookID(ctx context.Context, workbookID string) (*domain.ActiveQuestionList, error) {
 	snap, err := r.listDoc(workbookID).Get(ctx)
+	return toActiveQuestionList(workbookID, snap, err)
+}
+
+// toActiveQuestionList converts the result of a document Get (outside or inside
+// a transaction) into the aggregate. A missing document is an empty list.
+func toActiveQuestionList(workbookID string, snap *firestore.DocumentSnapshot, err error) (*domain.ActiveQuestionList, error) {
 	if err != nil {
 		if status.Code(err) != codes.NotFound {
 			return nil, fmt.Errorf("get active question list doc: %w", err)
@@ -67,10 +84,7 @@ func (r *ActiveQuestionListRepository) FindByWorkbookID(ctx context.Context, wor
 // Save persists the active question list atomically using a Firestore transaction.
 // It uses optimistic locking via a version field.
 func (r *ActiveQuestionListRepository) Save(ctx context.Context, list *domain.ActiveQuestionList) error {
-	record := activeQuestionListRecord{
-		QuestionIDs: list.Entries(),
-		Version:     list.Version() + 1,
-	}
+	record := toNextActiveQuestionListRecord(list)
 	return saveVersionedList[*domain.ActiveQuestionList, string, *activeQuestionListRecord](
 		ctx,
 		r.client,

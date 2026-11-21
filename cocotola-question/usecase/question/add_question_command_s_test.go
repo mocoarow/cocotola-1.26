@@ -49,8 +49,8 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(true, nil)
 
-	questionSaver := newMockquestionSaver(t)
-	questionSaver.On("Save", mock.Anything, mock.MatchedBy(func(q *domainquestion.Question) bool {
+	questionCreator := newMockquestionCreator(t)
+	questionCreator.On("Create", mock.Anything, mock.MatchedBy(func(q *domainquestion.Question) bool {
 		return q != nil &&
 			q.WorkbookID() == fixtureWorkbookID &&
 			q.QuestionType().Value() == "word_fill" &&
@@ -60,13 +60,7 @@ func Test_AddQuestionCommand_shouldAddQuestion_whenAllowed(t *testing.T) {
 			len(q.Tags()) == 1 && q.Tags()[0] == "lang:en"
 	})).Return(nil)
 
-	activeListFinder := newMockactiveQuestionListFinder(t)
-	activeListFinder.On("FindByWorkbookID", mock.Anything, fixtureWorkbookID).Return(fixtureActiveQuestionList(t), nil)
-
-	activeListSaver := newMockactiveQuestionListSaver(t)
-	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
-
-	cmd := questionusecase.NewAddQuestionCommand(questionSaver, activeListFinder, activeListSaver, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewAddQuestionCommand(questionCreator, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -92,7 +86,7 @@ func Test_AddQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.T) 
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -114,7 +108,7 @@ func Test_AddQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewAddQuestionCommand(nil, nil, nil, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewAddQuestionCommand(nil, authChecker, contentjson.Parser{})
 	input := newAddQuestionInput(t)
 
 	// when
@@ -139,7 +133,7 @@ func Test_AddQuestionCommand_shouldReturnError_whenInjectedParserFails(t *testin
 	parser := newMockcontentParser(t)
 	parser.On("ParseWordFill", fixtureWordFillContent).Return(nil, parseErr)
 
-	cmd := questionusecase.NewAddQuestionCommand(newMockquestionSaver(t), newMockactiveQuestionListFinder(t), newMockactiveQuestionListSaver(t), authChecker, parser)
+	cmd := questionusecase.NewAddQuestionCommand(newMockquestionCreator(t), authChecker, parser)
 	input := newAddQuestionInput(t)
 
 	// when
@@ -147,4 +141,22 @@ func Test_AddQuestionCommand_shouldReturnError_whenInjectedParserFails(t *testin
 
 	// then
 	require.ErrorIs(t, err, parseErr)
+}
+
+func Test_AddQuestionCommand_shouldReturnError_whenCreateFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	createErr := errors.New("firestore unavailable")
+	questionCreator := newMockquestionCreator(t)
+	questionCreator.On("Create", mock.Anything, mock.Anything).Return(createErr)
+
+	cmd := questionusecase.NewAddQuestionCommand(questionCreator, allowWorkbookAction(t, domain.ActionCreateQuestion()), contentjson.Parser{})
+
+	// when
+	_, err := cmd.AddQuestion(ctx, newAddQuestionInput(t))
+
+	// then
+	require.ErrorIs(t, err, createErr)
 }
