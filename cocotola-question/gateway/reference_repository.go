@@ -2,12 +2,10 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -71,33 +69,29 @@ func (r *ReferenceRepository) FindByID(ctx context.Context, userID string, refer
 		}
 		return nil, fmt.Errorf("find reference by id: %w", err)
 	}
+	ref, err := decodeReferenceDoc(doc, userID)
+	if err != nil {
+		return nil, fmt.Errorf("find reference %s: %w", referenceID, err)
+	}
+	return &ref, nil
+}
+
+func decodeReferenceDoc(doc *firestore.DocumentSnapshot, userID string) (domainreference.WorkbookReference, error) {
 	var record referenceRecord
 	if err := doc.DataTo(&record); err != nil {
-		return nil, fmt.Errorf("decode reference: %w", err)
+		return domainreference.WorkbookReference{}, fmt.Errorf("decode reference: %w", err)
 	}
-	return toReferenceDomain(userID, &record), nil
+	return *toReferenceDomain(userID, &record), nil
 }
 
 // FindByUserID returns all references for the given user.
 func (r *ReferenceRepository) FindByUserID(ctx context.Context, userID string) ([]domainreference.WorkbookReference, error) {
 	iter := r.refsCol(userID).Documents(ctx)
-	defer iter.Stop()
-
-	var refs []domainreference.WorkbookReference
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate references: %w", err)
-		}
-		var record referenceRecord
-		if err := doc.DataTo(&record); err != nil {
-			return nil, fmt.Errorf("decode reference: %w", err)
-		}
-		refs = append(refs, *toReferenceDomain(userID, &record))
+	refs, err := collectDocs(iter, func(doc *firestore.DocumentSnapshot) (domainreference.WorkbookReference, error) {
+		return decodeReferenceDoc(doc, userID)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("find references by user %s: %w", userID, err)
 	}
 	return refs, nil
 }

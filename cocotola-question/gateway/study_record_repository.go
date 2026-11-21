@@ -138,9 +138,17 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 		}
 		return nil, fmt.Errorf("find study record: %w", err)
 	}
+	rec, err := decodeStudyRecordDoc(doc)
+	if err != nil {
+		return nil, fmt.Errorf("find study record %s: %w", docID, err)
+	}
+	return &rec, nil
+}
+
+func decodeStudyRecordDoc(doc *firestore.DocumentSnapshot) (study.Record, error) {
 	var rec studyRecordRecord
 	if err := doc.DataTo(&rec); err != nil {
-		return nil, fmt.Errorf("decode study record: %w", err)
+		return study.Record{}, fmt.Errorf("decode study record: %w", err)
 	}
 	result := study.ReconstructRecord(
 		rec.WorkbookID,
@@ -152,7 +160,7 @@ func (r *StudyRecordRepository) FindByID(ctx context.Context, userID string, wor
 		rec.TotalIncorrect,
 	)
 	result.SetVersion(rec.Version)
-	return result, nil
+	return *result, nil
 }
 
 // DeleteByWorkbookID removes every study record the user has for the given
@@ -204,33 +212,9 @@ func deleteStudyRecordDocs(iter studyRecordIter, bw studyRecordBulkDeleter) erro
 // FindByWorkbookID returns all study records for a user and workbook.
 func (r *StudyRecordRepository) FindByWorkbookID(ctx context.Context, userID string, workbookID string) ([]study.Record, error) {
 	iter := r.recordsCol(userID).Where("workbookID", "==", workbookID).Documents(ctx)
-	defer iter.Stop()
-
-	var records []study.Record
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-			return nil, fmt.Errorf("iterate study records: %w", err)
-		}
-		var rec studyRecordRecord
-		if err := doc.DataTo(&rec); err != nil {
-			return nil, fmt.Errorf("decode study record: %w", err)
-		}
-		result := study.ReconstructRecord(
-			rec.WorkbookID,
-			rec.QuestionID,
-			rec.ConsecutiveCorrect,
-			rec.LastAnsweredAt,
-			rec.NextDueAt,
-			rec.TotalCorrect,
-			rec.TotalIncorrect,
-		)
-		result.SetVersion(rec.Version)
-		records = append(records, *result)
+	records, err := collectDocs(iter, decodeStudyRecordDoc)
+	if err != nil {
+		return nil, fmt.Errorf("find study records by workbook %s: %w", workbookID, err)
 	}
 	return records, nil
 }

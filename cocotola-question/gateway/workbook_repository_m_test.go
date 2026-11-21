@@ -5,8 +5,11 @@ import (
 	"testing"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
@@ -251,6 +254,44 @@ func Test_WorkbookRepository_FindBySpaceID_shouldReturnEmpty_whenNoWorkbooks(t *
 	// then
 	require.NoError(t, err)
 	assert.Empty(t, got)
+}
+
+func Test_WorkbookRepository_FindBySpaceID_shouldReturnErrInvalidArgument_whenStoredVisibilityIsInvalid(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	spaceID := "space-invalid-visibility-" + t.Name()
+	valid := newWorkbook(t, "wb-valid-"+t.Name(), spaceID, "owner-1", "org-1")
+	broken := newWorkbook(t, "wb-broken-"+t.Name(), spaceID, "owner-1", "org-1")
+	require.NoError(t, repo.Save(ctx, valid))
+	require.NoError(t, repo.Save(ctx, broken))
+	_, err := client.Collection("workbooks").Doc(broken.ID()).Update(ctx, []firestore.Update{{Path: "visibility", Value: "bogus"}})
+	require.NoError(t, err)
+
+	// when
+	_, err = repo.FindBySpaceID(ctx, spaceID)
+
+	// then
+	assert.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_WorkbookRepository_FindBySpaceID_shouldReturnCanceled_whenContextIsCanceled(t *testing.T) {
+	t.Parallel()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// when
+	_, err := repo.FindBySpaceID(ctx, "space-canceled-"+t.Name())
+
+	// then
+	assert.Equal(t, codes.Canceled, status.Code(err))
 }
 
 func Test_WorkbookRepository_FindPublicByOrganizationIDAndLanguage_shouldReturnOnlyPublic(t *testing.T) {

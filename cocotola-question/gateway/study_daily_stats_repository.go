@@ -2,12 +2,10 @@ package gateway
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/iterator"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study"
@@ -100,32 +98,19 @@ func (r *StudyDailyStatsRepository) FindRange(ctx context.Context, userID string
 		Where("date", "<=", toDateKey).
 		OrderBy("date", firestore.Asc).
 		Documents(ctx)
-	defer iter.Stop()
-
-	stats := make([]study.DailyStat, 0)
-
-	for {
-		doc, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				break
-			}
-
-			return nil, fmt.Errorf("iterate daily stats for user %s: %w", userID, err)
-		}
-
+	stats, err := collectDocs(iter, func(doc *firestore.DocumentSnapshot) (study.DailyStat, error) {
 		var rec studyDailyStatRecord
 		if err := doc.DataTo(&rec); err != nil {
-			return nil, fmt.Errorf("decode daily stat %s: %w", doc.Ref.ID, err)
+			return study.DailyStat{}, fmt.Errorf("decode daily stat: %w", err)
 		}
-
 		stat, err := study.NewDailyStat(rec.Date, rec.AnsweredCount, rec.CorrectCount)
 		if err != nil {
-			return nil, fmt.Errorf("reconstruct daily stat %s: %w", doc.Ref.ID, err)
+			return study.DailyStat{}, fmt.Errorf("reconstruct daily stat: %w", err)
 		}
-
-		stats = append(stats, stat)
+		return stat, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("find daily stats for user %s: %w", userID, err)
 	}
-
 	return stats, nil
 }
