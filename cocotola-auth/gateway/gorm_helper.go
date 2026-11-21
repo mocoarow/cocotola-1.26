@@ -8,7 +8,6 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
-	domaintoken "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
 // replaceRecords deletes matching records and inserts newRecords in one transaction.
@@ -51,32 +50,6 @@ func replaceRecords[R any](ctx context.Context, db *gorm.DB, whereClause string,
 		return fmt.Errorf("save %s: %w", label, err)
 	}
 	return nil
-}
-
-// findAndConvertWhitelist queries whitelist records and converts them to domain entries.
-func findAndConvertWhitelist[R any](ctx context.Context, db *gorm.DB, userID domain.AppUserID, toEntry func(R) domaintoken.WhitelistEntry, label string) ([]domaintoken.WhitelistEntry, error) {
-	var records []R
-	if err := db.WithContext(ctx).Where("user_id = ?", userID.String()).Find(&records).Error; err != nil {
-		return nil, fmt.Errorf("find %s: %w", label, err)
-	}
-
-	entries := make([]domaintoken.WhitelistEntry, len(records))
-	for i := range records {
-		entries[i] = toEntry(records[i])
-	}
-	return entries, nil
-}
-
-// saveWhitelist converts domain whitelist entries to records and persists them.
-func saveWhitelist[R any](ctx context.Context, db *gorm.DB, whitelist *domaintoken.Whitelist, toRecord func(string, domaintoken.WhitelistEntry) R, label string) error {
-	entries := whitelist.Entries()
-	userIDStr := whitelist.UserID().String()
-
-	records := make([]R, len(entries))
-	for i, e := range entries {
-		records[i] = toRecord(userIDStr, e)
-	}
-	return replaceRecords(ctx, db, "user_id = ?", userIDStr, records, label)
 }
 
 // findMemberIDs queries records by organization_id and extracts member IDs as strings.

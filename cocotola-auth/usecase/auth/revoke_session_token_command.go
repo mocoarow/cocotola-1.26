@@ -64,19 +64,11 @@ func (c *RevokeSessionTokenCommand) RevokeSessionToken(ctx context.Context, inpu
 	c.cache.DeleteSessionToken(hash)
 
 	// TX2: Remove from whitelist (separate aggregate, separate transaction)
-	entries, err := c.whitelistRepo.FindByUserID(ctx, token.UserID())
-	if err != nil {
-		return fmt.Errorf("find session token whitelist: %w", err)
-	}
-
-	whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, c.config.TokenWhitelistSize)
-	if err != nil {
-		return fmt.Errorf("new session token whitelist: %w", err)
-	}
-	whitelist.Remove([]string{token.ID()})
-
-	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {
-		return fmt.Errorf("save session token whitelist: %w", err)
+	if err := updateWhitelist(ctx, c.whitelistRepo, token.UserID(), func(w *domaintoken.Whitelist) error {
+		w.Remove([]string{token.ID()})
+		return nil
+	}); err != nil {
+		return fmt.Errorf("remove session token from whitelist: %w", err)
 	}
 
 	return nil

@@ -2,7 +2,7 @@ package token
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"time"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain"
@@ -14,27 +14,22 @@ type WhitelistEntry struct {
 	CreatedAt time.Time
 }
 
-// Whitelist is an aggregate keeping at most maxSize token IDs for a single user.
+// Whitelist is an aggregate holding the token IDs that are still valid for a single user.
 type Whitelist struct {
 	userID  domain.AppUserID
 	entries []WhitelistEntry
-	maxSize int
+	version int
 }
 
 // NewWhitelist creates a new Whitelist with validated parameters.
-func NewWhitelist(userID domain.AppUserID, entries []WhitelistEntry, maxSize int) (*Whitelist, error) {
+func NewWhitelist(userID domain.AppUserID, entries []WhitelistEntry) (*Whitelist, error) {
 	if userID.IsZero() {
 		return nil, fmt.Errorf("whitelist user id is required: %w", domain.ErrInvalidArgument)
 	}
-	if maxSize <= 0 {
-		return nil, fmt.Errorf("whitelist max size must be positive: %w", domain.ErrInvalidArgument)
-	}
-	copied := make([]WhitelistEntry, len(entries))
-	copy(copied, entries)
 	return &Whitelist{
 		userID:  userID,
-		entries: copied,
-		maxSize: maxSize,
+		entries: slices.Clone(entries),
+		version: 0,
 	}, nil
 }
 
@@ -45,60 +40,38 @@ func (w *Whitelist) UserID() domain.AppUserID {
 
 // Entries returns a defensive copy of the current entries.
 func (w *Whitelist) Entries() []WhitelistEntry {
-	copied := make([]WhitelistEntry, len(w.entries))
-	copy(copied, w.entries)
-	return copied
+	return slices.Clone(w.entries)
 }
+
+// Version returns the persisted version (0 = not yet saved).
+func (w *Whitelist) Version() int { return w.version }
+
+// SetVersion sets the persisted version on a reconstituted aggregate.
+func (w *Whitelist) SetVersion(version int) { w.version = version }
 
 // ContainsToken returns true if the given token ID exists in the whitelist.
 func (w *Whitelist) ContainsToken(tokenID string) bool {
-	for _, e := range w.entries {
-		if e.ID == tokenID {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(w.entries, func(e WhitelistEntry) bool { return e.ID == tokenID })
 }
 
 // Remove removes entries with the given IDs from the whitelist.
 func (w *Whitelist) Remove(tokenIDs []string) {
-	if len(tokenIDs) == 0 {
-		return
-	}
-	removeSet := make(map[string]struct{}, len(tokenIDs))
-	for _, id := range tokenIDs {
-		removeSet[id] = struct{}{}
-	}
-	filtered := make([]WhitelistEntry, 0, len(w.entries))
-	for _, e := range w.entries {
-		if _, ok := removeSet[e.ID]; !ok {
-			filtered = append(filtered, e)
-		}
-	}
-	w.entries = filtered
+	w.entries = slices.DeleteFunc(slices.Clone(w.entries), func(e WhitelistEntry) bool { return slices.Contains(tokenIDs, e.ID) })
 }
 
-// Add appends a new entry and returns the IDs of entries that should be evicted
-// to keep the whitelist within maxSize. Evicts oldest by CreatedAt first.
-func (w *Whitelist) Add(entry WhitelistEntry) []string {
-	w.entries = append(w.entries, entry)
-
-	if len(w.entries) <= w.maxSize {
-		return nil
+// Add appends entry and evicts the oldest entries by CreatedAt beyond maxSize.
+func (w *Whitelist) Add(entry WhitelistEntry, maxSize int) error {
+	if maxSize <= 0 {
+		return fmt.Errorf("whitelist max size must be positive: %w", domain.ErrInvalidArgument)
 	}
-
-	sort.Slice(w.entries, func(i, j int) bool {
-		return w.entries[i].CreatedAt.Before(w.entries[j].CreatedAt)
-	})
-
-	evictCount := len(w.entries) - w.maxSize
-	evictedIDs := make([]string, evictCount)
-
-	for i := range evictCount {
-		evictedIDs[i] = w.entries[i].ID
+	if w.ContainsToken(entry.ID) {
+		return fmt.Errorf("token %s is already whitelisted: %w", entry.ID, domain.ErrDuplicateEntry)
 	}
-
-	w.entries = w.entries[evictCount:]
-
-	return evictedIDs
+	entries := append(slices.Clone(w.entries), entry)
+	slices.SortStableFunc(entries, func(a, b WhitelistEntry) int { return a.CreatedAt.Compare(b.CreatedAt) })
+	if len(entries) > maxSize {
+		entries = entries[len(entries)-maxSize:]
+	}
+	w.entries = entries
+	return nil
 }

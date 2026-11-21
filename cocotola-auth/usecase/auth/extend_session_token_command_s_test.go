@@ -101,7 +101,7 @@ func Test_ExtendSessionTokenCommand_ExtendSessionToken_shouldSaveExtendedExpiry_
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{{ID: fixtureSessionTokenID, CreatedAt: now}}, nil)
+		Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: fixtureSessionTokenID, CreatedAt: now}), nil)
 
 	command := authusecase.NewExtendSessionTokenCommand(repoMock, whitelistMock, cacheMock, newValidateSessionTokenConfig(now))
 
@@ -131,7 +131,7 @@ func Test_ExtendSessionTokenCommand_ExtendSessionToken_shouldReturnErrTokenNotFo
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{{ID: "other-token-id", CreatedAt: now}}, nil)
+		Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: "other-token-id", CreatedAt: now}), nil)
 
 	command := authusecase.NewExtendSessionTokenCommand(repoMock, whitelistMock, cacheMock, newValidateSessionTokenConfig(now))
 

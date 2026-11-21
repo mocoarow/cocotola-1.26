@@ -13,7 +13,6 @@ func findWhitelistedSessionToken(
 	ctx context.Context,
 	repo sessionTokenFinder,
 	whitelistRepo whitelistFinder,
-	whitelistSize int,
 	hash string,
 ) (*domaintoken.SessionToken, error) {
 	token, err := repo.FindByTokenHash(ctx, hash)
@@ -21,13 +20,9 @@ func findWhitelistedSessionToken(
 		return nil, fmt.Errorf("find session token: %w", err)
 	}
 
-	entries, err := whitelistRepo.FindByUserID(ctx, token.UserID())
+	whitelist, err := whitelistRepo.FindByUserID(ctx, token.UserID())
 	if err != nil {
 		return nil, fmt.Errorf("find session token whitelist: %w", err)
-	}
-	whitelist, err := domaintoken.NewWhitelist(token.UserID(), entries, whitelistSize)
-	if err != nil {
-		return nil, fmt.Errorf("new session token whitelist: %w", err)
 	}
 	if !whitelist.ContainsToken(token.ID()) {
 		return nil, domain.ErrTokenNotFound

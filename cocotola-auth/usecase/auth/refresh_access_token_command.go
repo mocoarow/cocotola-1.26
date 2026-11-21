@@ -83,19 +83,11 @@ func (c *RefreshAccessTokenCommand) RefreshAccessToken(ctx context.Context, inpu
 	c.cache.SetAccessToken(accessID, accessToken)
 
 	// TX2: Update access token whitelist
-	entries, err := c.whitelistRepo.FindByUserID(ctx, refreshToken.UserID())
-	if err != nil {
-		return nil, fmt.Errorf("find access token whitelist entries: %w", err)
-	}
-
-	whitelist, err := domaintoken.NewWhitelist(refreshToken.UserID(), entries, c.config.TokenWhitelistSize)
-	if err != nil {
-		return nil, fmt.Errorf("new access token whitelist: %w", err)
-	}
-	whitelist.Add(domaintoken.WhitelistEntry{ID: accessID, CreatedAt: now})
-
-	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {
-		return nil, fmt.Errorf("save access token whitelist: %w", err)
+	entry := domaintoken.WhitelistEntry{ID: accessID, CreatedAt: now}
+	if err := updateWhitelist(ctx, c.whitelistRepo, refreshToken.UserID(), func(w *domaintoken.Whitelist) error {
+		return w.Add(entry, c.config.TokenWhitelistSize)
+	}); err != nil {
+		return nil, fmt.Errorf("add access token to whitelist: %w", err)
 	}
 
 	output, err := authservice.NewRefreshAccessTokenOutput(jwtString)

@@ -29,7 +29,7 @@ func newCreateTokenPairConfig(now time.Time) authusecase.UsecaseConfig {
 	return authusecase.UsecaseConfig{
 		AccessTokenTTLMin:  15,
 		RefreshTokenTTLMin: 60 * 24,
-		TokenWhitelistSize: 10,
+		TokenWhitelistSize: fixtureWhitelistSize,
 		ClockFunc:          func() time.Time { return now },
 	}
 }
@@ -73,12 +73,12 @@ func Test_CreateTokenPairCommand_CreateTokenPair_shouldReturnOutput_whenAllSucce
 
 	refreshWhitelistRepo := NewMockWhitelistRepository(t)
 	refreshWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	refreshWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	accessWhitelistRepo := NewMockWhitelistRepository(t)
 	accessWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	accessWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	jwtMock := NewMockJWTManager(t)
@@ -120,6 +120,56 @@ func Test_CreateTokenPairCommand_CreateTokenPair_shouldReturnOutput_whenAllSucce
 	assert.Equal(t, now.Add(15*time.Minute), savedAccess.ExpiresAt())
 }
 
+func Test_CreateTokenPairCommand_CreateTokenPair_shouldEvictOldestAccessEntry_whenAccessWhitelistIsFull(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
+
+	// given
+	refreshRepo := NewMockRefreshTokenRepository(t)
+	refreshRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.RefreshToken")).Return(nil)
+
+	var savedAccess *domaintoken.AccessToken
+	accessRepo := NewMockAccessTokenRepository(t)
+	accessRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.AccessToken")).
+		Run(func(args mock.Arguments) {
+			tk, ok := args.Get(1).(*domaintoken.AccessToken)
+			require.True(t, ok, "second arg must be *AccessToken")
+			savedAccess = tk
+		}).
+		Return(nil)
+
+	refreshWhitelistRepo := NewMockWhitelistRepository(t)
+	refreshWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(newTestWhitelist(t), nil)
+	refreshWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
+
+	var savedAccessWhitelist *domaintoken.Whitelist
+	accessWhitelistRepo := NewMockWhitelistRepository(t)
+	accessWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(fullTestWhitelist(t, now), nil)
+	accessWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).
+		Run(func(args mock.Arguments) {
+			w, ok := args.Get(1).(*domaintoken.Whitelist)
+			require.True(t, ok, "second arg must be *Whitelist")
+			savedAccessWhitelist = w
+		}).
+		Return(nil)
+
+	jwtMock := NewMockJWTManager(t)
+	expectJWTCreated(t, jwtMock)
+
+	cacheMock := NewMockTokenCache(t)
+	cacheMock.On("SetAccessToken", mock.AnythingOfType("string"), mock.AnythingOfType("*token.AccessToken")).Return()
+
+	cmd := authusecase.NewCreateTokenPairCommand(refreshRepo, accessRepo, refreshWhitelistRepo, accessWhitelistRepo, jwtMock, cacheMock, newCreateTokenPairConfig(now))
+
+	// when
+	_, err := cmd.CreateTokenPair(ctx, newCreateTokenPairInput(t))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{"newer", savedAccess.ID()}, whitelistEntryIDs(savedAccessWhitelist))
+}
+
 func Test_CreateTokenPairCommand_CreateTokenPair_shouldCacheAccessTokenByID_whenSucceeds(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -141,12 +191,12 @@ func Test_CreateTokenPairCommand_CreateTokenPair_shouldCacheAccessTokenByID_when
 
 	refreshWhitelistRepo := NewMockWhitelistRepository(t)
 	refreshWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	refreshWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	accessWhitelistRepo := NewMockWhitelistRepository(t)
 	accessWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	accessWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	jwtMock := NewMockJWTManager(t)
@@ -356,12 +406,12 @@ func Test_CreateTokenPairCommand_CreateTokenPair_shouldReturnError_whenAccessWhi
 
 	refreshWhitelistRepo := NewMockWhitelistRepository(t)
 	refreshWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	refreshWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	accessWhitelistRepo := NewMockWhitelistRepository(t)
 	accessWhitelistRepo.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	accessWhitelistRepo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(saveErr)
 
 	cacheMock := NewMockTokenCache(t)

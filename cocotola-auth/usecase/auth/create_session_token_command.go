@@ -67,19 +67,11 @@ func (c *CreateSessionTokenCommand) CreateSessionToken(ctx context.Context, inpu
 	c.cache.SetSessionToken(string(hash), token)
 
 	// TX2: Update whitelist (separate aggregate, separate transaction)
-	entries, err := c.whitelistRepo.FindByUserID(ctx, input.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("find session token whitelist entries: %w", err)
-	}
-
-	whitelist, err := domaintoken.NewWhitelist(input.UserID, entries, c.config.TokenWhitelistSize)
-	if err != nil {
-		return nil, fmt.Errorf("new session token whitelist: %w", err)
-	}
-	whitelist.Add(domaintoken.WhitelistEntry{ID: id, CreatedAt: now})
-
-	if err := c.whitelistRepo.Save(ctx, whitelist); err != nil {
-		return nil, fmt.Errorf("save session token whitelist: %w", err)
+	entry := domaintoken.WhitelistEntry{ID: id, CreatedAt: now}
+	if err := updateWhitelist(ctx, c.whitelistRepo, input.UserID, func(w *domaintoken.Whitelist) error {
+		return w.Add(entry, c.config.TokenWhitelistSize)
+	}); err != nil {
+		return nil, fmt.Errorf("add session token to whitelist: %w", err)
 	}
 
 	output, err := authservice.NewCreateSessionTokenOutput(raw)

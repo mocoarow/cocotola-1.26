@@ -28,7 +28,7 @@ type accessTokenCacheSetter interface {
 }
 
 type whitelistFinder interface {
-	FindByUserID(ctx context.Context, userID domain.AppUserID) ([]domaintoken.WhitelistEntry, error)
+	FindByUserID(ctx context.Context, userID domain.AppUserID) (*domaintoken.Whitelist, error)
 }
 
 type sessionTokenFinder interface {
