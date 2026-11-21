@@ -22,7 +22,7 @@ var (
 	fixtureSupaUserID3 = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000053")
 )
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnExistingUser_whenProviderLinkExists(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnExistingUser_whenProviderLinkExists(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -50,12 +50,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnExistingUser_whenPr
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
@@ -65,7 +65,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnExistingUser_whenPr
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldCreateUserAndLink_whenUserDoesNotExist(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldCreateUserAndLink_whenUserDoesNotExist(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -95,12 +95,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldCreateUserAndLink_whenUse
 
 	publisherMock := newMockeventPublisher(t)
 	publisherMock.On("Publish", mock.Anything).Return()
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
@@ -110,7 +110,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldCreateUserAndLink_whenUse
 	publisherMock.AssertCalled(t, "Publish", mock.Anything)
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenTokenIsInvalid(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnError_whenTokenIsInvalid(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -125,12 +125,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenTokenIsIn
 	orgFinderMock := NewMockOrganizationFinder(t)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("bad-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrUnauthenticated)
@@ -138,7 +138,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenTokenIsIn
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenOrganizationNotFound(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnError_whenOrganizationNotFound(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -155,12 +155,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenOrganizat
 	orgFinderMock.On("FindByName", mock.Anything, "unknown-org").Return(nil, domain.ErrOrganizationNotFound)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "unknown-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrOrganizationNotFound)
@@ -168,7 +168,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnError_whenOrganizat
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRetryFind_whenCreateRaceCondition(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldRetryFind_whenCreateRaceCondition(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -201,12 +201,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRetryFind_whenCreateRaceC
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
@@ -215,7 +215,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRetryFind_whenCreateRaceC
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldLinkProvider_whenUserExistsByLoginIDWithoutPassword(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldLinkProvider_whenUserExistsByLoginIDWithoutPassword(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -248,12 +248,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldLinkProvider_whenUserExis
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
@@ -263,7 +263,7 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldLinkProvider_whenUserExis
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenLinkingExistingUserLosesRace(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnLinkedUser_whenLinkingExistingUserLosesRace(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -296,20 +296,20 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenLink
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50), nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
 	assert.True(t, fixtureSupaUserID3.Equal(output.UserID))
 }
 
-// newUserLinkRaceQuery builds a query where the new user is saved but another request linked the sub to fixtureSupaUserID2 first.
-func newUserLinkRaceQuery(t *testing.T, publisherMock *mockeventPublisher) (*authusecase.SupabaseExchangeQuery, *authservice.SupabaseExchangeInput) {
+// newUserLinkRaceCommand builds a command where the new user is saved but another request linked the sub to fixtureSupaUserID2 first.
+func newUserLinkRaceCommand(t *testing.T, publisherMock *mockeventPublisher) (*authusecase.SupabaseExchangeCommand, *authservice.SupabaseExchangeInput) {
 	t.Helper()
 	verifierMock := NewMockSupabaseVerifier(t)
 	verifierMock.On("Verify", mock.Anything, "supabase-jwt").Return("sub-new-race", "new-race@example.com", nil)
@@ -338,13 +338,13 @@ func newUserLinkRaceQuery(t *testing.T, publisherMock *mockeventPublisher) (*aut
 	orgFinderMock := NewMockOrganizationFinder(t)
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50), nil)
 
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
-	return query, input
+	return cmd, input
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPublishAppUserCreatedForNewUser_whenNewUserLinkLosesRace(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldPublishAppUserCreatedForNewUser_whenNewUserLinkLosesRace(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -352,32 +352,32 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPublishAppUserCreatedForN
 	publisherMock.On("Publish", mock.MatchedBy(func(e domain.AppUserCreated) bool {
 		return e.LoginID() == "new-race@example.com" && !e.AppUserID().Equal(fixtureSupaUserID2)
 	})).Return().Once()
-	query, input := newUserLinkRaceQuery(t, publisherMock)
+	cmd, input := newUserLinkRaceCommand(t, publisherMock)
 
 	// when
-	_, err := query.SupabaseExchange(context.Background(), input)
+	_, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnLinkedUser_whenNewUserLinkLosesRace(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnLinkedUser_whenNewUserLinkLosesRace(t *testing.T) {
 	t.Parallel()
 
 	// given
 	publisherMock := newMockeventPublisher(t)
 	publisherMock.On("Publish", mock.Anything).Return()
-	query, input := newUserLinkRaceQuery(t, publisherMock)
+	cmd, input := newUserLinkRaceCommand(t, publisherMock)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.NoError(t, err)
 	assert.True(t, fixtureSupaUserID2.Equal(output.UserID))
 }
 
-func newRejectLinkQuery(t *testing.T) (*authusecase.SupabaseExchangeQuery, *MockAppUserSaver, *mockeventPublisher) {
+func newRejectLinkCommand(t *testing.T) (*authusecase.SupabaseExchangeCommand, *MockAppUserSaver, *mockeventPublisher) {
 	t.Helper()
 
 	verifierMock := NewMockSupabaseVerifier(t)
@@ -404,21 +404,21 @@ func newRejectLinkQuery(t *testing.T) (*authusecase.SupabaseExchangeQuery, *Mock
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 
-	return query, saverMock, publisherMock
+	return cmd, saverMock, publisherMock
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAccountHasPassword(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldRejectLink_whenExistingAccountHasPassword(t *testing.T) {
 	t.Parallel()
 
 	// given
-	query, saverMock, publisherMock := newRejectLinkQuery(t)
+	cmd, saverMock, publisherMock := newRejectLinkCommand(t)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrAppUserAutoLinkRejected)
@@ -427,23 +427,23 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldRejectLink_whenExistingAc
 	publisherMock.AssertNotCalled(t, "Publish")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldNotIncludeEmailInError_whenExistingAccountHasPassword(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldNotIncludeEmailInError_whenExistingAccountHasPassword(t *testing.T) {
 	t.Parallel()
 
 	// given
-	query, _, _ := newRejectLinkQuery(t)
+	cmd, _, _ := newRejectLinkCommand(t)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	_, err = query.SupabaseExchange(context.Background(), input)
+	_, err = cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrAppUserAutoLinkRejected)
 	assert.NotContains(t, err.Error(), "human@example.com")
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPropagateSaveError_whenCreateFailsWithNonDuplicateError(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldPropagateSaveError_whenCreateFailsWithNonDuplicateError(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -468,12 +468,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldPropagateSaveError_whenCr
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
 	publisherMock := newMockeventPublisher(t)
-	query := authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
+	cmd := authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, providerSaverMock, appUserByIDFinderMock, loginIDFinderMock, saverMock, orgFinderMock, publisherMock)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	output, err := query.SupabaseExchange(context.Background(), input)
+	output, err := cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInternal)
@@ -487,7 +487,7 @@ var (
 	errTestSaveAppUser       = errors.New("save app user failed")
 )
 
-func newSupabaseExchangeQueryWithRetryFailure(t *testing.T, saveErr error, retryErr error) *authusecase.SupabaseExchangeQuery {
+func newSupabaseExchangeCommandWithRetryFailure(t *testing.T, saveErr error, retryErr error) *authusecase.SupabaseExchangeCommand {
 	t.Helper()
 
 	verifierMock := NewMockSupabaseVerifier(t)
@@ -506,10 +506,10 @@ func newSupabaseExchangeQueryWithRetryFailure(t *testing.T, saveErr error, retry
 	org := domain.ReconstructOrganization(fixtureOrgID, "test-org", 100, 50)
 	orgFinderMock.On("FindByName", mock.Anything, "test-org").Return(org, nil)
 
-	return authusecase.NewSupabaseExchangeQuery(verifierMock, providerFinderMock, NewMockAppUserProviderSaver(t), NewMockAppUserByIDFinder(t), NewMockAppUserByLoginIDFinder(t), saverMock, orgFinderMock, newMockeventPublisher(t))
+	return authusecase.NewSupabaseExchangeCommand(verifierMock, providerFinderMock, NewMockAppUserProviderSaver(t), NewMockAppUserByIDFinder(t), NewMockAppUserByLoginIDFinder(t), saverMock, orgFinderMock, newMockeventPublisher(t))
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnRetryError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnRetryError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -524,12 +524,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnRetryError_whenRetr
 			t.Parallel()
 
 			// given
-			query := newSupabaseExchangeQueryWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
+			cmd := newSupabaseExchangeCommandWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
 			input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 			require.NoError(t, err)
 
 			// when
-			_, err = query.SupabaseExchange(context.Background(), input)
+			_, err = cmd.SupabaseExchange(context.Background(), input)
 
 			// then
 			require.ErrorIs(t, err, errTestRetryFindProvider)
@@ -537,22 +537,22 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnRetryError_whenRetr
 	}
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldKeepSaveError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldKeepSaveError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
 	t.Parallel()
 
 	// given
-	query := newSupabaseExchangeQueryWithRetryFailure(t, errTestSaveAppUser, errTestRetryFindProvider)
+	cmd := newSupabaseExchangeCommandWithRetryFailure(t, errTestSaveAppUser, errTestRetryFindProvider)
 	input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 	require.NoError(t, err)
 
 	// when
-	_, err = query.SupabaseExchange(context.Background(), input)
+	_, err = cmd.SupabaseExchange(context.Background(), input)
 
 	// then
 	require.ErrorIs(t, err, errTestSaveAppUser)
 }
 
-func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnInternalError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
+func Test_SupabaseExchangeCommand_SupabaseExchange_shouldReturnInternalError_whenRetryFindFailsAfterSaveFailure(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -567,12 +567,12 @@ func Test_SupabaseExchangeQuery_SupabaseExchange_shouldReturnInternalError_whenR
 			t.Parallel()
 
 			// given
-			query := newSupabaseExchangeQueryWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
+			cmd := newSupabaseExchangeCommandWithRetryFailure(t, tt.saveErr, errTestRetryFindProvider)
 			input, err := authservice.NewSupabaseExchangeInput("supabase-jwt", "test-org")
 			require.NoError(t, err)
 
 			// when
-			_, err = query.SupabaseExchange(context.Background(), input)
+			_, err = cmd.SupabaseExchange(context.Background(), input)
 
 			// then
 			require.ErrorIs(t, err, domain.ErrInternal)

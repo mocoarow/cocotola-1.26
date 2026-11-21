@@ -116,7 +116,6 @@ type Query struct {
 	*GuestAuthenticateQuery
 	*ValidateSessionTokenQuery
 	*ValidateAccessTokenQuery
-	*SupabaseExchangeQuery
 }
 
 // NewQuery returns a new Query with the given dependencies.
@@ -130,20 +129,11 @@ func NewQuery(
 	jwtManager JWTManager,
 	tokenCache TokenCache,
 	config UsecaseConfig,
-	supabaseVerifier SupabaseVerifier,
-	providerFinder AppUserProviderFinder,
-	providerSaver AppUserProviderSaver,
-	appUserByIDFinder AppUserByIDFinder,
-	appUserByLoginIDFinder AppUserByLoginIDFinder,
-	appUserSaver AppUserSaver,
-	organizationFinder OrganizationFinder,
-	publisher domain.EventPublisher,
 ) *Query {
 	return &Query{
 		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
 		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
-		SupabaseExchangeQuery:     NewSupabaseExchangeQuery(supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 	}
 }
