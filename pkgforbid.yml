@@ -140,6 +140,87 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware
+  question-controller: &question-controller
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/config
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
+  init-seed: &init-seed
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/storage
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-init/config
+    - github.com/mocoarow/cocotola-1.26/cocotola-init/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-init/initialize
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/config
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/authz
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/health
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/organization
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/handler/usersetting
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/rbac
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/initialize
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/service/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/auth
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/event
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/group
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/space
+    - github.com/mocoarow/cocotola-1.26/cocotola-auth/usecase/user
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/config
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/reference
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/initialize
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/service/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/service/reference
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/service/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study
+    - github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook
   audio-domain: &audio-domain
     - net/http
     - net/url
@@ -241,6 +322,15 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson": {forbiddenPackages: *question-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-question/gateway": {forbiddenPackages: *question-gateway}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/health": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/question": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/sharing": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware": {forbiddenPackages: *question-controller}
+  "github.com/mocoarow/cocotola-1.26/cocotola-init/seed": {forbiddenPackages: *init-seed}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}
