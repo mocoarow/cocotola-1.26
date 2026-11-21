@@ -16,6 +16,7 @@ import (
 
 const (
 	validIDString   = "0192d3f0-7b3a-7c4e-8f1a-2b3c4d5e6f70"
+	otherIDString   = "0192d3f0-7b3a-7c4e-8f1a-2b3c4d5e6f71"
 	invalidIDString = "not-a-uuid"
 )
 
@@ -40,14 +41,19 @@ type idEnvelope[T any] struct {
 
 type idSpec struct {
 	name       string
+	label      string
 	parse      func(s string) (idObject, error)
 	scan       func(src any) (idObject, error)
 	value      func(s string) (driver.Value, error)
 	encodeJSON func(s string) ([]byte, error)
 	decodeJSON func(data []byte) (idObject, error)
+	equal      func(t *testing.T, a, b string) bool
 }
 
-func newIDSpec[T idValuer, P idScanner[T]](name string, parse func(string) (T, error)) idSpec {
+func newIDSpec[T interface {
+	idValuer
+	Equal(other T) bool
+}, P idScanner[T]](name, label string, parse func(string) (T, error)) idSpec {
 	scan := func(src any) (T, error) {
 		var v T
 		if err := P(&v).Scan(src); err != nil {
@@ -65,6 +71,7 @@ func newIDSpec[T idValuer, P idScanner[T]](name string, parse func(string) (T, e
 
 	return idSpec{
 		name:       name,
+		label:      label,
 		parse:      asIDFunc(parse),
 		scan:       asIDFunc(scan),
 		decodeJSON: asIDFunc(decodeJSON),
@@ -90,6 +97,14 @@ func newIDSpec[T idValuer, P idScanner[T]](name string, parse func(string) (T, e
 			}
 			return data, nil
 		},
+		equal: func(t *testing.T, a, b string) bool {
+			t.Helper()
+			idA, err := parse(a)
+			require.NoError(t, err)
+			idB, err := parse(b)
+			require.NoError(t, err)
+			return idA.Equal(idB)
+		},
 	}
 }
 
@@ -102,11 +117,60 @@ func asIDFunc[A any, T idObject](f func(A) (T, error)) func(A) (idObject, error)
 
 func idSpecs() []idSpec {
 	return []idSpec{
-		newIDSpec("OrganizationID", domain.ParseOrganizationID),
-		newIDSpec("AppUserID", domain.ParseAppUserID),
-		newIDSpec("GroupID", domain.ParseGroupID),
-		newIDSpec("SpaceID", domain.ParseSpaceID),
-		newIDSpec("AppUserProviderID", domain.ParseAppUserProviderID),
+		newIDSpec("OrganizationID", "organization id", domain.ParseOrganizationID),
+		newIDSpec("AppUserID", "app user id", domain.ParseAppUserID),
+		newIDSpec("GroupID", "group id", domain.ParseGroupID),
+		newIDSpec("SpaceID", "space id", domain.ParseSpaceID),
+		newIDSpec("AppUserProviderID", "app user provider id", domain.ParseAppUserProviderID),
+	}
+}
+
+func Test_ParseID_shouldNameIDKindInError_whenEmpty(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range idSpecs() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given / when
+			_, err := tt.parse("")
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+			assert.Contains(t, err.Error(), tt.label)
+		})
+	}
+}
+
+func Test_ID_Equal_shouldReturnTrue_whenUUIDsAreSame(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range idSpecs() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given / when
+			got := tt.equal(t, validIDString, validIDString)
+
+			// then
+			assert.True(t, got)
+		})
+	}
+}
+
+func Test_ID_Equal_shouldReturnFalse_whenUUIDsDiffer(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range idSpecs() {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given / when
+			got := tt.equal(t, validIDString, otherIDString)
+
+			// then
+			assert.False(t, got)
+		})
 	}
 }
 
