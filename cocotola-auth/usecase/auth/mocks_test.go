@@ -902,23 +902,23 @@ func (_m *MockWhitelistRepository) EXPECT() *MockWhitelistRepository_Expecter {
 }
 
 // FindByUserID provides a mock function for the type MockWhitelistRepository
-func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error) {
+func (_mock *MockWhitelistRepository) FindByUserID(ctx context.Context, userID domain.AppUserID) (*token.Whitelist, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByUserID")
 	}
 
-	var r0 []token.WhitelistEntry
+	var r0 *token.Whitelist
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) ([]token.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) (*token.Whitelist, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) []token.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) *token.Whitelist); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]token.WhitelistEntry)
+			r0 = ret.Get(0).(*token.Whitelist)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.AppUserID) error); ok {
@@ -959,12 +959,12 @@ func (_c *MockWhitelistRepository_FindByUserID_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) Return(whitelistEntrys []token.WhitelistEntry, err error) *MockWhitelistRepository_FindByUserID_Call {
-	_c.Call.Return(whitelistEntrys, err)
+func (_c *MockWhitelistRepository_FindByUserID_Call) Return(whitelist *token.Whitelist, err error) *MockWhitelistRepository_FindByUserID_Call {
+	_c.Call.Return(whitelist, err)
 	return _c
 }
 
-func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error)) *MockWhitelistRepository_FindByUserID_Call {
+func (_c *MockWhitelistRepository_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) (*token.Whitelist, error)) *MockWhitelistRepository_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2970,23 +2970,23 @@ func (_m *mockwhitelistFinder) EXPECT() *mockwhitelistFinder_Expecter {
 }
 
 // FindByUserID provides a mock function for the type mockwhitelistFinder
-func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error) {
+func (_mock *mockwhitelistFinder) FindByUserID(ctx context.Context, userID domain.AppUserID) (*token.Whitelist, error) {
 	ret := _mock.Called(ctx, userID)
 
 	if len(ret) == 0 {
 		panic("no return value specified for FindByUserID")
 	}
 
-	var r0 []token.WhitelistEntry
+	var r0 *token.Whitelist
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) ([]token.WhitelistEntry, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) (*token.Whitelist, error)); ok {
 		return returnFunc(ctx, userID)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) []token.WhitelistEntry); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, domain.AppUserID) *token.Whitelist); ok {
 		r0 = returnFunc(ctx, userID)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]token.WhitelistEntry)
+			r0 = ret.Get(0).(*token.Whitelist)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, domain.AppUserID) error); ok {
@@ -3027,12 +3027,12 @@ func (_c *mockwhitelistFinder_FindByUserID_Call) Run(run func(ctx context.Contex
 	return _c
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) Return(whitelistEntrys []token.WhitelistEntry, err error) *mockwhitelistFinder_FindByUserID_Call {
-	_c.Call.Return(whitelistEntrys, err)
+func (_c *mockwhitelistFinder_FindByUserID_Call) Return(whitelist *token.Whitelist, err error) *mockwhitelistFinder_FindByUserID_Call {
+	_c.Call.Return(whitelist, err)
 	return _c
 }
 
-func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) ([]token.WhitelistEntry, error)) *mockwhitelistFinder_FindByUserID_Call {
+func (_c *mockwhitelistFinder_FindByUserID_Call) RunAndReturn(run func(ctx context.Context, userID domain.AppUserID) (*token.Whitelist, error)) *mockwhitelistFinder_FindByUserID_Call {
 	_c.Call.Return(run)
 	return _c
 }

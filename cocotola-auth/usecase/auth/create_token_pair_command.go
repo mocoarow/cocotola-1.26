@@ -107,17 +107,7 @@ func (c *CreateTokenPairCommand) CreateTokenPair(ctx context.Context, input *aut
 }
 
 func (c *CreateTokenPairCommand) addToWhitelist(ctx context.Context, repo WhitelistRepository, userID domain.AppUserID, entry domaintoken.WhitelistEntry) error {
-	entries, err := repo.FindByUserID(ctx, userID)
-	if err != nil {
-		return fmt.Errorf("find whitelist entries: %w", err)
-	}
-	whitelist, err := domaintoken.NewWhitelist(userID, entries, c.config.TokenWhitelistSize)
-	if err != nil {
-		return fmt.Errorf("new whitelist: %w", err)
-	}
-	whitelist.Add(entry)
-	if err := repo.Save(ctx, whitelist); err != nil {
-		return fmt.Errorf("save whitelist: %w", err)
-	}
-	return nil
+	return updateWhitelist(ctx, repo, userID, func(w *domaintoken.Whitelist) error {
+		return w.Add(entry, c.config.TokenWhitelistSize)
+	})
 }

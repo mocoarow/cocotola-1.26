@@ -17,6 +17,8 @@ import (
 	domainuser "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/user"
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/initialize"
+	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ"
 )
 
 const (
@@ -394,4 +396,63 @@ func Test_addToActiveUserList_shouldReturnError_whenSaveFails(t *testing.T) {
 
 	// then
 	require.ErrorIs(t, err, errRepository)
+}
+
+func freshActiveUserListRepository(t *testing.T, orgID domain.OrganizationID) *MockActiveUserListRepository {
+	t.Helper()
+	repo := NewMockActiveUserListRepository(t)
+	repo.EXPECT().FindByOrganizationID(mock.Anything, orgID).RunAndReturn(func(context.Context, domain.OrganizationID) (*domain.ActiveUserList, error) {
+		return newActiveUserList(t, orgID), nil
+	})
+	return repo
+}
+
+func Test_addToActiveUserList_shouldSucceed_whenSaveConflictsOnce(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	org := existingOrganization(t, spaciousActiveUserLimit)
+	repo := freshActiveUserListRepository(t, org.ID())
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
+
+	// when
+	err := initialize.AddToActiveUserList(ctx, repo, org, generateAppUserID(t), discardLogger())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_addToActiveUserList_shouldRereadList_whenSaveConflicts(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	org := existingOrganization(t, spaciousActiveUserLimit)
+	repo := freshActiveUserListRepository(t, org.ID())
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(nil)
+
+	// when
+	_ = initialize.AddToActiveUserList(ctx, repo, org, generateAppUserID(t), discardLogger())
+
+	// then
+	repo.AssertNumberOfCalls(t, "FindByOrganizationID", 2)
+}
+
+func Test_addToActiveUserList_shouldStopRetrying_whenSaveAttemptsAreExhausted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	org := existingOrganization(t, spaciousActiveUserLimit)
+	repo := freshActiveUserListRepository(t, org.ID())
+	repo.EXPECT().Save(mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
+
+	// when
+	_ = initialize.AddToActiveUserList(ctx, repo, org, generateAppUserID(t), discardLogger())
+
+	// then
+	repo.AssertNumberOfCalls(t, "Save", occ.MaxAttempts)
 }

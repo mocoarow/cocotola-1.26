@@ -30,7 +30,7 @@ func newCreateSessionTokenInput(t *testing.T) *authservice.CreateSessionTokenInp
 func newCreateSessionTokenConfig(now time.Time) authusecase.UsecaseConfig {
 	return authusecase.UsecaseConfig{
 		SessionTokenTTLMin: 30,
-		TokenWhitelistSize: 10,
+		TokenWhitelistSize: fixtureWhitelistSize,
 		ClockFunc:          func() time.Time { return now },
 	}
 }
@@ -53,7 +53,7 @@ func Test_CreateSessionTokenCommand_CreateSessionToken_shouldReturnRawToken_when
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	whitelistMock.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	cacheMock := NewMockTokenCache(t)
@@ -91,7 +91,7 @@ func Test_CreateSessionTokenCommand_CreateSessionToken_shouldCacheTokenByHash_wh
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	whitelistMock.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(nil)
 
 	var cachedHash string
@@ -191,7 +191,7 @@ func Test_CreateSessionTokenCommand_CreateSessionToken_shouldReturnError_whenWhi
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{}, nil)
+		Return(newTestWhitelist(t), nil)
 	whitelistMock.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(saveErr)
 
 	cacheMock := NewMockTokenCache(t)

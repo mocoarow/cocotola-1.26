@@ -108,6 +108,32 @@ func Test_ActiveUserList_Contains_shouldReturnFalse_whenEmpty(t *testing.T) {
 	assert.False(t, result)
 }
 
+func Test_ActiveUserList_Version_shouldReturnZero_whenNew(t *testing.T) {
+	t.Parallel()
+
+	// given
+	list, _ := domain.NewActiveUserList(fixtureOrgID, nil)
+
+	// when
+	version := list.Version()
+
+	// then
+	assert.Equal(t, 0, version)
+}
+
+func Test_ActiveUserList_SetVersion_shouldUpdateVersion(t *testing.T) {
+	t.Parallel()
+
+	// given
+	list, _ := domain.NewActiveUserList(fixtureOrgID, nil)
+
+	// when
+	list.SetVersion(4)
+
+	// then
+	assert.Equal(t, 4, list.Version())
+}
+
 func Test_ActiveUserList_Add_shouldSucceed_whenAddingToEmptyList(t *testing.T) {
 	t.Parallel()
 

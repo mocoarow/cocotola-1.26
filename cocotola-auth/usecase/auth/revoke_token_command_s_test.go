@@ -17,14 +17,13 @@ import (
 )
 
 const (
-	revokeFixtureJTI           = "access-token-jti"
-	revokeFixtureOpaqueInput   = "raw-refresh-value"
-	revokeFixtureRefreshID     = "refresh-token-id"
-	revokeFixtureOtherTokenID  = "other-token-id"
-	revokeFixtureActiveID1     = "active-1"
-	revokeFixtureActiveID2     = "active-2"
-	revokeFixtureRevokedID     = "already-revoked"
-	revokeFixtureWhitelistSize = 10
+	revokeFixtureJTI          = "access-token-jti"
+	revokeFixtureOpaqueInput  = "raw-refresh-value"
+	revokeFixtureRefreshID    = "refresh-token-id"
+	revokeFixtureOtherTokenID = "other-token-id"
+	revokeFixtureActiveID1    = "active-1"
+	revokeFixtureActiveID2    = "active-2"
+	revokeFixtureRevokedID    = "already-revoked"
 )
 
 var (
@@ -63,8 +62,7 @@ func (m revokeTokenMocks) newCommand() *authusecase.RevokeTokenCommand {
 		m.jwt,
 		m.cache,
 		authusecase.UsecaseConfig{
-			TokenWhitelistSize: revokeFixtureWhitelistSize,
-			ClockFunc:          func() time.Time { return revokeFixtureNow },
+			ClockFunc: func() time.Time { return revokeFixtureNow },
 		},
 	)
 }
@@ -101,7 +99,7 @@ type savedWhitelist struct {
 func expectWhitelistSaved(t *testing.T, repo *MockWhitelistRepository, existing []domaintoken.WhitelistEntry) *savedWhitelist {
 	t.Helper()
 	saved := &savedWhitelist{}
-	repo.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(existing, nil)
+	repo.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(newTestWhitelist(t, existing...), nil)
 	repo.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).
 		Run(func(args mock.Arguments) {
 			wl, ok := args.Get(1).(*domaintoken.Whitelist)
@@ -456,7 +454,7 @@ func Test_RevokeTokenCommand_RevokeToken_shouldReturnError_whenAccessWhitelistSa
 	m := newRevokeTokenMocks(t)
 	givenJWTAccessTokenRevocable(m)
 	expectAccessTokensSaved(t, m.accessRepo)
-	m.accessWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(newRevokeFixtureWhitelistEntries(revokeFixtureJTI), nil)
+	m.accessWhitelist.On("FindByUserID", mock.Anything, fixtureAppUserID).Return(newTestWhitelist(t, newRevokeFixtureWhitelistEntries(revokeFixtureJTI)...), nil)
 	m.accessWhitelist.On("Save", mock.Anything, mock.AnythingOfType("*token.Whitelist")).Return(errRevokeFixtureRepo)
 
 	// when

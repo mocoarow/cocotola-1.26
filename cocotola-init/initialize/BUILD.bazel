@@ -16,6 +16,7 @@ go_library(
         "//cocotola-auth/domain/space",
         "//cocotola-auth/domain/user",
         "//cocotola-auth/gateway",
+        "//cocotola-lib/usecase/occ",
         "@io_gorm_gorm//:gorm",
     ],
 )
@@ -41,7 +42,9 @@ smart_go_test(
         "//cocotola-auth/domain/space",
         "//cocotola-auth/domain/user",
         "//cocotola-auth/gateway",
+        "//cocotola-lib/domain/versioned",
         "//cocotola-lib/gateway",
+        "//cocotola-lib/usecase/occ",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",

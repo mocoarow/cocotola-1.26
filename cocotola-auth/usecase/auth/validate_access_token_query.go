@@ -57,13 +57,9 @@ func (q *ValidateAccessTokenQuery) ValidateAccessToken(ctx context.Context, inpu
 	token, ok := q.cache.GetAccessToken(jti)
 	if !ok {
 		// Check whitelist before loading full token
-		entries, err := q.whitelistRepo.FindByUserID(ctx, userInfo.UserID)
+		whitelist, err := q.whitelistRepo.FindByUserID(ctx, userInfo.UserID)
 		if err != nil {
 			return nil, fmt.Errorf("find access token whitelist: %w", err)
-		}
-		whitelist, err := domaintoken.NewWhitelist(userInfo.UserID, entries, q.config.TokenWhitelistSize)
-		if err != nil {
-			return nil, fmt.Errorf("new access token whitelist: %w", err)
 		}
 		if !whitelist.ContainsToken(jti) {
 			return nil, domain.ErrTokenNotFound

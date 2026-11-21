@@ -29,7 +29,6 @@ func newValidateSessionTokenConfig(now time.Time) authusecase.UsecaseConfig {
 	return authusecase.UsecaseConfig{
 		SessionTokenTTLMin: 30,
 		SessionMaxTTLMin:   8 * 60,
-		TokenWhitelistSize: 10,
 		ClockFunc:          func() time.Time { return now },
 	}
 }
@@ -95,7 +94,7 @@ func Test_ValidateSessionTokenQuery_ValidateSessionToken_shouldHydrateAndCache_w
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{{ID: fixtureSessionTokenID, CreatedAt: now}}, nil)
+		Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: fixtureSessionTokenID, CreatedAt: now}), nil)
 
 	query := authusecase.NewValidateSessionTokenQuery(repoMock, whitelistMock, cacheMock, newValidateSessionTokenConfig(now))
 
@@ -126,7 +125,7 @@ func Test_ValidateSessionTokenQuery_ValidateSessionToken_shouldReturnErrTokenNot
 
 	whitelistMock := NewMockWhitelistRepository(t)
 	whitelistMock.On("FindByUserID", mock.Anything, fixtureAppUserID).
-		Return([]domaintoken.WhitelistEntry{{ID: "other-token-id", CreatedAt: now}}, nil)
+		Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: "other-token-id", CreatedAt: now}), nil)
 
 	query := authusecase.NewValidateSessionTokenQuery(repoMock, whitelistMock, cacheMock, newValidateSessionTokenConfig(now))
 

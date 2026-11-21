@@ -74,13 +74,10 @@ func Test_ValidateAccessTokenQuery_ValidateAccessToken_shouldReturnUserInfo_when
 	repoMock.On("FindByID", mock.Anything, jti).Return(accessToken, nil)
 
 	whitelistRepoMock := NewMockWhitelistRepository(t)
-	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domaintoken.WhitelistEntry{
-		{ID: jti, CreatedAt: now},
-	}, nil)
+	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: jti, CreatedAt: now}), nil)
 
 	query := authusecase.NewValidateAccessTokenQuery(repoMock, whitelistRepoMock, jwtMock, cacheMock, authusecase.UsecaseConfig{
-		ClockFunc:          func() time.Time { return now },
-		TokenWhitelistSize: 10,
+		ClockFunc: func() time.Time { return now },
 	})
 
 	input := &authservice.ValidateAccessTokenInput{JWTString: "jwt-string"}

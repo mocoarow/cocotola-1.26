@@ -24,6 +24,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/config
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-auth/controller
@@ -85,6 +86,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ
     - github.com/mocoarow/cocotola-1.26/cocotola-question/config
     - github.com/mocoarow/cocotola-1.26/cocotola-question/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-question/controller
@@ -249,6 +251,7 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ
     - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/config
     - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/gateway
     - github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase
@@ -291,6 +294,22 @@ forbidden:
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/logging
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/telemetry
     - github.com/mocoarow/cocotola-1.26/cocotola-lib/process
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ
+  lib-usecase: &lib-usecase
+    - net/http
+    - database/sql
+    - gorm.io/gorm
+    - gorm.io/gorm/clause
+    - gorm.io/driver/postgres
+    - gorm.io/driver/mysql
+    - cloud.google.com/go/firestore
+    - github.com/gin-gonic/gin
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/gormsave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway/firestoresave
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/handler
+    - github.com/mocoarow/cocotola-1.26/cocotola-lib/controller/middleware
 
 packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-auth/domain": {forbiddenPackages: *auth-domain}
@@ -344,5 +363,6 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset": {forbiddenPackages: *lib-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned": {forbiddenPackages: *lib-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ": {forbiddenPackages: *lib-usecase}
 
 debug: false

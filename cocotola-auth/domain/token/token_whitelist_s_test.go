@@ -11,191 +11,138 @@ import (
 	"github.com/mocoarow/cocotola-1.26/cocotola-auth/domain/token"
 )
 
-func Test_TokenWhitelist_Add_shouldReturnNoEvictions_whenUnderMaxSize(t *testing.T) {
+var whitelistFixtureNow = time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+
+func whitelistEntry(id string, minutes int) token.WhitelistEntry {
+	return token.WhitelistEntry{ID: id, CreatedAt: whitelistFixtureNow.Add(time.Duration(minutes) * time.Minute)}
+}
+
+func entryIDs(entries []token.WhitelistEntry) []string {
+	ids := make([]string, len(entries))
+	for i, e := range entries {
+		ids[i] = e.ID
+	}
+	return ids
+}
+
+func newWhitelist(t *testing.T, entries ...token.WhitelistEntry) *token.Whitelist {
+	t.Helper()
+	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries)
+	require.NoError(t, err)
+	return whitelist
+}
+
+func Test_TokenWhitelist_Add_shouldKeepAllEntries_whenUnderMaxSize(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	existing := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, existing, 3)
-	require.NoError(t, err)
-
-	newEntry := token.WhitelistEntry{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)}
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
-	evictedIDs := whitelist.Add(newEntry)
+	err := whitelist.Add(whitelistEntry("token-2", 1), 3)
 
 	// then
-	assert.Nil(t, evictedIDs)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"token-1", "token-2"}, entryIDs(whitelist.Entries()))
 }
 
-func Test_TokenWhitelist_Add_shouldReturnOldestID_whenAtMaxSize(t *testing.T) {
+func Test_TokenWhitelist_Add_shouldEvictOldestByCreatedAt_whenMaxSizeExceeded(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	existing := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-		{ID: "token-3", CreatedAt: now.Add(2 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, existing, 3)
-	require.NoError(t, err)
-
-	newEntry := token.WhitelistEntry{ID: "token-4", CreatedAt: now.Add(3 * time.Minute)}
+	whitelist := newWhitelist(t, whitelistEntry("token-3", 2), whitelistEntry("token-1", 0), whitelistEntry("token-2", 1))
 
 	// when
-	evictedIDs := whitelist.Add(newEntry)
+	err := whitelist.Add(whitelistEntry("token-4", 3), 2)
 
 	// then
-	assert.Equal(t, []string{"token-1"}, evictedIDs)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"token-3", "token-4"}, entryIDs(whitelist.Entries()))
 }
 
-func Test_TokenWhitelist_Add_shouldEvictByCreatedAt_whenEntriesAreUnordered(t *testing.T) {
+func Test_TokenWhitelist_Add_shouldReturnErrInvalidArgument_whenMaxSizeIsNotPositive(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		maxSize int
+	}{
+		{name: "zero", maxSize: 0},
+		{name: "negative", maxSize: -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			whitelist := newWhitelist(t)
+
+			// when
+			err := whitelist.Add(whitelistEntry("token-1", 0), tt.maxSize)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
+}
+
+func Test_TokenWhitelist_Add_shouldReturnErrDuplicateEntry_whenTokenIsAlreadyListed(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	existing := []token.WhitelistEntry{
-		{ID: "token-3", CreatedAt: now.Add(2 * time.Minute)},
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, existing, 2)
-	require.NoError(t, err)
-
-	newEntry := token.WhitelistEntry{ID: "token-4", CreatedAt: now.Add(3 * time.Minute)}
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
-	evictedIDs := whitelist.Add(newEntry)
+	err := whitelist.Add(whitelistEntry("token-1", 1), 3)
 
 	// then
-	assert.Equal(t, []string{"token-1", "token-2"}, evictedIDs)
+	require.ErrorIs(t, err, domain.ErrDuplicateEntry)
 }
 
-func Test_TokenWhitelist_Add_shouldEvictExisting_whenMaxSizeIsOne(t *testing.T) {
+func Test_TokenWhitelist_Add_shouldKeepEntries_whenTokenIsAlreadyListed(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	existing := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, existing, 1)
-	require.NoError(t, err)
-
-	newEntry := token.WhitelistEntry{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)}
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
-	evictedIDs := whitelist.Add(newEntry)
+	_ = whitelist.Add(whitelistEntry("token-1", 1), 3)
 
 	// then
-	assert.Equal(t, []string{"token-1"}, evictedIDs)
+	assert.Equal(t, []token.WhitelistEntry{whitelistEntry("token-1", 0)}, whitelist.Entries())
 }
 
-func Test_TokenWhitelist_NewTokenWhitelist_shouldNotLeakMutation_whenOriginalSliceIsModified(t *testing.T) {
+func Test_TokenWhitelist_Remove_shouldRemoveGivenEntries_whenTheyExist(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 3)
-	require.NoError(t, err)
-
-	// when - mutate original slice
-	entries[0] = token.WhitelistEntry{ID: "mutated", CreatedAt: now}
-	evictedIDs := whitelist.Add(token.WhitelistEntry{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)})
-
-	// then - whitelist should not be affected by external mutation
-	assert.Nil(t, evictedIDs)
-}
-
-func Test_TokenWhitelist_Add_shouldReturnNoEvictions_whenAddingToEmptyWhitelist(t *testing.T) {
-	t.Parallel()
-
-	// given
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, nil, 3)
-	require.NoError(t, err)
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	newEntry := token.WhitelistEntry{ID: "token-1", CreatedAt: now}
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0), whitelistEntry("token-2", 1), whitelistEntry("token-3", 2))
 
 	// when
-	evictedIDs := whitelist.Add(newEntry)
+	whitelist.Remove([]string{"token-1", "token-3"})
 
 	// then
-	assert.Nil(t, evictedIDs)
+	assert.Equal(t, []string{"token-2"}, entryIDs(whitelist.Entries()))
 }
 
-func Test_TokenWhitelist_UserID_shouldReturnUserID(t *testing.T) {
+func Test_TokenWhitelist_Remove_shouldKeepEntries_whenIDDoesNotExist(t *testing.T) {
 	t.Parallel()
 
 	// given
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, nil, 3)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
-	userID := whitelist.UserID()
+	whitelist.Remove([]string{"non-existent"})
 
 	// then
-	assert.True(t, fixtureAppUserID.Equal(userID))
-}
-
-func Test_TokenWhitelist_Entries_shouldReturnDefensiveCopy(t *testing.T) {
-	t.Parallel()
-
-	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 3)
-	require.NoError(t, err)
-
-	// when
-	result := whitelist.Entries()
-	result[0] = token.WhitelistEntry{ID: "mutated", CreatedAt: now}
-
-	// then - mutation of returned slice should not affect whitelist
-	assert.Equal(t, "token-1", whitelist.Entries()[0].ID)
-}
-
-func Test_TokenWhitelist_Entries_shouldReturnAllEntries(t *testing.T) {
-	t.Parallel()
-
-	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 3)
-	require.NoError(t, err)
-
-	// when
-	result := whitelist.Entries()
-
-	// then
-	assert.Len(t, result, 2)
-	assert.Equal(t, "token-1", result[0].ID)
-	assert.Equal(t, "token-2", result[1].ID)
+	assert.Equal(t, []string{"token-1"}, entryIDs(whitelist.Entries()))
 }
 
 func Test_TokenWhitelist_ContainsToken_shouldReturnTrue_whenTokenExists(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 3)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0), whitelistEntry("token-2", 1))
 
 	// when
 	exists := whitelist.ContainsToken("token-2")
@@ -208,12 +155,7 @@ func Test_TokenWhitelist_ContainsToken_shouldReturnFalse_whenTokenDoesNotExist(t
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 3)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
 	exists := whitelist.ContainsToken("token-999")
@@ -222,112 +164,81 @@ func Test_TokenWhitelist_ContainsToken_shouldReturnFalse_whenTokenDoesNotExist(t
 	assert.False(t, exists)
 }
 
-func Test_TokenWhitelist_Remove_shouldRemoveSingleEntry(t *testing.T) {
+func Test_TokenWhitelist_Entries_shouldReturnDefensiveCopy(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-		{ID: "token-3", CreatedAt: now.Add(2 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 5)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t, whitelistEntry("token-1", 0))
 
 	// when
-	whitelist.Remove([]string{"token-2"})
+	whitelist.Entries()[0] = whitelistEntry("mutated", 0)
 
 	// then
-	result := whitelist.Entries()
-	assert.Len(t, result, 2)
-	assert.Equal(t, "token-1", result[0].ID)
-	assert.Equal(t, "token-3", result[1].ID)
+	assert.Equal(t, []string{"token-1"}, entryIDs(whitelist.Entries()))
 }
 
-func Test_TokenWhitelist_Remove_shouldRemoveMultipleEntries(t *testing.T) {
+func Test_TokenWhitelist_UserID_shouldReturnUserID(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-		{ID: "token-2", CreatedAt: now.Add(1 * time.Minute)},
-		{ID: "token-3", CreatedAt: now.Add(2 * time.Minute)},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 5)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t)
 
 	// when
-	whitelist.Remove([]string{"token-1", "token-3"})
+	userID := whitelist.UserID()
 
 	// then
-	result := whitelist.Entries()
-	assert.Len(t, result, 1)
-	assert.Equal(t, "token-2", result[0].ID)
+	assert.True(t, fixtureAppUserID.Equal(userID))
 }
 
-func Test_TokenWhitelist_Remove_shouldDoNothing_whenIDDoesNotExist(t *testing.T) {
+func Test_TokenWhitelist_Version_shouldReturnZero_whenNew(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 5)
-	require.NoError(t, err)
+	whitelist := newWhitelist(t)
 
 	// when
-	whitelist.Remove([]string{"non-existent"})
+	version := whitelist.Version()
 
 	// then
-	assert.Len(t, whitelist.Entries(), 1)
+	assert.Equal(t, 0, version)
 }
 
-func Test_TokenWhitelist_Remove_shouldDoNothing_whenEmptySlice(t *testing.T) {
+func Test_TokenWhitelist_SetVersion_shouldUpdateVersion(t *testing.T) {
 	t.Parallel()
 
 	// given
-	now := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
-	entries := []token.WhitelistEntry{
-		{ID: "token-1", CreatedAt: now},
-	}
-	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries, 5)
+	whitelist := newWhitelist(t)
+
+	// when
+	whitelist.SetVersion(7)
+
+	// then
+	assert.Equal(t, 7, whitelist.Version())
+}
+
+func Test_NewWhitelist_shouldNotShareEntries_whenOriginalSliceIsModified(t *testing.T) {
+	t.Parallel()
+
+	// given
+	entries := []token.WhitelistEntry{whitelistEntry("token-1", 0)}
+	whitelist, err := token.NewWhitelist(fixtureAppUserID, entries)
 	require.NoError(t, err)
 
 	// when
-	whitelist.Remove([]string{})
+	entries[0] = whitelistEntry("mutated", 0)
 
 	// then
-	assert.Len(t, whitelist.Entries(), 1)
+	assert.Equal(t, []string{"token-1"}, entryIDs(whitelist.Entries()))
 }
 
-func Test_NewWhitelist_shouldReturnError_whenUserIDIsZero(t *testing.T) {
+func Test_NewWhitelist_shouldReturnErrInvalidArgument_whenUserIDIsZero(t *testing.T) {
 	t.Parallel()
 
-	// when
-	_, err := token.NewWhitelist(domain.AppUserID{}, nil, 3)
-
-	// then
-	require.ErrorIs(t, err, domain.ErrInvalidArgument)
-}
-
-func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsZero(t *testing.T) {
-	t.Parallel()
+	// given
+	zeroUserID := domain.AppUserID{}
 
 	// when
-	_, err := token.NewWhitelist(fixtureAppUserID, nil, 0)
-
-	// then
-	require.ErrorIs(t, err, domain.ErrInvalidArgument)
-}
-
-func Test_NewWhitelist_shouldReturnError_whenMaxSizeIsNegative(t *testing.T) {
-	t.Parallel()
-
-	// when
-	_, err := token.NewWhitelist(fixtureAppUserID, nil, -1)
+	_, err := token.NewWhitelist(zeroUserID, nil)
 
 	// then
 	require.ErrorIs(t, err, domain.ErrInvalidArgument)

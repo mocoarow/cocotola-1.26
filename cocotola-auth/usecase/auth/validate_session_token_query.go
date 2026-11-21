@@ -40,7 +40,7 @@ func (q *ValidateSessionTokenQuery) ValidateSessionToken(ctx context.Context, in
 	token, ok := q.cache.GetSessionToken(hash)
 	if !ok {
 		var err error
-		token, err = findWhitelistedSessionToken(ctx, q.repo, q.whitelistRepo, q.config.TokenWhitelistSize, hash)
+		token, err = findWhitelistedSessionToken(ctx, q.repo, q.whitelistRepo, hash)
 		if err != nil {
 			return nil, err
 		}

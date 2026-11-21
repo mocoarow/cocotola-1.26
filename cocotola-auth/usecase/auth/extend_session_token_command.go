@@ -40,7 +40,7 @@ func (c *ExtendSessionTokenCommand) ExtendSessionToken(ctx context.Context, inpu
 	token, ok := c.cache.GetSessionToken(hash)
 	if !ok {
 		var err error
-		token, err = findWhitelistedSessionToken(ctx, c.repo, c.whitelistRepo, c.config.TokenWhitelistSize, hash)
+		token, err = findWhitelistedSessionToken(ctx, c.repo, c.whitelistRepo, hash)
 		if err != nil {
 			return err
 		}

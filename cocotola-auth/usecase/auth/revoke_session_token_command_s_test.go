@@ -31,9 +31,7 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTok
 	repoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	whitelistRepoMock := NewMockWhitelistRepository(t)
-	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return([]domaintoken.WhitelistEntry{
-		{ID: tokenID, CreatedAt: now},
-	}, nil)
+	whitelistRepoMock.On("FindByUserID", mock.Anything, userID).Return(newTestWhitelist(t, domaintoken.WhitelistEntry{ID: tokenID, CreatedAt: now}), nil)
 	whitelistRepoMock.On("Save", mock.Anything, mock.Anything).Return(nil)
 
 	cacheMock := NewMockTokenCache(t)
@@ -41,8 +39,7 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldRevokeToken_whenTok
 	cacheMock.On("DeleteSessionToken", hash).Return()
 
 	config := authusecase.UsecaseConfig{
-		TokenWhitelistSize: 10,
-		ClockFunc:          func() time.Time { return now },
+		ClockFunc: func() time.Time { return now },
 	}
 	cmd := authusecase.NewRevokeSessionTokenCommand(repoMock, whitelistRepoMock, cacheMock, config)
 
@@ -79,7 +76,7 @@ func Test_RevokeSessionTokenCommand_RevokeSessionToken_shouldReturnErrTokenRevok
 	cacheMock := NewMockTokenCache(t)
 	cacheMock.On("GetSessionToken", hash).Return(nil, false)
 
-	config := authusecase.UsecaseConfig{TokenWhitelistSize: 10}
+	config := authusecase.UsecaseConfig{}
 	cmd := authusecase.NewRevokeSessionTokenCommand(repoMock, whitelistRepoMock, cacheMock, config)
 
 	input := &authservice.RevokeSessionTokenInput{RawToken: rawInput}

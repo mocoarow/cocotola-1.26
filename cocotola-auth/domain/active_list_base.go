@@ -3,7 +3,8 @@ package domain
 import "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset"
 
 type activeListBase[M comparable] struct {
-	set idset.Set[OrganizationID, M]
+	set     idset.Set[OrganizationID, M]
+	version int
 }
 
 // OrganizationID returns the organization ID.
@@ -20,3 +21,9 @@ func (b *activeListBase[M]) Contains(id M) bool { return b.set.Contains(id) }
 
 // Remove removes an ID from the set.
 func (b *activeListBase[M]) Remove(id M) { b.set.Remove(id) }
+
+// Version returns the persisted version (0 = not yet saved).
+func (b *activeListBase[M]) Version() int { return b.version }
+
+// SetVersion sets the persisted version on a reconstituted aggregate.
+func (b *activeListBase[M]) SetVersion(version int) { b.version = version }

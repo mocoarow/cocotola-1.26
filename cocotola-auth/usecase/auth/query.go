@@ -31,7 +31,7 @@ type AccessTokenRepository interface {
 
 // WhitelistRepository defines persistence operations for token whitelists.
 type WhitelistRepository interface {
-	FindByUserID(ctx context.Context, userID domain.AppUserID) ([]domaintoken.WhitelistEntry, error)
+	FindByUserID(ctx context.Context, userID domain.AppUserID) (*domaintoken.Whitelist, error)
 	Save(ctx context.Context, whitelist *domaintoken.Whitelist) error
 }
 

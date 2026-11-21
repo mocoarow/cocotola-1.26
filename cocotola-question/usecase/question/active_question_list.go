@@ -2,15 +2,12 @@ package question
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	libversioned "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
-
-const maxActiveListSaveAttempts = 5
 
 func updateActiveList(
 	ctx context.Context,
@@ -19,14 +16,12 @@ func updateActiveList(
 	workbookID string,
 	mutate func(*domain.ActiveQuestionList) error,
 ) error {
-	var err error
-	for range maxActiveListSaveAttempts {
-		err = findMutateSave(ctx, finder, saver, workbookID, mutate)
-		if !errors.Is(err, libversioned.ErrConcurrentModification) {
-			return err
-		}
+	if err := occ.Retry(func() error {
+		return findMutateSave(ctx, finder, saver, workbookID, mutate)
+	}); err != nil {
+		return fmt.Errorf("update active list of workbook %s: %w", workbookID, err)
 	}
-	return err
+	return nil
 }
 
 func findMutateSave(
