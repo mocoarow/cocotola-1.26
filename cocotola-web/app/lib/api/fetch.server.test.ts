@@ -89,4 +89,24 @@ describe("fetchWithIdToken", () => {
     // then
     expect(finishedSpan().status.code).toBe(SpanStatusCode.ERROR);
   });
+
+  it("should reject when the signal aborts while the ID token fetch is pending", async () => {
+    // given
+    vi.stubEnv("APP_ENV", "production");
+    fetchMock.mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        }),
+    );
+    const controller = new AbortController();
+    const reason = new Error("aborted by caller");
+
+    // when
+    const result = fetchWithIdToken(AUDIENCE, BACKEND_URL, { signal: controller.signal });
+    controller.abort(reason);
+
+    // then
+    await expect(result).rejects.toBe(reason);
+  });
 });
