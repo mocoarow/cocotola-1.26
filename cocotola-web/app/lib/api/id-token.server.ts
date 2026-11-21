@@ -6,7 +6,10 @@ function isLocalOrTest(): boolean {
   return appEnv === "local" || appEnv === "test";
 }
 
-export async function getIdToken(audience: string): Promise<string | undefined> {
+export async function getIdToken(
+  audience: string,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
   console.info(
     `[id-token] getIdToken called: audience=${audience}, APP_ENV=${process.env.APP_ENV}`,
   );
@@ -22,6 +25,7 @@ export async function getIdToken(audience: string): Promise<string | undefined> 
 
     const response = await fetch(url, {
       headers: { "Metadata-Flavor": "Google" },
+      signal,
     });
 
     if (!response.ok) {

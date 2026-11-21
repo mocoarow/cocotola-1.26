@@ -35,7 +35,7 @@ export async function fetchWithIdToken(
   return withSpan(
     `backend ${method}`,
     async (span) => {
-      const idToken = await getIdToken(audience);
+      const idToken = await getIdToken(audience, init?.signal ?? undefined);
 
       let response: Response;
       if (idToken) {
