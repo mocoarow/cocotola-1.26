@@ -40,8 +40,8 @@ smart_go_test(
         "mocks_test.go",
         "update_question_command_s_test.go",
     ],
-    embed = [":question"],
     deps = [
+        ":question",
         "//cocotola-lib/domain/versioned",
         "//cocotola-lib/usecase/occ",
         "//cocotola-question/contentjson",
