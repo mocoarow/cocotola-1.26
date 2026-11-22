@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -28,6 +28,8 @@ const (
 	testOrgID         = "org-1"
 	testPublicSpaceID = "public-space-1"
 )
+
+var errQuestionRejected = fmt.Errorf("add question: %w", seed.ErrQuestionRejected)
 
 func discardLogger() *slog.Logger {
 	return slog.New(slog.DiscardHandler)
@@ -62,21 +64,19 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldCreateAllWorkbooksAndQu
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Vocabulary" && body.Visibility == "public" &&
-			strings.Contains(body.Description, "[seedKey:vocab-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Vocabulary" && strings.Contains(input.Description, "[seedKey:vocab-v1]")
 	})).Return("wb-Vocabulary", nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Grammar" && body.Visibility == "public" &&
-			strings.Contains(body.Description, "[seedKey:grammar-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Grammar" && strings.Contains(input.Description, "[seedKey:grammar-v1]")
 	})).Return("wb-Grammar", nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C1"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C1"
 	})).Return(nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2"
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -136,11 +136,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_
 		}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return(nil, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C1"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C1"
 	})).Return(nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2"
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -196,14 +196,14 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportPositionsAndMaxExistingOrderI
 	}, got)
 }
 
-func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejectedWith400(t *testing.T) {
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given: nothing imported yet; the server rejects C1
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).Return(nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
 	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger())
@@ -256,8 +256,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldNotReAddExistingQuestio
 			QuestionID: "q-existing",
 			Tags:       []string{"seed-vocab-v1:q1"},
 		}}, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2" && assert.Contains(t, body.Tags, "seed-vocab-v1:q2")
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2" && assert.Contains(t, input.Tags, "seed-vocab-v1:q2")
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -394,36 +394,17 @@ func existingVocabularyEnsurer(ctx context.Context, t *testing.T) *MockWorkbookP
 }
 
 func addQuestionWithContent(content string) any {
-	return mock.MatchedBy(func(body seed.AddQuestionRequest) bool { return body.Content == content })
+	return mock.MatchedBy(func(input seed.AddQuestionInput) bool { return input.Content == content })
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith403(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: the server forbids C1 with 403; C2 must not be attempted
+	// given: the server rejects C1
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusForbidden})
-	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
-
-	// when
-	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
-
-	// then
-	var statusErr *seed.HTTPStatusError
-	require.ErrorAs(t, err, &statusErr)
-	assert.Equal(t, http.StatusForbidden, statusErr.StatusCode)
-}
-
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejectedWith400(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given: the server rejects C1 with 400
-	client := existingVocabularyClient(ctx, t)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
 	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
@@ -435,18 +416,18 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_w
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejectedWith400(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given: vocab-v1's C1 is rejected; grammar-v1 comes after it and must still be created
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Grammar"
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Grammar"
 	})).Return("wb-Grammar", nil)
 	ensurer := existingVocabularyEnsurer(ctx, t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
@@ -459,30 +440,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_when
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWithoutRejection(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: the server fails C1 with 500; C2 must not be attempted
-	client := existingVocabularyClient(ctx, t)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusInternalServerError})
-	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
-
-	// when
-	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
-
-	// then
-	var statusErr *seed.HTTPStatusError
-	require.ErrorAs(t, err, &statusErr)
-	assert.Equal(t, http.StatusInternalServerError, statusErr.StatusCode)
-}
-
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given: a transport error on C1; C2 must not be attempted
+	// given: C1 fails for a reason other than rejection; C2 must not be attempted
 	sendErr := errors.New("connection reset")
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
@@ -501,7 +463,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	ctx := context.Background()
 
 	// given
-	var captured []seed.AddQuestionRequest
+	var captured []seed.AddQuestionInput
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
@@ -510,8 +472,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
-		Run(func(_ context.Context, _, _ string, body seed.AddQuestionRequest) {
-			captured = append(captured, body)
+		Run(func(_ context.Context, _, _ string, input seed.AddQuestionInput) {
+			captured = append(captured, input)
 		}).Return(nil).Times(2)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -525,9 +487,9 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	// then
 	require.NoError(t, err)
 	require.Len(t, captured, 2)
-	for _, body := range captured {
-		assert.NotEmpty(t, body.Tags, "seeder must prepend the seed identity tag")
-		for _, tag := range body.Tags {
+	for _, input := range captured {
+		assert.NotEmpty(t, input.Tags, "seeder must prepend the seed identity tag")
+		for _, tag := range input.Tags {
 			assert.Regexp(t, questionTagPattern, tag,
 				"every emitted tag must satisfy cocotola-question's tag pattern")
 		}
@@ -542,8 +504,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDe
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return strings.HasSuffix(body.Description, "[seedKey:vocab-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return strings.HasSuffix(input.Description, "[seedKey:vocab-v1]")
 	})).Return("wb-Vocabulary", nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)

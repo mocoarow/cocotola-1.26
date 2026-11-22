@@ -1,5 +1,5 @@
 // Package seed provides idempotent seeding of public workbooks (and their
-// questions) into cocotola-question via its internal HTTP API.
+// questions) into cocotola-question through WorkbookAPIClient.
 //
 // The package is intentionally split from the auth-side bootstrap logic so
 // that cocotola-init does not depend on cocotola-question's internal data
