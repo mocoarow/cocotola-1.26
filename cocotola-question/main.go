@@ -91,11 +91,21 @@ func run() (int, error) {
 	api := router.Group("api")
 	v1 := api.Group("v1")
 
-	questionCleanup, err := questioninit.Initialize(ctx, v1, cfg.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)
+	firestoreClient, shutdownFirestore, err := gateway.InitFirestore(ctx, cfg.Question.FirestoreProjectID)
 	if err != nil {
-		return 1, fmt.Errorf("initialize question: %w", err)
+		return 1, fmt.Errorf("init firestore: %w", err)
 	}
-	defer questionCleanup()
+	defer shutdownFirestore()
+
+	questioninit.Initialize(v1, cfg.Question, firestoreClient, questioninit.Dependencies{
+		AuthMiddleware:      authMiddleware,
+		APIKeyMiddleware:    apiKeyMiddleware,
+		AuthzChecker:        authzChecker,
+		OrgResolver:         orgResolver,
+		MaxWorkbooksFetcher: maxWbFetcher,
+		SpaceTypeFetcher:    spaceTypeFetcher,
+		PolicyAdder:         policyAdder,
+	})
 
 	timeouts := cfg.Server.HTTPServerTimeouts()
 	result := libprocess.Run(ctx,

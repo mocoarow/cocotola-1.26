@@ -96,11 +96,21 @@ func run() (int, error) {
 	// internal API key middleware (protects /api/v1/internal endpoints)
 	apiKeyMiddleware := questionmiddleware.NewAPIKeyMiddleware(cfg.App.Question.APIKey)
 
-	questionCleanup, err := questioninit.Initialize(ctx, authResult.V1RouterGroup, cfg.App.Question, authMiddleware, apiKeyMiddleware, authzChecker, orgResolver, maxWbFetcher, spaceTypeFetcher, policyAdder)
+	firestoreClient, shutdownFirestore, err := questiongateway.InitFirestore(ctx, cfg.App.Question.FirestoreProjectID)
 	if err != nil {
-		return 1, fmt.Errorf("initialize question: %w", err)
+		return 1, fmt.Errorf("init firestore: %w", err)
 	}
-	defer questionCleanup()
+	defer shutdownFirestore()
+
+	questioninit.Initialize(authResult.V1RouterGroup, cfg.App.Question, firestoreClient, questioninit.Dependencies{
+		AuthMiddleware:      authMiddleware,
+		APIKeyMiddleware:    apiKeyMiddleware,
+		AuthzChecker:        authzChecker,
+		OrgResolver:         orgResolver,
+		MaxWorkbooksFetcher: maxWbFetcher,
+		SpaceTypeFetcher:    spaceTypeFetcher,
+		PolicyAdder:         policyAdder,
+	})
 
 	timeouts := cfg.Server.HTTPServerTimeouts()
 	result := libprocess.Run(ctx,

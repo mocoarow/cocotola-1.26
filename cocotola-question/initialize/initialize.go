@@ -3,12 +3,9 @@ package initialize
 
 import (
 	"context"
-	"fmt"
-	"log/slog"
 
+	"cloud.google.com/go/firestore"
 	"github.com/gin-gonic/gin"
-
-	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/config"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/contentjson"
@@ -19,17 +16,18 @@ import (
 	studyhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/study"
 	workbookhandler "github.com/mocoarow/cocotola-1.26/cocotola-question/controller/handler/workbook"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/controller/middleware"
+	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/gateway"
 	questionusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/question"
 	sharingusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/sharing"
 	studyusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/study"
 	workbookusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook"
-
-	liblogging "github.com/mocoarow/cocotola-1.26/cocotola-lib/logging"
 )
 
 // AuthorizationChecker checks if an action is allowed by RBAC policy.
-type AuthorizationChecker = domain.AuthorizationChecker
+type AuthorizationChecker interface {
+	IsAllowed(ctx context.Context, organizationID string, operatorID string, action domain.Action, resource domain.Resource) (bool, error)
+}
 
 // MaxWorkbooksFetcher fetches the max workbooks limit for a user.
 type MaxWorkbooksFetcher interface {
@@ -42,110 +40,141 @@ type SpaceTypeFetcher interface {
 }
 
 // PolicyAdder adds per-user RBAC policies via the auth service.
-type PolicyAdder = domain.PolicyAdder
+type PolicyAdder interface {
+	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action domain.Action, resource domain.Resource, effect domain.Effect) error
+}
 
-// Initialize sets up the cocotola-question module: gateway, usecase, and controller layers.
-// It registers all question-related routes under the given parent router group and returns
-// a cleanup function to close the Firestore client.
-//
-// Public routes are mounted under parent. Internal service-to-service routes are mounted
-// under parent.Group("internal", apiKeyMiddleware) to keep the X-Service-Api-Key auth path
-// completely separated from the user-facing auth middleware. The audio queue routes are
-// processed across organizations, so only they skip the X-Organization-Id requirement.
-func Initialize(
-	ctx context.Context,
-	parent gin.IRouter,
-	questionConfig config.QuestionConfig,
-	authMiddleware gin.HandlerFunc,
-	apiKeyMiddleware gin.HandlerFunc,
-	authzChecker AuthorizationChecker,
-	orgResolver middleware.OrganizationIDResolver,
-	maxWbFetcher MaxWorkbooksFetcher,
-	spaceTypeFetcher SpaceTypeFetcher,
-	policyAdder PolicyAdder,
-) (func(), error) {
-	logger := slog.Default().With(slog.String(liblogging.LoggerNameKey, "cocotola-question-init"))
+// Dependencies holds the collaborators the question module is wired with.
+type Dependencies struct {
+	AuthMiddleware      gin.HandlerFunc
+	APIKeyMiddleware    gin.HandlerFunc
+	AuthzChecker        AuthorizationChecker
+	OrgResolver         middleware.OrganizationIDResolver
+	MaxWorkbooksFetcher MaxWorkbooksFetcher
+	SpaceTypeFetcher    SpaceTypeFetcher
+	PolicyAdder         PolicyAdder
+}
 
-	// gateway layer: Firestore client
-	firestoreClient, err := gateway.NewFirestoreClient(ctx, questionConfig.FirestoreProjectID)
-	if err != nil {
-		return nil, fmt.Errorf("new firestore client: %w", err)
+// Initialize registers the question module's routes under parent.
+func Initialize(parent gin.IRouter, questionConfig config.QuestionConfig, firestoreClient *firestore.Client, deps Dependencies) {
+	repos := newRepositories(firestoreClient)
+	usecases := newUsecases(repos, deps)
+	initRoutes(parent, questionConfig, repos, usecases, deps)
+}
+
+type repositories struct {
+	workbook           *gateway.WorkbookRepository
+	question           *gateway.QuestionRepository
+	reference          *gateway.ReferenceRepository
+	ownedWorkbookList  *gateway.OwnedWorkbookListRepository
+	studyRecord        *gateway.StudyRecordRepository
+	studyDailyStats    *gateway.StudyDailyStatsRepository
+	activeQuestionList *gateway.ActiveQuestionListRepository
+	health             *gateway.HealthRepository
+}
+
+func newRepositories(client *firestore.Client) repositories {
+	return repositories{
+		workbook:           gateway.NewWorkbookRepository(client),
+		question:           gateway.NewQuestionRepository(client),
+		reference:          gateway.NewReferenceRepository(client),
+		ownedWorkbookList:  gateway.NewOwnedWorkbookListRepository(client),
+		studyRecord:        gateway.NewStudyRecordRepository(client),
+		studyDailyStats:    gateway.NewStudyDailyStatsRepository(client),
+		activeQuestionList: gateway.NewActiveQuestionListRepository(client),
+		health:             gateway.NewHealthRepository(client),
 	}
+}
 
-	workbookRepo := gateway.NewWorkbookRepository(firestoreClient)
-	questionRepo := gateway.NewQuestionRepository(firestoreClient)
-	referenceRepo := gateway.NewReferenceRepository(firestoreClient)
-	ownedWorkbookListRepo := gateway.NewOwnedWorkbookListRepository(firestoreClient)
-	studyRecordRepo := gateway.NewStudyRecordRepository(firestoreClient)
-	studyDailyStatsRepo := gateway.NewStudyDailyStatsRepository(firestoreClient)
-	activeQuestionListRepo := gateway.NewActiveQuestionListRepository(firestoreClient)
-	healthRepo := gateway.NewHealthRepository(firestoreClient)
+type usecases struct {
+	workbook   *workbookusecase.Command
+	question   *questionusecase.Command
+	audioBatch *questionusecase.AudioBatchCommand
+	sharing    *sharingusecase.Command
+	study      *studyusecase.Command
+}
 
-	// organization resolver middleware
-	orgResolverMiddleware := middleware.NewOrganizationResolverMiddleware(orgResolver)
-
-	// usecase layer
+func newUsecases(r repositories, deps Dependencies) usecases {
 	contentParser := contentjson.Parser{}
-	workbookCommand := workbookusecase.NewCommand(workbookRepo, workbookRepo, workbookRepo, ownedWorkbookListRepo, ownedWorkbookListRepo, maxWbFetcher, spaceTypeFetcher, authzChecker, policyAdder)
-	questionCommand := questionusecase.NewCommand(questionRepo, questionRepo, questionRepo, questionRepo, workbookRepo, authzChecker, activeQuestionListRepo, activeQuestionListRepo, contentParser)
-	sharingCommand := sharingusecase.NewCommand(referenceRepo, referenceRepo, referenceRepo, workbookRepo, workbookRepo, workbookRepo, authzChecker)
-	studyCommand := studyusecase.NewCommand(studyRecordRepo, activeQuestionListRepo, questionRepo, workbookRepo, authzChecker, studyDailyStatsRepo, contentParser, studyusecase.UsecaseConfig{
-		ClockFunc:   nil,
-		ShuffleFunc: nil,
-	})
-
-	// controller layer
-	checkHandler := healthhandler.NewCheckHandler(healthRepo)
-	healthhandler.InitRouter(checkHandler, parent)
-
-	createWorkbookHandler := workbookhandler.NewCreateWorkbookHandler(workbookCommand)
-	getWorkbookHandler := workbookhandler.NewGetWorkbookHandler(workbookCommand)
-	listWorkbooksHandler := workbookhandler.NewListWorkbooksHandler(workbookCommand)
-	updateWorkbookHandler := workbookhandler.NewUpdateWorkbookHandler(workbookCommand)
-	deleteWorkbookHandler := workbookhandler.NewDeleteWorkbookHandler(workbookCommand)
-	workbookhandler.InitWorkbookRouter(createWorkbookHandler, getWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, parent, authMiddleware, orgResolverMiddleware)
-
-	audioURLBuilder := handler.NewAudioURLBuilder(questionConfig.AudioPublicBaseURL)
-	questionResponseBuilder := questionhandler.NewResponseBuilder(audioURLBuilder)
-	addQuestionHandler := questionhandler.NewAddQuestionHandler(questionCommand, questionResponseBuilder)
-	getQuestionHandler := questionhandler.NewGetQuestionHandler(questionCommand, questionResponseBuilder)
-	listQuestionsHandler := questionhandler.NewListQuestionsHandler(questionCommand, questionResponseBuilder)
-	updateQuestionHandler := questionhandler.NewUpdateQuestionHandler(questionCommand, questionResponseBuilder)
-	deleteQuestionHandler := questionhandler.NewDeleteQuestionHandler(questionCommand)
-	questionhandler.InitQuestionRouter(addQuestionHandler, getQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, parent, authMiddleware, orgResolverMiddleware)
-
-	audioBatchCommand := questionusecase.NewAudioBatchCommand(questionRepo, questionRepo, questionRepo, questionRepo, questionRepo, contentParser, questionusecase.UsecaseConfig{
-		ClockFunc: nil,
-	})
-	audioHandler := questionhandler.NewAudioHandler(audioBatchCommand)
-
-	shareWorkbookHandler := sharinghandler.NewShareWorkbookHandler(sharingCommand)
-	listSharedHandler := sharinghandler.NewListSharedHandler(sharingCommand)
-	unshareHandler := sharinghandler.NewUnshareHandler(sharingCommand)
-	listPublicHandler := sharinghandler.NewListPublicHandler(sharingCommand)
-	sharinghandler.InitSharingRouter(shareWorkbookHandler, listSharedHandler, unshareHandler, listPublicHandler, parent, authMiddleware, orgResolverMiddleware)
-
-	getStudyQuestionsHandler := studyhandler.NewGetStudyQuestionsHandler(studyCommand, audioURLBuilder)
-	getStudySummaryHandler := studyhandler.NewGetStudySummaryHandler(studyCommand)
-	recordAnswerHandler := studyhandler.NewRecordAnswerHandler(studyCommand)
-	deleteStudyHistoryHandler := studyhandler.NewDeleteStudyHistoryHandler(studyCommand)
-	listStudyRecordsHandler := studyhandler.NewListStudyRecordsHandler(studyCommand)
-	getDashboardHandler := studyhandler.NewGetDashboardHandler(studyCommand)
-	studyhandler.InitStudyRouter(getStudyQuestionsHandler, getStudySummaryHandler, recordAnswerHandler, deleteStudyHistoryHandler, listStudyRecordsHandler, parent, authMiddleware, orgResolverMiddleware)
-	studyhandler.InitDashboardRouter(getDashboardHandler, parent, authMiddleware, orgResolverMiddleware)
-
-	// internal routes (service-to-service via X-Service-Api-Key)
-	internalParent := parent.Group("internal", apiKeyMiddleware)
-	internalOrgParent := internalParent.Group("", middleware.NewOrganizationIDHeaderMiddleware())
-	workbookhandler.InitInternalWorkbookRouter(createWorkbookHandler, listWorkbooksHandler, updateWorkbookHandler, deleteWorkbookHandler, internalOrgParent)
-	questionhandler.InitInternalQuestionRouter(addQuestionHandler, listQuestionsHandler, updateQuestionHandler, deleteQuestionHandler, internalOrgParent)
-	questionhandler.InitInternalAudioRouter(audioHandler, internalParent)
-
-	cleanup := func() {
-		if err := firestoreClient.Close(); err != nil {
-			logger.Error("close firestore client", slog.Any("error", err))
-		}
+	return usecases{
+		workbook: workbookusecase.NewCommand(r.workbook, r.workbook, r.workbook, r.ownedWorkbookList, r.ownedWorkbookList, deps.MaxWorkbooksFetcher, deps.SpaceTypeFetcher, deps.AuthzChecker, deps.PolicyAdder),
+		question: questionusecase.NewCommand(r.question, r.question, r.question, r.question, r.workbook, deps.AuthzChecker, r.activeQuestionList, r.activeQuestionList, contentParser),
+		audioBatch: questionusecase.NewAudioBatchCommand(r.question, r.question, r.question, r.question, r.question, contentParser, questionusecase.UsecaseConfig{
+			ClockFunc: nil,
+		}),
+		sharing: sharingusecase.NewCommand(r.reference, r.reference, r.reference, r.workbook, r.workbook, r.workbook, deps.AuthzChecker),
+		study: studyusecase.NewCommand(r.studyRecord, r.activeQuestionList, r.question, r.workbook, deps.AuthzChecker, r.studyDailyStats, contentParser, studyusecase.UsecaseConfig{
+			ClockFunc:   nil,
+			ShuffleFunc: nil,
+		}),
 	}
+}
 
-	return cleanup, nil
+type routeGroups struct {
+	public            gin.IRouter
+	internal          gin.IRouter
+	internalOrg       gin.IRouter
+	auth              gin.HandlerFunc
+	organizationScope gin.HandlerFunc
+}
+
+func initRoutes(parent gin.IRouter, questionConfig config.QuestionConfig, r repositories, uc usecases, deps Dependencies) {
+	internal := parent.Group("internal", deps.APIKeyMiddleware)
+	groups := routeGroups{
+		public:            parent,
+		internal:          internal,
+		internalOrg:       internal.Group("", middleware.NewOrganizationIDHeaderMiddleware()),
+		auth:              deps.AuthMiddleware,
+		organizationScope: middleware.NewOrganizationResolverMiddleware(deps.OrgResolver),
+	}
+	audioURLBuilder := handler.NewAudioURLBuilder(questionConfig.AudioPublicBaseURL)
+
+	healthhandler.InitRouter(healthhandler.NewCheckHandler(r.health), groups.public)
+	initWorkbookRoutes(groups, uc.workbook)
+	initQuestionRoutes(groups, uc.question, uc.audioBatch, audioURLBuilder)
+	initSharingRoutes(groups, uc.sharing)
+	initStudyRoutes(groups, uc.study, audioURLBuilder)
+}
+
+func initWorkbookRoutes(g routeGroups, uc *workbookusecase.Command) {
+	create := workbookhandler.NewCreateWorkbookHandler(uc)
+	get := workbookhandler.NewGetWorkbookHandler(uc)
+	list := workbookhandler.NewListWorkbooksHandler(uc)
+	update := workbookhandler.NewUpdateWorkbookHandler(uc)
+	del := workbookhandler.NewDeleteWorkbookHandler(uc)
+	workbookhandler.InitWorkbookRouter(create, get, list, update, del, g.public, g.auth, g.organizationScope)
+	workbookhandler.InitInternalWorkbookRouter(create, list, update, del, g.internalOrg)
+}
+
+func initQuestionRoutes(g routeGroups, uc *questionusecase.Command, audioUC *questionusecase.AudioBatchCommand, audioURLBuilder *handler.AudioURLBuilder) {
+	response := questionhandler.NewResponseBuilder(audioURLBuilder)
+	add := questionhandler.NewAddQuestionHandler(uc, response)
+	get := questionhandler.NewGetQuestionHandler(uc, response)
+	list := questionhandler.NewListQuestionsHandler(uc, response)
+	update := questionhandler.NewUpdateQuestionHandler(uc, response)
+	del := questionhandler.NewDeleteQuestionHandler(uc)
+	questionhandler.InitQuestionRouter(add, get, list, update, del, g.public, g.auth, g.organizationScope)
+	questionhandler.InitInternalQuestionRouter(add, list, update, del, g.internalOrg)
+	// The audio queue is processed across organizations, so it does not require X-Organization-Id.
+	questionhandler.InitInternalAudioRouter(questionhandler.NewAudioHandler(audioUC), g.internal)
+}
+
+func initSharingRoutes(g routeGroups, uc *sharingusecase.Command) {
+	sharinghandler.InitSharingRouter(
+		sharinghandler.NewShareWorkbookHandler(uc),
+		sharinghandler.NewListSharedHandler(uc),
+		sharinghandler.NewUnshareHandler(uc),
+		sharinghandler.NewListPublicHandler(uc),
+		g.public, g.auth, g.organizationScope)
+}
+
+func initStudyRoutes(g routeGroups, uc *studyusecase.Command, audioURLBuilder *handler.AudioURLBuilder) {
+	studyhandler.InitStudyRouter(
+		studyhandler.NewGetStudyQuestionsHandler(uc, audioURLBuilder),
+		studyhandler.NewGetStudySummaryHandler(uc),
+		studyhandler.NewRecordAnswerHandler(uc),
+		studyhandler.NewDeleteStudyHistoryHandler(uc),
+		studyhandler.NewListStudyRecordsHandler(uc),
+		g.public, g.auth, g.organizationScope)
+	studyhandler.InitDashboardRouter(studyhandler.NewGetDashboardHandler(uc), g.public, g.auth, g.organizationScope)
 }
