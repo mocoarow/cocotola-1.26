@@ -296,6 +296,25 @@ func Test_RBACRepository_GetGroupsForUser_shouldReturnGroups_whenUserHasGroups(t
 	assert.Contains(t, groups, editorGroup.Value())
 }
 
+func Test_RBACRepository_GetGroupsForUser_shouldReturnSystemOwnerGroupName_whenUserIsSystemOwner(t *testing.T) {
+	t.Parallel()
+	// given
+	ctx := context.Background()
+	rbacRepo, err := gateway.NewRBACRepository(testDB)
+	require.NoError(t, err)
+
+	orgID := randOrgID(t)
+	userID := randAppUserID(t)
+	require.NoError(t, rbacRepo.AssignGroupToUser(ctx, orgID, userID, domainrbac.GroupSystemOwner()))
+
+	// when
+	groups, err := rbacRepo.GetGroupsForUser(ctx, orgID, userID)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{domainrbac.GroupSystemOwner().Value()}, groups)
+}
+
 func Test_RBACRepository_GetGroupsForUser_shouldReturnEmpty_whenUserHasNoGroups(t *testing.T) {
 	t.Parallel()
 	// given

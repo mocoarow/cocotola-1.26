@@ -63,8 +63,6 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	if err != nil {
 		return nil, fmt.Errorf("new RBAC repository: %w", err)
 	}
-	userAuthenticator := gateway.NewUserAuthenticator(db, bcryptHasher, rbacRepo)
-	guestAuthenticator := gateway.NewGuestAuthenticator(db)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(db)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(db)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(db)
@@ -106,8 +104,8 @@ func Initialize(ctx context.Context, parent gin.IRouter, db *gorm.DB, authConfig
 	appUserRepo := gateway.NewAppUserRepository(db)
 	appUserProviderRepo := gateway.NewAppUserProviderRepository(db)
 	authUsecase := authusecase.NewUsecase(
-		userAuthenticator,
-		guestAuthenticator,
+		rbacRepo,
+		bcryptHasher,
 		sessionTokenRepo,
 		sessionTokenWhitelistRepo,
 		refreshTokenRepo,

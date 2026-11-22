@@ -11,7 +11,7 @@ import (
 )
 
 // UserInfo represents an authenticated user's identity.
-// Used internally by gateway-layer interfaces (JWTManager, UserAuthenticator).
+// Used internally by gateway-layer interfaces (JWTManager).
 type UserInfo struct {
 	UserID           domain.AppUserID
 	LoginID          string    `validate:"required"`

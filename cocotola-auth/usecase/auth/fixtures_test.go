@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 var (
 	fixtureAppUserID = domain.MustParseAppUserID("00000000-0000-7000-8000-000000000020")
 	fixtureOrgID     = domain.MustParseOrganizationID("00000000-0000-7000-8000-000000000010")
+
+	errAuthStorage = errors.New("storage unavailable")
 )
 
 const fixtureWhitelistSize = 2

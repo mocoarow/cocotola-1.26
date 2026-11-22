@@ -4,6 +4,7 @@ load("//bazel:go_test.bzl", "smart_go_test")
 go_library(
     name = "auth",
     srcs = [
+        "app_user_lookup.go",
         "command.go",
         "create_session_token_command.go",
         "create_token_pair_command.go",
@@ -26,6 +27,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
         "//cocotola-auth/domain/token",
         "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",
@@ -41,7 +43,9 @@ smart_go_test(
         "create_token_pair_command_s_test.go",
         "extend_session_token_command_s_test.go",
         "fixtures_test.go",
+        "guest_authenticate_query_s_test.go",
         "mocks_test.go",
+        "password_authenticate_command_s_test.go",
         "refresh_access_token_command_s_test.go",
         "revoke_session_token_command_s_test.go",
         "revoke_token_command_s_test.go",
@@ -53,6 +57,7 @@ smart_go_test(
     deps = [
         ":auth",
         "//cocotola-auth/domain",
+        "//cocotola-auth/domain/rbac",
         "//cocotola-auth/domain/token",
         "//cocotola-auth/domain/user",
         "//cocotola-auth/service/auth",

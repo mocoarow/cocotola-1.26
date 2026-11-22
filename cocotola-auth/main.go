@@ -88,8 +88,6 @@ func run() (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("new rbac repository: %w", err)
 	}
-	userAuthenticator := gateway.NewUserAuthenticator(dbConn.DB, bcryptHasher, rbacRepo)
-	guestAuthenticator := gateway.NewGuestAuthenticator(dbConn.DB)
 	sessionTokenRepo := gateway.NewSessionTokenRepository(dbConn.DB)
 	sessionTokenWhitelistRepo := gateway.NewSessionTokenWhitelistRepository(dbConn.DB)
 	refreshTokenRepo := gateway.NewRefreshTokenRepository(dbConn.DB)
@@ -133,8 +131,8 @@ func run() (int, error) {
 	appUserRepo := gateway.NewAppUserRepository(dbConn.DB)
 	appUserProviderRepo := gateway.NewAppUserProviderRepository(dbConn.DB)
 	authUsecase := authusecase.NewUsecase(
-		userAuthenticator,
-		guestAuthenticator,
+		rbacRepo,
+		bcryptHasher,
 		sessionTokenRepo,
 		sessionTokenWhitelistRepo,
 		refreshTokenRepo,
