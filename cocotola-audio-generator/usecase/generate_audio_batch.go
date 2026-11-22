@@ -90,20 +90,46 @@ func GenerateAudioBatch(
 	}
 	logger.InfoContext(ctx, "starting audio batch", slog.Int("items", len(items)))
 
-	for _, item := range items {
-		processed++
-		if err := processOne(ctx, logger, api, tts, storage, cfg, item); err != nil {
-			logger.ErrorContext(ctx, "process item failed",
-				slog.String("workbookId", item.WorkbookID),
-				slog.String("questionId", item.QuestionID),
-				slog.Any("error", err),
-			)
-			// processOne already calls api.Fail on synth/upload errors; we
-			// only land here for transport-level failures, which we let bubble
-			// only after attempting all items.
-		}
+	processed, errs := processItems(ctx, logger, api, tts, storage, cfg, items)
+	if len(errs) > 0 {
+		return processed, fmt.Errorf("%d of %d items failed: %w", len(errs), len(items), errors.Join(errs...))
+	}
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return processed, fmt.Errorf("batch interrupted: %w", ctxErr)
 	}
 	return processed, nil
+}
+
+// processItems keeps failures after ctx is done out of errs: main exits 0 on
+// any error wrapping context.Canceled, which would hide earlier failures.
+func processItems(
+	ctx context.Context,
+	logger *slog.Logger,
+	api QuestionAPI,
+	tts TTS,
+	storage Storage,
+	cfg BatchConfig,
+	items []domain.PendingItem,
+) (int, []error) {
+	processed := 0
+	var errs []error
+	for _, item := range items {
+		processed++
+		err := processOne(ctx, logger, api, tts, storage, cfg, item)
+		if err == nil {
+			continue
+		}
+		logger.ErrorContext(ctx, "process item failed",
+			slog.String("workbookId", item.WorkbookID),
+			slog.String("questionId", item.QuestionID),
+			slog.Any("error", err),
+		)
+		if ctx.Err() != nil {
+			break
+		}
+		errs = append(errs, fmt.Errorf("process question %s: %w", item.QuestionID, err))
+	}
+	return processed, errs
 }
 
 func processOne(
@@ -126,14 +152,13 @@ func processOne(
 
 	refs, synthErr := synthesizeAndUpload(ctx, tts, storage, cfg, item)
 	if synthErr != nil {
-		if failErr := api.Fail(ctx, item, truncate(synthErr.Error(), maxFailReasonRunes)); failErr != nil {
-			// Both errors matter (the synth failure caused the call, the fail
-			// call itself failed the cleanup); join so unwrap can see both.
-			return fmt.Errorf("synth+fail report: %w", errors.Join(synthErr, failErr))
-		}
-		return fmt.Errorf("synthesize/upload: %w", synthErr)
+		return reportFailure(ctx, logger, api, item, synthErr)
 	}
 	if err := api.Complete(ctx, item, refs); err != nil {
+		if errors.Is(err, domain.ErrAudioStateChanged) {
+			logStateChanged(ctx, logger, item)
+			return nil
+		}
 		return fmt.Errorf("complete: %w", err)
 	}
 	logger.InfoContext(ctx, "audio generated",
@@ -141,6 +166,41 @@ func processOne(
 		slog.String("questionId", item.QuestionID),
 	)
 	return nil
+}
+
+func reportFailure(
+	ctx context.Context,
+	logger *slog.Logger,
+	api QuestionAPI,
+	item domain.PendingItem,
+	synthErr error,
+) error {
+	failErr := api.Fail(ctx, item, truncate(synthErr.Error(), maxFailReasonRunes))
+	switch {
+	case failErr == nil:
+		logger.WarnContext(ctx, "audio generation failed, reported for retry",
+			slog.String("workbookId", item.WorkbookID),
+			slog.String("questionId", item.QuestionID),
+			slog.Any("error", synthErr),
+		)
+		return nil
+	case errors.Is(failErr, domain.ErrAudioStateChanged):
+		logStateChanged(ctx, logger, item, slog.Any("error", synthErr))
+		return nil
+	default:
+		// Both errors matter (the synth failure caused the call, the fail
+		// call itself failed the cleanup); join so unwrap can see both.
+		return fmt.Errorf("synth+fail report: %w", errors.Join(synthErr, failErr))
+	}
+}
+
+func logStateChanged(ctx context.Context, logger *slog.Logger, item domain.PendingItem, attrs ...slog.Attr) {
+	logger.LogAttrs(ctx, slog.LevelInfo, "skipping item changed during generation",
+		append([]slog.Attr{
+			slog.String("workbookId", item.WorkbookID),
+			slog.String("questionId", item.QuestionID),
+		}, attrs...)...,
+	)
 }
 
 func synthesizeAndUpload(

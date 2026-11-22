@@ -182,6 +182,9 @@ func (c *QuestionAPIClient) postJSON(ctx context.Context, action string, item do
 		return fmt.Errorf("do %s request: %w", action, err)
 	}
 	defer closeBodyAndLog(ctx, resp.Body)
+	if resp.StatusCode == http.StatusConflict {
+		return domain.ErrAudioStateChanged
+	}
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("%s audio: %s", action, readErrorBody(resp))
 	}

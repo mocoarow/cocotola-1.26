@@ -194,6 +194,40 @@ func Test_QuestionAPIClient_Complete_shouldReturnError_whenServerReturnsNon200(t
 	require.ErrorContains(t, err, "complete audio")
 }
 
+func Test_QuestionAPIClient_Complete_shouldReturnErrAudioStateChanged_whenServerReturns409(t *testing.T) {
+	t.Parallel()
+
+	// given
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+	})
+	client := newTestQuestionClient(t, handler)
+	item := domain.PendingItem{WorkbookID: "wb-1", QuestionID: "q-1", InputHash: "hash1"}
+
+	// when
+	err := client.Complete(context.Background(), item, nil)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioStateChanged)
+}
+
+func Test_QuestionAPIClient_Fail_shouldReturnErrAudioStateChanged_whenServerReturns409(t *testing.T) {
+	t.Parallel()
+
+	// given
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+	})
+	client := newTestQuestionClient(t, handler)
+	item := domain.PendingItem{WorkbookID: "wb-1", QuestionID: "q-1", InputHash: "hash1"}
+
+	// when
+	err := client.Fail(context.Background(), item, "reason")
+
+	// then
+	require.ErrorIs(t, err, domain.ErrAudioStateChanged)
+}
+
 func Test_QuestionAPIClient_Fail_shouldReturnNil_whenServerReturns200(t *testing.T) {
 	t.Parallel()
 
