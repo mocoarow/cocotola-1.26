@@ -3,6 +3,7 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -131,6 +132,215 @@ func Test_GenerateAudioBatch_shouldSkipItem_whenClaimRaceLost(t *testing.T) {
 	// then: claim race results in skip (no Complete/Fail call made — assert via mock expectations)
 	require.NoError(t, err)
 	assert.Equal(t, 1, processed)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenClaimFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	claimErr := errors.New("claim transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(claimErr)
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, claimErr)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenCompleteFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	completeErr := errors.New("complete transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Complete(ctx, item, mock.Anything).Return(completeErr)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, completeErr)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenFailReportFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	failErr := errors.New("fail transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, mock.Anything).Return(failErr)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("synth boom"))
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, failErr)
+}
+
+func Test_GenerateAudioBatch_shouldProcessRemainingItems_whenEarlierItemFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	api.EXPECT().Claim(ctx, first).Return(errors.New("claim transport"))
+	api.EXPECT().Claim(ctx, second).Return(nil)
+	api.EXPECT().Complete(ctx, second, mock.Anything).Return(nil)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, _ = usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	api.AssertCalled(t, "Complete", ctx, second, mock.Anything)
+}
+
+func Test_GenerateAudioBatch_shouldStopProcessing_whenContextIsCanceled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	api.EXPECT().Claim(ctx, first).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, _ = usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	api.AssertNotCalled(t, "Claim", ctx, second)
+}
+
+func Test_GenerateAudioBatch_shouldReturnCanceled_whenOnlyCancellationInterruptsBatch(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func Test_GenerateAudioBatch_shouldNotReportCanceled_whenEarlierItemFailedBeforeCancellation(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	claimErr := errors.New("claim transport")
+	api.EXPECT().Claim(ctx, first).Return(claimErr)
+	api.EXPECT().Claim(ctx, second).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then: main exits 0 for context.Canceled, which would hide the first failure
+	require.ErrorIs(t, err, claimErr)
+	assert.NotErrorIs(t, err, context.Canceled)
+}
+
+func Test_GenerateAudioBatch_shouldSkipItem_whenCompleteReportsStateChanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Complete(ctx, item, mock.Anything).Return(domain.ErrAudioStateChanged)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_GenerateAudioBatch_shouldSkipItem_whenFailReportsStateChanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, mock.Anything).Return(domain.ErrAudioStateChanged)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("synth boom"))
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
 }
 
 func Test_GenerateAudioBatch_shouldCallReclaimStale_whenStaleAfterIsConfigured(t *testing.T) {
