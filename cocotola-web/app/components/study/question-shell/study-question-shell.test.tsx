@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -51,5 +51,54 @@ describe("StudyQuestionShell", () => {
 
     // then
     expect(onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  describe("Enter on the Check button", () => {
+    const multipleChoice = question(
+      "multiple_choice",
+      JSON.stringify({
+        questionText: "Q?",
+        choices: [
+          { id: "1", text: "Right", isCorrect: true },
+          { id: "2", text: "Wrong", isCorrect: false },
+        ],
+        shuffleChoices: false,
+        showCorrectCount: false,
+        explanation: "",
+      }),
+    );
+
+    async function focusCheckWithSelection(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(screen.getByRole("button", { name: "Right" }));
+      act(() => screen.getByRole("button", { name: "Check" }).focus());
+    }
+
+    it("should not move to the next question when Enter is held", async () => {
+      // given
+      const user = userEvent.setup();
+      const onAnswer = vi.fn();
+      render(<StudyQuestionShell question={multipleChoice} onAnswer={onAnswer} onSkip={vi.fn()} />);
+      await focusCheckWithSelection(user);
+
+      // when
+      await user.keyboard("{Enter>3}");
+
+      // then
+      expect(onAnswer).not.toHaveBeenCalled();
+    });
+
+    it("should move to the next question when Enter is pressed again after the held Enter", async () => {
+      // given
+      const user = userEvent.setup();
+      const onAnswer = vi.fn();
+      render(<StudyQuestionShell question={multipleChoice} onAnswer={onAnswer} onSkip={vi.fn()} />);
+      await focusCheckWithSelection(user);
+
+      // when
+      await user.keyboard("{Enter>3/}{Enter}");
+
+      // then
+      expect(onAnswer).toHaveBeenCalledTimes(1);
+    });
   });
 });

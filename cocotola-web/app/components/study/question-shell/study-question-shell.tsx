@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, type RefObject, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MarkdownText } from "~/components/markdown-text";
 import { getQuestionModule, isQuestionType } from "~/components/study/question-types/registry";
@@ -123,6 +123,10 @@ function QuestionFlow<T extends QuestionType, C>({
   );
 }
 
+function ignoreRepeatedEnter(event: KeyboardEvent<HTMLButtonElement>) {
+  if (event.key === "Enter" && event.repeat) event.preventDefault();
+}
+
 function ResultFooter({
   correct,
   nextButtonRef,
@@ -138,7 +142,7 @@ function ResultFooter({
       <span className={`text-sm font-medium ${correct ? "text-green-600" : "text-red-600"}`}>
         {correct ? t("workbooks.study.correct") : t("workbooks.study.incorrect")}
       </span>
-      <Button ref={nextButtonRef} onClick={onNext}>
+      <Button ref={nextButtonRef} onClick={onNext} onKeyDown={ignoreRepeatedEnter}>
         {t("workbooks.study.next")}
       </Button>
     </div>
