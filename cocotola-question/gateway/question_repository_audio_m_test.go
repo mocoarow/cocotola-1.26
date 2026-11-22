@@ -249,6 +249,29 @@ func Test_QuestionRepository_FindByID_shouldReturnTruncatedLastError_whenFailedW
 	assert.Equal(t, strings.Repeat("あ", 500), loaded.AudioGeneration().LastError())
 }
 
+func Test_QuestionRepository_Save_shouldRemoveAudioGeneration_whenAudioIsDiscarded(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a stored question whose audio is ready
+	client := setupFirestoreClient(t)
+	repo := gateway.NewQuestionRepository(client)
+	workbookID := "test-wb-discard-" + uuid.NewString()
+	q := newQuestionWithAudio(t, repo, workbookID, domainquestion.AudioGenerationStatusReady(), fixtureAudioInputHashA, time.Now())
+	q.SyncWordFillAudio(domainquestion.WordFillContent{
+		Source: domainquestion.TextWithLang{Text: "pomme", Lang: "fr"},
+		Target: domainquestion.TextWithLang{Text: "{{apple}}", Lang: "en"},
+	}, time.Now())
+	require.NoError(t, repo.Save(ctx, q))
+
+	// when
+	loaded, err := repo.FindByID(ctx, workbookID, q.ID())
+
+	// then
+	require.NoError(t, err)
+	assert.Nil(t, loaded.AudioGeneration())
+}
+
 func Test_QuestionRepository_FindFailedAudio_shouldReturnOnlyDueItems_whenMixedStatusesAndAttemptsExist(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

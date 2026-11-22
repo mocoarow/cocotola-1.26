@@ -361,6 +361,7 @@ packageConfigs:
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain": {forbiddenPackages: *audio-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase": {forbiddenPackages: *audio-usecase}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain": {forbiddenPackages: *lib-domain}
+  "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/audio": {forbiddenPackages: *lib-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/idset": {forbiddenPackages: *lib-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/versioned": {forbiddenPackages: *lib-domain}
   "github.com/mocoarow/cocotola-1.26/cocotola-lib/usecase/occ": {forbiddenPackages: *lib-usecase}
