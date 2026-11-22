@@ -6,19 +6,25 @@ go_library(
     srcs = [
         "doc.go",
         "gcs_reader.go",
+        "question_api_client.go",
     ],
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-init/gateway",
     visibility = ["//visibility:public"],
-    deps = ["@com_google_cloud_go_storage//:storage"],
+    deps = [
+        "//cocotola-init/seed",
+        "@com_google_cloud_go_storage//:storage",
+    ],
 )
 
 smart_go_test(
     name = "gateway_test",
     srcs = [
         "gcs_reader_s_test.go",
+        "question_api_client_s_test.go",
     ],
     deps = [
         ":gateway",
+        "//cocotola-init/seed",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

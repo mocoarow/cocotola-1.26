@@ -1,4 +1,4 @@
-package seed
+package gateway
 
 import (
 	"bytes"
@@ -10,6 +10,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+
+	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
 
 const (
@@ -41,20 +43,13 @@ func NewQuestionAPIClient(baseURL, apiKey string, httpClient *http.Client) *Ques
 	}
 }
 
-// WorkbookListItem is the subset of the ListWorkbooks response the seeder cares about.
-type WorkbookListItem struct {
-	WorkbookID  string `json:"workbookId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-}
-
 type listWorkbooksResponse struct {
-	Workbooks []WorkbookListItem `json:"workbooks"`
+	Workbooks []seed.WorkbookListItem `json:"workbooks"`
 }
 
 // ListWorkbooks calls GET /api/v1/internal/workbook?spaceId=... and returns
 // the workbooks present in the space for the given organization.
-func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, spaceID string) ([]WorkbookListItem, error) {
+func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, spaceID string) ([]seed.WorkbookListItem, error) {
 	q := url.Values{}
 	q.Set("spaceId", spaceID)
 	reqURL := c.baseURL + "/api/v1/internal/workbook?" + q.Encode()
@@ -66,44 +61,26 @@ func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, s
 	return resp.Workbooks, nil
 }
 
-// CreateWorkbookRequest mirrors cocotola-question's CreateWorkbookRequest.
-// Visibility is ignored server-side (the SpaceType determines it), so we
-// always send "public" for clarity.
-type CreateWorkbookRequest struct {
-	SpaceID     string `json:"spaceId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Visibility  string `json:"visibility"`
-	Language    string `json:"language"`
-}
-
-// WorkbookResponse mirrors cocotola-question's WorkbookResponse.
-type WorkbookResponse struct {
+type workbookResponse struct {
 	WorkbookID string `json:"workbookId"`
 }
 
 // CreateWorkbook calls POST /api/v1/internal/workbook.
-func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, body CreateWorkbookRequest) (string, error) {
+func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, body seed.CreateWorkbookRequest) (string, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook"
-	var resp WorkbookResponse
+	var resp workbookResponse
 	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
 		return "", fmt.Errorf("create workbook: %w", err)
 	}
 	return resp.WorkbookID, nil
 }
 
-// QuestionListItem is the subset of the ListQuestions response the seeder cares about.
-type QuestionListItem struct {
-	QuestionID string   `json:"questionId"`
-	Tags       []string `json:"tags"`
-}
-
 type listQuestionsResponse struct {
-	Questions []QuestionListItem `json:"questions"`
+	Questions []seed.QuestionListItem `json:"questions"`
 }
 
 // ListQuestions calls GET /api/v1/internal/workbook/{workbookId}/question.
-func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, workbookID string) ([]QuestionListItem, error) {
+func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, workbookID string) ([]seed.QuestionListItem, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
 
 	var resp listQuestionsResponse
@@ -113,25 +90,22 @@ func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, w
 	return resp.Questions, nil
 }
 
-// AddQuestionRequest mirrors cocotola-question's AddQuestionRequest.
-type AddQuestionRequest struct {
-	QuestionType string   `json:"questionType"`
-	Content      string   `json:"content"`
-	Tags         []string `json:"tags,omitempty"`
-	OrderIndex   int32    `json:"orderIndex"`
-}
-
 // AddQuestion calls POST /api/v1/internal/workbook/{workbookId}/question.
-func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error {
+// A 400 response is returned as seed.ErrQuestionRejected.
+func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, body seed.AddQuestionRequest) error {
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
-	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil, maxBodyBytes); err != nil {
+	err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil, maxBodyBytes)
+	if statusErr, ok := errors.AsType[*HTTPStatusError](err); ok && statusErr.StatusCode == http.StatusBadRequest {
+		return fmt.Errorf("add question (workbook %s): %w: %w", workbookID, seed.ErrQuestionRejected, err)
+	}
+	if err != nil {
 		return fmt.Errorf("add question (workbook %s): %w", workbookID, err)
 	}
 	return nil
 }
 
 // do issues an authenticated HTTP request and decodes the JSON response into out
-// (when out is non-nil). Non-2xx responses are surfaced as wrapped errors.
+// (when out is non-nil).
 func (c *QuestionAPIClient) do(ctx context.Context, method, reqURL, organizationID string, body, out any, maxDecodeBytes int64) error {
 	req, err := c.newRequest(ctx, method, reqURL, organizationID, body)
 	if err != nil {

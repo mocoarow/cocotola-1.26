@@ -13,7 +13,7 @@ import (
 	libgateway "github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/config"
-	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
+	"github.com/mocoarow/cocotola-1.26/cocotola-init/gateway"
 )
 
 const appName = "cocotola-init"
@@ -70,7 +70,7 @@ func run(args []string) (int, error) {
 	return 0, nil
 }
 
-func newQuestionAPIClient(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig) (*seed.QuestionAPIClient, error) {
+func newQuestionAPIClient(ctx context.Context, appEnv string, qcfg config.QuestionClientConfig) (*gateway.QuestionAPIClient, error) {
 	// TimeoutSec == 0 means "use the default" (see config.QuestionClientConfig).
 	const defaultTimeoutSec = 10
 	timeoutSec := qcfg.TimeoutSec
@@ -81,5 +81,5 @@ func newQuestionAPIClient(ctx context.Context, appEnv string, qcfg config.Questi
 	if err != nil {
 		return nil, fmt.Errorf("new http client: %w", err)
 	}
-	return seed.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient), nil
+	return gateway.NewQuestionAPIClient(qcfg.BaseURL, qcfg.APIKey, httpClient), nil
 }

@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -28,6 +28,8 @@ const (
 	testOrgID         = "org-1"
 	testPublicSpaceID = "public-space-1"
 )
+
+var errQuestionRejected = fmt.Errorf("add question: %w", seed.ErrQuestionRejected)
 
 func discardLogger() *slog.Logger {
 	return slog.New(slog.DiscardHandler)
@@ -196,14 +198,14 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportPositionsAndMaxExistingOrderI
 	}, got)
 }
 
-func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejectedWith400(t *testing.T) {
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReportRejected_whenQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given: nothing imported yet; the server rejects C1
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).Return(nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C3")).Return(nil)
 	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger())
@@ -397,33 +399,14 @@ func addQuestionWithContent(content string) any {
 	return mock.MatchedBy(func(body seed.AddQuestionRequest) bool { return body.Content == content })
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith403(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: the server forbids C1 with 403; C2 must not be attempted
+	// given: the server rejects C1
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusForbidden})
-	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
-
-	// when
-	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
-
-	// then
-	var statusErr *seed.HTTPStatusError
-	require.ErrorAs(t, err, &statusErr)
-	assert.Equal(t, http.StatusForbidden, statusErr.StatusCode)
-}
-
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejectedWith400(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given: the server rejects C1 with 400
-	client := existingVocabularyClient(ctx, t)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
 	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
@@ -435,14 +418,14 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_w
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejectedWith400(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_whenEarlierWorkbookQuestionRejected(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given: vocab-v1's C1 is rejected; grammar-v1 comes after it and must still be created
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusBadRequest})
+		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
@@ -459,30 +442,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_when
 	require.ErrorIs(t, err, seed.ErrInvalidSeed)
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWith5xx(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWithoutRejection(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: the server fails C1 with 500; C2 must not be attempted
-	client := existingVocabularyClient(ctx, t)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).
-		Return(&seed.HTTPStatusError{StatusCode: http.StatusInternalServerError})
-	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), discardLogger()), sampleSeeds()[:1])
-
-	// when
-	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
-
-	// then
-	var statusErr *seed.HTTPStatusError
-	require.ErrorAs(t, err, &statusErr)
-	assert.Equal(t, http.StatusInternalServerError, statusErr.StatusCode)
-}
-
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenAddQuestionFailsWithoutStatus(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	// given: a transport error on C1; C2 must not be attempted
+	// given: C1 fails for a reason other than rejection; C2 must not be attempted
 	sendErr := errors.New("connection reset")
 	client := existingVocabularyClient(ctx, t)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C1")).

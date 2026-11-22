@@ -1,6 +1,6 @@
 //go:build small
 
-package seed_test
+package gateway_test
 
 import (
 	"context"
@@ -16,13 +16,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-init/gateway"
 	"github.com/mocoarow/cocotola-1.26/cocotola-init/seed"
 )
 
 const (
 	testAPIKey       = "test-api-key"
 	testRequestOrgID = "org-1"
-	// listQuestionsLimitBytes mirrors the unexported limit in client.go.
+	// listQuestionsLimitBytes mirrors the unexported limit in question_api_client.go.
 	listQuestionsLimitBytes = 32 << 20
 )
 
@@ -96,8 +97,14 @@ func newRecorder() (*httptest.Server, *[]recordedCall) {
 	return srv, &calls
 }
 
-func newClient(srv *httptest.Server) *seed.QuestionAPIClient {
-	return seed.NewQuestionAPIClient(srv.URL, testAPIKey, srv.Client())
+func newClient(srv *httptest.Server) *gateway.QuestionAPIClient {
+	return gateway.NewQuestionAPIClient(srv.URL, testAPIKey, srv.Client())
+}
+
+func newStatusServer(status int) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(status)
+	}))
 }
 
 func Test_QuestionAPIClient_ListWorkbooks_shouldSendApiKeyAndOrgIDHeaders(t *testing.T) {
@@ -242,13 +249,11 @@ func Test_QuestionAPIClient_ListQuestions_shouldReportLimitInMessage_whenRespons
 	require.ErrorContains(t, err, fmt.Sprintf("response body exceeds %d bytes", listQuestionsLimitBytes))
 }
 
-func Test_QuestionAPIClient_shouldReturnHTTPStatusError_whenServerReturnsNon2xx(t *testing.T) {
+func Test_QuestionAPIClient_AddQuestion_shouldKeepHTTPStatusError_whenServerReturns400(t *testing.T) {
 	t.Parallel()
 
 	// given
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-	}))
+	srv := newStatusServer(http.StatusBadRequest)
 	defer srv.Close()
 	client := newClient(srv)
 
@@ -256,9 +261,114 @@ func Test_QuestionAPIClient_shouldReturnHTTPStatusError_whenServerReturnsNon2xx(
 	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
 
 	// then
-	var statusErr *seed.HTTPStatusError
+	var statusErr *gateway.HTTPStatusError
 	require.ErrorAs(t, err, &statusErr)
 	assert.Equal(t, http.StatusBadRequest, statusErr.StatusCode)
+}
+
+func Test_QuestionAPIClient_AddQuestion_shouldReturnErrQuestionRejected_whenServerReturns400(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newStatusServer(http.StatusBadRequest)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+
+	// then
+	require.ErrorIs(t, err, seed.ErrQuestionRejected)
+}
+
+func Test_QuestionAPIClient_AddQuestion_shouldNotReturnErrQuestionRejected_whenServerReturnsNon400(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status int
+	}{
+		{name: "forbidden", status: http.StatusForbidden},
+		{name: "internal server error", status: http.StatusInternalServerError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			srv := newStatusServer(tt.status)
+			defer srv.Close()
+			client := newClient(srv)
+
+			// when
+			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+
+			// then
+			assert.NotErrorIs(t, err, seed.ErrQuestionRejected)
+		})
+	}
+}
+
+func Test_QuestionAPIClient_AddQuestion_shouldReturnHTTPStatusError_whenServerReturnsNon400(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		status int
+	}{
+		{name: "forbidden", status: http.StatusForbidden},
+		{name: "internal server error", status: http.StatusInternalServerError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			srv := newStatusServer(tt.status)
+			defer srv.Close()
+			client := newClient(srv)
+
+			// when
+			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+
+			// then
+			var statusErr *gateway.HTTPStatusError
+			require.ErrorAs(t, err, &statusErr)
+			assert.Equal(t, tt.status, statusErr.StatusCode)
+		})
+	}
+}
+
+func Test_QuestionAPIClient_CreateWorkbook_shouldReturnHTTPStatusError_whenServerReturns400(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newStatusServer(http.StatusBadRequest)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookRequest{})
+
+	// then
+	var statusErr *gateway.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusBadRequest, statusErr.StatusCode)
+}
+
+func Test_QuestionAPIClient_CreateWorkbook_shouldNotReturnErrQuestionRejected_whenServerReturns400(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newStatusServer(http.StatusBadRequest)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookRequest{})
+
+	// then
+	assert.NotErrorIs(t, err, seed.ErrQuestionRejected)
 }
 
 func Test_QuestionAPIClient_shouldIncludeStatusInMessage_whenServerReturnsNon2xx(t *testing.T) {

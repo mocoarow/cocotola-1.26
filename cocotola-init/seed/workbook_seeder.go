@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"strings"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/i18n"
@@ -22,13 +21,48 @@ const (
 	questionTagPrefix = "seed-"
 )
 
-// WorkbookAPIClient is the subset of QuestionAPIClient required by WorkbookSeeder.
-// Defining it here lets the seeder be tested without spinning up an HTTP server.
+// ErrQuestionRejected is returned by WorkbookAPIClient.AddQuestion when the
+// question service rejects the question's content.
+var ErrQuestionRejected = errors.New("question rejected")
+
+// WorkbookAPIClient is the question service API required by WorkbookSeeder.
 type WorkbookAPIClient interface {
 	ListWorkbooks(ctx context.Context, organizationID, spaceID string) ([]WorkbookListItem, error)
 	CreateWorkbook(ctx context.Context, organizationID string, body CreateWorkbookRequest) (string, error)
 	ListQuestions(ctx context.Context, organizationID, workbookID string) ([]QuestionListItem, error)
 	AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error
+}
+
+// WorkbookListItem is the subset of the ListWorkbooks response the seeder cares about.
+type WorkbookListItem struct {
+	WorkbookID  string `json:"workbookId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+// CreateWorkbookRequest mirrors cocotola-question's CreateWorkbookRequest.
+// Visibility is ignored server-side (the SpaceType determines it), so we
+// always send "public" for clarity.
+type CreateWorkbookRequest struct {
+	SpaceID     string `json:"spaceId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+	Language    string `json:"language"`
+}
+
+// QuestionListItem is the subset of the ListQuestions response the seeder cares about.
+type QuestionListItem struct {
+	QuestionID string   `json:"questionId"`
+	Tags       []string `json:"tags"`
+}
+
+// AddQuestionRequest mirrors cocotola-question's AddQuestionRequest.
+type AddQuestionRequest struct {
+	QuestionType string   `json:"questionType"`
+	Content      string   `json:"content"`
+	Tags         []string `json:"tags,omitempty"`
+	OrderIndex   int32    `json:"orderIndex"`
 }
 
 // WorkbookPolicyEnsurer idempotently grants the system owner per-workbook RBAC
@@ -216,9 +250,8 @@ func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, wo
 	return output, nil
 }
 
-// addQuestion adds one question. A 400 response means the question's content
-// is invalid and will be rejected on every run, so it is reported as rejected
-// instead of stopping the remaining questions.
+// addQuestion adds one question. A rejected question will be rejected on every
+// run, so it is reported as rejected instead of stopping the remaining questions.
 func (s *WorkbookSeeder) addQuestion(ctx context.Context, organizationID, workbookID, workbookSeedKey, tag string, q QuestionSeed) (bool, error) {
 	body := AddQuestionRequest{
 		QuestionType: q.QuestionType,
@@ -227,11 +260,10 @@ func (s *WorkbookSeeder) addQuestion(ctx context.Context, organizationID, workbo
 		OrderIndex:   q.OrderIndex,
 	}
 	err := s.client.AddQuestion(ctx, organizationID, workbookID, body)
-	if statusErr, ok := errors.AsType[*HTTPStatusError](err); ok && statusErr.StatusCode == http.StatusBadRequest {
+	if errors.Is(err, ErrQuestionRejected) {
 		s.logger.WarnContext(ctx, "question rejected",
 			slog.String("workbook_seed_key", workbookSeedKey),
 			slog.String("question_seed_key", q.SeedKey),
-			slog.Int("status", statusErr.StatusCode),
 		)
 		return true, nil
 	}
