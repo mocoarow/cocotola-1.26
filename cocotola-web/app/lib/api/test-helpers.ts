@@ -18,6 +18,10 @@ export function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+export function unauthorizedResponse(): Response {
+  return new Response(null, { status: 401 });
+}
+
 export async function catchError(promise: Promise<unknown>): Promise<unknown> {
   return promise.then(
     () => undefined,

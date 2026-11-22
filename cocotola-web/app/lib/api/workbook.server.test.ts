@@ -1,6 +1,6 @@
 import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catchError, jsonResponse, newClient } from "./test-helpers";
+import { catchError, jsonResponse, newClient, unauthorizedResponse } from "./test-helpers";
 import {
   createWorkbook,
   deleteWorkbook,
@@ -15,10 +15,6 @@ const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 const QUESTION_BASE_URL = "http://localhost:8090";
-
-function unauthorized(): Response {
-  return new Response(null, { status: 401 });
-}
 
 function buildWorkbook(overrides: Partial<Workbook> = {}): Workbook {
   return {
@@ -146,7 +142,7 @@ describe("listWorkbooks", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(unauthorized());
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(listWorkbooks(newClient(), "sp-1"));
@@ -231,7 +227,7 @@ describe("createWorkbook", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(unauthorized());
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(createWorkbook(newClient(), CREATE_DATA));
@@ -288,7 +284,7 @@ describe("deleteWorkbook", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(unauthorized());
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(deleteWorkbook(newClient(), "wb-1"));
@@ -349,7 +345,7 @@ describe("getWorkbook", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(unauthorized());
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(getWorkbook(newClient(), "wb-1"));
@@ -421,7 +417,7 @@ describe("updateWorkbook", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(unauthorized());
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(updateWorkbook(newClient(), "wb-1", UPDATE_DATA));

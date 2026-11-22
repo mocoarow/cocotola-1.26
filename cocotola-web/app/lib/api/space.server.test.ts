@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { findPrivateSpace, listSpaces, type Space } from "./space.server";
-import { catchError, jsonResponse, newClient } from "./test-helpers";
+import { catchError, jsonResponse, newClient, unauthorizedResponse } from "./test-helpers";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -101,7 +101,7 @@ describe("listSpaces", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(listSpaces(newClient()));
@@ -163,7 +163,7 @@ describe("findPrivateSpace", () => {
 
   it("should throw redirect to /login when API returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(findPrivateSpace(newClient()));

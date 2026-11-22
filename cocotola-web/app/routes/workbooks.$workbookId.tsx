@@ -49,7 +49,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const { workbookId } = params;
   const [workbook, questions] = await Promise.all([
     getWorkbook(client, workbookId),
-    listQuestions(accessToken, workbookId),
+    listQuestions(client, workbookId),
   ]);
   return { workbook, questions };
 }
@@ -121,7 +121,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
       return saveQuestion(
         () =>
-          updateQuestion(accessToken, workbookId, questionId, {
+          updateQuestion(client, workbookId, questionId, {
             content,
             tags: tags.length > 0 ? tags : undefined,
             orderIndex,
@@ -136,7 +136,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
       return saveQuestion(
         () =>
-          updateQuestion(accessToken, workbookId, questionId, {
+          updateQuestion(client, workbookId, questionId, {
             content,
             tags: tags.length > 0 ? tags : undefined,
             orderIndex,
@@ -182,7 +182,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
       return saveQuestion(
         () =>
-          updateQuestion(accessToken, workbookId, questionId, {
+          updateQuestion(client, workbookId, questionId, {
             content,
             tags: tags.length > 0 ? tags : undefined,
             orderIndex,
@@ -199,7 +199,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
     if (typeof questionId !== "string" || !questionId) {
       throw new Response("questionId is required", { status: 400 });
     }
-    await deleteQuestion(accessToken, workbookId, questionId);
+    await deleteQuestion(client, workbookId, questionId);
     return { ok: true };
   }
 
@@ -241,7 +241,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
     return saveQuestion(
       () =>
-        addQuestion(accessToken, workbookId, {
+        addQuestion(client, workbookId, {
           questionType: "word_fill",
           content,
           tags: tags.length > 0 ? tags : undefined,
@@ -256,7 +256,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
     return saveQuestion(
       () =>
-        addQuestion(accessToken, workbookId, {
+        addQuestion(client, workbookId, {
           questionType: "multiple_choice",
           content,
           tags: tags.length > 0 ? tags : undefined,
@@ -271,7 +271,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
     return saveQuestion(
       () =>
-        addQuestion(accessToken, workbookId, {
+        addQuestion(client, workbookId, {
           questionType: "ordering",
           content,
           tags: tags.length > 0 ? tags : undefined,

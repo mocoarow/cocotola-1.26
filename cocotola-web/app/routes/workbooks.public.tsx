@@ -5,6 +5,7 @@ import { useFetcher, useLoaderData } from "react-router";
 import { useConfirm } from "~/components/confirm-dialog-provider";
 import { StartStudyDialog } from "~/components/study/start-study-dialog";
 import { Button } from "~/components/ui/button";
+import { createBackendClient } from "~/lib/api/client.server";
 import {
   listPublicWorkbooks,
   listSharedWorkbooks,
@@ -16,12 +17,13 @@ import { requireAuth } from "~/lib/auth/require-auth.server";
 import { formatDate } from "~/lib/format/date";
 import type { Route } from "./+types/workbooks.public";
 
-export async function loader({ context }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
 
   const [workbooks, references] = await Promise.all([
-    listPublicWorkbooks(accessToken),
-    listSharedWorkbooks(accessToken),
+    listPublicWorkbooks(client),
+    listSharedWorkbooks(client),
   ]);
 
   return { workbooks, references };
@@ -44,6 +46,7 @@ async function callTolerantly(
 
 export async function action({ request, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const formData = await request.formData();
   const intent = formData.get("intent");
 
@@ -54,7 +57,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
     // 409 means the user already shared this workbook (double-click or
     // concurrent tab). Treat as success so the next loader pass re-syncs.
-    const { tolerated } = await callTolerantly(() => shareWorkbook(accessToken, workbookId), [409]);
+    const { tolerated } = await callTolerantly(() => shareWorkbook(client, workbookId), [409]);
     return { ok: true, alreadyShared: tolerated };
   }
 
@@ -65,10 +68,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     }
     // 404 means the reference was already removed (double-click or
     // concurrent tab). Treat as success so the next loader pass re-syncs.
-    const { tolerated } = await callTolerantly(
-      () => unshareWorkbook(accessToken, referenceId),
-      [404],
-    );
+    const { tolerated } = await callTolerantly(() => unshareWorkbook(client, referenceId), [404]);
     return { ok: true, alreadyRemoved: tolerated };
   }
 

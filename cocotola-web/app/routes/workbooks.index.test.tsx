@@ -409,6 +409,19 @@ describe("WorkbooksIndex loader", () => {
     expect(result).toEqual({ workbooks: created, addedWorkbooks: added, spaceId: "sp-9" });
   });
 
+  it("should list the added workbooks through the backend client", async () => {
+    // given
+    vi.mocked(findPrivateSpace).mockResolvedValue(undefined);
+    vi.mocked(listSharedWorkbooks).mockResolvedValue([]);
+    const args = { request: new Request("http://localhost/workbooks") } as unknown as LoaderArgs;
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(listSharedWorkbooks).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it("should return added workbooks when the private space does not exist", async () => {
     // given
     const added = [buildAdded()];
@@ -451,7 +464,18 @@ describe("WorkbooksIndex action", () => {
     await action(buildActionArgs({ intent: "unshare", referenceId: "ref-xyz" }));
 
     // then
-    expect(unshareWorkbook).toHaveBeenCalledWith("test-token", "ref-xyz");
+    expect(vi.mocked(unshareWorkbook).mock.calls[0][1]).toBe("ref-xyz");
+  });
+
+  it("should unshare the workbook through the backend client on unshare intent", async () => {
+    // given
+    vi.mocked(unshareWorkbook).mockResolvedValue(undefined);
+
+    // when
+    await action(buildActionArgs({ intent: "unshare", referenceId: "ref-xyz" }));
+
+    // then
+    expect(vi.mocked(unshareWorkbook).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should create the backend client with the request the action received", async () => {

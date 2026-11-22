@@ -1,6 +1,6 @@
 import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catchError, jsonResponse, newClient } from "./test-helpers";
+import { catchError, jsonResponse, newClient, unauthorizedResponse } from "./test-helpers";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -130,7 +130,7 @@ describe("createBackendClient", () => {
 
   it("should throw redirect to /login when backend returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(newClient().get("question", "/api/v1/x", baseOptions));
@@ -141,7 +141,7 @@ describe("createBackendClient", () => {
 
   it("should destroy the session cookie when backend returns 401", async () => {
     // given
-    fetchMock.mockResolvedValue(new Response(null, { status: 401 }));
+    fetchMock.mockResolvedValue(unauthorizedResponse());
 
     // when
     const caught = await catchError(newClient().get("question", "/api/v1/x", baseOptions));

@@ -49,6 +49,7 @@ import { createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
 import {
   addQuestion,
+  deleteQuestion,
   listQuestions,
   QuestionValidationError,
   updateQuestion,
@@ -205,6 +206,17 @@ describe("WorkbookDetail loader", () => {
     // then
     expect(getWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
   });
+
+  it("should list the questions through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(listQuestions).mock.calls[0][0]).toBe(backendClient);
+  });
 });
 
 describe("WorkbookDetail action", () => {
@@ -258,7 +270,7 @@ describe("WorkbookDetail action", () => {
     await action(args);
 
     // then
-    expect(addQuestion).toHaveBeenCalledWith("test-token", "wb-1", {
+    expect(addQuestion).toHaveBeenCalledWith(backendClient, "wb-1", {
       questionType: "ordering",
       content: EXPECTED_CONTENT,
       tags: ["level:beginner"],
@@ -303,11 +315,22 @@ describe("WorkbookDetail action", () => {
     await action(args);
 
     // then
-    expect(updateQuestion).toHaveBeenCalledWith("test-token", "wb-1", "q-1", {
+    expect(updateQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", {
       content: EXPECTED_CONTENT,
       tags: ["level:beginner"],
       orderIndex: 5,
     });
+  });
+
+  it("should delete the question through the backend client on deleteQuestion intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "deleteQuestion", questionId: "q-1" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(deleteQuestion).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should split the tags on addWordFill intent", async () => {

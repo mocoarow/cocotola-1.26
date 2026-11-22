@@ -11,6 +11,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 vi.mock("~/lib/api/sharing.server", () => ({
   listPublicWorkbooks: vi.fn(),
   listSharedWorkbooks: vi.fn(),
@@ -64,12 +68,14 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useLoaderData } from "react-router";
+import { createBackendClient } from "~/lib/api/client.server";
 import {
   listPublicWorkbooks,
   listSharedWorkbooks,
   shareWorkbook,
   unshareWorkbook,
 } from "~/lib/api/sharing.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import WorkbooksPublic, { action, loader } from "./workbooks.public";
 
@@ -312,16 +318,44 @@ function buildActionArgs(request: Request): ActionArgs {
   return { request, params: {}, context: {} } as unknown as ActionArgs;
 }
 
+const backendClient = backendClientSentinel();
+
 describe("WorkbooksPublic loader", () => {
   beforeEach(() => {
     mockedRequireAuth.mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
   });
 
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should fetch public workbooks and shared references in parallel", async () => {
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    mockedListPublic.mockResolvedValue([]);
+    mockedListShared.mockResolvedValue([]);
+    const args = buildLoaderArgs(new Request("http://localhost/workbooks/public"));
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    mockedListPublic.mockResolvedValue([]);
+    mockedListShared.mockResolvedValue([]);
+
+    // when
+    await loader(buildLoaderArgs(new Request("http://localhost/workbooks/public")));
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should return public workbooks and shared references", async () => {
     // given
     const workbooks = [buildWorkbook({ workbookId: "wb-1" })];
     const references = [buildReference({ workbookId: "wb-1" })];
@@ -333,8 +367,30 @@ describe("WorkbooksPublic loader", () => {
 
     // then
     expect(result).toEqual({ workbooks, references });
-    expect(mockedListPublic).toHaveBeenCalledWith("test-token");
-    expect(mockedListShared).toHaveBeenCalledWith("test-token");
+  });
+
+  it("should list public workbooks through the backend client", async () => {
+    // given
+    mockedListPublic.mockResolvedValue([]);
+    mockedListShared.mockResolvedValue([]);
+
+    // when
+    await loader(buildLoaderArgs(new Request("http://localhost/workbooks/public")));
+
+    // then
+    expect(mockedListPublic.mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should list shared references through the backend client", async () => {
+    // given
+    mockedListPublic.mockResolvedValue([]);
+    mockedListShared.mockResolvedValue([]);
+
+    // when
+    await loader(buildLoaderArgs(new Request("http://localhost/workbooks/public")));
+
+    // then
+    expect(mockedListShared.mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should propagate errors when listPublicWorkbooks fails", async () => {
@@ -352,6 +408,7 @@ describe("WorkbooksPublic loader", () => {
 describe("WorkbooksPublic action", () => {
   beforeEach(() => {
     mockedRequireAuth.mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
   });
 
   afterEach(() => {
@@ -367,6 +424,30 @@ describe("WorkbooksPublic action", () => {
     });
   }
 
+  it("should create the backend client with the request the action received", async () => {
+    // given
+    mockedUnshareWorkbook.mockResolvedValue(undefined);
+    const args = buildActionArgs(buildPostRequest({ intent: "unshare", referenceId: "ref-1" }));
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    mockedUnshareWorkbook.mockResolvedValue(undefined);
+    const request = buildPostRequest({ intent: "unshare", referenceId: "ref-1" });
+
+    // when
+    await action(buildActionArgs(request));
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
   it("should call shareWorkbook on share intent", async () => {
     // given
     mockedShareWorkbook.mockResolvedValue({
@@ -380,8 +461,24 @@ describe("WorkbooksPublic action", () => {
     const result = await action(buildActionArgs(request));
 
     // then
-    expect(mockedShareWorkbook).toHaveBeenCalledWith("test-token", "wb-1");
+    expect(mockedShareWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
     expect(result).toEqual({ ok: true, alreadyShared: false });
+  });
+
+  it("should share the workbook through the backend client on share intent", async () => {
+    // given
+    mockedShareWorkbook.mockResolvedValue({
+      referenceId: "ref-new",
+      workbookId: "wb-1",
+      addedAt: "2026-04-29T00:00:00Z",
+    });
+    const request = buildPostRequest({ intent: "share", workbookId: "wb-1" });
+
+    // when
+    await action(buildActionArgs(request));
+
+    // then
+    expect(mockedShareWorkbook.mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should tolerate 409 conflict on share intent (already shared)", async () => {
@@ -432,8 +529,20 @@ describe("WorkbooksPublic action", () => {
     const result = await action(buildActionArgs(request));
 
     // then
-    expect(mockedUnshareWorkbook).toHaveBeenCalledWith("test-token", "ref-1");
+    expect(mockedUnshareWorkbook).toHaveBeenCalledWith(backendClient, "ref-1");
     expect(result).toEqual({ ok: true, alreadyRemoved: false });
+  });
+
+  it("should unshare the workbook through the backend client on unshare intent", async () => {
+    // given
+    mockedUnshareWorkbook.mockResolvedValue(undefined);
+    const request = buildPostRequest({ intent: "unshare", referenceId: "ref-1" });
+
+    // when
+    await action(buildActionArgs(request));
+
+    // then
+    expect(mockedUnshareWorkbook.mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should tolerate 404 on unshare intent (already removed)", async () => {

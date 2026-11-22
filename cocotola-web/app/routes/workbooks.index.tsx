@@ -56,7 +56,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
 
   const [{ workbooks, spaceId }, addedWorkbooks] = await Promise.all([
     listPrivateWorkbooks(client),
-    listSharedWorkbooks(accessToken),
+    listSharedWorkbooks(client),
   ]);
   return { workbooks, addedWorkbooks, spaceId };
 }
@@ -123,7 +123,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     if (typeof referenceId !== "string" || !referenceId) {
       throw new Response("referenceId is required", { status: 400 });
     }
-    await unshareWorkbook(accessToken, referenceId);
+    await unshareWorkbook(client, referenceId);
   }
 
   return { ok: true };
