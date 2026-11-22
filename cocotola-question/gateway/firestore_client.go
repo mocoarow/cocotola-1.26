@@ -3,17 +3,21 @@ package gateway
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"cloud.google.com/go/firestore"
-	"google.golang.org/api/option"
 )
 
-// NewFirestoreClient creates a new Firestore client for the given project ID.
-// If endpoint is non-empty, it connects to a Firestore emulator.
-func NewFirestoreClient(ctx context.Context, projectID string, opts ...option.ClientOption) (*firestore.Client, error) {
-	client, err := firestore.NewClient(ctx, projectID, opts...)
+// InitFirestore creates a Firestore client for the given project ID and
+// returns a function that closes it.
+func InitFirestore(ctx context.Context, projectID string) (*firestore.Client, func(), error) {
+	client, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
-		return nil, fmt.Errorf("create firestore client: %w", err)
+		return nil, nil, fmt.Errorf("create firestore client: %w", err)
 	}
-	return client, nil
+	return client, func() {
+		if err := client.Close(); err != nil {
+			slog.Error("close firestore client", slog.Any("error", err))
+		}
+	}, nil
 }

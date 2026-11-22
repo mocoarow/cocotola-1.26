@@ -7,10 +7,8 @@ go_library(
     importpath = "github.com/mocoarow/cocotola-1.26/cocotola-question/initialize",
     visibility = ["//visibility:public"],
     deps = [
-        "//cocotola-lib/logging",
         "//cocotola-question/config",
         "//cocotola-question/contentjson",
-        "//cocotola-question/controller",
         "//cocotola-question/controller/handler",
         "//cocotola-question/controller/handler/health",
         "//cocotola-question/controller/handler/question",
@@ -25,6 +23,7 @@ go_library(
         "//cocotola-question/usecase/study",
         "//cocotola-question/usecase/workbook",
         "@com_github_gin_gonic_gin//:gin",
+        "@com_google_cloud_go_firestore//:firestore",
     ],
 )
 
