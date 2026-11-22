@@ -55,7 +55,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const excludeIds = clampExcludeIds(url.searchParams.getAll("excludeIds"));
   const [workbook, data, user] = await Promise.all([
     getWorkbook(client, workbookId),
-    getStudyQuestions(accessToken, workbookId, limit, practice, excludeIds),
+    getStudyQuestions(client, workbookId, limit, practice, excludeIds),
     getUserPreferencesOrNull(request, accessToken),
   ]);
   const currentUserId = user === null || user.userId === "" ? null : user.userId;
@@ -111,6 +111,7 @@ export function shouldRevalidate({
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const formData = await request.formData();
   const intent = formData.get("intent");
@@ -137,7 +138,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   try {
     const result = await recordAnswer(
-      accessToken,
+      client,
       workbookId,
       questionId,
       payload,

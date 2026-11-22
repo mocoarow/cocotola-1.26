@@ -54,6 +54,7 @@ import {
   QuestionValidationError,
   updateQuestion,
 } from "~/lib/api/question.server";
+import { deleteStudyHistory } from "~/lib/api/study.server";
 import { backendClientSentinel } from "~/lib/api/test-helpers";
 import type { Workbook } from "~/lib/api/workbook.server";
 import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
@@ -331,6 +332,17 @@ describe("WorkbookDetail action", () => {
 
     // then
     expect(vi.mocked(deleteQuestion).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should delete the study history through the backend client on clearStudyHistory intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "clearStudyHistory" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(deleteStudyHistory).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should split the tags on addWordFill intent", async () => {

@@ -985,6 +985,18 @@ describe("StudyPage loader", () => {
     expect(getWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
   });
 
+  it("should fetch the study questions through the backend client", async () => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    await loader(buildLoaderArgs());
+
+    // then
+    expect(vi.mocked(getStudyQuestions).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it.each([
     ["user-1", "workbook"],
     ["owner-other", "public"],
@@ -1069,6 +1081,8 @@ type ActionArgs = Parameters<typeof action>[0];
 describe("StudyPage action", () => {
   beforeEach(() => {
     vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReset();
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
     vi.mocked(recordAnswer).mockReset();
     vi.mocked(recordAnswer).mockResolvedValue({
       nextDueAt: "2026-11-03T00:00:00Z",
@@ -1098,7 +1112,40 @@ describe("StudyPage action", () => {
     await action(args);
 
     // then
-    expect(recordAnswer).toHaveBeenCalledWith("test-token", "wb-1", "q-1", payload, undefined);
+    expect(recordAnswer).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", payload, undefined);
+  });
+
+  it("should create the backend client with the request the action received", async () => {
+    // given
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should record the answer through the backend client", async () => {
+    // given
+    const args = buildActionArgs(JSON.stringify({ type: "word_fill", correct: true }));
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(recordAnswer).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should return the recorded result when the answer payload is valid", async () => {

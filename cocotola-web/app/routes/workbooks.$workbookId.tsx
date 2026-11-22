@@ -204,7 +204,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
 
   if (intent === "clearStudyHistory") {
-    await deleteStudyHistory(accessToken, workbookId);
+    await deleteStudyHistory(client, workbookId);
     return { ok: true, cleared: true };
   }
 
