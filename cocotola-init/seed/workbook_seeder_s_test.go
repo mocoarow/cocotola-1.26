@@ -64,21 +64,19 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldCreateAllWorkbooksAndQu
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Vocabulary" && body.Visibility == "public" &&
-			strings.Contains(body.Description, "[seedKey:vocab-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Vocabulary" && strings.Contains(input.Description, "[seedKey:vocab-v1]")
 	})).Return("wb-Vocabulary", nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Grammar" && body.Visibility == "public" &&
-			strings.Contains(body.Description, "[seedKey:grammar-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Grammar" && strings.Contains(input.Description, "[seedKey:grammar-v1]")
 	})).Return("wb-Grammar", nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C1"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C1"
 	})).Return(nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2"
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -138,11 +136,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_
 		}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return(nil, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C1"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C1"
 	})).Return(nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2"
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2"
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -258,8 +256,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldNotReAddExistingQuestio
 			QuestionID: "q-existing",
 			Tags:       []string{"seed-vocab-v1:q1"},
 		}}, nil)
-	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(body seed.AddQuestionRequest) bool {
-		return body.Content == "C2" && assert.Contains(t, body.Tags, "seed-vocab-v1:q2")
+	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
+		return input.Content == "C2" && assert.Contains(t, input.Tags, "seed-vocab-v1:q2")
 	})).Return(nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -396,7 +394,7 @@ func existingVocabularyEnsurer(ctx context.Context, t *testing.T) *MockWorkbookP
 }
 
 func addQuestionWithContent(content string) any {
-	return mock.MatchedBy(func(body seed.AddQuestionRequest) bool { return body.Content == content })
+	return mock.MatchedBy(func(input seed.AddQuestionInput) bool { return input.Content == content })
 }
 
 func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldAddRemainingQuestions_whenQuestionRejected(t *testing.T) {
@@ -428,8 +426,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_when
 		Return(errQuestionRejected)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-existing", addQuestionWithContent("C2")).
 		Return(nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return body.Title == "Grammar"
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return input.Title == "Grammar"
 	})).Return("wb-Grammar", nil)
 	ensurer := existingVocabularyEnsurer(ctx, t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
@@ -465,7 +463,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	ctx := context.Background()
 
 	// given
-	var captured []seed.AddQuestionRequest
+	var captured []seed.AddQuestionInput
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
@@ -474,8 +472,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
-		Run(func(_ context.Context, _, _ string, body seed.AddQuestionRequest) {
-			captured = append(captured, body)
+		Run(func(_ context.Context, _, _ string, input seed.AddQuestionInput) {
+			captured = append(captured, input)
 		}).Return(nil).Times(2)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
@@ -489,9 +487,9 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	// then
 	require.NoError(t, err)
 	require.Len(t, captured, 2)
-	for _, body := range captured {
-		assert.NotEmpty(t, body.Tags, "seeder must prepend the seed identity tag")
-		for _, tag := range body.Tags {
+	for _, input := range captured {
+		assert.NotEmpty(t, input.Tags, "seeder must prepend the seed identity tag")
+		for _, tag := range input.Tags {
 			assert.Regexp(t, questionTagPattern, tag,
 				"every emitted tag must satisfy cocotola-question's tag pattern")
 		}
@@ -506,8 +504,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDe
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
-	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(body seed.CreateWorkbookRequest) bool {
-		return strings.HasSuffix(body.Description, "[seedKey:vocab-v1]")
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
+		return strings.HasSuffix(input.Description, "[seedKey:vocab-v1]")
 	})).Return("wb-Vocabulary", nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)

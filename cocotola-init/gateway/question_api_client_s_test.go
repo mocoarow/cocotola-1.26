@@ -128,6 +128,24 @@ func Test_QuestionAPIClient_ListWorkbooks_shouldSendApiKeyAndOrgIDHeaders(t *tes
 	assert.Equal(t, "wb-1", out[0].WorkbookID)
 }
 
+func Test_QuestionAPIClient_ListWorkbooks_shouldReturnEveryFieldOfResponse(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, _ := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	out, err := client.ListWorkbooks(context.Background(), testRequestOrgID, "space-1")
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []seed.WorkbookListItem{
+		{WorkbookID: "wb-1", Title: "Existing", Description: "desc [seedKey:k1]"},
+	}, out)
+}
+
 func Test_QuestionAPIClient_CreateWorkbook_shouldSendJsonBody(t *testing.T) {
 	t.Parallel()
 	srv, calls := newRecorder()
@@ -135,11 +153,11 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldSendJsonBody(t *testing.T) {
 	client := newClient(srv)
 
 	// when
-	id, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookRequest{
+	id, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{
 		SpaceID:     "space-1",
 		Title:       "T",
 		Description: "D",
-		Visibility:  "public",
+		Language:    "en",
 	})
 
 	// then
@@ -149,10 +167,29 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldSendJsonBody(t *testing.T) {
 	c := (*calls)[0]
 	assert.Equal(t, http.MethodPost, c.Method)
 	assert.Equal(t, "application/json", c.Headers.Get("Content-Type"))
-	var got seed.CreateWorkbookRequest
-	require.NoError(t, json.Unmarshal(c.Body, &got))
-	assert.Equal(t, "space-1", got.SpaceID)
-	assert.Equal(t, "public", got.Visibility)
+	assert.JSONEq(t, `{"spaceId":"space-1","title":"T","description":"D","visibility":"public","language":"en"}`, string(c.Body))
+}
+
+func Test_QuestionAPIClient_AddQuestion_shouldSendInputAsJsonBody(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, calls := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{
+		QuestionType: "word_fill",
+		Content:      "hello",
+		Tags:         []string{"seed-wb-1:q-1", "level:b1"},
+		OrderIndex:   3,
+	})
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, *calls, 1)
+	assert.JSONEq(t, `{"questionType":"word_fill","content":"hello","tags":["seed-wb-1:q-1","level:b1"],"orderIndex":3}`, string((*calls)[0].Body))
 }
 
 func Test_QuestionAPIClient_AddQuestion_shouldHitWorkbookScopedPath(t *testing.T) {
@@ -162,7 +199,7 @@ func Test_QuestionAPIClient_AddQuestion_shouldHitWorkbookScopedPath(t *testing.T
 	client := newClient(srv)
 
 	// when
-	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{
 		QuestionType: "word_fill",
 		Content:      "hello",
 		Tags:         []string{"seed:wb-1:q-1"},
@@ -181,11 +218,11 @@ func Test_QuestionAPIClient_ListQuestions_shouldDecodeAllQuestions_whenResponseE
 
 	// given: enough questions that the JSON body is larger than 1 MiB
 	const questionCount = 20000
-	questions := make([]seed.QuestionListItem, questionCount)
+	questions := make([]map[string]any, questionCount)
 	for i := range questions {
-		questions[i] = seed.QuestionListItem{
-			QuestionID: fmt.Sprintf("01900000-0000-7000-8000-%012d", i),
-			Tags:       []string{fmt.Sprintf("seed-cefr-b1-wordfill-v1:%d", i), "level:b1", "source:tatoeba"},
+		questions[i] = map[string]any{
+			"questionId": fmt.Sprintf("01900000-0000-7000-8000-%012d", i),
+			"tags":       []string{fmt.Sprintf("seed-cefr-b1-wordfill-v1:%d", i), "level:b1", "source:tatoeba"},
 		}
 	}
 	body, err := json.Marshal(map[string]any{"questions": questions})
@@ -204,6 +241,27 @@ func Test_QuestionAPIClient_ListQuestions_shouldDecodeAllQuestions_whenResponseE
 	// then
 	require.NoError(t, err)
 	assert.Len(t, got, questionCount)
+}
+
+func Test_QuestionAPIClient_ListQuestions_shouldReturnEveryFieldOfResponse(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"questions":[{"questionId":"q-1","tags":["seed-wb:q-1","level:b1"]}]}`)
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	got, err := client.ListQuestions(context.Background(), testRequestOrgID, "wb-1")
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []seed.QuestionListItem{
+		{QuestionID: "q-1", Tags: []string{"seed-wb:q-1", "level:b1"}},
+	}, got)
 }
 
 // newOversizedListQuestionsServer returns a server whose ListQuestions body is
@@ -258,7 +316,7 @@ func Test_QuestionAPIClient_AddQuestion_shouldKeepHTTPStatusError_whenServerRetu
 	client := newClient(srv)
 
 	// when
-	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{})
 
 	// then
 	var statusErr *gateway.HTTPStatusError
@@ -275,7 +333,7 @@ func Test_QuestionAPIClient_AddQuestion_shouldReturnErrQuestionRejected_whenServ
 	client := newClient(srv)
 
 	// when
-	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+	err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{})
 
 	// then
 	require.ErrorIs(t, err, seed.ErrQuestionRejected)
@@ -301,7 +359,7 @@ func Test_QuestionAPIClient_AddQuestion_shouldNotReturnErrQuestionRejected_whenS
 			client := newClient(srv)
 
 			// when
-			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{})
 
 			// then
 			assert.NotErrorIs(t, err, seed.ErrQuestionRejected)
@@ -329,7 +387,7 @@ func Test_QuestionAPIClient_AddQuestion_shouldReturnHTTPStatusError_whenServerRe
 			client := newClient(srv)
 
 			// when
-			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionRequest{})
+			err := client.AddQuestion(context.Background(), testRequestOrgID, "wb-1", seed.AddQuestionInput{})
 
 			// then
 			var statusErr *gateway.HTTPStatusError
@@ -348,7 +406,7 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldReturnHTTPStatusError_whenServe
 	client := newClient(srv)
 
 	// when
-	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookRequest{})
+	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{})
 
 	// then
 	var statusErr *gateway.HTTPStatusError
@@ -365,7 +423,7 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldNotReturnErrQuestionRejected_wh
 	client := newClient(srv)
 
 	// when
-	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookRequest{})
+	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{})
 
 	// then
 	assert.NotErrorIs(t, err, seed.ErrQuestionRejected)

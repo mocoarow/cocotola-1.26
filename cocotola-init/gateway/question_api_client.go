@@ -43,8 +43,14 @@ func NewQuestionAPIClient(baseURL, apiKey string, httpClient *http.Client) *Ques
 	}
 }
 
+type workbookListItemResponse struct {
+	WorkbookID  string `json:"workbookId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
 type listWorkbooksResponse struct {
-	Workbooks []seed.WorkbookListItem `json:"workbooks"`
+	Workbooks []workbookListItemResponse `json:"workbooks"`
 }
 
 // ListWorkbooks calls GET /api/v1/internal/workbook?spaceId=... and returns
@@ -58,7 +64,23 @@ func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, s
 	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxBodyBytes); err != nil {
 		return nil, fmt.Errorf("list workbooks (space %s): %w", spaceID, err)
 	}
-	return resp.Workbooks, nil
+	items := make([]seed.WorkbookListItem, 0, len(resp.Workbooks))
+	for _, w := range resp.Workbooks {
+		items = append(items, seed.WorkbookListItem{WorkbookID: w.WorkbookID, Title: w.Title, Description: w.Description})
+	}
+	return items, nil
+}
+
+// workbookVisibilityPublic is sent on every create because cocotola-question
+// requires the field, although it overwrites the value with the space type's.
+const workbookVisibilityPublic = "public"
+
+type createWorkbookRequest struct {
+	SpaceID     string `json:"spaceId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+	Language    string `json:"language"`
 }
 
 type workbookResponse struct {
@@ -66,8 +88,15 @@ type workbookResponse struct {
 }
 
 // CreateWorkbook calls POST /api/v1/internal/workbook.
-func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, body seed.CreateWorkbookRequest) (string, error) {
+func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (string, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook"
+	body := createWorkbookRequest{
+		SpaceID:     input.SpaceID,
+		Title:       input.Title,
+		Description: input.Description,
+		Visibility:  workbookVisibilityPublic,
+		Language:    input.Language,
+	}
 	var resp workbookResponse
 	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
 		return "", fmt.Errorf("create workbook: %w", err)
@@ -75,8 +104,13 @@ func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID s
 	return resp.WorkbookID, nil
 }
 
+type questionListItemResponse struct {
+	QuestionID string   `json:"questionId"`
+	Tags       []string `json:"tags"`
+}
+
 type listQuestionsResponse struct {
-	Questions []seed.QuestionListItem `json:"questions"`
+	Questions []questionListItemResponse `json:"questions"`
 }
 
 // ListQuestions calls GET /api/v1/internal/workbook/{workbookId}/question.
@@ -87,13 +121,30 @@ func (c *QuestionAPIClient) ListQuestions(ctx context.Context, organizationID, w
 	if err := c.do(ctx, http.MethodGet, reqURL, organizationID, nil, &resp, maxListQuestionsBodyBytes); err != nil {
 		return nil, fmt.Errorf("list questions (workbook %s): %w", workbookID, err)
 	}
-	return resp.Questions, nil
+	items := make([]seed.QuestionListItem, 0, len(resp.Questions))
+	for _, q := range resp.Questions {
+		items = append(items, seed.QuestionListItem{QuestionID: q.QuestionID, Tags: q.Tags})
+	}
+	return items, nil
+}
+
+type addQuestionRequest struct {
+	QuestionType string   `json:"questionType"`
+	Content      string   `json:"content"`
+	Tags         []string `json:"tags,omitempty"`
+	OrderIndex   int32    `json:"orderIndex"`
 }
 
 // AddQuestion calls POST /api/v1/internal/workbook/{workbookId}/question.
 // A 400 response is returned as seed.ErrQuestionRejected.
-func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, body seed.AddQuestionRequest) error {
+func (c *QuestionAPIClient) AddQuestion(ctx context.Context, organizationID, workbookID string, input seed.AddQuestionInput) error {
 	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID) + "/question"
+	body := addQuestionRequest{
+		QuestionType: input.QuestionType,
+		Content:      input.Content,
+		Tags:         input.Tags,
+		OrderIndex:   input.OrderIndex,
+	}
 	err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, nil, maxBodyBytes)
 	if statusErr, ok := errors.AsType[*HTTPStatusError](err); ok && statusErr.StatusCode == http.StatusBadRequest {
 		return fmt.Errorf("add question (workbook %s): %w: %w", workbookID, seed.ErrQuestionRejected, err)

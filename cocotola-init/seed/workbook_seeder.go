@@ -28,41 +28,38 @@ var ErrQuestionRejected = errors.New("question rejected")
 // WorkbookAPIClient is the question service API required by WorkbookSeeder.
 type WorkbookAPIClient interface {
 	ListWorkbooks(ctx context.Context, organizationID, spaceID string) ([]WorkbookListItem, error)
-	CreateWorkbook(ctx context.Context, organizationID string, body CreateWorkbookRequest) (string, error)
+	CreateWorkbook(ctx context.Context, organizationID string, input CreateWorkbookInput) (string, error)
 	ListQuestions(ctx context.Context, organizationID, workbookID string) ([]QuestionListItem, error)
-	AddQuestion(ctx context.Context, organizationID, workbookID string, body AddQuestionRequest) error
+	AddQuestion(ctx context.Context, organizationID, workbookID string, input AddQuestionInput) error
 }
 
-// WorkbookListItem is the subset of the ListWorkbooks response the seeder cares about.
+// WorkbookListItem is a workbook already present in the space.
 type WorkbookListItem struct {
-	WorkbookID  string `json:"workbookId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	WorkbookID  string
+	Title       string
+	Description string
 }
 
-// CreateWorkbookRequest mirrors cocotola-question's CreateWorkbookRequest.
-// Visibility is ignored server-side (the SpaceType determines it), so we
-// always send "public" for clarity.
-type CreateWorkbookRequest struct {
-	SpaceID     string `json:"spaceId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Visibility  string `json:"visibility"`
-	Language    string `json:"language"`
+// CreateWorkbookInput describes a workbook to create.
+type CreateWorkbookInput struct {
+	SpaceID     string
+	Title       string
+	Description string
+	Language    string
 }
 
-// QuestionListItem is the subset of the ListQuestions response the seeder cares about.
+// QuestionListItem is a question already present in the workbook.
 type QuestionListItem struct {
-	QuestionID string   `json:"questionId"`
-	Tags       []string `json:"tags"`
+	QuestionID string
+	Tags       []string
 }
 
-// AddQuestionRequest mirrors cocotola-question's AddQuestionRequest.
-type AddQuestionRequest struct {
-	QuestionType string   `json:"questionType"`
-	Content      string   `json:"content"`
-	Tags         []string `json:"tags,omitempty"`
-	OrderIndex   int32    `json:"orderIndex"`
+// AddQuestionInput describes a question to add.
+type AddQuestionInput struct {
+	QuestionType string
+	Content      string
+	Tags         []string
+	OrderIndex   int32
 }
 
 // WorkbookPolicyEnsurer idempotently grants the system owner per-workbook RBAC
@@ -186,14 +183,13 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 		return "", fmt.Errorf("seed %q: language %q must be a lowercase ISO 639-1 code: %w", sd.SeedKey, sd.Language, ErrInvalidSeed)
 	}
 
-	body := CreateWorkbookRequest{
+	input := CreateWorkbookInput{
 		SpaceID:     publicSpaceID,
 		Title:       sd.Title,
 		Description: encodeDescription(sd.Description, sd.SeedKey),
-		Visibility:  "public",
 		Language:    sd.Language,
 	}
-	workbookID, err := s.client.CreateWorkbook(ctx, organizationID, body)
+	workbookID, err := s.client.CreateWorkbook(ctx, organizationID, input)
 	if err != nil {
 		return "", fmt.Errorf("create workbook %q: %w", sd.SeedKey, err)
 	}
@@ -253,13 +249,13 @@ func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, wo
 // addQuestion adds one question. A rejected question will be rejected on every
 // run, so it is reported as rejected instead of stopping the remaining questions.
 func (s *WorkbookSeeder) addQuestion(ctx context.Context, organizationID, workbookID, workbookSeedKey, tag string, q QuestionSeed) (bool, error) {
-	body := AddQuestionRequest{
+	input := AddQuestionInput{
 		QuestionType: q.QuestionType,
 		Content:      q.Content,
 		Tags:         append([]string{tag}, q.Tags...),
 		OrderIndex:   q.OrderIndex,
 	}
-	err := s.client.AddQuestion(ctx, organizationID, workbookID, body)
+	err := s.client.AddQuestion(ctx, organizationID, workbookID, input)
 	if errors.Is(err, ErrQuestionRejected) {
 		s.logger.WarnContext(ctx, "question rejected",
 			slog.String("workbook_seed_key", workbookSeedKey),
