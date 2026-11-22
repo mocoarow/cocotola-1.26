@@ -39,6 +39,7 @@ smart_go_test(
         "list_questions_query_s_test.go",
         "mocks_test.go",
         "update_question_command_s_test.go",
+        "word_fill_audio_s_test.go",
     ],
     deps = [
         ":question",

@@ -18,8 +18,7 @@ type Config struct {
 	Audio  AudioGeneratorConfig `yaml:"audio" validate:"required"`
 }
 
-// LogConfig is a thin logging config; the full LogConfig from cocotola-lib is
-// not pulled in to keep this service's dependencies small.
+// LogConfig is a thin logging config.
 type LogConfig struct {
 	Level string `yaml:"level"`
 }
@@ -27,7 +26,7 @@ type LogConfig struct {
 // AudioGeneratorConfig collects all knobs that drive the batch.
 type AudioGeneratorConfig struct {
 	BucketName            string `yaml:"bucketName" validate:"required"`
-	MaxPerRun             int    `yaml:"maxPerRun" validate:"required,gte=1,lte=1000"`
+	MaxPerRun             int    `yaml:"maxPerRun" validate:"required,gte=1,lte=200"`
 	TTSVoiceJa            string `yaml:"ttsVoiceJa" validate:"required"`
 	TTSVoiceEn            string `yaml:"ttsVoiceEn" validate:"required"`
 	AudioEncoding         string `yaml:"audioEncoding" validate:"required,oneof=OGG_OPUS MP3"`

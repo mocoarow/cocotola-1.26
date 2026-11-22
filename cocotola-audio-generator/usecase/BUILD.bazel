@@ -19,6 +19,7 @@ smart_go_test(
     embed = [":usecase"],
     deps = [
         "//cocotola-audio-generator/domain",
+        "//cocotola-lib/domain/audio",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//mock",
         "@com_github_stretchr_testify//require",

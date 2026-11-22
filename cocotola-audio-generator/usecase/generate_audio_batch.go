@@ -42,6 +42,9 @@ type VoiceConfig struct {
 // maxFailReasonRunes mirrors the question API's LastError cap.
 const maxFailReasonRunes = 500
 
+// ErrUnsupportedLanguage is returned when no TTS voice is configured for a language.
+var ErrUnsupportedLanguage = errors.New("unsupported language")
+
 // BatchConfig collects runtime knobs for one batch run.
 type BatchConfig struct {
 	MaxPerRun   int
@@ -210,27 +213,9 @@ func synthesizeAndUpload(
 	cfg BatchConfig,
 	item domain.PendingItem,
 ) (map[string]domain.AudioRef, error) {
-	jobs := []struct {
-		slot      string
-		text      string
-		voice     string
-		lang      string
-		objectKey string
-	}{
-		{
-			slot:      domain.SlotSource,
-			text:      item.SourceText,
-			voice:     pickVoice(cfg.Voices, item.SourceLang),
-			lang:      pickFullLang(cfg.Voices, item.SourceLang),
-			objectKey: fmt.Sprintf("audio/questions/%s/%s%s", item.QuestionID, domain.SlotSource, cfg.ObjectExt),
-		},
-		{
-			slot:      domain.SlotTarget,
-			text:      item.TargetText,
-			voice:     pickVoice(cfg.Voices, item.TargetLang),
-			lang:      pickFullLang(cfg.Voices, item.TargetLang),
-			objectKey: fmt.Sprintf("audio/questions/%s/%s%s", item.QuestionID, domain.SlotTarget, cfg.ObjectExt),
-		},
+	jobs, err := buildSynthJobs(cfg, item)
+	if err != nil {
+		return nil, err
 	}
 
 	out := make(map[string]domain.AudioRef, len(jobs))
@@ -252,26 +237,51 @@ func synthesizeAndUpload(
 	return out, nil
 }
 
-func pickVoice(v VoiceConfig, lang string) string {
-	switch lang {
-	case "ja":
-		return v.JaVoice
-	case "en":
-		return v.EnVoice
-	default:
-		// fall through; downstream API will reject unsupported voices
-		return ""
-	}
+type synthJob struct {
+	slot      string
+	text      string
+	voice     string
+	lang      string
+	objectKey string
 }
 
-func pickFullLang(v VoiceConfig, lang string) string {
+// buildSynthJobs resolves every slot's voice before any TTS call.
+func buildSynthJobs(cfg BatchConfig, item domain.PendingItem) ([]synthJob, error) {
+	slots := []struct {
+		slot string
+		text string
+		lang string
+	}{
+		{slot: domain.SlotSource, text: item.SourceText, lang: item.SourceLang},
+		{slot: domain.SlotTarget, text: item.TargetText, lang: item.TargetLang},
+	}
+
+	jobs := make([]synthJob, 0, len(slots))
+	for _, s := range slots {
+		voice, fullLang, err := pickVoice(cfg.Voices, s.lang)
+		if err != nil {
+			return nil, fmt.Errorf("pick %s voice: %w", s.slot, err)
+		}
+		jobs = append(jobs, synthJob{
+			slot:      s.slot,
+			text:      s.text,
+			voice:     voice,
+			lang:      fullLang,
+			objectKey: fmt.Sprintf("audio/questions/%s/%s%s", item.QuestionID, s.slot, cfg.ObjectExt),
+		})
+	}
+	return jobs, nil
+}
+
+// pickVoice returns the TTS voice name and full locale for a short language code.
+func pickVoice(v VoiceConfig, lang string) (string, string, error) {
 	switch lang {
 	case "ja":
-		return v.JaLang
+		return v.JaVoice, v.JaLang, nil
 	case "en":
-		return v.EnLang
+		return v.EnVoice, v.EnLang, nil
 	default:
-		return ""
+		return "", "", fmt.Errorf("%w: %q", ErrUnsupportedLanguage, lang)
 	}
 }
 

@@ -20,10 +20,12 @@ smart_go_test(
     srcs = [
         "audio_output_s_test.go",
         "audio_s_test.go",
+        "audio_validator_drift_s_test.go",
         "question_s_test.go",
     ],
     deps = [
         ":question",
+        "//cocotola-lib/domain/audio",
         "//cocotola-question/domain",
         "//cocotola-question/domain/question",
         "@com_github_stretchr_testify//assert",

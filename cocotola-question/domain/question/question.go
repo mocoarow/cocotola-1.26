@@ -6,6 +6,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/audio"
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
 )
 
@@ -239,7 +240,7 @@ func (q *Question) ReadyAudioRefs() map[string]AudioRef {
 
 // SetAudioGeneration replaces the audio-generation state.
 // Intended for repository hydration and audio-batch transitions only; the
-// question-edit usecase should use MarkAudioPending instead.
+// question-edit usecase should use SyncWordFillAudio instead.
 func (q *Question) SetAudioGeneration(ag *AudioGeneration) { q.audioGeneration = ag }
 
 // MarkAudioPending sets the audio-generation state to pending; a no-op for the
@@ -256,6 +257,16 @@ func (q *Question) MarkAudioPending(inputHash string, now time.Time) {
 		failedAttempts: 0,
 		lastError:      "",
 	}
+}
+
+// SyncWordFillAudio applies MarkAudioPending for c, or discards the audio when
+// either language has no TTS voice.
+func (q *Question) SyncWordFillAudio(c WordFillContent, now time.Time) {
+	if !audio.IsSupportedLang(c.Source.Lang) || !audio.IsSupportedLang(c.Target.Lang) {
+		q.audioGeneration = nil
+		return
+	}
+	q.MarkAudioPending(ComputeWordFillAudioInputHash(c), now)
 }
 
 // ClaimAudio transitions the audio generation from pending to generating.
