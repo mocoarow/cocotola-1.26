@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Link,
@@ -13,6 +13,7 @@ import type { AnswerDraft } from "~/components/study/question-shell/types";
 import { StudyResult } from "~/components/study/study-result";
 import { Button } from "~/components/ui/button";
 import { useStudyResume } from "~/hooks/use-study-resume";
+import { useStudySessionController } from "~/hooks/use-study-session-controller";
 import {
   type AnswerLocaleHeaders,
   getStudyQuestions,
@@ -30,12 +31,7 @@ import {
 } from "~/lib/format/local-date";
 import { isConflictOrServerError } from "~/lib/route-error";
 import { parseAnswerPayload } from "~/lib/study/answer-payload";
-import {
-  appendAnsweredId,
-  clampExcludeIds,
-  clearStudySession,
-  studyRemountKey,
-} from "~/lib/study-session";
+import { clampExcludeIds, studyRemountKey } from "~/lib/study-session";
 import type { Route } from "./+types/workbooks.$workbookId.study";
 
 // Default session size when the user lands without choosing one (e.g. the
@@ -171,8 +167,6 @@ function parseAnswerLocale(formData: FormData): AnswerLocaleHeaders | undefined 
   return { localDateKey, timezone };
 }
 
-type Phase = "studying" | "done";
-
 function StudyResumePlaceholder() {
   const { t } = useTranslation();
   return (
@@ -187,6 +181,88 @@ function StudyResumePlaceholder() {
   );
 }
 
+function StudyEmptyState({
+  workbookId,
+  practice,
+  backUrl,
+  backLabel,
+}: {
+  workbookId: string;
+  practice: boolean;
+  backUrl: string;
+  backLabel: string;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center py-16">
+      <p className="mb-4 text-lg text-muted-foreground">{t("workbooks.study.noQuestions")}</p>
+      <div className="flex flex-col items-center gap-3 sm:flex-row">
+        {!practice && (
+          <Button
+            variant="outline"
+            nativeButton={false}
+            render={<Link to={`/workbooks/${workbookId}/study?practice=true`} />}
+          >
+            {t("workbooks.study.practiceCta")}
+          </Button>
+        )}
+        <Button nativeButton={false} render={<Link to={backUrl} />}>
+          {backLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function useAnswerSubmitter(workbookId: string, practice: boolean, timezone: string) {
+  const fetcher = useFetcher<typeof action>();
+  // Preserve the practice flag in the action URL itself so the server can
+  // verify the mode independently of client-supplied form fields.
+  const actionPath = practice
+    ? `/workbooks/${workbookId}/study?practice=true`
+    : `/workbooks/${workbookId}/study`;
+
+  function submitAnswer(questionId: string, draft: AnswerDraft) {
+    fetcher.submit(
+      {
+        intent: "answer",
+        questionId,
+        answer: JSON.stringify(draft.payload),
+        localDateKey: getLocalDateKey(timezone),
+        timezone,
+      },
+      { method: "post", action: actionPath },
+    );
+  }
+
+  const answerErrorKey = fetcher.data?.ok === false ? fetcher.data.errorKey : undefined;
+  return { submitAnswer, answerErrorKey };
+}
+
+function StudyAnswerError({ errorKey }: { errorKey: string }) {
+  const { t } = useTranslation();
+  return (
+    <p
+      role="alert"
+      data-testid="study-answer-error"
+      className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+    >
+      {t(errorKey)}
+    </p>
+  );
+}
+
+type StudySessionProps = {
+  userId: string | null;
+  workbookId: string;
+  questions: StudyQuestion[];
+  practice: boolean;
+  loaderExcludeIds: string[];
+  backUrl: string;
+  backLabel: string;
+  timezone: string;
+};
+
 function StudySession({
   userId,
   workbookId,
@@ -196,34 +272,12 @@ function StudySession({
   backUrl,
   backLabel,
   timezone,
-}: {
-  userId: string | null;
-  workbookId: string;
-  questions: StudyQuestion[];
-  practice: boolean;
-  loaderExcludeIds: string[];
-  backUrl: string;
-  backLabel: string;
-  timezone: string;
-}) {
-  const { t } = useTranslation();
-  const fetcher = useFetcher<typeof action>();
+}: StudySessionProps) {
   const navigate = useNavigate();
-  const [queue, setQueue] = useState<StudyQuestion[]>(() => questions);
-  const [correctCount, setCorrectCount] = useState(0);
-  const [incorrectCount, setIncorrectCount] = useState(0);
-  const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
-  // "redirecting" suppresses the answer card during the navigate→remount
-  // window so the user cannot click a question that the resume orchestrator
-  // is about to remove. Without this gate, a fast click on the pre-resume
-  // first card fires fetcher.submit and double-updates the SRS state.
-  const resumeStatus = useStudyResume({
-    userId,
-    workbookId,
-    practice,
-    loaderExcludeIds,
-    navigate,
-  });
+  const { submitAnswer, answerErrorKey } = useAnswerSubmitter(workbookId, practice, timezone);
+  const { question, correctCount, incorrectCount, cardKey, answer, skip } =
+    useStudySessionController({ userId, workbookId, practice, questions, submitAnswer });
+  const resumeStatus = useStudyResume({ userId, workbookId, practice, loaderExcludeIds, navigate });
 
   // Resume gate: hide the answer card (and its click handlers) while the
   // navigate-driven loader rerun is in flight, so the user cannot
@@ -232,34 +286,21 @@ function StudySession({
     return <StudyResumePlaceholder />;
   }
 
-  // Structural empty-state guard: derived from the loader prop, not the local
-  // queue. The queue can also reach length 0 (after the last correct answer)
-  // but that case must render the result screen, not this empty state.
+  // Structural empty-state guard: derived from the loader prop, not `question`.
+  // `question` also becomes undefined once the queue drains, but that case
+  // must render the result screen, not this empty state.
   if (questions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <p className="mb-4 text-lg text-muted-foreground">{t("workbooks.study.noQuestions")}</p>
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
-          {!practice && (
-            <Button
-              variant="outline"
-              nativeButton={false}
-              render={<Link to={`/workbooks/${workbookId}/study?practice=true`} />}
-            >
-              {t("workbooks.study.practiceCta")}
-            </Button>
-          )}
-          <Button nativeButton={false} render={<Link to={backUrl} />}>
-            {backLabel}
-          </Button>
-        </div>
-      </div>
+      <StudyEmptyState
+        workbookId={workbookId}
+        practice={practice}
+        backUrl={backUrl}
+        backLabel={backLabel}
+      />
     );
   }
 
-  const phase: Phase = queue.length === 0 ? "done" : "studying";
-
-  if (phase === "done") {
+  if (question === undefined) {
     return (
       <StudyResult
         correctCount={correctCount}
@@ -270,91 +311,14 @@ function StudySession({
     );
   }
 
-  const question = queue[0];
-  // Skip the persistence side when userId is unknown so we never write under an ambiguous scope.
-  const scope = userId === null ? null : { userId, workbookId, practice };
-
-  function dequeueHead() {
-    // Read the queue length here, BEFORE setQueue, so the "session done"
-    // decision lives outside the setState updater. The updater itself must
-    // stay pure — StrictMode runs it twice — even though clearStudySession
-    // happens to be idempotent today.
-    const finishesSession = queue.length === 1;
-    setQueue((q) => q.slice(1));
-    if (scope !== null && finishesSession) {
-      clearStudySession(scope);
-    }
-  }
-
-  function advance(correct: boolean) {
-    setAttemptCounts((prev) => ({
-      ...prev,
-      [question.questionId]: (prev[question.questionId] ?? 0) + 1,
-    }));
-    if (correct) {
-      // Persist completion so a F5 mid-session resumes without re-showing
-      // questions the user has finished. Incorrect attempts are not stored:
-      // they get re-queued in memory and the user will retry within this
-      // session; if they reload before retrying, the question reappears
-      // fresh (matching the pre-resume behavior).
-      if (scope !== null) {
-        appendAnsweredId(scope, question.questionId, Date.now());
-      }
-      setCorrectCount((c) => c + 1);
-      dequeueHead();
-    } else {
-      setIncorrectCount((c) => c + 1);
-      setQueue((q) => {
-        const [head, ...rest] = q;
-        return [...rest, head];
-      });
-    }
-  }
-
-  // Preserve the practice flag in the action URL itself so the server can
-  // verify the mode independently of client-supplied form fields.
-  const actionPath = practice
-    ? `/workbooks/${workbookId}/study?practice=true`
-    : `/workbooks/${workbookId}/study`;
-
-  function handleAnswer(draft: AnswerDraft) {
-    fetcher.submit(
-      {
-        intent: "answer",
-        questionId: question.questionId,
-        answer: JSON.stringify(draft.payload),
-        localDateKey: getLocalDateKey(timezone),
-        timezone,
-      },
-      { method: "post", action: actionPath },
-    );
-    advance(draft.correct);
-  }
-
-  const cardKey = `${question.questionId}-${attemptCounts[question.questionId] ?? 0}`;
-  const answerErrorKey = fetcher.data?.ok === false ? fetcher.data.errorKey : undefined;
-
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <ProgressBar current={correctCount} total={questions.length} />
 
-      {answerErrorKey && (
-        <p
-          role="alert"
-          data-testid="study-answer-error"
-          className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          {t(answerErrorKey)}
-        </p>
-      )}
+      {answerErrorKey && <StudyAnswerError errorKey={answerErrorKey} />}
 
       <div className="rounded-xl border bg-card p-6 shadow-sm">
-        <StudyQuestionShell
-          key={cardKey}
-          question={question}
-          onAnswer={handleAnswer}
-          onSkip={dequeueHead}
-        />
+        <StudyQuestionShell key={cardKey} question={question} onAnswer={answer} onSkip={skip} />
       </div>
     </div>
   );
