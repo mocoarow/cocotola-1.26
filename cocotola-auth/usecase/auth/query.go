@@ -41,9 +41,15 @@ type JWTManager interface {
 	ParseAccessToken(tokenString string) (*authservice.UserInfo, string, error)
 }
 
-// UserAuthenticator verifies user credentials and returns user info.
-type UserAuthenticator interface {
-	Authenticate(ctx context.Context, loginID string, password string, organizationName string) (*authservice.UserInfo, error)
+// PasswordHasher hashes and compares passwords.
+type PasswordHasher interface {
+	Hash(password string) (string, error)
+	Compare(hashedPassword string, password string) error
+}
+
+// GroupFinder retrieves the groups assigned to a user within an organization.
+type GroupFinder interface {
+	GetGroupsForUser(ctx context.Context, organizationID domain.OrganizationID, userID domain.AppUserID) ([]string, error)
 }
 
 // TokenCache provides in-memory caching for session and access tokens.
@@ -120,8 +126,10 @@ type Query struct {
 
 // NewQuery returns a new Query with the given dependencies.
 func NewQuery(
-	userAuthenticator UserAuthenticator,
-	guestAuthenticator GuestAuthenticator,
+	organizationFinder OrganizationFinder,
+	appUserByLoginIDFinder AppUserByLoginIDFinder,
+	groupFinder GroupFinder,
+	passwordHasher PasswordHasher,
 	sessionTokenRepo SessionTokenRepository,
 	sessionTokenWhitelistRepo WhitelistRepository,
 	accessTokenRepo AccessTokenRepository,
@@ -131,8 +139,8 @@ func NewQuery(
 	config UsecaseConfig,
 ) *Query {
 	return &Query{
-		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(userAuthenticator),
-		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(guestAuthenticator),
+		PasswordAuthenticateQuery: NewPasswordAuthenticateQuery(organizationFinder, appUserByLoginIDFinder, groupFinder, passwordHasher),
+		GuestAuthenticateQuery:    NewGuestAuthenticateQuery(organizationFinder, appUserByLoginIDFinder),
 		ValidateSessionTokenQuery: NewValidateSessionTokenQuery(sessionTokenRepo, sessionTokenWhitelistRepo, tokenCache, config),
 		ValidateAccessTokenQuery:  NewValidateAccessTokenQuery(accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 	}

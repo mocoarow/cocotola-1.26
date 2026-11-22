@@ -54,8 +54,8 @@ type Usecase struct {
 
 // NewUsecase returns a new Usecase with the given dependencies.
 func NewUsecase(
-	userAuthenticator UserAuthenticator,
-	guestAuthenticator GuestAuthenticator,
+	groupFinder GroupFinder,
+	passwordHasher PasswordHasher,
 	sessionTokenRepo SessionTokenRepository,
 	sessionTokenWhitelistRepo WhitelistRepository,
 	refreshTokenRepo RefreshTokenRepository,
@@ -75,7 +75,7 @@ func NewUsecase(
 	publisher domain.EventPublisher,
 ) *Usecase {
 	return &Usecase{
-		Query:   NewQuery(userAuthenticator, guestAuthenticator, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
+		Query:   NewQuery(organizationFinder, appUserByLoginIDFinder, groupFinder, passwordHasher, sessionTokenRepo, sessionTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config),
 		Command: NewCommand(sessionTokenRepo, sessionTokenWhitelistRepo, refreshTokenRepo, refreshTokenWhitelistRepo, accessTokenRepo, accessTokenWhitelistRepo, jwtManager, tokenCache, config, supabaseVerifier, providerFinder, providerSaver, appUserByIDFinder, appUserByLoginIDFinder, appUserSaver, organizationFinder, publisher),
 	}
 }
