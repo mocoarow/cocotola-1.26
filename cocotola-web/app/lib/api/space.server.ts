@@ -1,45 +1,43 @@
-import { fetchWithIdToken, getAuthUrl } from "./fetch.server";
+import { z } from "zod";
 
-export type Space = {
-  spaceId: string;
-  organizationId: string;
-  ownerId: string;
-  keyName: string;
-  name: string;
-  spaceType: "public" | "private";
-  deleted: boolean;
-};
+import type { BackendClient } from "./client.server";
 
-type ListSpacesResponse = {
-  spaces: Space[];
-};
+const spaceSchema = z.object({
+  spaceId: z.string(),
+  organizationId: z.string(),
+  ownerId: z.string(),
+  keyName: z.string(),
+  name: z.string(),
+  spaceType: z.enum(["public", "private"]),
+  deleted: z.boolean(),
+});
 
-export async function listSpaces(accessToken: string): Promise<Space[]> {
+export type Space = z.infer<typeof spaceSchema>;
+
+const listSpacesResponseSchema = z.object({
+  spaces: z
+    .array(spaceSchema)
+    .nullish()
+    .transform((spaces) => spaces ?? []),
+});
+
+const parseSpaceList = (raw: unknown): Space[] => listSpacesResponseSchema.parse(raw).spaces;
+
+export async function listSpaces(client: BackendClient): Promise<Space[]> {
   console.info("[space] listSpaces called");
 
-  const authUrl = getAuthUrl();
-
-  const url = `${authUrl}/api/v1/auth/space`;
-  console.info(`[space] fetching spaces: url=${url}`);
-
-  const response = await fetchWithIdToken(authUrl, url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const spaces = await client.get("auth", "/api/v1/auth/space", {
+    source: "space:listSpaces",
+    errorMessage: "Failed to fetch spaces",
+    parse: parseSpaceList,
   });
-
-  if (!response.ok) {
-    console.error(`[space] listSpaces failed: status=${response.status}, url=${url}`);
-    throw new Response("Failed to fetch spaces", { status: response.status });
-  }
-
-  const data = (await response.json()) as ListSpacesResponse;
-  const spaces = data.spaces ?? [];
   console.info(`[space] listSpaces succeeded: count=${spaces.length}`);
   return spaces;
 }
 
-export async function findPrivateSpace(accessToken: string): Promise<Space | undefined> {
+export async function findPrivateSpace(client: BackendClient): Promise<Space | undefined> {
   console.info("[space] findPrivateSpace called");
-  const spaces = await listSpaces(accessToken);
+  const spaces = await listSpaces(client);
   const privateSpace = spaces.find((s) => s.spaceType === "private" && !s.deleted);
   console.info(
     `[space] findPrivateSpace result: found=${!!privateSpace}, spaceId=${privateSpace?.spaceId ?? "none"}`,

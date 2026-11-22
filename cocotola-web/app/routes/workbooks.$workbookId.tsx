@@ -29,6 +29,7 @@ import {
 } from "~/components/workbook/schemas";
 import { WordFillEditForm } from "~/components/workbook/word-fill-edit-form";
 import { WorkbookHeader } from "~/components/workbook/workbook-header";
+import { type BackendClient, createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
 import {
   addQuestion,
@@ -42,11 +43,12 @@ import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId";
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ request, params, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const [workbook, questions] = await Promise.all([
-    getWorkbook(accessToken, workbookId),
+    getWorkbook(client, workbookId),
     listQuestions(accessToken, workbookId),
   ]);
   return { workbook, questions };
@@ -65,7 +67,7 @@ async function saveQuestion<T>(save: () => Promise<unknown>, saved: T) {
 }
 
 async function handleUpdateTitleIntent(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   formData: FormData,
 ) {
@@ -84,7 +86,7 @@ async function handleUpdateTitleIntent(
   const rawVisibility = String(formData.get("visibility") ?? "private");
   const visibility = rawVisibility === "public" ? "public" : "private";
   try {
-    await updateWorkbook(accessToken, workbookId, { title, description, visibility, language });
+    await updateWorkbook(client, workbookId, { title, description, visibility, language });
   } catch (error) {
     if (error instanceof WorkbookValidationError) {
       return { ok: false, errorKey: "workbooks.detail.errors.invalid" };
@@ -96,12 +98,13 @@ async function handleUpdateTitleIntent(
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "updateTitle") {
-    return handleUpdateTitleIntent(accessToken, workbookId, formData);
+    return handleUpdateTitleIntent(client, workbookId, formData);
   }
 
   if (intent === "updateQuestion") {

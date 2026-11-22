@@ -18,6 +18,7 @@ import {
 import { AddedWorkbookCard } from "~/components/workbook/added-workbook-card";
 import { LangSelect } from "~/components/workbook/lang-select";
 import { useJustSucceeded } from "~/hooks/use-just-succeeded";
+import { type BackendClient, createBackendClient } from "~/lib/api/client.server";
 import { listSharedWorkbooks, unshareWorkbook } from "~/lib/api/sharing.server";
 import { findPrivateSpace } from "~/lib/api/space.server";
 import {
@@ -39,28 +40,29 @@ import {
 import type { Route } from "./+types/workbooks.index";
 
 async function listPrivateWorkbooks(
-  accessToken: string,
+  client: BackendClient,
 ): Promise<{ workbooks: Workbook[]; spaceId: string | null }> {
-  const privateSpace = await findPrivateSpace(accessToken);
+  const privateSpace = await findPrivateSpace(client);
   if (!privateSpace) {
     return { workbooks: [], spaceId: null };
   }
-  const workbooks = await listWorkbooks(accessToken, privateSpace.spaceId);
+  const workbooks = await listWorkbooks(client, privateSpace.spaceId);
   return { workbooks, spaceId: privateSpace.spaceId };
 }
 
-export async function loader({ context }: Route.LoaderArgs) {
+export async function loader({ request, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
 
   const [{ workbooks, spaceId }, addedWorkbooks] = await Promise.all([
-    listPrivateWorkbooks(accessToken),
+    listPrivateWorkbooks(client),
     listSharedWorkbooks(accessToken),
   ]);
   return { workbooks, addedWorkbooks, spaceId };
 }
 
-async function handleCreateIntent(accessToken: string, formData: FormData) {
-  const privateSpace = await findPrivateSpace(accessToken);
+async function handleCreateIntent(client: BackendClient, formData: FormData) {
+  const privateSpace = await findPrivateSpace(client);
   if (!privateSpace) {
     throw new Response("No private space found", { status: 400 });
   }
@@ -83,7 +85,7 @@ async function handleCreateIntent(accessToken: string, formData: FormData) {
   }
 
   try {
-    await createWorkbook(accessToken, {
+    await createWorkbook(client, {
       spaceId: privateSpace.spaceId,
       title,
       description,
@@ -101,17 +103,18 @@ async function handleCreateIntent(accessToken: string, formData: FormData) {
 
 export async function action({ request, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "create") {
-    return handleCreateIntent(accessToken, formData);
+    return handleCreateIntent(client, formData);
   }
 
   if (intent === "delete") {
     const workbookId = formData.get("workbookId");
     if (typeof workbookId === "string") {
-      await deleteWorkbook(accessToken, workbookId);
+      await deleteWorkbook(client, workbookId);
     }
   }
 

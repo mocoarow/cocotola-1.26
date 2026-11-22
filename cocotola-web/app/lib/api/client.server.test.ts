@@ -1,6 +1,6 @@
 import { format } from "node:util";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createBackendClient } from "./client.server";
+import { catchError, jsonResponse, newClient } from "./test-helpers";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -8,30 +8,8 @@ vi.stubGlobal("fetch", fetchMock);
 const QUESTION_BASE_URL = "http://localhost:8090";
 const AUTH_BASE_URL = "http://localhost:8080";
 
-function fakeRequest(): Request {
-  return new Request("http://localhost/some-loader", { method: "GET" });
-}
-
-function newClient() {
-  return createBackendClient({ request: fakeRequest(), accessToken: "test-token" });
-}
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
 function lastFetchInit(): RequestInit {
   return fetchMock.mock.lastCall?.[1] as RequestInit;
-}
-
-async function catchError(promise: Promise<unknown>): Promise<unknown> {
-  return promise.then(
-    () => undefined,
-    (e: unknown) => e,
-  );
 }
 
 const baseOptions = { source: "test:call", errorMessage: "Failed to call" };

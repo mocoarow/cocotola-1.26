@@ -9,6 +9,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 vi.mock("~/lib/api/study.server", () => ({
   getStudyQuestions: vi.fn(),
   getStudySummary: vi.fn(),
@@ -61,7 +65,9 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useLoaderData, useNavigate } from "react-router";
+import { createBackendClient } from "~/lib/api/client.server";
 import { getStudyQuestions, recordAnswer } from "~/lib/api/study.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
 import { getUserPreferencesOrNull } from "~/lib/api/user-setting.server";
 import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
@@ -896,6 +902,8 @@ describe("StudyPage", () => {
 
 type LoaderArgs = Parameters<typeof loader>[0];
 
+const backendClient = backendClientSentinel();
+
 describe("StudyPage loader", () => {
   const preferences = {
     userId: "user-1",
@@ -908,6 +916,9 @@ describe("StudyPage loader", () => {
 
   beforeEach(() => {
     vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReset();
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(getWorkbook).mockReset();
     vi.mocked(getStudyQuestions).mockResolvedValue({
       questions: [],
       totalDue: 0,
@@ -936,6 +947,43 @@ describe("StudyPage loader", () => {
     const request = new Request("http://localhost/workbooks/wb-1/study");
     return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
   }
+
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    await loader(buildLoaderArgs());
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should fetch the workbook through the backend client", async () => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    await loader(buildLoaderArgs());
+
+    // then
+    expect(getWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
+  });
 
   it.each([
     ["user-1", "workbook"],

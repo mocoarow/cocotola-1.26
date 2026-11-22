@@ -4,6 +4,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 vi.mock("~/lib/api/question.server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~/lib/api/question.server")>();
   return {
@@ -41,14 +45,24 @@ import { createRoutesStub, data } from "react-router";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import { QUESTION_INVALID_ERROR_KEY } from "~/components/workbook/question-form-error";
 import i18n from "~/i18n/config";
+import { createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
-import { addQuestion, QuestionValidationError, updateQuestion } from "~/lib/api/question.server";
+import {
+  addQuestion,
+  listQuestions,
+  QuestionValidationError,
+  updateQuestion,
+} from "~/lib/api/question.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
 import type { Workbook } from "~/lib/api/workbook.server";
-import { updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
+import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
-import WorkbookDetail, { action } from "./workbooks.$workbookId";
+import WorkbookDetail, { action, loader } from "./workbooks.$workbookId";
 
 type ActionArgs = Parameters<typeof action>[0];
+type LoaderArgs = Parameters<typeof loader>[0];
+
+const backendClient = backendClientSentinel();
 
 const ORDERING_ENTRIES = {
   sourceText: "私は学生です。",
@@ -143,13 +157,97 @@ function buildActionArgs(formEntries: Record<string, string>): ActionArgs {
   return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as ActionArgs;
 }
 
-describe("WorkbookDetail action", () => {
+describe("WorkbookDetail loader", () => {
   beforeEach(() => {
     vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(listQuestions).mockResolvedValue([]);
   });
 
   afterEach(() => {
     vi.resetAllMocks();
+  });
+
+  function buildLoaderArgs(): LoaderArgs {
+    const request = new Request("http://localhost/workbooks/wb-1");
+    return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
+  }
+
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should fetch the workbook through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(getWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
+  });
+});
+
+describe("WorkbookDetail action", () => {
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("should create the backend client with the request the action received", async () => {
+    // given
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should update the workbook through the backend client on updateTitle intent", async () => {
+    // given
+    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(updateWorkbook).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should add an ordering question on addOrdering intent", async () => {

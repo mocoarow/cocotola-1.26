@@ -14,6 +14,7 @@ import { StudyResult } from "~/components/study/study-result";
 import { Button } from "~/components/ui/button";
 import { useStudyResume } from "~/hooks/use-study-resume";
 import { useStudySessionController } from "~/hooks/use-study-session-controller";
+import { createBackendClient } from "~/lib/api/client.server";
 import {
   type AnswerLocaleHeaders,
   getStudyQuestions,
@@ -43,6 +44,7 @@ const ANSWER_NOT_SAVED_ERROR_KEY = "workbooks.study.errors.answerNotSaved";
 
 export async function loader({ request, params, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const url = new URL(request.url);
   const practice = url.searchParams.get("practice") === "true";
@@ -52,7 +54,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   // again at the trust boundary.
   const excludeIds = clampExcludeIds(url.searchParams.getAll("excludeIds"));
   const [workbook, data, user] = await Promise.all([
-    getWorkbook(accessToken, workbookId),
+    getWorkbook(client, workbookId),
     getStudyQuestions(accessToken, workbookId, limit, practice, excludeIds),
     getUserPreferencesOrNull(request, accessToken),
   ]);
