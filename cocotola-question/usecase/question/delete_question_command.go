@@ -12,15 +12,17 @@ import (
 // DeleteQuestionCommand handles question deletion.
 type DeleteQuestionCommand struct {
 	questionDeleter  questionDeleter
+	workbookFinder   workbookFinder
 	activeListFinder activeQuestionListFinder
 	activeListSaver  activeQuestionListSaver
 	authChecker      authorizationChecker
 }
 
 // NewDeleteQuestionCommand returns a new DeleteQuestionCommand.
-func NewDeleteQuestionCommand(questionDeleter questionDeleter, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker) *DeleteQuestionCommand {
+func NewDeleteQuestionCommand(questionDeleter questionDeleter, workbookFinder workbookFinder, activeListFinder activeQuestionListFinder, activeListSaver activeQuestionListSaver, authChecker authorizationChecker) *DeleteQuestionCommand {
 	return &DeleteQuestionCommand{
 		questionDeleter:  questionDeleter,
+		workbookFinder:   workbookFinder,
 		activeListFinder: activeListFinder,
 		activeListSaver:  activeListSaver,
 		authChecker:      authChecker,
@@ -29,6 +31,10 @@ func NewDeleteQuestionCommand(questionDeleter questionDeleter, activeListFinder 
 
 // DeleteQuestion deletes a question from a workbook.
 func (c *DeleteQuestionCommand) DeleteQuestion(ctx context.Context, input *questionservice.DeleteQuestionInput) error {
+	if _, err := c.workbookFinder.FindByID(ctx, input.WorkbookID); err != nil {
+		return fmt.Errorf("find workbook: %w", err)
+	}
+
 	resource, err := domain.ResourceWorkbook(input.WorkbookID)
 	if err != nil {
 		return fmt.Errorf("resource workbook: %w", err)

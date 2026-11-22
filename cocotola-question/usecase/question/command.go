@@ -38,10 +38,10 @@ func NewCommand(
 	parser contentParser,
 ) *Command {
 	return &Command{
-		AddQuestionCommand:    NewAddQuestionCommand(questionCreatorRepo, authChecker, parser),
+		AddQuestionCommand:    NewAddQuestionCommand(questionCreatorRepo, workbookFinderRepo, authChecker, parser),
 		GetQuestionQuery:      NewGetQuestionQuery(questionFinderRepo, workbookFinderRepo, authChecker),
 		ListQuestionsQuery:    NewListQuestionsQuery(questionFinderRepo, workbookFinderRepo, authChecker),
-		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionSaverRepo, authChecker, parser),
-		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, activeListFinder, activeListSaver, authChecker),
+		UpdateQuestionCommand: NewUpdateQuestionCommand(questionFinderRepo, questionSaverRepo, workbookFinderRepo, authChecker, parser),
+		DeleteQuestionCommand: NewDeleteQuestionCommand(questionDeleterRepo, workbookFinderRepo, activeListFinder, activeListSaver, authChecker),
 	}
 }

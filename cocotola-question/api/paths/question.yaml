@@ -144,7 +144,7 @@ question-by-id:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
       '404':
-        description: Question not found
+        description: Workbook or question not found
         content:
           application/json:
             schema:
@@ -210,7 +210,7 @@ question-by-id:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
       '404':
-        description: Question not found
+        description: Workbook or question not found
         content:
           application/json:
             schema:
@@ -258,7 +258,7 @@ question-by-id:
               $ref: '../schemas/common.yaml#/ErrorResponse'
         headers: {}
       '404':
-        description: Question not found
+        description: Workbook not found
         content:
           application/json:
             schema:
@@ -397,7 +397,7 @@ internal-question-by-id:
             schema:
               $ref: '../schemas/question.yaml#/QuestionResponse'
       '404':
-        description: Question not found
+        description: Workbook or question not found
         content:
           application/json:
             schema:
@@ -435,7 +435,7 @@ internal-question-by-id:
       '204':
         description: Successfully deleted
       '404':
-        description: Question not found
+        description: Workbook not found
         content:
           application/json:
             schema:

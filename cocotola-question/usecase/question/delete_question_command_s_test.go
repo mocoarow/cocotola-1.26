@@ -40,7 +40,7 @@ func Test_DeleteQuestionCommand_shouldDeleteQuestion_whenAllowed(t *testing.T) {
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(questionDeleter, activeListFinder, activeListSaver, authChecker)
+	cmd := questionusecase.NewDeleteQuestionCommand(questionDeleter, existingWorkbookFinder(t), activeListFinder, activeListSaver, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
@@ -61,7 +61,7 @@ func Test_DeleteQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(nil, nil, nil, authChecker)
+	cmd := questionusecase.NewDeleteQuestionCommand(nil, existingWorkbookFinder(t), nil, nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
@@ -83,7 +83,7 @@ func Test_DeleteQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionDeleteQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(nil, nil, nil, authChecker)
+	cmd := questionusecase.NewDeleteQuestionCommand(nil, existingWorkbookFinder(t), nil, nil, authChecker)
 	input := newDeleteQuestionInput(t)
 
 	// when
@@ -91,4 +91,21 @@ func Test_DeleteQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 
 	// then
 	require.ErrorIs(t, err, authErr)
+}
+
+func Test_DeleteQuestionCommand_shouldReturnWorkbookNotFound_whenWorkbookDoesNotExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newMockauthorizationChecker(t)
+
+	cmd := questionusecase.NewDeleteQuestionCommand(nil, missingWorkbookFinder(t), nil, nil, authChecker)
+	input := newDeleteQuestionInput(t)
+
+	// when
+	err := cmd.DeleteQuestion(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
 }

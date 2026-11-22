@@ -20,22 +20,28 @@ type questionCreator interface {
 
 // AddQuestionCommand handles adding a question to a workbook.
 type AddQuestionCommand struct {
-	questionRepo questionCreator
-	authChecker  authorizationChecker
-	parser       contentParser
+	questionRepo   questionCreator
+	workbookFinder workbookFinder
+	authChecker    authorizationChecker
+	parser         contentParser
 }
 
 // NewAddQuestionCommand returns a new AddQuestionCommand.
-func NewAddQuestionCommand(questionRepo questionCreator, authChecker authorizationChecker, parser contentParser) *AddQuestionCommand {
+func NewAddQuestionCommand(questionRepo questionCreator, workbookFinder workbookFinder, authChecker authorizationChecker, parser contentParser) *AddQuestionCommand {
 	return &AddQuestionCommand{
-		questionRepo: questionRepo,
-		authChecker:  authChecker,
-		parser:       parser,
+		questionRepo:   questionRepo,
+		workbookFinder: workbookFinder,
+		authChecker:    authChecker,
+		parser:         parser,
 	}
 }
 
 // AddQuestion adds a question to a workbook.
 func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionservice.AddQuestionInput) (*questionservice.AddQuestionOutput, error) {
+	if _, err := c.workbookFinder.FindByID(ctx, input.WorkbookID); err != nil {
+		return nil, fmt.Errorf("find workbook: %w", err)
+	}
+
 	resource, err := domain.ResourceWorkbook(input.WorkbookID)
 	if err != nil {
 		return nil, fmt.Errorf("resource workbook: %w", err)

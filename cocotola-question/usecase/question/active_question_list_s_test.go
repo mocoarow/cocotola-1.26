@@ -33,6 +33,20 @@ func allowWorkbookAction(t *testing.T, action domain.Action) *mockauthorizationC
 	return authChecker
 }
 
+func existingWorkbookFinder(t *testing.T) *mockworkbookFinder {
+	t.Helper()
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(newPrivateWorkbook(), nil)
+	return wbFinder
+}
+
+func missingWorkbookFinder(t *testing.T) *mockworkbookFinder {
+	t.Helper()
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(nil, domain.ErrWorkbookNotFound)
+	return wbFinder
+}
+
 func acceptingQuestionDeleter(t *testing.T) *mockquestionDeleter {
 	t.Helper()
 	questionDeleter := newMockquestionDeleter(t)
@@ -51,7 +65,7 @@ func Test_DeleteQuestionCommand_shouldDeleteQuestion_whenActiveListSaveConflicts
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification).Once()
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(nil).Once()
 
-	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
+	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), existingWorkbookFinder(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
 
 	// when
 	err := cmd.DeleteQuestion(ctx, newDeleteQuestionInput(t))
@@ -70,7 +84,7 @@ func Test_DeleteQuestionCommand_shouldReturnConcurrentModification_whenActiveLis
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
+	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), existingWorkbookFinder(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
 
 	// when
 	err := cmd.DeleteQuestion(ctx, newDeleteQuestionInput(t))
@@ -89,7 +103,7 @@ func Test_DeleteQuestionCommand_shouldStopRetrying_whenActiveListSaveAttemptsAre
 	activeListSaver := newMockactiveQuestionListSaver(t)
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(libversioned.ErrConcurrentModification)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
+	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), existingWorkbookFinder(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
 
 	// when
 	_ = cmd.DeleteQuestion(ctx, newDeleteQuestionInput(t))
@@ -109,7 +123,7 @@ func Test_DeleteQuestionCommand_shouldNotRetry_whenActiveListSaveFailsWithOtherE
 	saveErr := errors.New("firestore unavailable")
 	activeListSaver.On("Save", mock.Anything, mock.Anything).Return(saveErr)
 
-	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
+	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), existingWorkbookFinder(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
 
 	// when
 	_ = cmd.DeleteQuestion(ctx, newDeleteQuestionInput(t))
@@ -132,7 +146,7 @@ func Test_DeleteQuestionCommand_shouldSaveRereadActiveList_whenActiveListSaveCon
 		return l.Version() == 2 && l.Size() == 1 && l.Contains(fixtureOtherQuestionID)
 	})).Return(nil).Once()
 
-	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
+	cmd := questionusecase.NewDeleteQuestionCommand(acceptingQuestionDeleter(t), existingWorkbookFinder(t), activeListFinder, activeListSaver, allowWorkbookAction(t, domain.ActionDeleteQuestion()))
 
 	// when
 	err := cmd.DeleteQuestion(ctx, newDeleteQuestionInput(t))
