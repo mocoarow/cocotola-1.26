@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import "~/i18n/config";
 
@@ -10,6 +10,10 @@ vi.mock("~/hooks/use-mobile", () => ({
 
 vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
+}));
+
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
 }));
 
 vi.mock("~/lib/api/user-setting.server", () => ({
@@ -34,8 +38,11 @@ vi.mock("react-router", async (importOriginal) => {
   };
 });
 
-import type { UserPreferences } from "~/lib/api/user-setting.server";
-import { ErrorBoundary } from "./workbooks";
+import { createBackendClient } from "~/lib/api/client.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
+import { getUserPreferencesOrNull, type UserPreferences } from "~/lib/api/user-setting.server";
+import { requireAuth } from "~/lib/auth/require-auth.server";
+import { ErrorBoundary, loader } from "./workbooks";
 
 type ErrorBoundaryProps = Parameters<typeof ErrorBoundary>[0];
 
@@ -95,5 +102,61 @@ describe("WorkbooksLayout ErrorBoundary", () => {
 
     // then
     expect(screen.getByTestId("workbooks-sidebar")).toBeInTheDocument();
+  });
+});
+
+type LoaderArgs = Parameters<typeof loader>[0];
+
+const backendClient = backendClientSentinel();
+
+describe("WorkbooksLayout loader", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "info").mockImplementation(() => {});
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(null);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+  });
+
+  function buildLoaderArgs(): LoaderArgs {
+    const request = new Request("http://localhost/workbooks");
+    return { request, params: {}, context: {} } as unknown as LoaderArgs;
+  }
+
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should fetch the user preferences through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getUserPreferencesOrNull).mock.calls[0][0]).toBe(backendClient);
   });
 });

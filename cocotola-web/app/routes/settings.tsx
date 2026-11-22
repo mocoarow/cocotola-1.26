@@ -4,6 +4,7 @@ import { Form, useActionData, useFetcher, useLoaderData, useNavigation } from "r
 
 import { Button } from "~/components/ui/button";
 import { type SupportedLanguage, supportedLanguages } from "~/i18n/config";
+import { type BackendClient, createBackendClient } from "~/lib/api/client.server";
 import {
   getUserPreferences,
   updateUserDailyGoal,
@@ -13,18 +14,15 @@ import {
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import { detectBrowserTimezone, isValidIanaTimezoneShape } from "~/lib/format/local-date";
 import { MAX_DAILY_GOAL, MIN_DAILY_GOAL } from "~/lib/format/user-setting-bounds";
+import { isRedirectResponse } from "~/lib/route-error";
 
 import type { Route } from "./+types/settings";
 
-/**
- * Server loader: hydrates the form with the persisted preferences from
- * /auth/me. Funneled through getUserPreferences so the response shape and
- * the 401-redirect-to-login contract stay in sync with routes/workbooks.tsx
- * and routes/dashboard.tsx.
- */
+/** Server loader: hydrates the form with the persisted preferences from /auth/me. */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
-  const prefs = await getUserPreferences(request, accessToken);
+  const client = createBackendClient({ request, accessToken });
+  const prefs = await getUserPreferences(client);
   return {
     loginId: prefs.loginId,
     organizationName: prefs.organizationName,
@@ -43,8 +41,8 @@ const REJECTED_REQUEST_BODY = "Invalid request parameters";
 /**
  * Saves a single preference field. Catches per-field failures so the
  * caller can report partial success while still propagating thrown
- * redirect Responses (e.g. the /login redirect from redirectOnUnauthorized)
- * so React Router can navigate instead of recording the redirect as a
+ * redirect Responses (e.g. the /login redirect the backend client throws
+ * on 401) so React Router can navigate instead of recording the redirect as a
  * field-level save failure.
  */
 async function savePreferenceField<F extends string>(
@@ -55,7 +53,7 @@ async function savePreferenceField<F extends string>(
     await saveFn();
     return { field, ok: true };
   } catch (err) {
-    if (err instanceof Response && err.status >= 300 && err.status < 400) {
+    if (isRedirectResponse(err)) {
       throw err;
     }
     console.error(`[settings] save ${field} failed`, err);
@@ -74,13 +72,13 @@ async function savePreferenceField<F extends string>(
  * (the failure path leaves the UI on the pre-change language; see
  * SettingsPage's languageFetcher effect).
  */
-async function handleLanguageIntent(request: Request, accessToken: string, formData: FormData) {
+async function handleLanguageIntent(client: BackendClient, formData: FormData) {
   const language = String(formData.get("language") ?? "");
   if (!supportedLanguages.includes(language as SupportedLanguage)) {
     console.warn(`[settings] action rejected: unsupported language (length=${language.length})`);
     throw new Response(REJECTED_REQUEST_BODY, { status: 400 });
   }
-  await updateUserLanguage(request, accessToken, language);
+  await updateUserLanguage(client, language);
   return { ok: true as const, intent: "saveLanguage" as const, language };
 }
 
@@ -89,7 +87,7 @@ async function handleLanguageIntent(request: Request, accessToken: string, formD
  * then saves each field sequentially so a per-field failure can be
  * reported back to the UI without hiding the other field's success.
  */
-async function handleStudyIntent(request: Request, accessToken: string, formData: FormData) {
+async function handleStudyIntent(client: BackendClient, formData: FormData) {
   const dailyGoalRaw = formData.get("dailyGoal");
   const timezone = String(formData.get("timezone") ?? "");
 
@@ -110,10 +108,10 @@ async function handleStudyIntent(request: Request, accessToken: string, formData
   }
 
   const goalResult = await savePreferenceField("dailyGoal", () =>
-    updateUserDailyGoal(request, accessToken, dailyGoal),
+    updateUserDailyGoal(client, dailyGoal),
   );
   const tzResult = await savePreferenceField("timezone", () =>
-    updateUserTimezone(request, accessToken, timezone),
+    updateUserTimezone(client, timezone),
   );
 
   const failedFields = [goalResult, tzResult].filter((r) => !r.ok).map((r) => r.field);
@@ -129,14 +127,15 @@ async function handleStudyIntent(request: Request, accessToken: string, formData
 
 export async function action({ request, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const formData = await request.formData();
   const intent = String(formData.get("intent") ?? "");
 
   if (intent === "saveLanguage") {
-    return handleLanguageIntent(request, accessToken, formData);
+    return handleLanguageIntent(client, formData);
   }
   if (intent === "saveStudyPreferences") {
-    return handleStudyIntent(request, accessToken, formData);
+    return handleStudyIntent(client, formData);
   }
   // Never interpolate the raw intent — a tampered form body could pack
   // an injection payload or control characters that poison downstream

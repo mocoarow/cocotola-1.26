@@ -997,6 +997,18 @@ describe("StudyPage loader", () => {
     expect(vi.mocked(getStudyQuestions).mock.calls[0][0]).toBe(backendClient);
   });
 
+  it("should fetch the user preferences through the backend client", async () => {
+    // given
+    givenWorkbookOwnedBy("user-1");
+    vi.mocked(getUserPreferencesOrNull).mockResolvedValue(preferences);
+
+    // when
+    await loader(buildLoaderArgs());
+
+    // then
+    expect(vi.mocked(getUserPreferencesOrNull).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it.each([
     ["user-1", "workbook"],
     ["owner-other", "public"],

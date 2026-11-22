@@ -6,6 +6,16 @@ export type RouteErrorKind = "forbidden" | "notFound" | "conflict" | "server" | 
 const STATUS_FORBIDDEN = 403;
 const STATUS_NOT_FOUND = 404;
 const STATUS_CONFLICT = 409;
+const STATUS_REDIRECT_MIN = 300;
+const STATUS_REDIRECT_MAX_EXCLUSIVE = 400;
+
+export function isRedirectResponse(error: unknown): error is Response {
+  return (
+    error instanceof Response &&
+    error.status >= STATUS_REDIRECT_MIN &&
+    error.status < STATUS_REDIRECT_MAX_EXCLUSIVE
+  );
+}
 
 export function isConflictOrServerError(status: number): boolean {
   return status === STATUS_CONFLICT || isServerErrorStatus(status);

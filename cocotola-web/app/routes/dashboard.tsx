@@ -4,6 +4,7 @@ import { useLoaderData } from "react-router";
 import { ContributionGraph } from "~/components/dashboard/contribution-graph";
 import { DailyGoalCard } from "~/components/dashboard/daily-goal-card";
 import { StreakCard } from "~/components/dashboard/streak-card";
+import { createBackendClient } from "~/lib/api/client.server";
 import { getDashboard } from "~/lib/api/dashboard.server";
 import { getUserPreferences } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
@@ -19,21 +20,16 @@ import type { Route } from "./+types/dashboard";
  * "user traveled" case) they have to update the preference manually,
  * which is the simplest behavior that keeps server-rendered and client
  * views consistent.
- *
- * The /auth/me lookup goes through getUserPreferences so the response
- * shape, default-field fallbacks, and 401-redirect-to-login behavior stay
- * consistent with routes/workbooks.tsx — without this funnel a stale tab
- * pointed at /dashboard would render the React Router error boundary
- * instead of being redirected back to the login screen.
  */
 export async function loader({ request, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
-  const prefs = await getUserPreferences(request, accessToken);
+  const client = createBackendClient({ request, accessToken });
+  const prefs = await getUserPreferences(client);
   const todayKey = getLocalDateKey(prefs.timezone);
   // Omitting `days` so the function default (DEFAULT_DASHBOARD_DAYS in
   // dashboard.server.ts) is the single source of truth. A `365` literal
   // here would have made the constant in the client library cosmetic.
-  const dashboard = await getDashboard(request, accessToken, todayKey, prefs.timezone);
+  const dashboard = await getDashboard(client, todayKey, prefs.timezone);
   return {
     dashboard,
     dailyGoal: prefs.dailyGoal,

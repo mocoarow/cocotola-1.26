@@ -48,15 +48,6 @@ export async function destroySession(session: Awaited<ReturnType<typeof getSessi
  * If `response` carries HTTP 401, destroy the React Router session and
  * throw a `redirect("/login")` Response. Otherwise resolves with `response`
  * unchanged so the caller can fall through to its normal handling.
- *
- * Every server-side fetch that authenticates against an internal service
- * (i.e. anything going through fetchWithIdToken with a Bearer token) must
- * funnel its 401 branch through this helper. Without the funnel a stale
- * tab whose token expired between loaders would produce a generic React
- * Router error boundary on whichever endpoint replied first — instead of
- * the user being sent to /login with the cookie cleared. The "source" tag
- * appears in the structured log so it is clear which call site triggered
- * the redirect during incident review.
  */
 export async function redirectOnUnauthorized(
   request: Request,

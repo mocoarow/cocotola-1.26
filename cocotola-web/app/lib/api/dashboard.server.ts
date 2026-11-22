@@ -1,25 +1,31 @@
-import { redirectOnUnauthorized } from "~/lib/auth/session.server";
+import { z } from "zod";
 
-import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
+import type { BackendClient } from "./client.server";
 
-export type DashboardDailyItem = {
-  date: string;
-  answeredCount: number;
-  correctCount: number;
-};
+const dashboardDailyItemSchema = z.object({
+  date: z.string(),
+  answeredCount: z.number().int(),
+  correctCount: z.number().int(),
+});
 
-export type DashboardResponse = {
-  from: string;
-  to: string;
-  days: DashboardDailyItem[];
-  currentStreak: number;
-  longestStreak: number;
-  todayCount: number;
-  todayCorrect: number;
-  activeDays: number;
-  totalAnswered: number;
-  totalCorrect: number;
-};
+export type DashboardDailyItem = z.infer<typeof dashboardDailyItemSchema>;
+
+const dashboardResponseSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  days: z.array(dashboardDailyItemSchema),
+  currentStreak: z.number().int().nonnegative(),
+  longestStreak: z.number().int().nonnegative(),
+  todayCount: z.number().int().nonnegative(),
+  todayCorrect: z.number().int().nonnegative(),
+  activeDays: z.number().int().nonnegative(),
+  totalAnswered: z.number().int().nonnegative(),
+  totalCorrect: z.number().int().nonnegative(),
+});
+
+export type DashboardResponse = z.infer<typeof dashboardResponseSchema>;
+
+const parseDashboard = (raw: unknown): DashboardResponse => dashboardResponseSchema.parse(raw);
 
 // Min / max mirror studyservice.{Min,Max}DashboardDays on the Go side.
 // DEFAULT is purely an HTTP-client convention (the backend has its own
@@ -45,41 +51,19 @@ function clampDays(days: number): number {
  * user's local "today" (YYYY-MM-DD) and IANA timezone so the backend
  * windows the response in the user's calendar regardless of where the
  * request is served from.
- *
- * Routes through redirectOnUnauthorized so a 401 from the dashboard
- * endpoint converts to destroySession + redirect("/login") — symmetric
- * with getUserPreferences. Without this funnel a stale tab whose token
- * expired between the /auth/me and the /study/dashboard call would hit
- * the React Router error boundary on the second request with no path
- * back to the login screen.
  */
 export async function getDashboard(
-  request: Request,
-  accessToken: string,
+  client: BackendClient,
   localDateKey: string,
   timezone: string,
   days: number = DEFAULT_DASHBOARD_DAYS,
 ): Promise<DashboardResponse> {
-  const baseUrl = getQuestionUrl();
   const params = new URLSearchParams({ days: String(clampDays(days)) });
-  const url = `${baseUrl}/api/v1/study/dashboard?${params.toString()}`;
 
-  const response = await redirectOnUnauthorized(
-    request,
-    await fetchWithIdToken(baseUrl, url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "X-Local-Date": localDateKey,
-        "X-Local-Timezone": timezone,
-      },
-    }),
-    "dashboard:getDashboard",
-  );
-
-  if (!response.ok) {
-    console.error(`[dashboard] getDashboard failed: status=${response.status}, url=${url}`);
-    throw new Response("Failed to fetch dashboard", { status: response.status });
-  }
-
-  return (await response.json()) as DashboardResponse;
+  return client.get("question", `/api/v1/study/dashboard?${params.toString()}`, {
+    source: "dashboard:getDashboard",
+    errorMessage: "Failed to fetch dashboard",
+    headers: { "X-Local-Date": localDateKey, "X-Local-Timezone": timezone },
+    parse: parseDashboard,
+  });
 }

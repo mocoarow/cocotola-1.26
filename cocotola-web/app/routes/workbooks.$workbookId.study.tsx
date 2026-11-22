@@ -56,7 +56,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const [workbook, data, user] = await Promise.all([
     getWorkbook(client, workbookId),
     getStudyQuestions(client, workbookId, limit, practice, excludeIds),
-    getUserPreferencesOrNull(request, accessToken),
+    getUserPreferencesOrNull(client),
   ]);
   const currentUserId = user === null || user.userId === "" ? null : user.userId;
   return {
