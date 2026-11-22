@@ -22,7 +22,7 @@ const (
 )
 
 // ErrQuestionRejected is returned by WorkbookAPIClient.AddQuestion when the
-// question service rejects the question's content.
+// question service rejects the question as invalid.
 var ErrQuestionRejected = errors.New("question rejected")
 
 // WorkbookAPIClient is the question service API required by WorkbookSeeder.
