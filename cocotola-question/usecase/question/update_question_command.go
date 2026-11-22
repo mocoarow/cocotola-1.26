@@ -13,15 +13,17 @@ import (
 type UpdateQuestionCommand struct {
 	questionFinder questionFinder
 	questionSaver  questionSaver
+	workbookFinder workbookFinder
 	authChecker    authorizationChecker
 	parser         contentParser
 }
 
 // NewUpdateQuestionCommand returns a new UpdateQuestionCommand.
-func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver questionSaver, authChecker authorizationChecker, parser contentParser) *UpdateQuestionCommand {
+func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver questionSaver, workbookFinder workbookFinder, authChecker authorizationChecker, parser contentParser) *UpdateQuestionCommand {
 	return &UpdateQuestionCommand{
 		questionFinder: questionFinder,
 		questionSaver:  questionSaver,
+		workbookFinder: workbookFinder,
 		authChecker:    authChecker,
 		parser:         parser,
 	}
@@ -29,6 +31,10 @@ func NewUpdateQuestionCommand(questionFinder questionFinder, questionSaver quest
 
 // UpdateQuestion updates an existing question.
 func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *questionservice.UpdateQuestionInput) (*questionservice.UpdateQuestionOutput, error) {
+	if _, err := c.workbookFinder.FindByID(ctx, input.WorkbookID); err != nil {
+		return nil, fmt.Errorf("find workbook: %w", err)
+	}
+
 	resource, err := domain.ResourceWorkbook(input.WorkbookID)
 	if err != nil {
 		return nil, fmt.Errorf("resource workbook: %w", err)

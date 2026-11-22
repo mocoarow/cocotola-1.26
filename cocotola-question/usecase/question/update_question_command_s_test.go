@@ -54,7 +54,7 @@ func Test_UpdateQuestionCommand_shouldUpdateQuestion_whenAllowed(t *testing.T) {
 			len(saved.Tags()) == 1 && saved.Tags()[0] == "lang:ja"
 	})).Return(nil)
 
-	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, questionSaver, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, questionSaver, existingWorkbookFinder(t), authChecker, contentjson.Parser{})
 	input := newUpdateQuestionInput(t)
 
 	// when
@@ -79,7 +79,7 @@ func Test_UpdateQuestionCommand_shouldReturnForbidden_whenNotAllowed(t *testing.
 	authChecker := newMockauthorizationChecker(t)
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource).Return(false, nil)
 
-	cmd := questionusecase.NewUpdateQuestionCommand(nil, nil, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewUpdateQuestionCommand(nil, nil, existingWorkbookFinder(t), authChecker, contentjson.Parser{})
 	input := newUpdateQuestionInput(t)
 
 	// when
@@ -101,7 +101,7 @@ func Test_UpdateQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 	authErr := errors.New("auth unavailable")
 	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionUpdateQuestion(), wbResource).Return(false, authErr)
 
-	cmd := questionusecase.NewUpdateQuestionCommand(nil, nil, authChecker, contentjson.Parser{})
+	cmd := questionusecase.NewUpdateQuestionCommand(nil, nil, existingWorkbookFinder(t), authChecker, contentjson.Parser{})
 	input := newUpdateQuestionInput(t)
 
 	// when
@@ -109,6 +109,23 @@ func Test_UpdateQuestionCommand_shouldReturnError_whenAuthCheckFails(t *testing.
 
 	// then
 	require.ErrorIs(t, err, authErr)
+}
+
+func Test_UpdateQuestionCommand_shouldReturnWorkbookNotFound_whenWorkbookDoesNotExist(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker := newMockauthorizationChecker(t)
+
+	cmd := questionusecase.NewUpdateQuestionCommand(nil, nil, missingWorkbookFinder(t), authChecker, contentjson.Parser{})
+	input := newUpdateQuestionInput(t)
+
+	// when
+	_, err := cmd.UpdateQuestion(ctx, input)
+
+	// then
+	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
 }
 
 func Test_UpdateQuestionCommand_shouldReturnError_whenInjectedParserFails(t *testing.T) {
@@ -131,7 +148,7 @@ func Test_UpdateQuestionCommand_shouldReturnError_whenInjectedParserFails(t *tes
 	parser := newMockcontentParser(t)
 	parser.On("ParseWordFill", fixtureUpdatedWordFillContent).Return(nil, parseErr)
 
-	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, newMockquestionSaver(t), authChecker, parser)
+	cmd := questionusecase.NewUpdateQuestionCommand(questionFinder, newMockquestionSaver(t), existingWorkbookFinder(t), authChecker, parser)
 	input := newUpdateQuestionInput(t)
 
 	// when
