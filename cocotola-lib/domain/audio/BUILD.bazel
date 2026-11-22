@@ -1,0 +1,21 @@
+load("@rules_go//go:def.bzl", "go_library")
+load("//bazel:go_test.bzl", "smart_go_test")
+
+go_library(
+    name = "audio",
+    srcs = [
+        "audio.go",
+        "doc.go",
+    ],
+    importpath = "github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/audio",
+    visibility = ["//visibility:public"],
+)
+
+smart_go_test(
+    name = "audio_test",
+    srcs = ["audio_s_test.go"],
+    deps = [
+        ":audio",
+        "@com_github_stretchr_testify//assert",
+    ],
+)
