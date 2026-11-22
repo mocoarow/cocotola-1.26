@@ -86,9 +86,9 @@ func run() (int, error) {
 
 	authMiddleware := questionmiddleware.NewAuthMiddleware(questiongateway.NewAuthServiceMeFetcher(authClientBaseURL, httpClient, time.Duration(cfg.App.AuthClient.MeCacheTTLSec)*time.Second))
 	authzChecker := questiongateway.NewAuthServiceAuthorizationChecker(authClientBaseURL, authClientAPIKey, httpClient)
-	orgResolver := questiongateway.NewCachedOrganizationResolver(
+	orgResolver := questionmiddleware.OrganizationIDResolverFunc(questiongateway.NewCachedOrganizationResolver(
 		questiongateway.AuthServiceOrganizationResolver(authClientBaseURL, authClientAPIKey, httpClient),
-		time.Duration(cfg.App.AuthClient.OrgResolverCacheTTLMin)*time.Minute)
+		time.Duration(cfg.App.AuthClient.OrgResolverCacheTTLMin)*time.Minute))
 	maxWbFetcher := questiongateway.NewAuthServiceMaxWorkbooksFetcher(authClientBaseURL, authClientAPIKey, httpClient)
 	spaceTypeFetcher := questiongateway.NewAuthServiceSpaceTypeFetcher(authClientBaseURL, authClientAPIKey, httpClient)
 	policyAdder := questiongateway.NewAuthServicePolicyAdder(authClientBaseURL, authClientAPIKey, httpClient)

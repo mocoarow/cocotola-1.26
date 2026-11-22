@@ -103,8 +103,8 @@ func decodeJSON(resp *http.Response, result any) error {
 	return nil
 }
 
-// AuthServiceOrganizationResolver returns an OrganizationIDResolver that resolves
-// organization names by calling cocotola-auth's internal GET /api/v1/internal/auth/organization endpoint.
+// AuthServiceOrganizationResolver resolves organization names by calling
+// cocotola-auth's internal GET /api/v1/internal/auth/organization endpoint.
 func AuthServiceOrganizationResolver(authBaseURL string, apiKey string, httpClient *http.Client) func(ctx context.Context, name string) (string, error) {
 	client := newAuthServiceClient(authBaseURL, apiKey, httpClient, "OrgResolver")
 

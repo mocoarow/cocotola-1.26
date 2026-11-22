@@ -10,7 +10,6 @@ go_library(
         "//cocotola-lib/logging",
         "//cocotola-question/config",
         "//cocotola-question/contentjson",
-        "//cocotola-question/controller",
         "//cocotola-question/controller/handler",
         "//cocotola-question/controller/handler/health",
         "//cocotola-question/controller/handler/question",
