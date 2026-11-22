@@ -17,8 +17,13 @@ smart_go_test(
     name = "config_test",
     srcs = [
         "config_test.go",
+        "config_validator_drift_s_test.go",
         "export_test.go",
     ],
     embed = [":config"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "//cocotola-lib/domain/audio",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
