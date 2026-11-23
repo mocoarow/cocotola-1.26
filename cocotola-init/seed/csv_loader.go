@@ -35,46 +35,41 @@ func NewCSVWorkbookLoader(reader GCSObjectReader, manifest CSVWorkbookManifest) 
 	return &CSVWorkbookLoader{reader: reader, manifest: manifest}
 }
 
-// Load calls LoadCSVWorkbookSeeds with the loader's reader and manifest.
-func (l *CSVWorkbookLoader) Load(ctx context.Context) ([]CSVWorkbookSeed, error) {
-	return LoadCSVWorkbookSeeds(ctx, l.reader, l.manifest)
+// Entries returns the manifest entries in manifest order.
+func (l *CSVWorkbookLoader) Entries() []CSVWorkbookEntry {
+	return l.manifest.Workbooks
 }
 
-// LoadCSVWorkbookSeeds turns each manifest entry into a CSVWorkbookSeed by
-// downloading its CSV from GCS and converting the rows into question seeds.
-// The workbook metadata comes from the manifest; only the questions come from
-// the CSV.
-func LoadCSVWorkbookSeeds(ctx context.Context, reader GCSObjectReader, manifest CSVWorkbookManifest) ([]CSVWorkbookSeed, error) {
-	if err := manifest.validate(); err != nil {
-		return nil, fmt.Errorf("validate csv manifest: %w", err)
+// Load calls LoadCSVWorkbookSeed with the loader's reader.
+func (l *CSVWorkbookLoader) Load(ctx context.Context, entry CSVWorkbookEntry) (CSVWorkbookSeed, error) {
+	return LoadCSVWorkbookSeed(ctx, l.reader, entry)
+}
+
+// LoadCSVWorkbookSeed downloads the CSV of entry from GCS and converts the rows
+// into question seeds. The workbook metadata comes from the entry; only the
+// questions come from the CSV. The manifest is validated where it is built.
+func LoadCSVWorkbookSeed(ctx context.Context, reader GCSObjectReader, entry CSVWorkbookEntry) (CSVWorkbookSeed, error) {
+	data, err := reader.ReadObject(ctx, entry.GCSObject)
+	if err != nil {
+		return CSVWorkbookSeed{}, fmt.Errorf("read csv object %q for workbook %q: %w", entry.GCSObject, entry.SeedKey, err)
 	}
 
-	seeds := make([]CSVWorkbookSeed, 0, len(manifest.Workbooks))
-	for _, entry := range manifest.Workbooks {
-		data, err := reader.ReadObject(ctx, entry.GCSObject)
-		if err != nil {
-			return nil, fmt.Errorf("read csv object %q for workbook %q: %w", entry.GCSObject, entry.SeedKey, err)
-		}
-
-		conv, err := convertCSV(entry.Format, entry.SourceLang, entry.TargetLang, data)
-		if err != nil {
-			return nil, fmt.Errorf("convert csv for workbook %q: %w", entry.SeedKey, err)
-		}
-		logSkippedRows(ctx, entry.SeedKey, conv.skipped)
-
-		seeds = append(seeds, CSVWorkbookSeed{
-			Seed: PublicWorkbookSeed{
-				SeedKey:     entry.SeedKey,
-				Title:       entry.Title,
-				Description: entry.Description,
-				Language:    entry.Language,
-				Questions:   conv.questions,
-			},
-			InvalidRowIndexes: invalidRowIndexes(conv.skipped),
-		})
+	conv, err := convertCSV(entry.Format, entry.SourceLang, entry.TargetLang, data)
+	if err != nil {
+		return CSVWorkbookSeed{}, fmt.Errorf("convert csv for workbook %q: %w", entry.SeedKey, err)
 	}
+	logSkippedRows(ctx, entry.SeedKey, conv.skipped)
 
-	return seeds, nil
+	return CSVWorkbookSeed{
+		Seed: PublicWorkbookSeed{
+			SeedKey:     entry.SeedKey,
+			Title:       entry.Title,
+			Description: entry.Description,
+			Language:    entry.Language,
+			Questions:   conv.questions,
+		},
+		InvalidRowIndexes: invalidRowIndexes(conv.skipped),
+	}, nil
 }
 
 func invalidRowIndexes(skipped []skippedCSVRow) []int32 {

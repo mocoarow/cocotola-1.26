@@ -9,6 +9,11 @@
 #       srcSentenceNumber, srcAuthor, dstSentenceNumber, dstAuthor
 #     In this dataset the src* columns describe the target-language (en)
 #     sentence and the dst* columns the source-language (ja) sentence.
+#   generated-ordering
+#     Required CSV columns: id, srcText, segments, pattern
+#     Optional CSV columns: patternName, patternPoint, tags (CEFR level),
+#       sourceType
+#     segments is a JSON array of {"type": "chip"|"fixed", "text": "..."}.
 csvWorkbooks:
   - seedKey: cefr-b1-wordfill-v1
     title: "穴埋め問題: CEFR B1 単語"
@@ -18,3 +23,11 @@ csvWorkbooks:
     sourceLang: ja
     targetLang: en
     gcsObject: cefr_b1_questions.csv
+  - seedKey: cefr-b1-ordering-v1
+    title: "並べ替え問題: CEFR B1 構文"
+    description: "CEFR B1 レベルの文法構文ごとに、日本語の意味に合うよう英語の語句を並べ替える問題集です。"
+    language: ja
+    format: generated-ordering
+    sourceLang: ja
+    targetLang: en
+    gcsObject: ordering_b1_questions.csv

@@ -131,28 +131,72 @@ func (_m *MockCSVWorkbookLoader) EXPECT() *MockCSVWorkbookLoader_Expecter {
 	return &MockCSVWorkbookLoader_Expecter{mock: &_m.Mock}
 }
 
+// Entries provides a mock function for the type MockCSVWorkbookLoader
+func (_mock *MockCSVWorkbookLoader) Entries() []seed.CSVWorkbookEntry {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Entries")
+	}
+
+	var r0 []seed.CSVWorkbookEntry
+	if returnFunc, ok := ret.Get(0).(func() []seed.CSVWorkbookEntry); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]seed.CSVWorkbookEntry)
+		}
+	}
+	return r0
+}
+
+// MockCSVWorkbookLoader_Entries_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Entries'
+type MockCSVWorkbookLoader_Entries_Call struct {
+	*mock.Call
+}
+
+// Entries is a helper method to define mock.On call
+func (_e *MockCSVWorkbookLoader_Expecter) Entries() *MockCSVWorkbookLoader_Entries_Call {
+	return &MockCSVWorkbookLoader_Entries_Call{Call: _e.mock.On("Entries")}
+}
+
+func (_c *MockCSVWorkbookLoader_Entries_Call) Run(run func()) *MockCSVWorkbookLoader_Entries_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *MockCSVWorkbookLoader_Entries_Call) Return(cSVWorkbookEntrys []seed.CSVWorkbookEntry) *MockCSVWorkbookLoader_Entries_Call {
+	_c.Call.Return(cSVWorkbookEntrys)
+	return _c
+}
+
+func (_c *MockCSVWorkbookLoader_Entries_Call) RunAndReturn(run func() []seed.CSVWorkbookEntry) *MockCSVWorkbookLoader_Entries_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Load provides a mock function for the type MockCSVWorkbookLoader
-func (_mock *MockCSVWorkbookLoader) Load(ctx context.Context) ([]seed.CSVWorkbookSeed, error) {
-	ret := _mock.Called(ctx)
+func (_mock *MockCSVWorkbookLoader) Load(ctx context.Context, entry seed.CSVWorkbookEntry) (seed.CSVWorkbookSeed, error) {
+	ret := _mock.Called(ctx, entry)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Load")
 	}
 
-	var r0 []seed.CSVWorkbookSeed
+	var r0 seed.CSVWorkbookSeed
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context) ([]seed.CSVWorkbookSeed, error)); ok {
-		return returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, seed.CSVWorkbookEntry) (seed.CSVWorkbookSeed, error)); ok {
+		return returnFunc(ctx, entry)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context) []seed.CSVWorkbookSeed); ok {
-		r0 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, seed.CSVWorkbookEntry) seed.CSVWorkbookSeed); ok {
+		r0 = returnFunc(ctx, entry)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]seed.CSVWorkbookSeed)
-		}
+		r0 = ret.Get(0).(seed.CSVWorkbookSeed)
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context) error); ok {
-		r1 = returnFunc(ctx)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, seed.CSVWorkbookEntry) error); ok {
+		r1 = returnFunc(ctx, entry)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -166,29 +210,35 @@ type MockCSVWorkbookLoader_Load_Call struct {
 
 // Load is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *MockCSVWorkbookLoader_Expecter) Load(ctx interface{}) *MockCSVWorkbookLoader_Load_Call {
-	return &MockCSVWorkbookLoader_Load_Call{Call: _e.mock.On("Load", ctx)}
+//   - entry seed.CSVWorkbookEntry
+func (_e *MockCSVWorkbookLoader_Expecter) Load(ctx interface{}, entry interface{}) *MockCSVWorkbookLoader_Load_Call {
+	return &MockCSVWorkbookLoader_Load_Call{Call: _e.mock.On("Load", ctx, entry)}
 }
 
-func (_c *MockCSVWorkbookLoader_Load_Call) Run(run func(ctx context.Context)) *MockCSVWorkbookLoader_Load_Call {
+func (_c *MockCSVWorkbookLoader_Load_Call) Run(run func(ctx context.Context, entry seed.CSVWorkbookEntry)) *MockCSVWorkbookLoader_Load_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
+		var arg1 seed.CSVWorkbookEntry
+		if args[1] != nil {
+			arg1 = args[1].(seed.CSVWorkbookEntry)
+		}
 		run(
 			arg0,
+			arg1,
 		)
 	})
 	return _c
 }
 
-func (_c *MockCSVWorkbookLoader_Load_Call) Return(cSVWorkbookSeeds []seed.CSVWorkbookSeed, err error) *MockCSVWorkbookLoader_Load_Call {
-	_c.Call.Return(cSVWorkbookSeeds, err)
+func (_c *MockCSVWorkbookLoader_Load_Call) Return(cSVWorkbookSeed seed.CSVWorkbookSeed, err error) *MockCSVWorkbookLoader_Load_Call {
+	_c.Call.Return(cSVWorkbookSeed, err)
 	return _c
 }
 
-func (_c *MockCSVWorkbookLoader_Load_Call) RunAndReturn(run func(ctx context.Context) ([]seed.CSVWorkbookSeed, error)) *MockCSVWorkbookLoader_Load_Call {
+func (_c *MockCSVWorkbookLoader_Load_Call) RunAndReturn(run func(ctx context.Context, entry seed.CSVWorkbookEntry) (seed.CSVWorkbookSeed, error)) *MockCSVWorkbookLoader_Load_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -5,6 +5,7 @@ go_library(
     name = "seed",
     srcs = [
         "csv_converter.go",
+        "csv_converter_ordering.go",
         "csv_loader.go",
         "doc.go",
         "loader.go",
@@ -27,6 +28,7 @@ go_library(
 smart_go_test(
     name = "seed_test",
     srcs = [
+        "csv_converter_ordering_s_test.go",
         "csv_loader_s_test.go",
         "export_test.go",
         "loader_s_test.go",

@@ -95,6 +95,37 @@ func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenLangua
 	}
 }
 
+func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenSeedKeyDuplicated(t *testing.T) {
+	t.Parallel()
+
+	// given: two entries share a seedKey
+	first := wordFillEntry()
+	second := wordFillEntry()
+	second.GCSObject = "other.csv"
+	manifest := seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{first, second}}
+
+	// when
+	err := seed.ValidateCSVManifest(manifest)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+}
+
+func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenSeedKeyOutsideTagPattern(t *testing.T) {
+	t.Parallel()
+
+	// given: the seedKey becomes part of every question tag
+	entry := wordFillEntry()
+	entry.SeedKey = "cefr.b1"
+	manifest := seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{entry}}
+
+	// when
+	err := seed.ValidateCSVManifest(manifest)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+}
+
 func Test_DefaultCSVManifest_shouldNotShareSeedKeyWithDefaultSeeds_whenBothEmbedded(t *testing.T) {
 	t.Parallel()
 
@@ -133,4 +164,28 @@ func Test_DefaultCSVManifest_shouldMapCEFRB1WorkbookToGeneratedCSV(t *testing.T)
 		gcsObjects[e.SeedKey] = e.GCSObject
 	}
 	assert.Equal(t, "cefr_b1_questions.csv", gcsObjects["cefr-b1-wordfill-v1"])
+}
+
+func Test_DefaultCSVManifest_shouldMapCEFRB1OrderingWorkbookToGeneratedCSV(t *testing.T) {
+	t.Parallel()
+
+	// when
+	manifest, err := seed.DefaultCSVManifest()
+
+	// then
+	require.NoError(t, err)
+	entries := make(map[string]seed.CSVWorkbookEntry, len(manifest.Workbooks))
+	for _, e := range manifest.Workbooks {
+		entries[e.SeedKey] = e
+	}
+	assert.Equal(t, seed.CSVWorkbookEntry{
+		SeedKey:     "cefr-b1-ordering-v1",
+		Title:       "並べ替え問題: CEFR B1 構文",
+		Description: "CEFR B1 レベルの文法構文ごとに、日本語の意味に合うよう英語の語句を並べ替える問題集です。",
+		Language:    "ja",
+		Format:      "generated-ordering",
+		SourceLang:  "ja",
+		TargetLang:  "en",
+		GCSObject:   "ordering_b1_questions.csv",
+	}, entries["cefr-b1-ordering-v1"])
 }
