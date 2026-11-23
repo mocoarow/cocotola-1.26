@@ -10,7 +10,7 @@ import (
 
 	"github.com/mocoarow/slogotel"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -96,7 +96,7 @@ func InitLogProvider(ctx context.Context, logConfig LogConfig, appName string) (
 		)),
 	)
 
-	global.SetLoggerProvider(lp)
+	otel.SetLoggerProvider(lp)
 
 	defaultLogLevel := stringToLogLevel(logConfig.Level)
 	otelHandler := otelslog.NewHandler(appName, otelslog.WithLoggerProvider(lp))

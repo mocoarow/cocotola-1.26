@@ -77,7 +77,6 @@ func setRequiredConfigEnv(t *testing.T) {
 	t.Helper()
 	t.Setenv("QUESTION_API_KEY", "question-api-key")
 	t.Setenv("AUTH_API_KEY", "auth-api-key")
-	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "test-project")
 }
 
 func Test_LoadConfig_shouldUseDefaultOrgResolverCacheTTL_whenEnvIsNotSet(t *testing.T) {

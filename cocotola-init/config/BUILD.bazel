@@ -22,7 +22,6 @@ smart_go_test(
     ],
     embed = [":config"],
     deps = [
-        "@com_github_go_playground_validator_v10//:validator",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

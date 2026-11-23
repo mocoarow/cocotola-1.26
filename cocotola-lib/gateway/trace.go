@@ -30,11 +30,6 @@ type OTLPTraceConfig struct {
 	Insecure bool   `yaml:"insecure"`
 }
 
-// GoogleTraceConfig holds Google Cloud trace exporter settings.
-type GoogleTraceConfig struct {
-	ProjectID string `yaml:"projectId" validate:"required"`
-}
-
 // UptraceTraceConfig holds Uptrace trace exporter settings.
 type UptraceTraceConfig struct {
 	Endpoint string `yaml:"endpoint" validate:"required"`
@@ -43,17 +38,14 @@ type UptraceTraceConfig struct {
 
 // TraceConfig holds the exporter type, sampling percentage, and provider-specific settings.
 type TraceConfig struct {
-	Exporter           string              `yaml:"exporter" validate:"required,oneof=otlphttp otlpgrpc uptracehttp google stdout none"`
+	Exporter           string              `yaml:"exporter" validate:"required,oneof=otlphttp otlpgrpc uptracehttp stdout none"`
 	SamplingPercentage int                 `yaml:"samplingPercentage" validate:"gte=0,lte=100"`
 	OTLP               *OTLPTraceConfig    `yaml:"otlp"`
-	Google             *GoogleTraceConfig  `yaml:"google"`
 	Uptrace            *UptraceTraceConfig `yaml:"uptrace"`
 }
 
 func initTracerExporter(ctx context.Context, traceConfig TraceConfig) (sdktrace.SpanExporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
 	switch traceConfig.Exporter {
-	case "google":
-		return initTracerExporterGoogle(ctx, traceConfig)
 	case "otlphttp":
 		return initTracerExporterOTLPHTTP(ctx, traceConfig)
 	case "otlpgrpc":
