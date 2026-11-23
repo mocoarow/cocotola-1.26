@@ -59,25 +59,25 @@ const (
 // wordFillManifest returns a single-entry manifest for the tatoeba-wordfill
 // format used across the loader tests.
 func wordFillManifest() seed.CSVWorkbookManifest {
-	return seed.CSVWorkbookManifest{
-		Workbooks: []seed.CSVWorkbookEntry{
-			{
-				SeedKey:     testCSVSeedKey,
-				Title:       "CEFR B2",
-				Description: "desc",
-				Language:    "ja",
-				Format:      "tatoeba-wordfill",
-				SourceLang:  "ja",
-				TargetLang:  "en",
-				GCSObject:   testCSVObject,
-			},
-		},
+	return seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{wordFillEntry()}}
+}
+
+func wordFillEntry() seed.CSVWorkbookEntry {
+	return seed.CSVWorkbookEntry{
+		SeedKey:     testCSVSeedKey,
+		Title:       "CEFR B2",
+		Description: "desc",
+		Language:    "ja",
+		Format:      "tatoeba-wordfill",
+		SourceLang:  "ja",
+		TargetLang:  "en",
+		GCSObject:   testCSVObject,
 	}
 }
 
 const wordFillHeader = "id,wordId,srcText,dstText,blankText,tags,blankAnswers,srcSentenceNumber,srcAuthor,dstSentenceNumber,dstAuthor,sourceType\n"
 
-func Test_LoadCSVWorkbookSeeds_shouldConvertSingleBlankRow_whenWordFill(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldConvertSingleBlankRow_whenWordFill(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -88,13 +88,12 @@ func Test_LoadCSVWorkbookSeeds_shouldConvertSingleBlankRow_whenWordFill(t *testi
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.NoError(t, err)
-	require.Len(t, seeds, 1)
-	require.Len(t, seeds[0].Seed.Questions, 1)
-	q := seeds[0].Seed.Questions[0]
+	require.Len(t, got.Seed.Questions, 1)
+	q := got.Seed.Questions[0]
 	assert.Equal(t, "1", q.SeedKey)
 	assert.Equal(t, "word_fill", q.QuestionType)
 	assert.Equal(t, int32(1), q.OrderIndex)
@@ -110,7 +109,7 @@ func Test_LoadCSVWorkbookSeeds_shouldConvertSingleBlankRow_whenWordFill(t *testi
 	assert.Equal(t, []string{"level:b1", "source:tatoeba"}, q.Tags)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldConvertMultiBlankRow_whenWordFill(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldConvertMultiBlankRow_whenWordFill(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -121,12 +120,12 @@ func Test_LoadCSVWorkbookSeeds_shouldConvertMultiBlankRow_whenWordFill(t *testin
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.NoError(t, err)
-	require.Len(t, seeds[0].Seed.Questions, 1)
-	c := parseWordFillContent(t, seeds[0].Seed.Questions[0].Content)
+	require.Len(t, got.Seed.Questions, 1)
+	c := parseWordFillContent(t, got.Seed.Questions[0].Content)
 	assert.Equal(t, "Relax, and {{above}} {{all}}, don't panic.", c.Target.Text)
 	assert.True(t, c.AllowPartialCredit)
 	wantAttr := tatoebaAttr("2", "KK", "1", "CK")
@@ -134,7 +133,7 @@ func Test_LoadCSVWorkbookSeeds_shouldConvertMultiBlankRow_whenWordFill(t *testin
 	assert.Equal(t, wantAttr, c.Explanation2)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldOmitAuthorSegment_whenAuthorEmpty(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldOmitAuthorSegment_whenAuthorEmpty(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -145,18 +144,18 @@ func Test_LoadCSVWorkbookSeeds_shouldOmitAuthorSegment_whenAuthorEmpty(t *testin
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.NoError(t, err)
-	c := parseWordFillContent(t, seeds[0].Seed.Questions[0].Content)
+	c := parseWordFillContent(t, got.Seed.Questions[0].Content)
 	want := "Sentence source(ja): Tatoeba [#182349](https://tatoeba.org/en/sentences/show/182349) / Licensed under [CC BY 2.0 FR](https://creativecommons.org/licenses/by/2.0/fr/)" +
 		"\n\n" +
 		"Sentence source(en): Tatoeba [#19526](https://tatoeba.org/en/sentences/show/19526) / Author: [CK](https://tatoeba.org/en/user/profile/CK) / Licensed under [CC BY 2.0 FR](https://creativecommons.org/licenses/by/2.0/fr/)"
 	assert.Equal(t, want, c.Explanation1)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldSetWorkbookMetadataFromManifest_notFromCSV(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldSetWorkbookMetadataFromManifest_notFromCSV(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -167,14 +166,14 @@ func Test_LoadCSVWorkbookSeeds_shouldSetWorkbookMetadataFromManifest_notFromCSV(
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, testCSVSeedKey, seeds[0].Seed.SeedKey)
-	assert.Equal(t, "CEFR B2", seeds[0].Seed.Title)
-	assert.Equal(t, "desc", seeds[0].Seed.Description)
-	assert.Equal(t, "ja", seeds[0].Seed.Language)
+	assert.Equal(t, testCSVSeedKey, got.Seed.SeedKey)
+	assert.Equal(t, "CEFR B2", got.Seed.Title)
+	assert.Equal(t, "desc", got.Seed.Description)
+	assert.Equal(t, "ja", got.Seed.Language)
 }
 
 // sortedKeys returns the sorted top-level keys of a decoded JSON object, so key
@@ -188,9 +187,9 @@ func sortedKeys(m map[string]json.RawMessage) []string {
 	return keys
 }
 
-// Test_LoadCSVWorkbookSeeds_shouldEmitContentMatchingQuestionWireContract guards
+// Test_LoadCSVWorkbookSeed_shouldEmitContentMatchingQuestionWireContract guards
 // the mirrored content structs against drifting from cocotola-question/contentjson.
-func Test_LoadCSVWorkbookSeeds_shouldEmitContentMatchingQuestionWireContract(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldEmitContentMatchingQuestionWireContract(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -201,12 +200,12 @@ func Test_LoadCSVWorkbookSeeds_shouldEmitContentMatchingQuestionWireContract(t *
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.NoError(t, err)
 	var top map[string]json.RawMessage
-	require.NoError(t, json.Unmarshal([]byte(seeds[0].Seed.Questions[0].Content), &top))
+	require.NoError(t, json.Unmarshal([]byte(got.Seed.Questions[0].Content), &top))
 	assert.Equal(t,
 		[]string{"allowPartialCredit", "explanation1", "explanation2", "source", "target"},
 		sortedKeys(top))
@@ -230,15 +229,14 @@ func loadSingleWordFillSeed(ctx context.Context, t *testing.T, csv string) (seed
 	t.Helper()
 	reader := NewMockGCSObjectReader(t)
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
-	seeds, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	got, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 	if err != nil {
-		return seed.CSVWorkbookSeed{}, fmt.Errorf("load csv workbook seeds: %w", err)
+		return seed.CSVWorkbookSeed{}, fmt.Errorf("load csv workbook seed: %w", err)
 	}
-	require.Len(t, seeds, 1)
-	return seeds[0], nil
+	return got, nil
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldSkipRow_whenInvalid(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldSkipRow_whenInvalid(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -273,7 +271,7 @@ func Test_LoadCSVWorkbookSeeds_shouldSkipRow_whenInvalid(t *testing.T) {
 	}
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReportInvalidRowIndexes_whenRowSkipped(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldReportInvalidRowIndexes_whenRowSkipped(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -290,7 +288,7 @@ func Test_LoadCSVWorkbookSeeds_shouldReportInvalidRowIndexes_whenRowSkipped(t *t
 	assert.Equal(t, []int32{11}, got.InvalidRowIndexes)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldKeepFirstRow_whenIDDuplicated(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldKeepFirstRow_whenIDDuplicated(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -313,7 +311,7 @@ func Test_LoadCSVWorkbookSeeds_shouldKeepFirstRow_whenIDDuplicated(t *testing.T)
 	assert.Equal(t, []string{"日本語1"}, srcTextsForID1)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldDeduplicateLevelTags_whenTagsRepeat(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldDeduplicateLevelTags_whenTagsRepeat(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -330,7 +328,7 @@ func Test_LoadCSVWorkbookSeeds_shouldDeduplicateLevelTags_whenTagsRepeat(t *test
 	assert.Equal(t, []string{"level:b1", "source:tatoeba"}, got.Seed.Questions[0].Tags)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnErrInvalidCSVRow_whenNoDataRow(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldReturnErrInvalidCSVRow_whenNoDataRow(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -344,7 +342,7 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnErrInvalidCSVRow_whenNoDataRow(t *tes
 	require.ErrorIs(t, err, seed.ErrInvalidCSVRow)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldLoadValidRows_whenHalfOfRowsAreInvalid(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldLoadValidRows_whenHalfOfRowsAreInvalid(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -360,7 +358,7 @@ func Test_LoadCSVWorkbookSeeds_shouldLoadValidRows_whenHalfOfRowsAreInvalid(t *t
 	assert.Len(t, got.Seed.Questions, 10)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldKeepRowPositionAsOrderIndex_whenRowSkipped(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldKeepRowPositionAsOrderIndex_whenRowSkipped(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -383,7 +381,7 @@ func Test_LoadCSVWorkbookSeeds_shouldKeepRowPositionAsOrderIndex_whenRowSkipped(
 	assert.Equal(t, wantOrderIndexes, orderIndexes)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenRequiredColumnMissing(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldReturnError_whenRequiredColumnMissing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -393,30 +391,30 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenRequiredColumnMissing(t *te
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
 
 	// when
-	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	_, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.ErrorIs(t, err, seed.ErrMissingCSVColumn)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenFormatUnsupported(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldReturnError_whenFormatUnsupported(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	// given
-	manifest := wordFillManifest()
-	manifest.Workbooks[0].Format = "unknown-format"
+	entry := wordFillEntry()
+	entry.Format = "unknown-format"
 	reader := NewMockGCSObjectReader(t)
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(wordFillHeader), nil)
 
 	// when
-	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
+	_, err := seed.LoadCSVWorkbookSeed(ctx, reader, entry)
 
 	// then
 	require.ErrorIs(t, err, seed.ErrUnsupportedCSVFormat)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenReaderFails(t *testing.T) {
+func Test_LoadCSVWorkbookSeed_shouldReturnError_whenReaderFails(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -426,47 +424,43 @@ func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenReaderFails(t *testing.T) {
 	reader.EXPECT().ReadObject(ctx, testCSVObject).Return(nil, readErr)
 
 	// when
-	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, wordFillManifest())
+	_, err := seed.LoadCSVWorkbookSeed(ctx, reader, wordFillEntry())
 
 	// then
 	require.ErrorIs(t, err, readErr)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestHasDuplicateSeedKey(t *testing.T) {
+func Test_CSVWorkbookLoader_Entries_shouldReturnManifestEntriesInOrder_whenManifestHasEntries(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
 
-	// given: two entries share a seedKey
-	manifest := seed.CSVWorkbookManifest{
-		Workbooks: []seed.CSVWorkbookEntry{
-			{SeedKey: "dup", Title: "A", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
-			{SeedKey: "dup", Title: "B", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "b.csv"},
-		},
-	}
-	reader := NewMockGCSObjectReader(t)
+	// given
+	first := wordFillEntry()
+	second := wordFillEntry()
+	second.SeedKey = "second"
+	loader := seed.NewCSVWorkbookLoader(NewMockGCSObjectReader(t), seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{first, second}})
 
 	// when
-	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
+	entries := loader.Entries()
 
 	// then
-	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+	assert.Equal(t, []seed.CSVWorkbookEntry{first, second}, entries)
 }
 
-func Test_LoadCSVWorkbookSeeds_shouldReturnError_whenManifestSeedKeyOutsideTagPattern(t *testing.T) {
+func Test_CSVWorkbookLoader_Load_shouldLoadGivenEntry_whenReaderSucceeds(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: the seedKey becomes part of every question tag
-	manifest := seed.CSVWorkbookManifest{
-		Workbooks: []seed.CSVWorkbookEntry{
-			{SeedKey: "cefr.b1", Title: "A", Language: "ja", Format: "tatoeba-wordfill", SourceLang: "ja", TargetLang: "en", GCSObject: "a.csv"},
-		},
-	}
+	// given
+	csv := wordFillHeader + validWordFillRows(1, 2)
 	reader := NewMockGCSObjectReader(t)
+	reader.EXPECT().ReadObject(ctx, testCSVObject).Return([]byte(csv), nil)
+	loader := seed.NewCSVWorkbookLoader(reader, wordFillManifest())
 
 	// when
-	_, err := seed.LoadCSVWorkbookSeeds(ctx, reader, manifest)
+	got, err := loader.Load(ctx, wordFillEntry())
 
 	// then
-	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+	require.NoError(t, err)
+	assert.Equal(t, testCSVSeedKey, got.Seed.SeedKey)
+	assert.Len(t, got.Seed.Questions, 2)
 }

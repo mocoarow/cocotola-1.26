@@ -27,6 +27,10 @@ func loadedWorkbook(seedKey string, invalidRowIndexes ...int32) seed.CSVWorkbook
 	}
 }
 
+func entryFor(seedKey string) seed.CSVWorkbookEntry {
+	return seed.CSVWorkbookEntry{SeedKey: seedKey}
+}
+
 // indexRange returns the positions first..last.
 func indexRange(first, last int32) []int32 {
 	indexes := make([]int32, 0, last-first+1)
@@ -36,21 +40,34 @@ func indexRange(first, last int32) []int32 {
 	return indexes
 }
 
-// newImporter wires mocks so that the space exists, the loader returns loaded
-// and the seeder returns outputs.
-func newImporter(t *testing.T, loaded []seed.CSVWorkbookSeed, outputs []seed.WorkbookOutput) *importer.Importer {
+func newFinder(t *testing.T) *MockPublicSpaceFinder {
 	t.Helper()
 	finder := NewMockPublicSpaceFinder(t)
 	finder.EXPECT().FindPublicSpaceID(mock.Anything, testOrganizationID).Return(testSpaceID, nil)
-	loader := NewMockCSVWorkbookLoader(t)
-	loader.EXPECT().Load(mock.Anything).Return(loaded, nil)
-	seeds := make([]seed.PublicWorkbookSeed, 0, len(loaded))
+	return finder
+}
+
+// newImporter wires mocks so that the space exists, the loader returns each of
+// loaded for its entry and the seeder returns the matching element of outputs
+// (nothing when outputs is shorter).
+func newImporter(t *testing.T, loaded []seed.CSVWorkbookSeed, outputs []seed.WorkbookOutput) *importer.Importer {
+	t.Helper()
+	entries := make([]seed.CSVWorkbookEntry, 0, len(loaded))
 	for _, l := range loaded {
-		seeds = append(seeds, l.Seed)
+		entries = append(entries, entryFor(l.Seed.SeedKey))
 	}
+	loader := NewMockCSVWorkbookLoader(t)
+	loader.EXPECT().Entries().Return(entries)
 	seeder := NewMockWorkbookSeeder(t)
-	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, seeds).Return(outputs, nil)
-	return importer.NewImporter(testOrganizationID, finder, loader, seeder)
+	for i, l := range loaded {
+		loader.EXPECT().Load(mock.Anything, entries[i]).Return(l, nil)
+		var out []seed.WorkbookOutput
+		if i < len(outputs) {
+			out = []seed.WorkbookOutput{outputs[i]}
+		}
+		seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{l.Seed}).Return(out, nil)
+	}
+	return importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
 }
 
 func Test_Importer_Run_shouldSeedLoadedWorkbooksIntoPublicSpace_whenSpaceExists(t *testing.T) {
@@ -88,11 +105,10 @@ func Test_Importer_Run_shouldReturnError_whenLoadFails(t *testing.T) {
 
 	// given: the seeder must not be called
 	loadErr := errors.New("object not found")
-	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(testSpaceID, nil)
 	loader := NewMockCSVWorkbookLoader(t)
-	loader.EXPECT().Load(mock.Anything).Return(nil, loadErr)
-	im := importer.NewImporter(testOrganizationID, finder, loader, NewMockWorkbookSeeder(t))
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor(testSeedKey)})
+	loader.EXPECT().Load(mock.Anything, entryFor(testSeedKey)).Return(seed.CSVWorkbookSeed{}, loadErr)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, NewMockWorkbookSeeder(t))
 
 	// when
 	err := im.Run(context.Background())
@@ -106,13 +122,12 @@ func Test_Importer_Run_shouldReturnError_whenSeedFails(t *testing.T) {
 
 	// given
 	seedErr := errors.New("status 500")
-	finder := NewMockPublicSpaceFinder(t)
-	finder.EXPECT().FindPublicSpaceID(mock.Anything, mock.Anything).Return(testSpaceID, nil)
 	loader := NewMockCSVWorkbookLoader(t)
-	loader.EXPECT().Load(mock.Anything).Return([]seed.CSVWorkbookSeed{loadedWorkbook(testSeedKey)}, nil)
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor(testSeedKey)})
+	loader.EXPECT().Load(mock.Anything, entryFor(testSeedKey)).Return(loadedWorkbook(testSeedKey), nil)
 	seeder := NewMockWorkbookSeeder(t)
 	seeder.EXPECT().SeedWorkbooks(mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, seedErr)
-	im := importer.NewImporter(testOrganizationID, finder, loader, seeder)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
 
 	// when
 	err := im.Run(context.Background())
@@ -121,7 +136,7 @@ func Test_Importer_Run_shouldReturnError_whenSeedFails(t *testing.T) {
 	require.ErrorIs(t, err, seedErr)
 }
 
-func Test_Importer_Run_shouldReturnErrWorkbookOutputMismatch_whenSeederReturnsFewerOutputs(t *testing.T) {
+func Test_Importer_Run_shouldReturnErrWorkbookOutputMismatch_whenSeederReturnsNoOutput(t *testing.T) {
 	t.Parallel()
 
 	// given
@@ -132,6 +147,93 @@ func Test_Importer_Run_shouldReturnErrWorkbookOutputMismatch_whenSeederReturnsFe
 
 	// then
 	require.ErrorIs(t, err, importer.ErrWorkbookOutputMismatch)
+}
+
+func Test_Importer_Run_shouldSeedSecondWorkbook_whenFirstWorkbookLoadFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	loadErr := errors.New("object not found")
+	second := loadedWorkbook("second")
+	loader := NewMockCSVWorkbookLoader(t)
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor("first"), entryFor("second")})
+	loader.EXPECT().Load(mock.Anything, entryFor("first")).Return(seed.CSVWorkbookSeed{}, loadErr)
+	loader.EXPECT().Load(mock.Anything, entryFor("second")).Return(second, nil)
+	seeder := NewMockWorkbookSeeder(t)
+	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{second.Seed}).
+		Return([]seed.WorkbookOutput{{SeedKey: "second", AddedOrderIndexes: indexRange(1, 3)}}, nil)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
+
+	// when
+	err := im.Run(context.Background())
+
+	// then
+	require.ErrorIs(t, err, loadErr)
+}
+
+func Test_Importer_Run_shouldSeedSecondWorkbook_whenFirstWorkbookSeedFails(t *testing.T) {
+	t.Parallel()
+
+	// given
+	seedErr := errors.New("status 500")
+	first := loadedWorkbook("first")
+	second := loadedWorkbook("second")
+	loader := NewMockCSVWorkbookLoader(t)
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor("first"), entryFor("second")})
+	loader.EXPECT().Load(mock.Anything, entryFor("first")).Return(first, nil)
+	loader.EXPECT().Load(mock.Anything, entryFor("second")).Return(second, nil)
+	seeder := NewMockWorkbookSeeder(t)
+	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{first.Seed}).Return(nil, seedErr)
+	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{second.Seed}).
+		Return([]seed.WorkbookOutput{{SeedKey: "second", AddedOrderIndexes: indexRange(1, 3)}}, nil)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
+
+	// when
+	err := im.Run(context.Background())
+
+	// then
+	require.ErrorIs(t, err, seedErr)
+}
+
+func Test_Importer_Run_shouldSeedSecondWorkbook_whenFirstWorkbookExceedsLimit(t *testing.T) {
+	t.Parallel()
+
+	// given: the first workbook has 2 rejected of 20 new rows
+	im := newImporter(t,
+		[]seed.CSVWorkbookSeed{loadedWorkbook("first"), loadedWorkbook("second")},
+		[]seed.WorkbookOutput{
+			{SeedKey: "first", AddedOrderIndexes: indexRange(1, 18), RejectedOrderIndexes: []int32{19, 20}},
+			{SeedKey: "second", AddedOrderIndexes: indexRange(1, 3)},
+		})
+
+	// when
+	err := im.Run(context.Background())
+
+	// then
+	require.ErrorIs(t, err, importer.ErrTooManyInvalidNewRows)
+}
+
+func Test_Importer_Run_shouldReturnAllErrors_whenTwoWorkbooksFail(t *testing.T) {
+	t.Parallel()
+
+	// given
+	firstErr := errors.New("object not found")
+	secondErr := errors.New("status 500")
+	second := loadedWorkbook("second")
+	loader := NewMockCSVWorkbookLoader(t)
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor("first"), entryFor("second")})
+	loader.EXPECT().Load(mock.Anything, entryFor("first")).Return(seed.CSVWorkbookSeed{}, firstErr)
+	loader.EXPECT().Load(mock.Anything, entryFor("second")).Return(second, nil)
+	seeder := NewMockWorkbookSeeder(t)
+	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{second.Seed}).Return(nil, secondErr)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
+
+	// when
+	err := im.Run(context.Background())
+
+	// then
+	require.ErrorIs(t, err, firstErr)
+	require.ErrorIs(t, err, secondErr)
 }
 
 func Test_Importer_Run_shouldReturnErrTooManyInvalidNewRows_whenNewRowsExceedLimit(t *testing.T) {

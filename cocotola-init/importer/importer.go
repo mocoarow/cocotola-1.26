@@ -23,8 +23,8 @@ var (
 	// maxInvalidNewRowPercent of the rows appended since the last import are
 	// invalid or rejected.
 	ErrTooManyInvalidNewRows = errors.New("too many invalid new rows")
-	// ErrWorkbookOutputMismatch is returned when the seeder does not return one
-	// output per loaded workbook.
+	// ErrWorkbookOutputMismatch is returned when the seeder does not return
+	// exactly one output for a workbook.
 	ErrWorkbookOutputMismatch = errors.New("workbook output mismatch")
 )
 
@@ -35,7 +35,8 @@ type PublicSpaceFinder interface {
 
 // CSVWorkbookLoader loads the workbooks to import.
 type CSVWorkbookLoader interface {
-	Load(ctx context.Context) ([]seed.CSVWorkbookSeed, error)
+	Entries() []seed.CSVWorkbookEntry
+	Load(ctx context.Context, entry seed.CSVWorkbookEntry) (seed.CSVWorkbookSeed, error)
 }
 
 // WorkbookSeeder adds missing workbooks and questions.
@@ -85,29 +86,35 @@ func (im *Importer) run(ctx context.Context, span trace.Span) error {
 		return fmt.Errorf("find public space: %w", err)
 	}
 
-	loaded, err := im.loader.Load(ctx)
-	if err != nil {
-		return fmt.Errorf("load csv workbooks: %w", err)
-	}
-
-	seeds := make([]seed.PublicWorkbookSeed, 0, len(loaded))
-	for _, l := range loaded {
-		seeds = append(seeds, l.Seed)
-	}
-	outputs, err := im.seeder.SeedWorkbooks(ctx, im.organizationID, spaceID, seeds)
-	if err != nil {
-		return fmt.Errorf("seed workbooks: %w", err)
-	}
-	if len(outputs) != len(loaded) {
-		return fmt.Errorf("%d outputs for %d workbooks: %w", len(outputs), len(loaded), ErrWorkbookOutputMismatch)
-	}
-
-	for i, output := range outputs {
-		if err := im.checkNewRows(ctx, span, loaded[i].InvalidRowIndexes, output); err != nil {
-			return err
+	entries := im.loader.Entries()
+	errs := make([]error, 0, len(entries))
+	for _, entry := range entries {
+		if err := im.importEntry(ctx, span, spaceID, entry); err != nil {
+			errs = append(errs, fmt.Errorf("workbook %q: %w", entry.SeedKey, err))
 		}
 	}
+	if err := errors.Join(errs...); err != nil {
+		return fmt.Errorf("import csv workbooks: %w", err)
+	}
 	return nil
+}
+
+// importEntry imports one workbook on its own so that a failure does not stop
+// the other entries.
+func (im *Importer) importEntry(ctx context.Context, span trace.Span, spaceID string, entry seed.CSVWorkbookEntry) error {
+	loaded, err := im.loader.Load(ctx, entry)
+	if err != nil {
+		return fmt.Errorf("load csv workbook: %w", err)
+	}
+
+	outputs, err := im.seeder.SeedWorkbooks(ctx, im.organizationID, spaceID, []seed.PublicWorkbookSeed{loaded.Seed})
+	if err != nil {
+		return fmt.Errorf("seed workbook: %w", err)
+	}
+	if len(outputs) != 1 {
+		return fmt.Errorf("%d outputs for 1 workbook: %w", len(outputs), ErrWorkbookOutputMismatch)
+	}
+	return im.checkNewRows(ctx, span, loaded.InvalidRowIndexes, outputs[0])
 }
 
 // checkNewRows judges only the rows after the last imported one, so rows that
@@ -136,7 +143,7 @@ func (im *Importer) checkNewRows(ctx context.Context, span trace.Span, invalidRo
 	)
 
 	if bad*100 > newRows*maxInvalidNewRowPercent {
-		return fmt.Errorf("workbook %q: %d of %d new rows are invalid or rejected: %w", output.SeedKey, bad, newRows, ErrTooManyInvalidNewRows)
+		return fmt.Errorf("%d of %d new rows are invalid or rejected: %w", bad, newRows, ErrTooManyInvalidNewRows)
 	}
 	return nil
 }

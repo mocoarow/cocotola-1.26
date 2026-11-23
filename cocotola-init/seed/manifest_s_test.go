@@ -95,6 +95,37 @@ func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenLangua
 	}
 }
 
+func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenSeedKeyDuplicated(t *testing.T) {
+	t.Parallel()
+
+	// given: two entries share a seedKey
+	first := wordFillEntry()
+	second := wordFillEntry()
+	second.GCSObject = "other.csv"
+	manifest := seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{first, second}}
+
+	// when
+	err := seed.ValidateCSVManifest(manifest)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+}
+
+func Test_CSVWorkbookManifest_validate_shouldReturnErrInvalidManifest_whenSeedKeyOutsideTagPattern(t *testing.T) {
+	t.Parallel()
+
+	// given: the seedKey becomes part of every question tag
+	entry := wordFillEntry()
+	entry.SeedKey = "cefr.b1"
+	manifest := seed.CSVWorkbookManifest{Workbooks: []seed.CSVWorkbookEntry{entry}}
+
+	// when
+	err := seed.ValidateCSVManifest(manifest)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrInvalidManifest)
+}
+
 func Test_DefaultCSVManifest_shouldNotShareSeedKeyWithDefaultSeeds_whenBothEmbedded(t *testing.T) {
 	t.Parallel()
 
