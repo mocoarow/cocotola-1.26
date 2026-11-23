@@ -165,3 +165,27 @@ func Test_DefaultCSVManifest_shouldMapCEFRB1WorkbookToGeneratedCSV(t *testing.T)
 	}
 	assert.Equal(t, "cefr_b1_questions.csv", gcsObjects["cefr-b1-wordfill-v1"])
 }
+
+func Test_DefaultCSVManifest_shouldMapCEFRB1OrderingWorkbookToGeneratedCSV(t *testing.T) {
+	t.Parallel()
+
+	// when
+	manifest, err := seed.DefaultCSVManifest()
+
+	// then
+	require.NoError(t, err)
+	entries := make(map[string]seed.CSVWorkbookEntry, len(manifest.Workbooks))
+	for _, e := range manifest.Workbooks {
+		entries[e.SeedKey] = e
+	}
+	assert.Equal(t, seed.CSVWorkbookEntry{
+		SeedKey:     "cefr-b1-ordering-v1",
+		Title:       "並べ替え問題: CEFR B1 構文",
+		Description: "CEFR B1 レベルの文法構文ごとに、日本語の意味に合うよう英語の語句を並べ替える問題集です。",
+		Language:    "ja",
+		Format:      "generated-ordering",
+		SourceLang:  "ja",
+		TargetLang:  "en",
+		GCSObject:   "ordering_b1_questions.csv",
+	}, entries["cefr-b1-ordering-v1"])
+}

@@ -93,17 +93,23 @@ func convertCSV(format, sourceLang, targetLang string, data []byte) (csvConversi
 	switch format {
 	case formatTatoebaWordFill:
 		return convertWordFillCSV(sourceLang, targetLang, data)
+	case formatGeneratedOrdering:
+		return convertOrderingCSV(sourceLang, targetLang, data)
 	default:
 		return csvConversion{}, fmt.Errorf("format %q: %w", format, ErrUnsupportedCSVFormat)
 	}
 }
 
-// convertWordFillCSV maps each valid data row to a word_fill QuestionSeed and
-// skips invalid rows. The CSV `id` column becomes the question seedKey (stable
-// across runs so appended rows are detected as new), and OrderIndex is the
-// row's position, so it stays the same as the CSV grows.
-func convertWordFillCSV(sourceLang, targetLang string, data []byte) (csvConversion, error) {
-	header, rows, err := readWordFillRows(data)
+// csvRowConverter converts one data row, whose id is already checked, into a
+// QuestionSeed or returns an ErrInvalidCSVRow-wrapped error.
+type csvRowConverter func(row []string, idx map[string]int, id string, orderIndex int32) (QuestionSeed, error)
+
+// convertCSVRows maps each valid data row to a QuestionSeed and skips invalid
+// rows. The CSV `id` column becomes the question seedKey (stable across runs so
+// appended rows are detected as new), and OrderIndex is the row's position, so
+// it stays the same as the CSV grows.
+func convertCSVRows(data []byte, requiredColumns []string, convertRow csvRowConverter) (csvConversion, error) {
+	header, rows, err := readCSVRows(data, requiredColumns)
 	if err != nil {
 		return csvConversion{}, err
 	}
@@ -114,27 +120,26 @@ func convertWordFillCSV(sourceLang, targetLang string, data []byte) (csvConversi
 	seen := make(map[string]bool, len(rows))
 	for i, row := range rows {
 		index := int32(i + 1)
-		if len(row) != len(header) {
-			reason := fmt.Errorf("%d fields, header has %d: %w", len(row), len(header), ErrInvalidCSVRow)
-			skipped = append(skipped, skippedCSVRow{index: index, reason: reason})
-
-			continue
-		}
-		q, err := convertWordFillRow(row, idx, seen, sourceLang, targetLang, index)
+		id, err := checkRowID(row, len(header), idx, seen)
 		if err != nil {
 			skipped = append(skipped, skippedCSVRow{index: index, reason: err})
 			continue
 		}
-		seen[q.SeedKey] = true
+		q, err := convertRow(row, idx, id, index)
+		if err != nil {
+			skipped = append(skipped, skippedCSVRow{index: index, reason: err})
+			continue
+		}
+		seen[id] = true
 		questions = append(questions, q)
 	}
 	return csvConversion{questions: questions, skipped: skipped}, nil
 }
 
-// readWordFillRows parses data and returns the header and the data rows. Rows
-// may have any number of fields so that a row with the wrong count can be
-// skipped instead of failing the whole CSV.
-func readWordFillRows(data []byte) ([]string, [][]string, error) {
+// readCSVRows parses data and returns the header and the data rows. Rows may
+// have any number of fields so that a row with the wrong count can be skipped
+// instead of failing the whole CSV.
+func readCSVRows(data []byte, requiredColumns []string) ([]string, [][]string, error) {
 	reader := csv.NewReader(bytes.NewReader(data))
 	reader.FieldsPerRecord = -1
 	records, err := reader.ReadAll()
@@ -145,27 +150,44 @@ func readWordFillRows(data []byte) ([]string, [][]string, error) {
 		return nil, nil, fmt.Errorf("csv needs a header and at least one data row: %w", ErrInvalidCSVRow)
 	}
 
-	if err := requireColumns(indexColumns(records[0]), "id", "srcText", "blankText", "blankAnswers"); err != nil {
+	if err := requireColumns(indexColumns(records[0]), requiredColumns...); err != nil {
 		return nil, nil, err
 	}
 	return records[0], records[csvHeaderRows:], nil
 }
 
-// convertWordFillRow converts a single CSV data row into a QuestionSeed, or
-// returns an ErrInvalidCSVRow-wrapped error when the row cannot become a
-// question. seen holds the ids of rows already accepted.
-func convertWordFillRow(row []string, idx map[string]int, seen map[string]bool, sourceLang, targetLang string, orderIndex int32) (QuestionSeed, error) {
+// checkRowID returns the row's id when the row has as many fields as the
+// header, the id matches the tag pattern, and no accepted row (seen) has it.
+func checkRowID(row []string, headerLen int, idx map[string]int, seen map[string]bool) (string, error) {
+	if len(row) != headerLen {
+		return "", fmt.Errorf("%d fields, header has %d: %w", len(row), headerLen, ErrInvalidCSVRow)
+	}
+
 	id := cell(row, idx, "id")
 	switch {
 	case !tagValuePattern.MatchString(id):
-		return QuestionSeed{}, fmt.Errorf("id is empty or outside the tag pattern: %w", ErrInvalidCSVRow)
+		return "", fmt.Errorf("id is empty or outside the tag pattern: %w", ErrInvalidCSVRow)
 	case seen[id]:
-		return QuestionSeed{}, fmt.Errorf("duplicate id %s: %w", id, ErrInvalidCSVRow)
-	case cell(row, idx, "srcText") == "":
+		return "", fmt.Errorf("duplicate id %s: %w", id, ErrInvalidCSVRow)
+	}
+	return id, nil
+}
+
+// convertWordFillCSV maps each valid data row to a word_fill QuestionSeed.
+func convertWordFillCSV(sourceLang, targetLang string, data []byte) (csvConversion, error) {
+	return convertCSVRows(data, []string{"id", "srcText", "blankText", "blankAnswers"},
+		func(row []string, idx map[string]int, id string, orderIndex int32) (QuestionSeed, error) {
+			return convertWordFillRow(row, idx, id, sourceLang, targetLang, orderIndex)
+		})
+}
+
+// convertWordFillRow converts a single CSV data row into a word_fill QuestionSeed.
+func convertWordFillRow(row []string, idx map[string]int, id, sourceLang, targetLang string, orderIndex int32) (QuestionSeed, error) {
+	if cell(row, idx, "srcText") == "" {
 		return QuestionSeed{}, fmt.Errorf("id %s: empty srcText: %w", id, ErrInvalidCSVRow)
 	}
 
-	tags, err := wordFillTags(row, idx)
+	tags, err := csvRowTags(row, idx)
 	if err != nil {
 		return QuestionSeed{}, fmt.Errorf("id %s: %w", id, err)
 	}
@@ -184,7 +206,7 @@ func convertWordFillRow(row []string, idx map[string]int, seen map[string]bool, 
 		{lang: targetLang, number: cell(row, idx, "srcSentenceNumber"), author: cell(row, idx, "srcAuthor")},
 	})
 
-	content, err := marshalWordFillContent(wordFillContentJSON{
+	content, err := marshalContent(wordFillContentJSON{
 		Source:             textWithLangJSON{Text: cell(row, idx, "srcText"), Lang: sourceLang},
 		Target:             textWithLangJSON{Text: target, Lang: targetLang},
 		Explanation1:       attribution,
@@ -222,10 +244,10 @@ func buildWordFillTarget(blankText string, answers []string) (string, error) {
 	return result, nil
 }
 
-func marshalWordFillContent(content wordFillContentJSON) (string, error) {
+func marshalContent(content any) (string, error) {
 	encoded, err := json.Marshal(content)
 	if err != nil {
-		return "", fmt.Errorf("marshal word_fill content: %w", err)
+		return "", fmt.Errorf("marshal content: %w", err)
 	}
 	return string(encoded), nil
 }
@@ -259,16 +281,17 @@ func tatoebaAttribution(citations []sentenceCitation) string {
 	return strings.Join(lines, "\n\n")
 }
 
-// wordFillTags derives extra question tags from the CSV: one level:<value> tag
-// per entry in the tags column, plus a source:<value> tag from sourceType. The
-// seeder prepends its own seed identity tag separately.
-func wordFillTags(row []string, idx map[string]int) ([]string, error) {
+// csvRowTags derives extra question tags from the CSV: one level:<value> tag
+// per entry in the tags column, then extra, then a source:<value> tag from
+// sourceType. The seeder prepends its own seed identity tag separately.
+func csvRowTags(row []string, idx map[string]int, extra ...string) ([]string, error) {
 	var tags []string
 	for _, level := range splitCommaList(cell(row, idx, "tags")) {
 		if tag := "level:" + strings.ToLower(level); !slices.Contains(tags, tag) {
 			tags = append(tags, tag)
 		}
 	}
+	tags = append(tags, extra...)
 	if source := cell(row, idx, "sourceType"); source != "" {
 		tags = append(tags, "source:"+strings.ToLower(source))
 	}
