@@ -1,6 +1,7 @@
 import { ArrowLeftIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, useLoaderData } from "react-router";
+import { createBackendClient } from "~/lib/api/client.server";
 import { listStudyRecords, type StudyRecord } from "~/lib/api/study.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId.debug-study";
@@ -9,13 +10,14 @@ import type { Route } from "./+types/workbooks.$workbookId.debug-study";
 // effectively unreachable; the navigation button in `workbooks.$workbookId`
 // is also hidden behind `import.meta.env.DEV` so production users can't see
 // the URL in the UI to begin with.
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ request, params, context }: Route.LoaderArgs) {
   if (process.env.NODE_ENV === "production") {
     throw new Response("Not Found", { status: 404 });
   }
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
-  const { records } = await listStudyRecords(accessToken, workbookId);
+  const { records } = await listStudyRecords(client, workbookId);
   return { workbookId, records };
 }
 

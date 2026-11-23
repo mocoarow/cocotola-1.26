@@ -9,6 +9,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 // Cover every concrete export the route module imports, even ones the
 // current tests do not exercise, so future tests (or any reorganization
 // that pulls a new helper into route scope) do not hit `undefined`.
@@ -33,14 +37,19 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useActionData, useFetcher, useLoaderData } from "react-router";
+import { createBackendClient } from "~/lib/api/client.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
 import {
+  getUserPreferences,
   updateUserDailyGoal,
   updateUserLanguage,
   updateUserTimezone,
 } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 
-import SettingsPage, { action } from "./settings";
+import SettingsPage, { action, loader } from "./settings";
+
+const backendClient = backendClientSentinel();
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUseActionData = vi.mocked(useActionData);
@@ -337,6 +346,7 @@ describe("settings action", () => {
 
   beforeEach(() => {
     vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
     vi.mocked(updateUserLanguage).mockResolvedValue(undefined);
     vi.mocked(updateUserDailyGoal).mockResolvedValue(undefined);
     vi.mocked(updateUserTimezone).mockResolvedValue(undefined);
@@ -344,6 +354,69 @@ describe("settings action", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("should_createBackendClientWithActionRequest_when_actionIsCalled", async () => {
+    // given
+    const request = buildActionRequest({ intent: "saveLanguage", language: "ja" });
+
+    // when
+    await callAction(request);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(request);
+  });
+
+  it("should_createBackendClientWithAccessToken_when_actionIsCalled", async () => {
+    // given
+    const request = buildActionRequest({ intent: "saveLanguage", language: "ja" });
+
+    // when
+    await callAction(request);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should_saveLanguageThroughBackendClient_when_intentIsLanguage", async () => {
+    // given
+    const request = buildActionRequest({ intent: "saveLanguage", language: "ja" });
+
+    // when
+    await callAction(request);
+
+    // then
+    expect(vi.mocked(updateUserLanguage).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should_saveDailyGoalThroughBackendClient_when_intentIsStudy", async () => {
+    // given
+    const request = buildActionRequest({
+      intent: "saveStudyPreferences",
+      dailyGoal: "20",
+      timezone: "Asia/Tokyo",
+    });
+
+    // when
+    await callAction(request);
+
+    // then
+    expect(vi.mocked(updateUserDailyGoal).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should_saveTimezoneThroughBackendClient_when_intentIsStudy", async () => {
+    // given
+    const request = buildActionRequest({
+      intent: "saveStudyPreferences",
+      dailyGoal: "20",
+      timezone: "Asia/Tokyo",
+    });
+
+    // when
+    await callAction(request);
+
+    // then
+    expect(vi.mocked(updateUserTimezone).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should_returnLanguageInPayload_when_languageSaveSucceeds", async () => {
@@ -360,7 +433,7 @@ describe("settings action", () => {
     // client's effect can commit i18n.changeLanguage without trusting
     // the unverified pending state.
     expect(result).toEqual({ ok: true, intent: "saveLanguage", language: "ja" });
-    expect(vi.mocked(updateUserLanguage)).toHaveBeenCalledWith(request, "test-token", "ja");
+    expect(vi.mocked(updateUserLanguage)).toHaveBeenCalledWith(backendClient, "ja");
   });
 
   it("should_throw400_when_languageIsUnsupported", async () => {
@@ -411,8 +484,8 @@ describe("settings action", () => {
 
     // then
     expect(result).toMatchObject({ ok: true, intent: "saveStudyPreferences" });
-    expect(vi.mocked(updateUserDailyGoal)).toHaveBeenCalledWith(request, "test-token", 20);
-    expect(vi.mocked(updateUserTimezone)).toHaveBeenCalledWith(request, "test-token", "Asia/Tokyo");
+    expect(vi.mocked(updateUserDailyGoal)).toHaveBeenCalledWith(backendClient, 20);
+    expect(vi.mocked(updateUserTimezone)).toHaveBeenCalledWith(backendClient, "Asia/Tokyo");
   });
 
   it("should_notInvokeLanguageUpdater_when_intentIsStudy", async () => {
@@ -579,10 +652,6 @@ describe("settings action", () => {
 
   it("should_propagateRedirect_when_updaterThrowsRedirectResponse", async () => {
     // given
-    // redirectOnUnauthorized throws a redirect Response on 401. The
-    // savePreferenceField helper must propagate any 3xx Response
-    // (Location header present) so React Router can navigate, instead
-    // of recording it as a field-level failure.
     const loginRedirect = new Response(null, {
       status: 302,
       headers: { Location: "/login" },
@@ -603,5 +672,60 @@ describe("settings action", () => {
     }
     expect(caught).toBe(loginRedirect);
     expect(vi.mocked(updateUserTimezone)).not.toHaveBeenCalled();
+  });
+});
+
+describe("settings loader", () => {
+  type LoaderArgs = Parameters<typeof loader>[0];
+
+  function buildLoaderArgs(): LoaderArgs {
+    const request = new Request("http://localhost/settings");
+    return { request, params: {}, context: {} } as unknown as LoaderArgs;
+  }
+
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(getUserPreferences).mockResolvedValue({
+      userId: "user-1",
+      ...makeLoaderData(),
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should_createBackendClientWithLoaderRequest_when_loaderIsCalled", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should_createBackendClientWithAccessToken_when_loaderIsCalled", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should_fetchPreferencesThroughBackendClient_when_loaderIsCalled", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getUserPreferences).mock.calls[0][0]).toBe(backendClient);
   });
 });

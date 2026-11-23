@@ -30,6 +30,7 @@ import {
 } from "~/components/workbook/schemas";
 import { WordFillEditForm } from "~/components/workbook/word-fill-edit-form";
 import { WorkbookHeader } from "~/components/workbook/workbook-header";
+import { type BackendClient, createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
 import {
   addQuestion,
@@ -43,12 +44,13 @@ import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks.$workbookId";
 
-export async function loader({ params, context }: Route.LoaderArgs) {
+export async function loader({ request, params, context }: Route.LoaderArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const [workbook, questions] = await Promise.all([
-    getWorkbook(accessToken, workbookId),
-    listQuestions(accessToken, workbookId),
+    getWorkbook(client, workbookId),
+    listQuestions(client, workbookId),
   ]);
   return { workbook, questions };
 }
@@ -66,7 +68,7 @@ async function saveQuestion<T>(save: () => Promise<unknown>, saved: T) {
 }
 
 async function handleUpdateTitleIntent(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   formData: FormData,
 ) {
@@ -85,7 +87,7 @@ async function handleUpdateTitleIntent(
   const rawVisibility = String(formData.get("visibility") ?? "private");
   const visibility = rawVisibility === "public" ? "public" : "private";
   try {
-    await updateWorkbook(accessToken, workbookId, { title, description, visibility, language });
+    await updateWorkbook(client, workbookId, { title, description, visibility, language });
   } catch (error) {
     if (error instanceof WorkbookValidationError) {
       return { ok: false, errorKey: "workbooks.detail.errors.invalid" };
@@ -155,7 +157,7 @@ function parseUpdateQuestionFormData(formData: FormData) {
 }
 
 async function handleUpdateQuestionIntent(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   formData: FormData,
 ) {
@@ -164,7 +166,7 @@ async function handleUpdateQuestionIntent(
   const orderIndex = Number(formData.get("orderIndex") ?? 0);
   return saveQuestion(
     () =>
-      updateQuestion(accessToken, workbookId, questionId, {
+      updateQuestion(client, workbookId, questionId, {
         content,
         tags: optionalTags(tags),
         orderIndex,
@@ -174,29 +176,29 @@ async function handleUpdateQuestionIntent(
 }
 
 async function handleDeleteQuestionIntent(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   formData: FormData,
 ) {
   const questionId = requireQuestionId(formData);
-  await deleteQuestion(accessToken, workbookId, questionId);
+  await deleteQuestion(client, workbookId, questionId);
   return { ok: true };
 }
 
-async function handleClearStudyHistoryIntent(accessToken: string, workbookId: string) {
-  await deleteStudyHistory(accessToken, workbookId);
+async function handleClearStudyHistoryIntent(client: BackendClient, workbookId: string) {
+  await deleteStudyHistory(client, workbookId);
   return { ok: true, cleared: true };
 }
 
 async function handleAddQuestionIntent(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   questionType: QuestionType,
   { content, tags }: { content: string; tags: string[] },
 ) {
   return saveQuestion(
     () =>
-      addQuestion(accessToken, workbookId, {
+      addQuestion(client, workbookId, {
         questionType,
         content,
         tags: optionalTags(tags),
@@ -208,25 +210,26 @@ async function handleAddQuestionIntent(
 
 export async function action({ request, params, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
   const { workbookId } = params;
   const formData = await request.formData();
   const intent = formData.get("intent");
 
   if (intent === "updateTitle") {
-    return handleUpdateTitleIntent(accessToken, workbookId, formData);
+    return handleUpdateTitleIntent(client, workbookId, formData);
   }
   if (intent === "updateQuestion") {
-    return handleUpdateQuestionIntent(accessToken, workbookId, formData);
+    return handleUpdateQuestionIntent(client, workbookId, formData);
   }
   if (intent === "deleteQuestion") {
-    return handleDeleteQuestionIntent(accessToken, workbookId, formData);
+    return handleDeleteQuestionIntent(client, workbookId, formData);
   }
   if (intent === "clearStudyHistory") {
-    return handleClearStudyHistoryIntent(accessToken, workbookId);
+    return handleClearStudyHistoryIntent(client, workbookId);
   }
   if (intent === "addWordFill") {
     return handleAddQuestionIntent(
-      accessToken,
+      client,
       workbookId,
       "word_fill",
       parseWordFillFormData(formData, ["explanation"]),
@@ -234,19 +237,14 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   }
   if (intent === "addMultipleChoice") {
     return handleAddQuestionIntent(
-      accessToken,
+      client,
       workbookId,
       "multiple_choice",
       parseMultipleChoiceFormData(formData),
     );
   }
   if (intent === "addOrdering") {
-    return handleAddQuestionIntent(
-      accessToken,
-      workbookId,
-      "ordering",
-      parseOrderingFormData(formData),
-    );
+    return handleAddQuestionIntent(client, workbookId, "ordering", parseOrderingFormData(formData));
   }
   throw new Response(`Unknown intent: ${String(intent)}`, { status: 400 });
 }

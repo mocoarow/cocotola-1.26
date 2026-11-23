@@ -1,6 +1,6 @@
-import { redirectOnUnauthorized } from "~/lib/auth/session.server";
+import { isRedirectResponse } from "~/lib/route-error";
 
-import { fetchWithIdToken, getAuthUrl } from "./fetch.server";
+import type { BackendClient } from "./client.server";
 
 /**
  * Shape returned by GET /api/v1/auth/me. Keeping the type next to the only
@@ -24,37 +24,13 @@ export type UserPreferences = {
  * Centralized here so the loaders in routes/workbooks.tsx and
  * routes/dashboard.tsx (and any future surface that needs the same fields)
  * cannot drift apart on the response shape.
- *
- * 401 semantics matter for the layout consistency contract: when the
- * supplied access token is rejected we destroy the React Router session
- * and redirect to /login. Without this branch a stale tab opened against
- * the dashboard or any other layout that reads /auth/me would render
- * raw error markup with no way back to a login form.
  */
-export async function getUserPreferences(
-  request: Request,
-  accessToken: string,
-): Promise<UserPreferences> {
-  const authUrl = getAuthUrl();
-  const url = `${authUrl}/api/v1/auth/me`;
-
-  const response = await redirectOnUnauthorized(
-    request,
-    await fetchWithIdToken(authUrl, url, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }),
-    "user-setting:getUserPreferences",
-  );
-
-  if (!response.ok) {
-    console.error(
-      `[user-setting] getUserPreferences failed: status=${response.status}, url=${url}`,
-    );
-    throw new Response("Failed to load user preferences", { status: response.status });
-  }
-
-  const raw = (await response.json()) as unknown;
-  return parseUserPreferencesResponse(raw);
+export async function getUserPreferences(client: BackendClient): Promise<UserPreferences> {
+  return client.get("auth", "/api/v1/auth/me", {
+    source: "user-setting:getUserPreferences",
+    errorMessage: "Failed to load user preferences",
+    parse: parseUserPreferencesResponse,
+  });
 }
 
 /**
@@ -62,13 +38,12 @@ export async function getUserPreferences(
  * can still render. The 3xx redirect to /login (fired on 401) is rethrown.
  */
 export async function getUserPreferencesOrNull(
-  request: Request,
-  accessToken: string,
+  client: BackendClient,
 ): Promise<UserPreferences | null> {
   try {
-    return await getUserPreferences(request, accessToken);
+    return await getUserPreferences(client);
   } catch (e) {
-    if (e instanceof Response && e.status >= 300 && e.status < 400) throw e;
+    if (isRedirectResponse(e)) throw e;
     console.error("[user-setting] /auth/me failed (degraded render):", e);
     return null;
   }
@@ -105,51 +80,24 @@ function pickFiniteInt(v: unknown, fallback: number): number {
   return typeof v === "number" && Number.isFinite(v) ? v : fallback;
 }
 
-/**
- * Routes every user-setting update through this helper so the 401 -> /login
- * branch lives in exactly one place. The three update endpoints are
- * structurally identical, only differing in path and body, so the
- * boilerplate can collapse without obscuring intent at the call sites.
- */
 async function putUserSetting(
-  request: Request,
-  accessToken: string,
+  client: BackendClient,
   path: string,
   body: unknown,
   source: string,
 ): Promise<void> {
-  const authUrl = getAuthUrl();
-  const url = `${authUrl}${path}`;
-
-  const response = await redirectOnUnauthorized(
-    request,
-    await fetchWithIdToken(authUrl, url, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }),
+  await client.put("auth", path, {
     source,
-  );
-
-  if (!response.ok) {
-    console.error(`[user-setting] ${source} failed: status=${response.status}, url=${url}`);
-    throw new Response(`Failed to ${source}`, { status: response.status });
-  }
+    errorMessage: `Failed to ${source}`,
+    body,
+  });
 }
 
 /** Updates the authenticated user's preferred language. */
-export async function updateUserLanguage(
-  request: Request,
-  accessToken: string,
-  language: string,
-): Promise<void> {
+export async function updateUserLanguage(client: BackendClient, language: string): Promise<void> {
   console.info(`[user-setting] updateUserLanguage called: languageLength=${language.length}`);
   await putUserSetting(
-    request,
-    accessToken,
+    client,
     "/api/v1/auth/user-setting/language",
     { language },
     "user-setting:updateUserLanguage",
@@ -158,15 +106,10 @@ export async function updateUserLanguage(
 }
 
 /** Updates the authenticated user's daily problem goal. */
-export async function updateUserDailyGoal(
-  request: Request,
-  accessToken: string,
-  dailyGoal: number,
-): Promise<void> {
+export async function updateUserDailyGoal(client: BackendClient, dailyGoal: number): Promise<void> {
   console.info(`[user-setting] updateUserDailyGoal called: dailyGoal=${dailyGoal}`);
   await putUserSetting(
-    request,
-    accessToken,
+    client,
     "/api/v1/auth/user-setting/daily-goal",
     { dailyGoal },
     "user-setting:updateUserDailyGoal",
@@ -175,15 +118,10 @@ export async function updateUserDailyGoal(
 }
 
 /** Updates the authenticated user's preferred IANA timezone. */
-export async function updateUserTimezone(
-  request: Request,
-  accessToken: string,
-  timezone: string,
-): Promise<void> {
+export async function updateUserTimezone(client: BackendClient, timezone: string): Promise<void> {
   console.info(`[user-setting] updateUserTimezone called: timezoneLength=${timezone.length}`);
   await putUserSetting(
-    request,
-    accessToken,
+    client,
     "/api/v1/auth/user-setting/timezone",
     { timezone },
     "user-setting:updateUserTimezone",

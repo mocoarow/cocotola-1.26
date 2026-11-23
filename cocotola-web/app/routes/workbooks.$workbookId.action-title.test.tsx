@@ -4,6 +4,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 vi.mock("~/lib/api/question.server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~/lib/api/question.server")>();
   return {
@@ -37,7 +41,11 @@ vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
 
 import { updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
 import { action } from "./workbooks.$workbookId";
-import { buildActionArgs, setupActionMocks } from "./workbooks.$workbookId.action.test-helpers";
+import {
+  backendClient,
+  buildActionArgs,
+  setupActionMocks,
+} from "./workbooks.$workbookId.action.test-helpers";
 
 const MAX_TITLE_LENGTH = 200;
 
@@ -92,12 +100,23 @@ describe("WorkbookDetail action updateTitle intent", () => {
     await action(args);
 
     // then
-    expect(updateWorkbook).toHaveBeenCalledWith("test-token", "wb-1", {
+    expect(updateWorkbook).toHaveBeenCalledWith(backendClient, "wb-1", {
       title: "Phrasal verbs",
       description: "Common phrasal verbs",
       visibility: "public",
       language: "fr",
     });
+  });
+
+  it("should update the workbook through the backend client on updateTitle intent", async () => {
+    // given
+    const args = buildActionArgs(SUBMITTED_TITLE_ENTRIES);
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(updateWorkbook).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should send private visibility when the submitted visibility is unknown", async () => {

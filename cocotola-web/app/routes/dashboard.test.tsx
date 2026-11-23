@@ -1,10 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import "~/i18n/config";
 
 vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
+}));
+
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
 }));
 
 vi.mock("~/lib/api/dashboard.server", () => ({
@@ -35,8 +39,13 @@ vi.mock("react-router", async (importOriginal) => {
 });
 
 import { useLoaderData } from "react-router";
+import { createBackendClient } from "~/lib/api/client.server";
+import { getDashboard } from "~/lib/api/dashboard.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
+import { getUserPreferences } from "~/lib/api/user-setting.server";
+import { requireAuth } from "~/lib/auth/require-auth.server";
 
-import DashboardPage from "./dashboard";
+import DashboardPage, { loader } from "./dashboard";
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 
@@ -124,5 +133,91 @@ describe("DashboardPage", () => {
     // then: preferences inputs now live on /settings, not the dashboard
     expect(screen.queryByLabelText(/Daily goal/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Timezone/i)).not.toBeInTheDocument();
+  });
+});
+
+type LoaderArgs = Parameters<typeof loader>[0];
+
+const backendClient = backendClientSentinel();
+
+describe("Dashboard loader", () => {
+  const preferences = {
+    userId: "user-1",
+    loginId: "learner-login",
+    organizationName: "org-name",
+    language: "ja",
+    dailyGoal: 25,
+    timezone: "America/Los_Angeles",
+  };
+
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(getUserPreferences).mockResolvedValue(preferences);
+    vi.mocked(getDashboard).mockResolvedValue(makeLoaderData().dashboard);
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  function buildLoaderArgs(): LoaderArgs {
+    const request = new Request("http://localhost/dashboard");
+    return { request, params: {}, context: {} } as unknown as LoaderArgs;
+  }
+
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should fetch the user preferences through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getUserPreferences).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should fetch the dashboard through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getDashboard).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should fetch the dashboard in the user's timezone", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getDashboard).mock.calls[0][2]).toBe("America/Los_Angeles");
   });
 });

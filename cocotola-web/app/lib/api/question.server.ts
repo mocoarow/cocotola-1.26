@@ -1,18 +1,30 @@
-import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
+import { z } from "zod";
 
-export type Question = {
-  questionId: string;
-  questionType: string;
-  content: string;
-  tags?: string[];
-  orderIndex: number;
-  createdAt: string;
-  updatedAt: string;
-};
+import type { BackendClient } from "./client.server";
 
-type ListQuestionsResponse = {
-  questions: Question[];
-};
+const questionSchema = z.object({
+  questionId: z.string(),
+  questionType: z.string(),
+  content: z.string(),
+  tags: z.array(z.string()).optional(),
+  orderIndex: z.number().int(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type Question = z.infer<typeof questionSchema>;
+
+const listQuestionsResponseSchema = z.object({
+  questions: z
+    .array(questionSchema)
+    .nullish()
+    .transform((questions) => questions ?? []),
+});
+
+const parseQuestion = (raw: unknown): Question => questionSchema.parse(raw);
+
+const parseQuestionList = (raw: unknown): Question[] =>
+  listQuestionsResponseSchema.parse(raw).questions;
 
 export class QuestionValidationError extends Error {
   constructor() {
@@ -21,11 +33,16 @@ export class QuestionValidationError extends Error {
   }
 }
 
-function questionSaveError(status: number, message: string): Error | Response {
-  if (status === 400) {
-    return new QuestionValidationError();
-  }
-  return new Response(message, { status });
+function questionSaveError(status: number): Error | undefined {
+  return status === 400 ? new QuestionValidationError() : undefined;
+}
+
+function questionsPath(workbookId: string): string {
+  return `/api/v1/workbook/${encodeURIComponent(workbookId)}/question`;
+}
+
+function questionPath(workbookId: string, questionId: string): string {
+  return `${questionsPath(workbookId)}/${encodeURIComponent(questionId)}`;
 }
 
 type AddQuestionBody = {
@@ -35,91 +52,59 @@ type AddQuestionBody = {
   orderIndex: number;
 };
 
-export async function listQuestions(accessToken: string, workbookId: string): Promise<Question[]> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-
-  if (!response.ok) {
-    throw new Response("Failed to fetch questions", { status: response.status });
-  }
-
-  const data = (await response.json()) as ListQuestionsResponse;
-  return data.questions ?? [];
-}
-
 type UpdateQuestionBody = {
   content: string;
   tags?: string[];
   orderIndex: number;
 };
 
+export async function listQuestions(
+  client: BackendClient,
+  workbookId: string,
+): Promise<Question[]> {
+  return client.get("question", questionsPath(workbookId), {
+    source: "question:listQuestions",
+    errorMessage: "Failed to fetch questions",
+    parse: parseQuestionList,
+  });
+}
+
 export async function updateQuestion(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   questionId: string,
   body: UpdateQuestionBody,
 ): Promise<Question> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question/${encodeURIComponent(questionId)}`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+  return client.put("question", questionPath(workbookId, questionId), {
+    source: "question:updateQuestion",
+    errorMessage: "Failed to update question",
+    body,
+    mapError: questionSaveError,
+    parse: parseQuestion,
   });
-
-  if (!response.ok) {
-    throw questionSaveError(response.status, "Failed to update question");
-  }
-
-  return (await response.json()) as Question;
 }
 
 export async function deleteQuestion(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   questionId: string,
 ): Promise<void> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question/${encodeURIComponent(questionId)}`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${accessToken}` },
+  await client.delete("question", questionPath(workbookId, questionId), {
+    source: "question:deleteQuestion",
+    errorMessage: "Failed to delete question",
   });
-
-  if (!response.ok) {
-    throw new Response("Failed to delete question", { status: response.status });
-  }
 }
 
 export async function addQuestion(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   body: AddQuestionBody,
 ): Promise<Question> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}/question`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
+  return client.post("question", questionsPath(workbookId), {
+    source: "question:addQuestion",
+    errorMessage: "Failed to add question",
+    body,
+    mapError: questionSaveError,
+    parse: parseQuestion,
   });
-
-  if (!response.ok) {
-    throw questionSaveError(response.status, "Failed to add question");
-  }
-
-  return (await response.json()) as Question;
 }

@@ -1,17 +1,33 @@
-import { fetchWithIdToken, getQuestionUrl } from "./fetch.server";
+import { z } from "zod";
 
-export type Workbook = {
-  workbookId: string;
-  spaceId: string;
-  ownerId: string;
-  organizationId: string;
-  title: string;
-  description: string;
-  visibility: "private" | "public";
-  language: string;
-  createdAt: string;
-  updatedAt: string;
-};
+import type { BackendClient } from "./client.server";
+
+const workbookSchema = z.object({
+  workbookId: z.string(),
+  spaceId: z.string(),
+  ownerId: z.string(),
+  organizationId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  visibility: z.enum(["private", "public"]),
+  language: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export type Workbook = z.infer<typeof workbookSchema>;
+
+const listWorkbooksResponseSchema = z.object({
+  workbooks: z
+    .array(workbookSchema)
+    .nullish()
+    .transform((workbooks) => workbooks ?? []),
+});
+
+const parseWorkbook = (raw: unknown): Workbook => workbookSchema.parse(raw);
+
+const parseWorkbookList = (raw: unknown): Workbook[] =>
+  listWorkbooksResponseSchema.parse(raw).workbooks;
 
 export class WorkbookValidationError extends Error {
   constructor() {
@@ -20,41 +36,29 @@ export class WorkbookValidationError extends Error {
   }
 }
 
-function workbookSaveError(status: number, message: string): Error | Response {
-  if (status === 400) {
-    return new WorkbookValidationError();
-  }
-  return new Response(message, { status });
+function workbookSaveError(status: number): Error | undefined {
+  return status === 400 ? new WorkbookValidationError() : undefined;
 }
 
-type ListWorkbooksResponse = {
-  workbooks: Workbook[];
-};
+function workbookPath(workbookId: string): string {
+  return `/api/v1/workbook/${encodeURIComponent(workbookId)}`;
+}
 
-export async function listWorkbooks(accessToken: string, spaceId: string): Promise<Workbook[]> {
+export async function listWorkbooks(client: BackendClient, spaceId: string): Promise<Workbook[]> {
   console.info(`[workbook] listWorkbooks called: spaceId=${spaceId}`);
 
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
-  console.info(`[workbook] fetching workbooks: url=${url}`);
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  const path = `/api/v1/workbook?spaceId=${encodeURIComponent(spaceId)}`;
+  const workbooks = await client.get("question", path, {
+    source: "workbook:listWorkbooks",
+    errorMessage: "Failed to fetch workbooks",
+    parse: parseWorkbookList,
   });
-
-  if (!response.ok) {
-    console.error(`[workbook] listWorkbooks failed: status=${response.status}, url=${url}`);
-    throw new Response("Failed to fetch workbooks", { status: response.status });
-  }
-
-  const data = (await response.json()) as ListWorkbooksResponse;
-  const workbooks = data.workbooks ?? [];
   console.info(`[workbook] listWorkbooks succeeded: count=${workbooks.length}`);
   return workbooks;
 }
 
 export async function createWorkbook(
-  accessToken: string,
+  client: BackendClient,
   data: {
     spaceId: string;
     title: string;
@@ -67,84 +71,45 @@ export async function createWorkbook(
     `[workbook] createWorkbook called: spaceId=${data.spaceId}, titleLength=${data.title.length}`,
   );
 
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook`;
-  console.info(`[workbook] creating workbook: url=${url}`);
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+  const workbook = await client.post("question", "/api/v1/workbook", {
+    source: "workbook:createWorkbook",
+    errorMessage: "Failed to create workbook",
+    body: data,
+    mapError: workbookSaveError,
+    parse: parseWorkbook,
   });
-
-  if (!response.ok) {
-    console.error(`[workbook] createWorkbook failed: status=${response.status}, url=${url}`);
-    throw workbookSaveError(response.status, "Failed to create workbook");
-  }
-
-  const workbook = (await response.json()) as Workbook;
   console.info(`[workbook] createWorkbook succeeded: workbookId=${workbook.workbookId}`);
   return workbook;
 }
 
-export async function getWorkbook(accessToken: string, workbookId: string): Promise<Workbook> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+export async function getWorkbook(client: BackendClient, workbookId: string): Promise<Workbook> {
+  return client.get("question", workbookPath(workbookId), {
+    source: "workbook:getWorkbook",
+    errorMessage: "Failed to fetch workbook",
+    parse: parseWorkbook,
   });
-
-  if (!response.ok) {
-    throw new Response("Failed to fetch workbook", { status: response.status });
-  }
-
-  return (await response.json()) as Workbook;
 }
 
 export async function updateWorkbook(
-  accessToken: string,
+  client: BackendClient,
   workbookId: string,
   data: { title: string; description: string; visibility: "private" | "public"; language: string },
 ): Promise<Workbook> {
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+  return client.put("question", workbookPath(workbookId), {
+    source: "workbook:updateWorkbook",
+    errorMessage: "Failed to update workbook",
+    body: data,
+    mapError: workbookSaveError,
+    parse: parseWorkbook,
   });
-
-  if (!response.ok) {
-    throw workbookSaveError(response.status, "Failed to update workbook");
-  }
-
-  return (await response.json()) as Workbook;
 }
 
-export async function deleteWorkbook(accessToken: string, workbookId: string): Promise<void> {
+export async function deleteWorkbook(client: BackendClient, workbookId: string): Promise<void> {
   console.info(`[workbook] deleteWorkbook called: workbookId=${workbookId}`);
 
-  const baseUrl = getQuestionUrl();
-  const url = `${baseUrl}/api/v1/workbook/${encodeURIComponent(workbookId)}`;
-  console.info(`[workbook] deleting workbook: url=${url}`);
-
-  const response = await fetchWithIdToken(baseUrl, url, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${accessToken}` },
+  await client.delete("question", workbookPath(workbookId), {
+    source: "workbook:deleteWorkbook",
+    errorMessage: "Failed to delete workbook",
   });
-
-  if (!response.ok) {
-    console.error(`[workbook] deleteWorkbook failed: status=${response.status}, url=${url}`);
-    throw new Response("Failed to delete workbook", { status: response.status });
-  }
-
   console.info(`[workbook] deleteWorkbook succeeded: workbookId=${workbookId}`);
 }

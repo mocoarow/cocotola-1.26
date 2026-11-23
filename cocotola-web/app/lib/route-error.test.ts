@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyRouteError, isConflictOrServerError } from "./route-error";
+import { classifyRouteError, isConflictOrServerError, isRedirectResponse } from "./route-error";
 
 function routeErrorResponse(status: number) {
   return { status, statusText: "", internal: false, data: "" };
@@ -49,6 +49,43 @@ describe("isConflictOrServerError", () => {
   it.each([400, 401, 403, 404])("should return false when status is %i", (status) => {
     // given / when
     const result = isConflictOrServerError(status);
+
+    // then
+    expect(result).toBe(false);
+  });
+});
+
+describe("isRedirectResponse", () => {
+  it.each([300, 302, 399])("should return true when the Response status is %i", (status) => {
+    // given
+    const error = new Response(null, { status });
+
+    // when
+    const result = isRedirectResponse(error);
+
+    // then
+    expect(result).toBe(true);
+  });
+
+  it.each([
+    200, 299, 400, 401, 500, 502,
+  ])("should return false when the Response status is %i", (status) => {
+    // given
+    const error = new Response(null, { status });
+
+    // when
+    const result = isRedirectResponse(error);
+
+    // then
+    expect(result).toBe(false);
+  });
+
+  it("should return false when the error is not a Response", () => {
+    // given
+    const error = { status: 302 };
+
+    // when
+    const result = isRedirectResponse(error);
 
     // then
     expect(result).toBe(false);

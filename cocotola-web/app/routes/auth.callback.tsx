@@ -1,12 +1,14 @@
 import { redirect } from "react-router";
 import { detectLanguageFromRequest } from "~/i18n/config";
 import { exchangeSupabaseToken } from "~/lib/api/auth.server";
+import { createBackendClient } from "~/lib/api/client.server";
 import { getUserPreferences, updateUserLanguage } from "~/lib/api/user-setting.server";
 import {
   diagnoseCallbackCookies,
   supabaseAuthStorageKey,
 } from "~/lib/auth/callback-diagnostics.server";
 import { commitSession, getSession } from "~/lib/auth/session.server";
+import { isRedirectResponse } from "~/lib/route-error";
 import { createSupabaseServerClient } from "~/lib/supabase/server";
 import type { Route } from "./+types/auth.callback";
 
@@ -70,8 +72,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   // the same user logs in from a browser with a different Accept-Language.
   const uiLanguage = detectLanguageFromRequest(request);
   const backendDefaultLanguage = "en";
+  const client = createBackendClient({ request, accessToken: tokens.accessToken });
   try {
-    const prefs = await getUserPreferences(request, tokens.accessToken);
+    const prefs = await getUserPreferences(client);
     const currentLanguage = prefs.language;
     if (currentLanguage !== backendDefaultLanguage) {
       console.info(
@@ -80,18 +83,13 @@ export async function loader({ request }: Route.LoaderArgs) {
     } else if (currentLanguage === uiLanguage) {
       console.info(`[auth.callback] user language already in sync: ${currentLanguage}`);
     } else {
-      await updateUserLanguage(request, tokens.accessToken, uiLanguage);
+      await updateUserLanguage(client, uiLanguage);
       console.info(`[auth.callback] synced user language: ${uiLanguage}`);
     }
   } catch (e) {
-    // Preserve thrown Response objects (e.g. redirect("/login") that
-    // redirectOnUnauthorized fires on 401) so React Router can navigate.
-    // Without this re-throw the catch would swallow the redirect, fall
-    // through to `return redirect("/")` below, and then the next loader
-    // would hit a second 401 — costing a round trip to reach the same
-    // /login destination. Only non-Response errors should remain
-    // best-effort here so the language sync truly stays non-fatal.
-    if (e instanceof Response) throw e;
+    // Swallowing the 401 redirect would send the user to "/" only for the
+    // next loader to hit the same 401 and bounce to /login.
+    if (isRedirectResponse(e)) throw e;
     console.error("[auth.callback] language sync failed (non-fatal):", e);
   }
 

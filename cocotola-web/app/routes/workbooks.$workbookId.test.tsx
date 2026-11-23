@@ -1,13 +1,123 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("~/lib/auth/require-auth.server", () => ({
+  requireAuth: vi.fn(),
+}));
+
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
+vi.mock("~/lib/api/question.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/lib/api/question.server")>();
+  return {
+    listQuestions: vi.fn(),
+    updateQuestion: vi.fn(),
+    deleteQuestion: vi.fn(),
+    addQuestion: vi.fn(),
+    QuestionValidationError: actual.QuestionValidationError,
+  };
+});
+
+vi.mock("~/lib/api/study.server", () => ({
+  getStudyQuestions: vi.fn(),
+  getStudySummary: vi.fn(),
+  recordAnswer: vi.fn(),
+  deleteStudyHistory: vi.fn(),
+  listStudyRecords: vi.fn(),
+}));
+
+vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("~/lib/api/workbook.server")>();
+  return {
+    listWorkbooks: vi.fn(),
+    createWorkbook: vi.fn(),
+    getWorkbook: vi.fn(),
+    updateWorkbook: vi.fn(),
+    deleteWorkbook: vi.fn(),
+    WorkbookValidationError: actual.WorkbookValidationError,
+  };
+});
+
 import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createRoutesStub, data } from "react-router";
-import { describe, expect, it, vi } from "vitest";
 import { ConfirmDialogProvider } from "~/components/confirm-dialog-provider";
 import { QUESTION_INVALID_ERROR_KEY } from "~/components/workbook/question-form-error";
 import i18n from "~/i18n/config";
+import { createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
+import { listQuestions } from "~/lib/api/question.server";
+import { backendClientSentinel } from "~/lib/api/test-helpers";
 import type { Workbook } from "~/lib/api/workbook.server";
-import WorkbookDetail from "./workbooks.$workbookId";
+import { getWorkbook } from "~/lib/api/workbook.server";
+import { requireAuth } from "~/lib/auth/require-auth.server";
+import WorkbookDetail, { loader } from "./workbooks.$workbookId";
+
+type LoaderArgs = Parameters<typeof loader>[0];
+
+const backendClient = backendClientSentinel();
+
+function buildLoaderArgs(): LoaderArgs {
+  const request = new Request("http://localhost/workbooks/wb-1");
+  return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
+}
+
+describe("WorkbookDetail loader", () => {
+  beforeEach(() => {
+    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
+    vi.mocked(createBackendClient).mockReturnValue(backendClient);
+    vi.mocked(listQuestions).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.resetAllMocks();
+  });
+
+  it("should create the backend client with the request the loader received", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
+  });
+
+  it("should fetch the workbook through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(getWorkbook).mock.calls[0][0]).toBe(backendClient);
+  });
+
+  it("should list the questions through the backend client", async () => {
+    // given
+    const args = buildLoaderArgs();
+
+    // when
+    await loader(args);
+
+    // then
+    expect(vi.mocked(listQuestions).mock.calls[0][0]).toBe(backendClient);
+  });
+});
 
 const BOUNDARY_TEXT = "route error boundary";
 

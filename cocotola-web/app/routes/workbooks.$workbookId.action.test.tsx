@@ -4,6 +4,10 @@ vi.mock("~/lib/auth/require-auth.server", () => ({
   requireAuth: vi.fn(),
 }));
 
+vi.mock("~/lib/api/client.server", () => ({
+  createBackendClient: vi.fn(),
+}));
+
 vi.mock("~/lib/api/question.server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("~/lib/api/question.server")>();
   return {
@@ -36,6 +40,7 @@ vi.mock("~/lib/api/workbook.server", async (importOriginal) => {
 });
 
 import { QUESTION_INVALID_ERROR_KEY } from "~/components/workbook/question-form-error";
+import { createBackendClient } from "~/lib/api/client.server";
 import {
   addQuestion,
   deleteQuestion,
@@ -46,7 +51,9 @@ import { deleteStudyHistory } from "~/lib/api/study.server";
 import { updateWorkbook } from "~/lib/api/workbook.server";
 import { action } from "./workbooks.$workbookId";
 import {
+  ACCESS_TOKEN,
   type ActionArgs,
+  backendClient,
   buildActionArgs,
   setupActionMocks,
 } from "./workbooks.$workbookId.action.test-helpers";
@@ -176,7 +183,42 @@ async function catchThrown(args: ActionArgs): Promise<unknown> {
 
 setupActionMocks();
 
+describe("WorkbookDetail action backend client", () => {
+  it("should create the backend client with the request the action received", async () => {
+    // given
+    const args = buildActionArgs({ intent: "clearStudyHistory" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
+  });
+
+  it("should create the backend client with the access token", async () => {
+    // given
+    const args = buildActionArgs({ intent: "clearStudyHistory" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe(ACCESS_TOKEN);
+  });
+});
+
 describe("WorkbookDetail action updateQuestion intent", () => {
+  it("should update the question through the backend client on updateQuestion intent", async () => {
+    // given
+    const args = buildActionArgs(UPDATE_WORD_FILL_ENTRIES);
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(updateQuestion).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it("should return ok when the question is updated", async () => {
     // given
     const args = buildActionArgs(UPDATE_WORD_FILL_ENTRIES);
@@ -202,7 +244,7 @@ describe("WorkbookDetail action updateQuestion intent", () => {
     await action(args);
 
     // then
-    expect(updateQuestion).toHaveBeenCalledWith("test-token", "wb-1", "q-1", {
+    expect(updateQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", {
       content: JSON.stringify({
         source: { text: "ゴミを捨てる", lang: "ja" },
         target: { text: "{{throw}} it {{away}}", lang: "en" },
@@ -280,7 +322,7 @@ describe("WorkbookDetail action updateQuestion intent", () => {
     await action(args);
 
     // then
-    expect(updateQuestion).toHaveBeenCalledWith("test-token", "wb-1", "q-1", {
+    expect(updateQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", {
       content: EXPECTED_MULTIPLE_CHOICE_CONTENT,
       tags: ["level:beginner"],
       orderIndex: 2,
@@ -301,7 +343,7 @@ describe("WorkbookDetail action updateQuestion intent", () => {
     await action(args);
 
     // then
-    expect(updateQuestion).toHaveBeenCalledWith("test-token", "wb-1", "q-1", {
+    expect(updateQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", {
       content: EXPECTED_CONTENT,
       tags: ["level:beginner"],
       orderIndex: 5,
@@ -380,7 +422,18 @@ describe("WorkbookDetail action deleteQuestion intent", () => {
     await action(args);
 
     // then
-    expect(deleteQuestion).toHaveBeenCalledWith("test-token", "wb-1", "q-1");
+    expect(deleteQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1");
+  });
+
+  it("should delete the question through the backend client on deleteQuestion intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "deleteQuestion", questionId: "q-1" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(deleteQuestion).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should throw a 400 response when the questionId is missing", async () => {
@@ -426,11 +479,33 @@ describe("WorkbookDetail action clearStudyHistory intent", () => {
     await action(args);
 
     // then
-    expect(deleteStudyHistory).toHaveBeenCalledWith("test-token", "wb-1");
+    expect(deleteStudyHistory).toHaveBeenCalledWith(backendClient, "wb-1");
+  });
+
+  it("should delete the study history through the backend client on clearStudyHistory intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "clearStudyHistory" });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(deleteStudyHistory).mock.calls[0][0]).toBe(backendClient);
   });
 });
 
 describe("WorkbookDetail action addWordFill intent", () => {
+  it("should add the question through the backend client on addWordFill intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "addWordFill", ...WORD_FILL_ENTRIES });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(addQuestion).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it("should report the addition when the word_fill question is added", async () => {
     // given
     const args = buildActionArgs({ intent: "addWordFill", ...WORD_FILL_ENTRIES });
@@ -455,7 +530,7 @@ describe("WorkbookDetail action addWordFill intent", () => {
     await action(args);
 
     // then
-    expect(addQuestion).toHaveBeenCalledWith("test-token", "wb-1", {
+    expect(addQuestion).toHaveBeenCalledWith(backendClient, "wb-1", {
       questionType: "word_fill",
       content: JSON.stringify({
         source: { text: "ゴミを捨てる", lang: "ja" },
@@ -514,6 +589,20 @@ describe("WorkbookDetail action addWordFill intent", () => {
 });
 
 describe("WorkbookDetail action addMultipleChoice intent", () => {
+  it("should add the question through the backend client on addMultipleChoice intent", async () => {
+    // given
+    const args = buildActionArgs({
+      intent: "addMultipleChoice",
+      ...MULTIPLE_CHOICE_OPTION_ENTRIES,
+    });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(addQuestion).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it("should report the addition when the multiple_choice question is added", async () => {
     // given
     const args = buildActionArgs({
@@ -539,7 +628,7 @@ describe("WorkbookDetail action addMultipleChoice intent", () => {
     await action(args);
 
     // then
-    expect(addQuestion).toHaveBeenCalledWith("test-token", "wb-1", {
+    expect(addQuestion).toHaveBeenCalledWith(backendClient, "wb-1", {
       questionType: "multiple_choice",
       content: EXPECTED_MULTIPLE_CHOICE_CONTENT,
       tags: ["level:beginner"],
@@ -579,6 +668,17 @@ describe("WorkbookDetail action addMultipleChoice intent", () => {
 });
 
 describe("WorkbookDetail action addOrdering intent", () => {
+  it("should add the question through the backend client on addOrdering intent", async () => {
+    // given
+    const args = buildActionArgs({ intent: "addOrdering", ...ORDERING_ENTRIES });
+
+    // when
+    await action(args);
+
+    // then
+    expect(vi.mocked(addQuestion).mock.calls[0][0]).toBe(backendClient);
+  });
+
   it("should add an ordering question on addOrdering intent", async () => {
     // given
     const args = buildActionArgs({ intent: "addOrdering", ...ORDERING_ENTRIES });
@@ -587,7 +687,7 @@ describe("WorkbookDetail action addOrdering intent", () => {
     await action(args);
 
     // then
-    expect(addQuestion).toHaveBeenCalledWith("test-token", "wb-1", {
+    expect(addQuestion).toHaveBeenCalledWith(backendClient, "wb-1", {
       questionType: "ordering",
       content: EXPECTED_CONTENT,
       tags: ["level:beginner"],

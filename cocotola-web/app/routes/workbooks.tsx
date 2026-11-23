@@ -21,6 +21,7 @@ import {
   SidebarSeparator,
   SidebarTrigger,
 } from "~/components/ui/sidebar";
+import { createBackendClient } from "~/lib/api/client.server";
 import { getUserPreferencesOrNull, type UserPreferences } from "~/lib/api/user-setting.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
 import type { Route } from "./+types/workbooks";
@@ -28,8 +29,9 @@ import type { Route } from "./+types/workbooks";
 export async function loader({ request, context }: Route.LoaderArgs) {
   console.info("[workbooks] loader called");
   const { accessToken } = requireAuth(context);
+  const client = createBackendClient({ request, accessToken });
 
-  const user = await getUserPreferencesOrNull(request, accessToken);
+  const user = await getUserPreferencesOrNull(client);
 
   if (user !== null) {
     // loginId is email-shaped PII; log only the opaque userId so server
