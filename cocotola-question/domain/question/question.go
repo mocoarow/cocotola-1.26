@@ -260,13 +260,20 @@ func (q *Question) MarkAudioPending(inputHash string, now time.Time) {
 }
 
 // SyncWordFillAudio applies MarkAudioPending for c, or discards the audio when
-// either language has no TTS voice.
+// either language has no TTS voice or either text exceeds the TTS input limit.
 func (q *Question) SyncWordFillAudio(c WordFillContent, now time.Time) {
-	if !audio.IsSupportedLang(c.Source.Lang) || !audio.IsSupportedLang(c.Target.Lang) {
+	if !canSynthesizeWordFill(c) {
 		q.audioGeneration = nil
 		return
 	}
 	q.MarkAudioPending(ComputeWordFillAudioInputHash(c), now)
+}
+
+func canSynthesizeWordFill(c WordFillContent) bool {
+	return audio.IsSupportedLang(c.Source.Lang) &&
+		audio.IsSupportedLang(c.Target.Lang) &&
+		audio.FitsSynthesisInput(c.Source.Text) &&
+		audio.FitsSynthesisInput(FillWordFillBlanks(c.Target.Text))
 }
 
 // ClaimAudio transitions the audio generation from pending to generating.

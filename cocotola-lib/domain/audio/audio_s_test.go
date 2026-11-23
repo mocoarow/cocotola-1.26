@@ -1,9 +1,11 @@
 package audio_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/audio"
 )
@@ -61,4 +63,38 @@ func Test_IsSupportedLang_shouldReturnFalse_whenLangIsNotSupported(t *testing.T)
 			assert.False(t, got)
 		})
 	}
+}
+
+func multiByteTextOfBytes(t *testing.T, n int) string {
+	t.Helper()
+	const runeBytes = 3
+	s := strings.Repeat("あ", n/runeBytes) + strings.Repeat("a", n%runeBytes)
+	require.Len(t, s, n)
+	return s
+}
+
+func Test_FitsSynthesisInput_shouldReturnTrue_whenTextIsAtByteLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	text := multiByteTextOfBytes(t, audio.MaxSynthesisInputBytes)
+
+	// when
+	got := audio.FitsSynthesisInput(text)
+
+	// then
+	assert.True(t, got)
+}
+
+func Test_FitsSynthesisInput_shouldReturnFalse_whenTextExceedsByteLimit(t *testing.T) {
+	t.Parallel()
+
+	// given
+	text := multiByteTextOfBytes(t, audio.MaxSynthesisInputBytes+1)
+
+	// when
+	got := audio.FitsSynthesisInput(text)
+
+	// then
+	assert.False(t, got)
 }
