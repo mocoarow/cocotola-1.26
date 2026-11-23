@@ -5,7 +5,6 @@ package config_test
 import (
 	"testing"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -118,8 +117,6 @@ func setRequiredEnv(t *testing.T) {
 	t.Setenv("INIT_POSTGRES_PASSWORD", "password")
 	t.Setenv("OWNER_LOGIN_ID", "owner")
 	t.Setenv("OWNER_PASSWORD", "password123")
-	t.Setenv("TRACE_EXPORTER", "google")
-	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "project")
 }
 
 func Test_LoadConfig_shouldSucceed_whenOwnerIsUnset(t *testing.T) {
@@ -133,34 +130,6 @@ func Test_LoadConfig_shouldSucceed_whenOwnerIsUnset(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-}
-
-func Test_LoadConfig_shouldSucceed_whenNoneExporterHasNoProjectID(t *testing.T) {
-	// given
-	setRequiredEnv(t)
-	t.Setenv("TRACE_EXPORTER", "none")
-	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "")
-
-	// when
-	_, err := config.LoadConfig()
-
-	// then
-	require.NoError(t, err)
-}
-
-func Test_LoadConfig_shouldRejectProjectID_whenGoogleExporterHasNoProjectID(t *testing.T) {
-	// given
-	setRequiredEnv(t)
-	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "")
-
-	// when
-	_, err := config.LoadConfig()
-
-	// then
-	var verrs validator.ValidationErrors
-	require.ErrorAs(t, err, &verrs)
-	require.Len(t, verrs, 1)
-	assert.Equal(t, "Config.Trace.Google.ProjectID", verrs[0].StructNamespace())
 }
 
 func validConfig() *config.Config {

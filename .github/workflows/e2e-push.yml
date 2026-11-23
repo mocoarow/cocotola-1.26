@@ -256,10 +256,6 @@ jobs:
       FIRESTORE_EMULATOR_HOST: 127.0.0.1:8681
       QUESTION_FIRESTORE_PROJECT_ID: local
 
-      # cocotola-lib TraceConfig requires a non-empty trace.google.projectId even
-      # when the exporter is "none" (cocotola-lib/gateway/trace.go).
-      TRACE_GOOGLE_PROJECT_ID: local
-
       # --- Standalone service ports (separate from the monolith's 8000) ---
       AUTH_HTTP_PORT: "8080"
       AUTH_METRICS_PORT: "8081"

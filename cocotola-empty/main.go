@@ -111,7 +111,6 @@ func newTraceConfig() libgateway.TraceConfig {
 		Exporter:           getEnvOrDefault("TRACE_EXPORTER", "none"),
 		SamplingPercentage: 0,
 		OTLP:               nil,
-		Google:             nil,
 		Uptrace:            nil,
 	}
 }

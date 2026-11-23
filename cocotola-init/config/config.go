@@ -140,20 +140,9 @@ func LoadConfig() (*Config, error) {
 		return nil, fmt.Errorf("yaml.Unmarshal. filename: %s, err: %w", filename, err)
 	}
 
-	validated := withoutUnusedGoogleTrace(conf)
-	if err := libdomain.ValidateStruct(&validated); err != nil {
+	if err := libdomain.ValidateStruct(&conf); err != nil {
 		return nil, fmt.Errorf("validate struct. filename: %s, err: %w", filename, err)
 	}
 
-	return &validated, nil
-}
-
-func withoutUnusedGoogleTrace(conf Config) Config {
-	if conf.Trace.Exporter == "google" {
-		return conf
-	}
-	trace := conf.Trace
-	trace.Google = nil
-	conf.Trace = trace
-	return conf
+	return &conf, nil
 }

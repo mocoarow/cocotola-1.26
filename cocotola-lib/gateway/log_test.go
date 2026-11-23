@@ -11,6 +11,8 @@ import (
 	"github.com/mocoarow/slogotel"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-lib/gateway"
 )
@@ -235,4 +237,28 @@ func Test_InitLog_shouldReturnCallableCleanup_whenExporterIsNone(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cleanup)
 	assert.NotPanics(t, cleanup)
+}
+
+func Test_InitLogProvider_shouldSetGlobalLoggerProvider_whenExporterIsOTLPHTTP(t *testing.T) {
+	t.Parallel()
+
+	// given
+	lockDefaultLogger(t)
+	prevProvider := otel.GetLoggerProvider()
+	t.Cleanup(func() {
+		otel.SetLoggerProvider(prevProvider)
+	})
+	logConfig := gateway.LogConfig{
+		Level:    "error",
+		Exporter: "otlphttp",
+		OTLP:     &gateway.OTLPLogConfig{Endpoint: "127.0.0.1:1", Insecure: true},
+	}
+
+	// when
+	cleanup, err := gateway.InitLogProvider(context.Background(), logConfig, "test-app")
+
+	// then
+	require.NoError(t, err)
+	t.Cleanup(cleanup)
+	assert.IsType(t, &sdklog.LoggerProvider{}, otel.GetLoggerProvider())
 }
