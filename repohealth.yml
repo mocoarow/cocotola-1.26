@@ -1,0 +1,37 @@
+---
+version: 1
+areas:
+  - name: app
+    paths: [cocotola-app]
+  - name: audio-generator
+    paths: [cocotola-audio-generator]
+  - name: auth
+    paths: [cocotola-auth]
+  - name: empty
+    paths: [cocotola-empty]
+  - name: init
+    paths: [cocotola-init]
+  - name: lib
+    paths: [cocotola-lib]
+  - name: question
+    paths: [cocotola-question]
+  - name: test
+    paths: [cocotola-test]
+  - name: web
+    paths: [cocotola-web]
+groups:
+  - name: backend
+    areas: [auth, question, audio-generator]
+exclude:
+  - "**/*.gen.go"
+  # Cross-area changes count source files only.
+  - "**/*.{bazel,yaml,yml,json,mod,sum,sh,md,css,svg,txt,ico,example,mjs}"
+  - "**/{Dockerfile,.gitignore,.dockerignore,.node-version}"
+  # Vendored shadcn code, also excluded in cocotola-web/biome.json.
+  - "cocotola-web/app/components/ui/*.tsx"
+  - "cocotola-web/app/lib/utils.ts"
+  - "cocotola-web/app/hooks/use-mobile.ts"
+stablePackages:
+  - "*/domain/**"
+coverage:
+  - file: coverage.lcov
