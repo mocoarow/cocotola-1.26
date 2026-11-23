@@ -17,5 +17,6 @@ smart_go_test(
     deps = [
         ":audio",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

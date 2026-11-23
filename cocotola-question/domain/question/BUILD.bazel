@@ -35,6 +35,7 @@ smart_go_test(
     data = glob(["testdata/**"]),
     embed = [":question"],
     deps = [
+        "//cocotola-lib/domain/audio",
         "//cocotola-question/contentjson",
         "//cocotola-question/domain",
         "@com_github_stretchr_testify//assert",
