@@ -35,3 +35,7 @@ const SlotTarget = "target"
 // ErrClaimRace indicates another batch instance won the race to claim the
 // item. The caller should skip this item and continue with the next one.
 var ErrClaimRace = errors.New("audio claim lost race")
+
+// ErrAudioStateChanged indicates cocotola-question rejected complete/fail
+// with 409 because the item changed after it was claimed; skip it.
+var ErrAudioStateChanged = errors.New("audio state changed during generation")

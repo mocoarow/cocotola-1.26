@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"context"
 	"errors"
 	"fmt"
 )
@@ -97,11 +96,6 @@ func ResourceWorkbook(workbookID string) (Resource, error) {
 	return Resource{value: "workbook:" + workbookID}, nil
 }
 
-// AuthorizationChecker checks if an action is allowed by RBAC policy.
-type AuthorizationChecker interface {
-	IsAllowed(ctx context.Context, organizationID string, operatorID string, action Action, resource Resource) (bool, error)
-}
-
 // Effect represents a policy effect (allow or deny).
 type Effect struct {
 	value string
@@ -125,8 +119,3 @@ func EffectAllow() Effect { return Effect{value: "allow"} }
 
 // EffectDeny returns the deny effect.
 func EffectDeny() Effect { return Effect{value: "deny"} }
-
-// PolicyAdder adds per-user RBAC policies via the auth service.
-type PolicyAdder interface {
-	AddPolicyForUser(ctx context.Context, organizationID string, userID string, action Action, resource Resource, effect Effect) error
-}

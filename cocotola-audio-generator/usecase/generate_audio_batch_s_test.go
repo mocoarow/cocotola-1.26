@@ -3,7 +3,9 @@ package usecase_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/domain"
 	"github.com/mocoarow/cocotola-1.26/cocotola-audio-generator/usecase"
+	"github.com/mocoarow/cocotola-1.26/cocotola-lib/domain/audio"
 )
 
 func newDiscardLogger() *slog.Logger {
@@ -113,6 +116,42 @@ func Test_GenerateAudioBatch_shouldFailItem_whenSynthesisFails(t *testing.T) {
 	assert.Equal(t, 1, processed)
 }
 
+func Test_GenerateAudioBatch_shouldFailItemWithoutSynthesis_whenLangIsUnsupported(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		sourceLang string
+		targetLang string
+	}{
+		{name: "unsupported source", sourceLang: "fr", targetLang: "en"},
+		{name: "unsupported target", sourceLang: "ja", targetLang: "fr"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			ctx := context.Background()
+
+			// given: TTS and Storage mocks reject any call
+			item := sampleItem()
+			item.SourceLang = tt.sourceLang
+			item.TargetLang = tt.targetLang
+			api := NewMockQuestionAPI(t)
+			api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+			api.EXPECT().Claim(ctx, item).Return(nil)
+			api.EXPECT().Fail(ctx, item, mock.MatchedBy(func(reason string) bool {
+				return strings.Contains(reason, usecase.ErrUnsupportedLanguage.Error())
+			})).Return(nil)
+
+			// when
+			_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, NewMockTTS(t), NewMockStorage(t), defaultBatchConfig())
+
+			// then: the item is failed with the unsupported-language reason
+			require.NoError(t, err)
+		})
+	}
+}
+
 func Test_GenerateAudioBatch_shouldSkipItem_whenClaimRaceLost(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -131,6 +170,215 @@ func Test_GenerateAudioBatch_shouldSkipItem_whenClaimRaceLost(t *testing.T) {
 	// then: claim race results in skip (no Complete/Fail call made — assert via mock expectations)
 	require.NoError(t, err)
 	assert.Equal(t, 1, processed)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenClaimFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	claimErr := errors.New("claim transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(claimErr)
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, claimErr)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenCompleteFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	completeErr := errors.New("complete transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Complete(ctx, item, mock.Anything).Return(completeErr)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, completeErr)
+}
+
+func Test_GenerateAudioBatch_shouldReturnError_whenFailReportFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	failErr := errors.New("fail transport")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, mock.Anything).Return(failErr)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("synth boom"))
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, failErr)
+}
+
+func Test_GenerateAudioBatch_shouldProcessRemainingItems_whenEarlierItemFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	api.EXPECT().Claim(ctx, first).Return(errors.New("claim transport"))
+	api.EXPECT().Claim(ctx, second).Return(nil)
+	api.EXPECT().Complete(ctx, second, mock.Anything).Return(nil)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, _ = usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	api.AssertCalled(t, "Complete", ctx, second, mock.Anything)
+}
+
+func Test_GenerateAudioBatch_shouldStopProcessing_whenContextIsCanceled(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	api.EXPECT().Claim(ctx, first).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, _ = usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	api.AssertNotCalled(t, "Claim", ctx, second)
+}
+
+func Test_GenerateAudioBatch_shouldReturnCanceled_whenOnlyCancellationInterruptsBatch(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func Test_GenerateAudioBatch_shouldNotReportCanceled_whenEarlierItemFailedBeforeCancellation(t *testing.T) {
+	t.Parallel()
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// given
+	first := sampleItem()
+	second := sampleItem()
+	second.QuestionID = "q-2"
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{first, second}, nil)
+	claimErr := errors.New("claim transport")
+	api.EXPECT().Claim(ctx, first).Return(claimErr)
+	api.EXPECT().Claim(ctx, second).RunAndReturn(func(context.Context, domain.PendingItem) error {
+		cancel()
+		return fmt.Errorf("do claim request: %w", context.Canceled)
+	})
+	tts := NewMockTTS(t)
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then: main exits 0 for context.Canceled, which would hide the first failure
+	require.ErrorIs(t, err, claimErr)
+	assert.NotErrorIs(t, err, context.Canceled)
+}
+
+func Test_GenerateAudioBatch_shouldSkipItem_whenCompleteReportsStateChanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Complete(ctx, item, mock.Anything).Return(domain.ErrAudioStateChanged)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return([]byte("audio"), nil).Times(2)
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, mock.Anything).Return(int64(5), nil).Times(2)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_GenerateAudioBatch_shouldSkipItem_whenFailReportsStateChanged(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := sampleItem()
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, mock.Anything).Return(domain.ErrAudioStateChanged)
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, mock.Anything, mock.Anything, mock.Anything).Return(nil, errors.New("synth boom"))
+	storage := NewMockStorage(t)
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
 }
 
 func Test_GenerateAudioBatch_shouldCallReclaimStale_whenStaleAfterIsConfigured(t *testing.T) {
@@ -234,16 +482,17 @@ func Test_truncate_shouldCutAtRuneBoundary_whenExceedingLimit(t *testing.T) {
 	}
 }
 
-func Test_pickVoice_shouldReturnConfiguredVoice_whenLangIsSupported(t *testing.T) {
+func Test_pickVoice_shouldReturnConfiguredVoiceAndLocale_whenLangIsSupported(t *testing.T) {
 	t.Parallel()
 
 	voices := defaultBatchConfig().Voices
 	tests := []struct {
-		lang string
-		want string
+		lang      string
+		wantVoice string
+		wantLang  string
 	}{
-		{lang: "ja", want: voices.JaVoice},
-		{lang: "en", want: voices.EnVoice},
+		{lang: "ja", wantVoice: voices.JaVoice, wantLang: voices.JaLang},
+		{lang: "en", wantVoice: voices.EnVoice, wantLang: voices.EnLang},
 	}
 	for _, tt := range tests {
 		t.Run(tt.lang, func(t *testing.T) {
@@ -252,15 +501,36 @@ func Test_pickVoice_shouldReturnConfiguredVoice_whenLangIsSupported(t *testing.T
 			// given: a supported short language code
 
 			// when
-			got := usecase.PickVoice(voices, tt.lang)
+			gotVoice, gotLang, err := usecase.PickVoice(voices, tt.lang)
 
 			// then
-			assert.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantVoice, gotVoice)
+			assert.Equal(t, tt.wantLang, gotLang)
 		})
 	}
 }
 
-func Test_pickVoice_shouldReturnEmpty_whenLangIsUnsupported(t *testing.T) {
+func Test_pickVoice_shouldResolveVoice_whenLangIsInSharedSupportedLangs(t *testing.T) {
+	t.Parallel()
+
+	voices := defaultBatchConfig().Voices
+	for _, lang := range audio.SupportedLangs() {
+		t.Run(lang, func(t *testing.T) {
+			t.Parallel()
+
+			// given: a language cocotola-question queues audio for
+
+			// when
+			_, _, err := usecase.PickVoice(voices, lang)
+
+			// then
+			require.NoError(t, err)
+		})
+	}
+}
+
+func Test_pickVoice_shouldReturnErrUnsupportedLanguage_whenLangIsUnsupported(t *testing.T) {
 	t.Parallel()
 
 	voices := defaultBatchConfig().Voices
@@ -280,64 +550,10 @@ func Test_pickVoice_shouldReturnEmpty_whenLangIsUnsupported(t *testing.T) {
 			// given: a language code that is not a supported short code
 
 			// when
-			got := usecase.PickVoice(voices, tt.lang)
+			_, _, err := usecase.PickVoice(voices, tt.lang)
 
 			// then
-			assert.Empty(t, got)
-		})
-	}
-}
-
-func Test_pickFullLang_shouldReturnConfiguredLocale_whenLangIsSupported(t *testing.T) {
-	t.Parallel()
-
-	voices := defaultBatchConfig().Voices
-	tests := []struct {
-		lang string
-		want string
-	}{
-		{lang: "ja", want: voices.JaLang},
-		{lang: "en", want: voices.EnLang},
-	}
-	for _, tt := range tests {
-		t.Run(tt.lang, func(t *testing.T) {
-			t.Parallel()
-
-			// given: a supported short language code
-
-			// when
-			got := usecase.PickFullLang(voices, tt.lang)
-
-			// then
-			assert.Equal(t, tt.want, got)
-		})
-	}
-}
-
-func Test_pickFullLang_shouldReturnEmpty_whenLangIsUnsupported(t *testing.T) {
-	t.Parallel()
-
-	voices := defaultBatchConfig().Voices
-	tests := []struct {
-		name string
-		lang string
-	}{
-		{name: "unknown code", lang: "fr"},
-		{name: "empty code", lang: ""},
-		{name: "uppercase code", lang: "JA"},
-		{name: "full locale", lang: "ja-JP"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			// given: a language code that is not a supported short code
-
-			// when
-			got := usecase.PickFullLang(voices, tt.lang)
-
-			// then
-			assert.Empty(t, got)
+			require.ErrorIs(t, err, usecase.ErrUnsupportedLanguage)
 		})
 	}
 }

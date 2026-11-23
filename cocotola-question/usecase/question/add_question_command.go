@@ -69,8 +69,8 @@ func (c *AddQuestionCommand) AddQuestion(ctx context.Context, input *questionser
 		return nil, fmt.Errorf("new question: %w", err)
 	}
 
-	if err := markAudioPendingIfWordFill(c.parser, q, now); err != nil {
-		return nil, fmt.Errorf("mark audio pending: %w", err)
+	if err := syncWordFillAudio(c.parser, q, now); err != nil {
+		return nil, fmt.Errorf("sync word_fill audio: %w", err)
 	}
 
 	if err := c.questionRepo.Create(ctx, q); err != nil {

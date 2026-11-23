@@ -57,8 +57,8 @@ func (c *UpdateQuestionCommand) UpdateQuestion(ctx context.Context, input *quest
 		return nil, fmt.Errorf("edit question: %w", err)
 	}
 
-	if err := markAudioPendingIfWordFill(c.parser, q, now); err != nil {
-		return nil, fmt.Errorf("mark audio pending: %w", err)
+	if err := syncWordFillAudio(c.parser, q, now); err != nil {
+		return nil, fmt.Errorf("sync word_fill audio: %w", err)
 	}
 
 	if err := c.questionSaver.Save(ctx, q); err != nil {

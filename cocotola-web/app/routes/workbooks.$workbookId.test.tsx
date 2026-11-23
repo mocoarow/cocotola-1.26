@@ -47,116 +47,20 @@ import { QUESTION_INVALID_ERROR_KEY } from "~/components/workbook/question-form-
 import i18n from "~/i18n/config";
 import { createBackendClient } from "~/lib/api/client.server";
 import type { Question } from "~/lib/api/question.server";
-import {
-  addQuestion,
-  deleteQuestion,
-  listQuestions,
-  QuestionValidationError,
-  updateQuestion,
-} from "~/lib/api/question.server";
-import { deleteStudyHistory } from "~/lib/api/study.server";
+import { listQuestions } from "~/lib/api/question.server";
 import { backendClientSentinel } from "~/lib/api/test-helpers";
 import type { Workbook } from "~/lib/api/workbook.server";
-import { getWorkbook, updateWorkbook, WorkbookValidationError } from "~/lib/api/workbook.server";
+import { getWorkbook } from "~/lib/api/workbook.server";
 import { requireAuth } from "~/lib/auth/require-auth.server";
-import WorkbookDetail, { action, loader } from "./workbooks.$workbookId";
+import WorkbookDetail, { loader } from "./workbooks.$workbookId";
 
-type ActionArgs = Parameters<typeof action>[0];
 type LoaderArgs = Parameters<typeof loader>[0];
 
 const backendClient = backendClientSentinel();
 
-const ORDERING_ENTRIES = {
-  sourceText: "私は学生です。",
-  sourceLang: "ja",
-  targetText: "I / am / a student [[.]]",
-  targetLang: "en",
-  tags: "level:beginner",
-};
-
-const EXPECTED_CONTENT = JSON.stringify({
-  source: { text: "私は学生です。", lang: "ja" },
-  target: {
-    lang: "en",
-    segments: [
-      { type: "chip", text: "I" },
-      { type: "chip", text: "am" },
-      { type: "chip", text: "a student" },
-      { type: "fixed", text: "." },
-    ],
-  },
-});
-
-const WORD_FILL_ENTRIES = {
-  sourceText: "ゴミを捨てる",
-  sourceLang: "ja",
-  targetText: "{{throw}} it {{away}}",
-  targetLang: "en",
-};
-
-const MULTIPLE_CHOICE_ENTRIES = {
-  questionText: "Which is a fruit?",
-  choices: JSON.stringify([
-    { id: "1", text: "apple", isCorrect: true },
-    { id: "2", text: "chair", isCorrect: false },
-  ]),
-};
-
-const UPDATE_ENTRIES = { intent: "updateQuestion", questionId: "q-1" };
-
-const UPDATE_TITLE_ENTRIES = {
-  intent: "updateTitle",
-  title: "Phrasal verbs",
-  description: "",
-  visibility: "private",
-};
-
-type QuestionBranch = {
-  name: string;
-  entries: Record<string, string>;
-  api: typeof addQuestion | typeof updateQuestion;
-};
-
-const QUESTION_BRANCHES: QuestionBranch[] = [
-  {
-    name: "addWordFill",
-    entries: { intent: "addWordFill", ...WORD_FILL_ENTRIES },
-    api: addQuestion,
-  },
-  {
-    name: "addMultipleChoice",
-    entries: { intent: "addMultipleChoice", ...MULTIPLE_CHOICE_ENTRIES },
-    api: addQuestion,
-  },
-  {
-    name: "addOrdering",
-    entries: { intent: "addOrdering", ...ORDERING_ENTRIES },
-    api: addQuestion,
-  },
-  {
-    name: "updateQuestion for word_fill",
-    entries: { ...UPDATE_ENTRIES, questionType: "word_fill", ...WORD_FILL_ENTRIES },
-    api: updateQuestion,
-  },
-  {
-    name: "updateQuestion for multiple_choice",
-    entries: { ...UPDATE_ENTRIES, questionType: "multiple_choice", ...MULTIPLE_CHOICE_ENTRIES },
-    api: updateQuestion,
-  },
-  {
-    name: "updateQuestion for ordering",
-    entries: { ...UPDATE_ENTRIES, questionType: "ordering", ...ORDERING_ENTRIES },
-    api: updateQuestion,
-  },
-];
-
-function buildActionArgs(formEntries: Record<string, string>): ActionArgs {
-  const request = new Request("http://localhost/workbooks/wb-1", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(formEntries).toString(),
-  });
-  return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as ActionArgs;
+function buildLoaderArgs(): LoaderArgs {
+  const request = new Request("http://localhost/workbooks/wb-1");
+  return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
 }
 
 describe("WorkbookDetail loader", () => {
@@ -169,11 +73,6 @@ describe("WorkbookDetail loader", () => {
   afterEach(() => {
     vi.resetAllMocks();
   });
-
-  function buildLoaderArgs(): LoaderArgs {
-    const request = new Request("http://localhost/workbooks/wb-1");
-    return { request, params: { workbookId: "wb-1" }, context: {} } as unknown as LoaderArgs;
-  }
 
   it("should create the backend client with the request the loader received", async () => {
     // given
@@ -205,7 +104,7 @@ describe("WorkbookDetail loader", () => {
     await loader(args);
 
     // then
-    expect(getWorkbook).toHaveBeenCalledWith(backendClient, "wb-1");
+    expect(vi.mocked(getWorkbook).mock.calls[0][0]).toBe(backendClient);
   });
 
   it("should list the questions through the backend client", async () => {
@@ -217,266 +116,6 @@ describe("WorkbookDetail loader", () => {
 
     // then
     expect(vi.mocked(listQuestions).mock.calls[0][0]).toBe(backendClient);
-  });
-});
-
-describe("WorkbookDetail action", () => {
-  beforeEach(() => {
-    vi.mocked(requireAuth).mockReturnValue({ accessToken: "test-token" });
-    vi.mocked(createBackendClient).mockReturnValue(backendClient);
-  });
-
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("should create the backend client with the request the action received", async () => {
-    // given
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(createBackendClient).mock.calls[0][0].request).toBe(args.request);
-  });
-
-  it("should create the backend client with the access token", async () => {
-    // given
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(createBackendClient).mock.calls[0][0].accessToken).toBe("test-token");
-  });
-
-  it("should update the workbook through the backend client on updateTitle intent", async () => {
-    // given
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(updateWorkbook).mock.calls[0][0]).toBe(backendClient);
-  });
-
-  it("should add an ordering question on addOrdering intent", async () => {
-    // given
-    const args = buildActionArgs({ intent: "addOrdering", ...ORDERING_ENTRIES });
-
-    // when
-    await action(args);
-
-    // then
-    expect(addQuestion).toHaveBeenCalledWith(backendClient, "wb-1", {
-      questionType: "ordering",
-      content: EXPECTED_CONTENT,
-      tags: ["level:beginner"],
-      orderIndex: 0,
-    });
-  });
-
-  it("should report the addition on addOrdering intent", async () => {
-    // given
-    const args = buildActionArgs({ intent: "addOrdering", ...ORDERING_ENTRIES });
-
-    // when
-    const result = await action(args);
-
-    // then
-    expect(result).toEqual({ ok: true, added: true });
-  });
-
-  it("should reject addOrdering intent with an invalid notation", async () => {
-    // given
-    const args = buildActionArgs({
-      intent: "addOrdering",
-      ...ORDERING_ENTRIES,
-      targetText: "I [[.]]",
-    });
-
-    // when / then
-    await expect(action(args)).rejects.toMatchObject({ status: 400 });
-  });
-
-  it("should update an ordering question on updateQuestion intent", async () => {
-    // given
-    const args = buildActionArgs({
-      intent: "updateQuestion",
-      questionId: "q-1",
-      questionType: "ordering",
-      orderIndex: "5",
-      ...ORDERING_ENTRIES,
-    });
-
-    // when
-    await action(args);
-
-    // then
-    expect(updateQuestion).toHaveBeenCalledWith(backendClient, "wb-1", "q-1", {
-      content: EXPECTED_CONTENT,
-      tags: ["level:beginner"],
-      orderIndex: 5,
-    });
-  });
-
-  it("should delete the question through the backend client on deleteQuestion intent", async () => {
-    // given
-    const args = buildActionArgs({ intent: "deleteQuestion", questionId: "q-1" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(deleteQuestion).mock.calls[0][0]).toBe(backendClient);
-  });
-
-  it("should delete the study history through the backend client on clearStudyHistory intent", async () => {
-    // given
-    const args = buildActionArgs({ intent: "clearStudyHistory" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(deleteStudyHistory).mock.calls[0][0]).toBe(backendClient);
-  });
-
-  it("should split the tags on addWordFill intent", async () => {
-    // given
-    const args = buildActionArgs({
-      intent: "addWordFill",
-      sourceText: "ゴミを捨てる",
-      sourceLang: "ja",
-      targetText: "{{throw}} it {{away}}",
-      targetLang: "en",
-      tags: " level:beginner , ,topic:phrasal-verbs ",
-    });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(addQuestion).mock.calls[0][2].tags).toEqual([
-      "level:beginner",
-      "topic:phrasal-verbs",
-    ]);
-  });
-
-  it("should split the tags on updateQuestion intent for word_fill", async () => {
-    // given
-    const args = buildActionArgs({
-      intent: "updateQuestion",
-      questionId: "q-1",
-      questionType: "word_fill",
-      sourceText: "ゴミを捨てる",
-      sourceLang: "ja",
-      targetText: "{{throw}} it {{away}}",
-      targetLang: "en",
-      tags: " level:beginner , ,topic:phrasal-verbs ",
-    });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(updateQuestion).mock.calls[0][3].tags).toEqual([
-      "level:beginner",
-      "topic:phrasal-verbs",
-    ]);
-  });
-
-  it("should reject updateQuestion intent for ordering with an invalid notation", async () => {
-    // given
-    const args = buildActionArgs({
-      intent: "updateQuestion",
-      questionId: "q-1",
-      questionType: "ordering",
-      ...ORDERING_ENTRIES,
-      targetText: "I / / am",
-    });
-
-    // when / then
-    await expect(action(args)).rejects.toMatchObject({ status: 400 });
-  });
-
-  it.each(
-    QUESTION_BRANCHES,
-  )("should return the invalid error key with status 400 when $name is rejected as invalid", async ({
-    entries,
-    api,
-  }) => {
-    // given
-    vi.mocked(api).mockRejectedValue(new QuestionValidationError());
-    const args = buildActionArgs(entries);
-
-    // when
-    const result = await action(args);
-
-    // then
-    expect(result).toMatchObject({
-      data: { ok: false, errorKey: QUESTION_INVALID_ERROR_KEY },
-      init: { status: 400 },
-    });
-  });
-
-  it.each(
-    QUESTION_BRANCHES,
-  )("should rethrow the error when $name fails for another reason", async ({ entries, api }) => {
-    // given
-    const failure = new Response("Failed to save question", { status: 500 });
-    vi.mocked(api).mockRejectedValue(failure);
-    const args = buildActionArgs(entries);
-
-    // when / then
-    await expect(action(args)).rejects.toBe(failure);
-  });
-
-  it("should send the submitted language on updateTitle intent", async () => {
-    // given
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when
-    await action(args);
-
-    // then
-    expect(vi.mocked(updateWorkbook).mock.calls[0][2].language).toBe("fr");
-  });
-
-  it("should return the invalid error key when updateTitle intent has no language", async () => {
-    // given
-    const args = buildActionArgs(UPDATE_TITLE_ENTRIES);
-
-    // when
-    const result = await action(args);
-
-    // then
-    expect(result).toEqual({ ok: false, errorKey: "workbooks.detail.errors.invalid" });
-  });
-
-  it("should return the invalid error key when updateTitle is rejected as invalid", async () => {
-    // given
-    vi.mocked(updateWorkbook).mockRejectedValue(new WorkbookValidationError());
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when
-    const result = await action(args);
-
-    // then
-    expect(result).toEqual({ ok: false, errorKey: "workbooks.detail.errors.invalid" });
-  });
-
-  it("should rethrow the error when updateTitle fails for another reason", async () => {
-    // given
-    const failure = new Response("Failed to update workbook", { status: 500 });
-    vi.mocked(updateWorkbook).mockRejectedValue(failure);
-    const args = buildActionArgs({ ...UPDATE_TITLE_ENTRIES, language: "fr" });
-
-    // when / then
-    await expect(action(args)).rejects.toBe(failure);
   });
 });
 

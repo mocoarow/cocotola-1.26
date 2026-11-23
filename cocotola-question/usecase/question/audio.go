@@ -8,9 +8,8 @@ import (
 	questionservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/question"
 )
 
-// markAudioPendingIfWordFill queues word_fill audio generation; safe on every
-// save because MarkAudioPending ignores an unchanged inputHash.
-func markAudioPendingIfWordFill(parser contentParser, q *domainquestion.Question, now time.Time) error {
+// syncWordFillAudio keeps a word_fill question's audio in step with its content.
+func syncWordFillAudio(parser contentParser, q *domainquestion.Question, now time.Time) error {
 	if q.QuestionType().Value() != domainquestion.TypeWordFill().Value() {
 		return nil
 	}
@@ -22,8 +21,7 @@ func markAudioPendingIfWordFill(parser contentParser, q *domainquestion.Question
 		}
 		c = parsed
 	}
-	hash := domainquestion.ComputeWordFillAudioInputHash(*c)
-	q.MarkAudioPending(hash, now)
+	q.SyncWordFillAudio(*c, now)
 	return nil
 }
 

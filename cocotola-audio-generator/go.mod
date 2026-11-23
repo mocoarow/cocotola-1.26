@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.71.0
 	cloud.google.com/go/texttospeech v1.21.0
 	github.com/go-playground/validator/v10 v10.30.5
+	github.com/mocoarow/cocotola-1.26/cocotola-lib v0.0.0-20260530145707-fdb29b8b59c1
 	github.com/stretchr/testify v1.12.1
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 )

@@ -26,6 +26,7 @@ import {
   parseOrderingContent,
   parseTagsFormData,
   parseWordFillContent,
+  type QuestionType,
 } from "~/components/workbook/schemas";
 import { WordFillEditForm } from "~/components/workbook/word-fill-edit-form";
 import { WorkbookHeader } from "~/components/workbook/workbook-header";
@@ -96,6 +97,117 @@ async function handleUpdateTitleIntent(
   return { ok: true };
 }
 
+function optionalTags(tags: string[]) {
+  return tags.length > 0 ? tags : undefined;
+}
+
+function requireQuestionId(formData: FormData) {
+  const questionId = formData.get("questionId");
+  if (typeof questionId !== "string" || !questionId) {
+    throw new Response("questionId is required", { status: 400 });
+  }
+  return questionId;
+}
+
+function nonBlankText(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" && value.trim() ? value : undefined;
+}
+
+function optionalTextEntry(formData: FormData, key: string) {
+  const value = nonBlankText(formData, key);
+  return value === undefined ? {} : { [key]: value };
+}
+
+function parseWordFillPair(formData: FormData) {
+  const sourceText = nonBlankText(formData, "sourceText");
+  const sourceLang = nonBlankText(formData, "sourceLang");
+  const targetText = nonBlankText(formData, "targetText");
+  const targetLang = nonBlankText(formData, "targetLang");
+  if (!(sourceText && sourceLang && targetText && targetLang)) {
+    throw new Response("sourceText, sourceLang, targetText, and targetLang are required", {
+      status: 400,
+    });
+  }
+  return {
+    source: { text: sourceText, lang: sourceLang },
+    target: { text: targetText, lang: targetLang },
+  };
+}
+
+function parseWordFillFormData(formData: FormData, explanationKeys: string[]) {
+  const pair = parseWordFillPair(formData);
+  const explanations = explanationKeys.map((key) => optionalTextEntry(formData, key));
+  const content = JSON.stringify(Object.assign({}, pair, ...explanations));
+  return { content, tags: parseTagsFormData(formData) };
+}
+
+function parseUpdateQuestionFormData(formData: FormData) {
+  const questionType = formData.get("questionType");
+  if (questionType === "multiple_choice") {
+    return parseMultipleChoiceFormData(formData);
+  }
+  if (questionType === "ordering") {
+    return parseOrderingFormData(formData);
+  }
+  if (questionType === "word_fill" || !questionType) {
+    return parseWordFillFormData(formData, ["explanation", "explanation1", "explanation2"]);
+  }
+  throw new Response(`Unknown questionType: ${String(questionType)}`, { status: 400 });
+}
+
+async function handleUpdateQuestionIntent(
+  client: BackendClient,
+  workbookId: string,
+  formData: FormData,
+) {
+  const questionId = requireQuestionId(formData);
+  const { content, tags } = parseUpdateQuestionFormData(formData);
+  const orderIndex = Number(formData.get("orderIndex") ?? 0);
+  return saveQuestion(
+    () =>
+      updateQuestion(client, workbookId, questionId, {
+        content,
+        tags: optionalTags(tags),
+        orderIndex,
+      }),
+    { ok: true },
+  );
+}
+
+async function handleDeleteQuestionIntent(
+  client: BackendClient,
+  workbookId: string,
+  formData: FormData,
+) {
+  const questionId = requireQuestionId(formData);
+  await deleteQuestion(client, workbookId, questionId);
+  return { ok: true };
+}
+
+async function handleClearStudyHistoryIntent(client: BackendClient, workbookId: string) {
+  await deleteStudyHistory(client, workbookId);
+  return { ok: true, cleared: true };
+}
+
+async function handleAddQuestionIntent(
+  client: BackendClient,
+  workbookId: string,
+  questionType: QuestionType,
+  { content, tags }: { content: string; tags: string[] },
+) {
+  return saveQuestion(
+    () =>
+      addQuestion(client, workbookId, {
+        questionType,
+        content,
+        tags: optionalTags(tags),
+        orderIndex: 0,
+      }),
+    { ok: true, added: true },
+  );
+}
+
 export async function action({ request, params, context }: Route.ActionArgs) {
   const { accessToken } = requireAuth(context);
   const client = createBackendClient({ request, accessToken });
@@ -106,181 +218,34 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   if (intent === "updateTitle") {
     return handleUpdateTitleIntent(client, workbookId, formData);
   }
-
   if (intent === "updateQuestion") {
-    const questionId = formData.get("questionId");
-    if (typeof questionId !== "string" || !questionId) {
-      throw new Response("questionId is required", { status: 400 });
-    }
-
-    const questionType = formData.get("questionType");
-
-    if (questionType === "multiple_choice") {
-      const { content, tags } = parseMultipleChoiceFormData(formData);
-      const orderIndex = Number(formData.get("orderIndex") ?? 0);
-
-      return saveQuestion(
-        () =>
-          updateQuestion(client, workbookId, questionId, {
-            content,
-            tags: tags.length > 0 ? tags : undefined,
-            orderIndex,
-          }),
-        { ok: true },
-      );
-    }
-
-    if (questionType === "ordering") {
-      const { content, tags } = parseOrderingFormData(formData);
-      const orderIndex = Number(formData.get("orderIndex") ?? 0);
-
-      return saveQuestion(
-        () =>
-          updateQuestion(client, workbookId, questionId, {
-            content,
-            tags: tags.length > 0 ? tags : undefined,
-            orderIndex,
-          }),
-        { ok: true },
-      );
-    }
-
-    if (questionType === "word_fill" || !questionType) {
-      const sourceText = formData.get("sourceText");
-      const sourceLang = formData.get("sourceLang");
-      const targetText = formData.get("targetText");
-      const targetLang = formData.get("targetLang");
-
-      if (
-        typeof sourceText !== "string" ||
-        !sourceText.trim() ||
-        typeof sourceLang !== "string" ||
-        !sourceLang.trim() ||
-        typeof targetText !== "string" ||
-        !targetText.trim() ||
-        typeof targetLang !== "string" ||
-        !targetLang.trim()
-      ) {
-        throw new Response("sourceText, sourceLang, targetText, and targetLang are required", {
-          status: 400,
-        });
-      }
-
-      const explanation = formData.get("explanation");
-      const explanation1 = formData.get("explanation1");
-      const explanation2 = formData.get("explanation2");
-      const content = JSON.stringify({
-        source: { text: sourceText, lang: sourceLang },
-        target: { text: targetText, lang: targetLang },
-        ...(typeof explanation === "string" && explanation.trim() ? { explanation } : {}),
-        ...(typeof explanation1 === "string" && explanation1.trim() ? { explanation1 } : {}),
-        ...(typeof explanation2 === "string" && explanation2.trim() ? { explanation2 } : {}),
-      });
-
-      const tags = parseTagsFormData(formData);
-      const orderIndex = Number(formData.get("orderIndex") ?? 0);
-
-      return saveQuestion(
-        () =>
-          updateQuestion(client, workbookId, questionId, {
-            content,
-            tags: tags.length > 0 ? tags : undefined,
-            orderIndex,
-          }),
-        { ok: true },
-      );
-    }
-
-    throw new Response(`Unknown questionType: ${String(questionType)}`, { status: 400 });
+    return handleUpdateQuestionIntent(client, workbookId, formData);
   }
-
   if (intent === "deleteQuestion") {
-    const questionId = formData.get("questionId");
-    if (typeof questionId !== "string" || !questionId) {
-      throw new Response("questionId is required", { status: 400 });
-    }
-    await deleteQuestion(client, workbookId, questionId);
-    return { ok: true };
+    return handleDeleteQuestionIntent(client, workbookId, formData);
   }
-
   if (intent === "clearStudyHistory") {
-    await deleteStudyHistory(client, workbookId);
-    return { ok: true, cleared: true };
+    return handleClearStudyHistoryIntent(client, workbookId);
   }
-
   if (intent === "addWordFill") {
-    const sourceText = formData.get("sourceText");
-    const sourceLang = formData.get("sourceLang");
-    const targetText = formData.get("targetText");
-    const targetLang = formData.get("targetLang");
-
-    if (
-      typeof sourceText !== "string" ||
-      !sourceText.trim() ||
-      typeof sourceLang !== "string" ||
-      !sourceLang.trim() ||
-      typeof targetText !== "string" ||
-      !targetText.trim() ||
-      typeof targetLang !== "string" ||
-      !targetLang.trim()
-    ) {
-      throw new Response("sourceText, sourceLang, targetText, and targetLang are required", {
-        status: 400,
-      });
-    }
-
-    const explanation = formData.get("explanation");
-
-    const content = JSON.stringify({
-      source: { text: sourceText, lang: sourceLang },
-      target: { text: targetText, lang: targetLang },
-      ...(typeof explanation === "string" && explanation.trim() ? { explanation } : {}),
-    });
-
-    const tags = parseTagsFormData(formData);
-
-    return saveQuestion(
-      () =>
-        addQuestion(client, workbookId, {
-          questionType: "word_fill",
-          content,
-          tags: tags.length > 0 ? tags : undefined,
-          orderIndex: 0,
-        }),
-      { ok: true, added: true },
+    return handleAddQuestionIntent(
+      client,
+      workbookId,
+      "word_fill",
+      parseWordFillFormData(formData, ["explanation"]),
     );
   }
-
   if (intent === "addMultipleChoice") {
-    const { content, tags } = parseMultipleChoiceFormData(formData);
-
-    return saveQuestion(
-      () =>
-        addQuestion(client, workbookId, {
-          questionType: "multiple_choice",
-          content,
-          tags: tags.length > 0 ? tags : undefined,
-          orderIndex: 0,
-        }),
-      { ok: true, added: true },
+    return handleAddQuestionIntent(
+      client,
+      workbookId,
+      "multiple_choice",
+      parseMultipleChoiceFormData(formData),
     );
   }
-
   if (intent === "addOrdering") {
-    const { content, tags } = parseOrderingFormData(formData);
-
-    return saveQuestion(
-      () =>
-        addQuestion(client, workbookId, {
-          questionType: "ordering",
-          content,
-          tags: tags.length > 0 ? tags : undefined,
-          orderIndex: 0,
-        }),
-      { ok: true, added: true },
-    );
+    return handleAddQuestionIntent(client, workbookId, "ordering", parseOrderingFormData(formData));
   }
-
   throw new Response(`Unknown intent: ${String(intent)}`, { status: 400 });
 }
 
