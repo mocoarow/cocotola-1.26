@@ -223,9 +223,8 @@ type reclaimStaleResponse struct {
 	Reclaimed int `json:"reclaimed"`
 }
 
-// ReclaimStale asks cocotola-question to transition any "generating" audio
-// entries stuck longer than staleAfter back to "pending". Returns the number
-// of entries reclaimed in this call.
+// ReclaimStale calls cocotola-question's reclaim-stale endpoint and returns
+// the number of audio entries it re-queued.
 func (c *QuestionAPIClient) ReclaimStale(ctx context.Context, staleAfter time.Duration, limit int) (int, error) {
 	body, err := json.Marshal(reclaimStaleRequest{
 		StaleAfterSec: int(staleAfter.Seconds()),

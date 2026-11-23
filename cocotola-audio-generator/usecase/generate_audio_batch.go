@@ -51,10 +51,7 @@ type BatchConfig struct {
 	ContentType string // e.g. "audio/ogg; codecs=opus"
 	ObjectExt   string // e.g. ".opus"
 	Voices      VoiceConfig
-	// StaleAfter is how long an audio entry may sit in "generating" state
-	// before the reaper at the start of the batch reclaims it back to
-	// "pending". Set to 0 to skip the reclaim sweep.
-	StaleAfter time.Duration
+	StaleAfter  time.Duration
 }
 
 // GenerateAudioBatch runs a single pass: fetch pending items, claim, synthesize,
@@ -71,16 +68,16 @@ func GenerateAudioBatch(
 	cfg BatchConfig,
 ) (processed int, err error) {
 	if cfg.StaleAfter > 0 {
-		reclaimed, reclaimErr := api.ReclaimStale(ctx, cfg.StaleAfter, cfg.MaxPerRun)
+		requeued, reclaimErr := api.ReclaimStale(ctx, cfg.StaleAfter, cfg.MaxPerRun)
 		if reclaimErr != nil {
 			// A reclaim failure is logged but does not abort the run: pending
 			// items can still be processed; the reclaim sweep will retry next
 			// run.
 			logger.WarnContext(ctx, "reclaim stale failed, continuing",
 				slog.Any("error", reclaimErr))
-		} else if reclaimed > 0 {
-			logger.InfoContext(ctx, "reclaimed stuck items",
-				slog.Int("reclaimed", reclaimed))
+		} else if requeued > 0 {
+			logger.InfoContext(ctx, "requeued audio items",
+				slog.Int("requeued", requeued))
 		}
 	}
 	items, err := api.ListPending(ctx, cfg.MaxPerRun)
