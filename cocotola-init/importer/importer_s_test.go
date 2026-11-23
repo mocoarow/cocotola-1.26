@@ -213,6 +213,28 @@ func Test_Importer_Run_shouldSeedSecondWorkbook_whenFirstWorkbookExceedsLimit(t 
 	require.ErrorIs(t, err, importer.ErrTooManyInvalidNewRows)
 }
 
+func Test_Importer_Run_shouldCheckSecondWorkbookNewRows_whenFirstWorkbookLoadFails(t *testing.T) {
+	t.Parallel()
+
+	// given: the second workbook has 2 rejected of 20 new rows
+	loadErr := errors.New("object not found")
+	second := loadedWorkbook("second")
+	loader := NewMockCSVWorkbookLoader(t)
+	loader.EXPECT().Entries().Return([]seed.CSVWorkbookEntry{entryFor("first"), entryFor("second")})
+	loader.EXPECT().Load(mock.Anything, entryFor("first")).Return(seed.CSVWorkbookSeed{}, loadErr)
+	loader.EXPECT().Load(mock.Anything, entryFor("second")).Return(second, nil)
+	seeder := NewMockWorkbookSeeder(t)
+	seeder.EXPECT().SeedWorkbooks(mock.Anything, testOrganizationID, testSpaceID, []seed.PublicWorkbookSeed{second.Seed}).
+		Return([]seed.WorkbookOutput{{SeedKey: "second", AddedOrderIndexes: indexRange(1, 18), RejectedOrderIndexes: []int32{19, 20}}}, nil)
+	im := importer.NewImporter(testOrganizationID, newFinder(t), loader, seeder)
+
+	// when
+	err := im.Run(context.Background())
+
+	// then
+	require.ErrorIs(t, err, importer.ErrTooManyInvalidNewRows)
+}
+
 func Test_Importer_Run_shouldReturnAllErrors_whenTwoWorkbooksFail(t *testing.T) {
 	t.Parallel()
 
