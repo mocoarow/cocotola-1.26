@@ -1,0 +1,1494 @@
+{
+  "schemaVersion": 1,
+  "takenAt": "2026-11-24T00:12:09.18592049+09:00",
+  "rev": "37eda81def47e75d03a5c45789bd5b750fe17153",
+  "committedAt": "2026-11-24T00:05:03+09:00",
+  "tools": {
+    "repohealth": "v0.0.0-20261123133459-d188564a8b95",
+    "biome": "2.4.10"
+  },
+  "crossArea": {
+    "months": [
+      {
+        "period": "2026-03",
+        "prs": 15,
+        "crossArea": 8,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 0
+          }
+        ]
+      },
+      {
+        "period": "2026-04",
+        "prs": 60,
+        "crossArea": 34,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 17
+          }
+        ]
+      },
+      {
+        "period": "2026-05",
+        "prs": 20,
+        "crossArea": 10,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 3
+          }
+        ]
+      },
+      {
+        "period": "2026-06",
+        "prs": 22,
+        "crossArea": 4,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 2
+          }
+        ]
+      },
+      {
+        "period": "2026-07",
+        "prs": 11,
+        "crossArea": 0,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 0
+          }
+        ]
+      },
+      {
+        "period": "2026-10",
+        "prs": 65,
+        "crossArea": 7,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 3
+          }
+        ]
+      },
+      {
+        "period": "2026-11",
+        "prs": 81,
+        "crossArea": 13,
+        "groups": [
+          {
+            "group": "backend",
+            "crossArea": 4
+          }
+        ]
+      }
+    ],
+    "pairs": [
+      {
+        "a": "auth",
+        "b": "question",
+        "prs": 25
+      },
+      {
+        "a": "auth",
+        "b": "init",
+        "prs": 22
+      },
+      {
+        "a": "question",
+        "b": "web",
+        "prs": 20
+      },
+      {
+        "a": "auth",
+        "b": "lib",
+        "prs": 16
+      },
+      {
+        "a": "lib",
+        "b": "question",
+        "prs": 15
+      },
+      {
+        "a": "init",
+        "b": "question",
+        "prs": 13
+      },
+      {
+        "a": "app",
+        "b": "question",
+        "prs": 12
+      },
+      {
+        "a": "auth",
+        "b": "web",
+        "prs": 12
+      },
+      {
+        "a": "app",
+        "b": "auth",
+        "prs": 10
+      },
+      {
+        "a": "init",
+        "b": "lib",
+        "prs": 9
+      },
+      {
+        "a": "audio-generator",
+        "b": "question",
+        "prs": 5
+      },
+      {
+        "a": "init",
+        "b": "web",
+        "prs": 5
+      },
+      {
+        "a": "lib",
+        "b": "web",
+        "prs": 5
+      },
+      {
+        "a": "app",
+        "b": "web",
+        "prs": 4
+      },
+      {
+        "a": "audio-generator",
+        "b": "lib",
+        "prs": 4
+      },
+      {
+        "a": "audio-generator",
+        "b": "web",
+        "prs": 4
+      },
+      {
+        "a": "test",
+        "b": "web",
+        "prs": 4
+      },
+      {
+        "a": "audio-generator",
+        "b": "auth",
+        "prs": 3
+      },
+      {
+        "a": "audio-generator",
+        "b": "init",
+        "prs": 3
+      },
+      {
+        "a": "empty",
+        "b": "lib",
+        "prs": 3
+      },
+      {
+        "a": "question",
+        "b": "test",
+        "prs": 3
+      },
+      {
+        "a": "app",
+        "b": "init",
+        "prs": 2
+      },
+      {
+        "a": "app",
+        "b": "lib",
+        "prs": 2
+      },
+      {
+        "a": "empty",
+        "b": "question",
+        "prs": 2
+      },
+      {
+        "a": "app",
+        "b": "empty",
+        "prs": 1
+      },
+      {
+        "a": "auth",
+        "b": "empty",
+        "prs": 1
+      },
+      {
+        "a": "auth",
+        "b": "test",
+        "prs": 1
+      },
+      {
+        "a": "empty",
+        "b": "init",
+        "prs": 1
+      }
+    ]
+  },
+  "hotspots": [
+    {
+      "path": "cocotola-init/initialize/initializer.go",
+      "churn": 26,
+      "recentChurn": 10,
+      "sumCognit": 40,
+      "maxCognit": 8,
+      "score": 1040
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.$workbookId.tsx",
+      "churn": 18,
+      "recentChurn": 9,
+      "sumCognit": 51,
+      "maxCognit": 14,
+      "score": 918
+    },
+    {
+      "path": "cocotola-question/domain/question/question.go",
+      "churn": 15,
+      "recentChurn": 9,
+      "sumCognit": 48,
+      "maxCognit": 13,
+      "score": 720
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.$workbookId.study.tsx",
+      "churn": 21,
+      "recentChurn": 10,
+      "sumCognit": 30,
+      "maxCognit": 9,
+      "score": 630
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.index.tsx",
+      "churn": 18,
+      "recentChurn": 6,
+      "sumCognit": 34,
+      "maxCognit": 11,
+      "score": 612
+    },
+    {
+      "path": "cocotola-init/seed/workbook_seeder.go",
+      "churn": 14,
+      "recentChurn": 10,
+      "sumCognit": 40,
+      "maxCognit": 10,
+      "score": 560
+    },
+    {
+      "path": "cocotola-question/gateway/question_repository.go",
+      "churn": 10,
+      "recentChurn": 4,
+      "sumCognit": 51,
+      "maxCognit": 12,
+      "score": 510
+    },
+    {
+      "path": "cocotola-question/domain/question/content.go",
+      "churn": 9,
+      "recentChurn": 4,
+      "sumCognit": 53,
+      "maxCognit": 12,
+      "score": 477
+    },
+    {
+      "path": "cocotola-question/gateway/auth_client.go",
+      "churn": 17,
+      "recentChurn": 7,
+      "sumCognit": 24,
+      "maxCognit": 5,
+      "score": 408
+    },
+    {
+      "path": "cocotola-question/usecase/workbook/create_workbook_command.go",
+      "churn": 16,
+      "recentChurn": 3,
+      "sumCognit": 24,
+      "maxCognit": 10,
+      "score": 384
+    },
+    {
+      "path": "cocotola-question/service/study/study.go",
+      "churn": 15,
+      "recentChurn": 4,
+      "sumCognit": 23,
+      "maxCognit": 9,
+      "score": 345
+    },
+    {
+      "path": "cocotola-question/usecase/study/record_answer_command.go",
+      "churn": 10,
+      "recentChurn": 4,
+      "sumCognit": 32,
+      "maxCognit": 10,
+      "score": 320
+    },
+    {
+      "path": "cocotola-auth/gateway/space_repository.go",
+      "churn": 14,
+      "recentChurn": 2,
+      "sumCognit": 22,
+      "maxCognit": 4,
+      "score": 308
+    },
+    {
+      "path": "cocotola-web/app/components/workbook/add-question-section.tsx",
+      "churn": 9,
+      "recentChurn": 5,
+      "sumCognit": 33,
+      "maxCognit": 11,
+      "score": 297
+    },
+    {
+      "path": "cocotola-init/seed/csv_converter.go",
+      "churn": 8,
+      "recentChurn": 6,
+      "sumCognit": 36,
+      "maxCognit": 7,
+      "score": 288
+    },
+    {
+      "path": "cocotola-question/usecase/study/get_study_questions_query.go",
+      "churn": 11,
+      "recentChurn": 2,
+      "sumCognit": 26,
+      "maxCognit": 11,
+      "score": 286
+    },
+    {
+      "path": "cocotola-auth/gateway/app_user_repository.go",
+      "churn": 16,
+      "recentChurn": 1,
+      "sumCognit": 14,
+      "maxCognit": 4,
+      "score": 224
+    },
+    {
+      "path": "cocotola-question/gateway/study_record_repository.go",
+      "churn": 10,
+      "recentChurn": 2,
+      "sumCognit": 22,
+      "maxCognit": 11,
+      "score": 220
+    },
+    {
+      "path": "cocotola-question/usecase/question/audio_batch_command.go",
+      "churn": 6,
+      "recentChurn": 4,
+      "sumCognit": 36,
+      "maxCognit": 8,
+      "score": 216
+    },
+    {
+      "path": "cocotola-auth/main.go",
+      "churn": 30,
+      "recentChurn": 5,
+      "sumCognit": 7,
+      "maxCognit": 7,
+      "score": 210
+    },
+    {
+      "path": "cocotola-auth/gateway/group_repository.go",
+      "churn": 14,
+      "recentChurn": 1,
+      "sumCognit": 13,
+      "maxCognit": 4,
+      "score": 182
+    },
+    {
+      "path": "cocotola-question/controller/handler/study/record_answer_handler.go",
+      "churn": 8,
+      "recentChurn": 3,
+      "sumCognit": 21,
+      "maxCognit": 7,
+      "score": 168
+    },
+    {
+      "path": "cocotola-question/gateway/workbook_repository.go",
+      "churn": 8,
+      "recentChurn": 3,
+      "sumCognit": 20,
+      "maxCognit": 8,
+      "score": 160
+    },
+    {
+      "path": "cocotola-question/controller/handler/question/audio_handler.go",
+      "churn": 5,
+      "recentChurn": 3,
+      "sumCognit": 30,
+      "maxCognit": 8,
+      "score": 150
+    },
+    {
+      "path": "cocotola-audio-generator/usecase/generate_audio_batch.go",
+      "churn": 5,
+      "recentChurn": 4,
+      "sumCognit": 29,
+      "maxCognit": 8,
+      "score": 145
+    },
+    {
+      "path": "cocotola-app/main.go",
+      "churn": 18,
+      "recentChurn": 6,
+      "sumCognit": 8,
+      "maxCognit": 8,
+      "score": 144
+    },
+    {
+      "path": "cocotola-question/controller/handler/study/get_study_questions_handler.go",
+      "churn": 9,
+      "recentChurn": 4,
+      "sumCognit": 15,
+      "maxCognit": 6,
+      "score": 135
+    },
+    {
+      "path": "cocotola-auth/domain/group/group_hierarchy.go",
+      "churn": 5,
+      "recentChurn": 1,
+      "sumCognit": 26,
+      "maxCognit": 10,
+      "score": 130
+    },
+    {
+      "path": "cocotola-auth/service/auth/auth.go",
+      "churn": 8,
+      "recentChurn": 2,
+      "sumCognit": 16,
+      "maxCognit": 2,
+      "score": 128
+    },
+    {
+      "path": "cocotola-auth/gateway/supabase_verifier.go",
+      "churn": 7,
+      "recentChurn": 3,
+      "sumCognit": 18,
+      "maxCognit": 9,
+      "score": 126
+    }
+  ],
+  "functions": [
+    {
+      "lang": "go",
+      "file": "cocotola-auth/usecase/space/list_spaces_query.go",
+      "line": 40,
+      "name": "(*ListSpacesQuery).ListSpaces",
+      "cyclo": 12,
+      "cognit": 17
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-init/seed/loader.go",
+      "line": 58,
+      "name": "validateSeeds",
+      "cyclo": 8,
+      "cognit": 15
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-init/seed/manifest.go",
+      "line": 65,
+      "name": "(CSVWorkbookManifest).validate",
+      "cyclo": 9,
+      "cognit": 15
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-lib/process/multiprocess.go",
+      "line": 22,
+      "name": "Run",
+      "cyclo": 8,
+      "cognit": 15
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/controller/middleware/auth_middleware.go",
+      "line": 29,
+      "name": "NewAuthMiddleware",
+      "cyclo": 7,
+      "cognit": 13
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/domain/question/question.go",
+      "line": 129,
+      "name": "(*Question).validateContent",
+      "cyclo": 10,
+      "cognit": 13
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/usecase/auth/validate_access_token_query.go",
+      "line": 49,
+      "name": "(*ValidateAccessTokenQuery).ValidateAccessToken",
+      "cyclo": 10,
+      "cognit": 12
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/domain/question/content.go",
+      "line": 201,
+      "name": "validateChoices",
+      "cyclo": 9,
+      "cognit": 12
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/gateway/question_repository.go",
+      "line": 181,
+      "name": "(*QuestionRepository).Create",
+      "cyclo": 9,
+      "cognit": 12
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/controller/handler/authz/check_handler.go",
+      "line": 48,
+      "name": "(*CheckHandler).Check",
+      "cyclo": 12,
+      "cognit": 11
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/usecase/auth/revoke_token_command.go",
+      "line": 87,
+      "name": "(*RevokeTokenCommand).revokeRefreshToken",
+      "cyclo": 9,
+      "cognit": 11
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/gateway/study_record_repository.go",
+      "line": 176,
+      "name": "deleteStudyRecordDocs",
+      "cyclo": 8,
+      "cognit": 11
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/study/get_study_questions_query.go",
+      "line": 44,
+      "name": "(*GetStudyQuestionsQuery).GetStudyQuestions",
+      "cyclo": 9,
+      "cognit": 11
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-audio-generator/main.go",
+      "line": 37,
+      "name": "run",
+      "cyclo": 9,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/domain/group/group_hierarchy.go",
+      "line": 127,
+      "name": "(*Hierarchy).hasPath",
+      "cyclo": 6,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/usecase/auth/supabase_exchange_command.go",
+      "line": 82,
+      "name": "(*SupabaseExchangeCommand).findOrCreateUserAndLink",
+      "cyclo": 10,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-init/gateway/question_api_client.go",
+      "line": 160,
+      "name": "(*QuestionAPIClient).do",
+      "cyclo": 9,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-init/main.go",
+      "line": 29,
+      "name": "run",
+      "cyclo": 10,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-init/seed/workbook_seeder.go",
+      "line": 204,
+      "name": "(*WorkbookSeeder).ensureQuestions",
+      "cyclo": 7,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/domain/question/content.go",
+      "line": 78,
+      "name": "(*MultipleChoiceContent).EvaluateAnswer",
+      "cyclo": 8,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/domain/question/content.go",
+      "line": 106,
+      "name": "(*WordFillContent).Validate",
+      "cyclo": 10,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/question/list_questions_query.go",
+      "line": 28,
+      "name": "(*ListQuestionsQuery).ListQuestions",
+      "cyclo": 8,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/study/get_study_summary_query.go",
+      "line": 41,
+      "name": "(*GetStudySummaryQuery).GetStudySummary",
+      "cyclo": 8,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/study/list_study_records_query.go",
+      "line": 33,
+      "name": "(*ListStudyRecordsQuery).ListStudyRecords",
+      "cyclo": 8,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/study/record_answer_command.go",
+      "line": 152,
+      "name": "(*RecordAnswerCommand).RecordAnswer",
+      "cyclo": 10,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/workbook/create_workbook_command.go",
+      "line": 53,
+      "name": "(*CreateWorkbookCommand).CreateWorkbook",
+      "cyclo": 11,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-question/usecase/workbook/update_workbook_command.go",
+      "line": 30,
+      "name": "(*UpdateWorkbookCommand).UpdateWorkbook",
+      "cyclo": 11,
+      "cognit": 10
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/gateway/supabase_verifier.go",
+      "line": 90,
+      "name": "(*SupabaseVerifier).Verify",
+      "cyclo": 9,
+      "cognit": 9
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/gateway/versioned_root.go",
+      "line": 81,
+      "name": "saveVersionedMembers",
+      "cyclo": 6,
+      "cognit": 9
+    },
+    {
+      "lang": "go",
+      "file": "cocotola-auth/usecase/auth/create_token_pair_command.go",
+      "line": 52,
+      "name": "(*CreateTokenPairCommand).CreateTokenPair",
+      "cyclo": 10,
+      "cognit": 9
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/hooks/use-study-resume.ts",
+      "line": 50,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 15
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.$workbookId.tsx",
+      "line": 252,
+      "name": "WorkbookDetail",
+      "cyclo": 0,
+      "cognit": 14
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/question-types/ordering/keyboard.ts",
+      "line": 101,
+      "name": "keyAction",
+      "cyclo": 0,
+      "cognit": 12
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/auth.callback.tsx",
+      "line": 15,
+      "name": "loader",
+      "cyclo": 0,
+      "cognit": 12
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/workbook/add-question-section.tsx",
+      "line": 253,
+      "name": "AddQuestionSection",
+      "cyclo": 0,
+      "cognit": 11
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/lib/observability/tracing.server.ts",
+      "line": 23,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 11
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/lib/study-session.ts",
+      "line": 105,
+      "name": "parseState",
+      "cyclo": 0,
+      "cognit": 11
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.$workbookId.tsx",
+      "line": 70,
+      "name": "handleUpdateTitleIntent",
+      "cyclo": 0,
+      "cognit": 11
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.index.tsx",
+      "line": 64,
+      "name": "handleCreateIntent",
+      "cyclo": 0,
+      "cognit": 11
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/question-types/ordering/answer-line.tsx",
+      "line": 73,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 10
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/start-study-dialog.tsx",
+      "line": 31,
+      "name": "StartStudyDialog",
+      "cyclo": 0,
+      "cognit": 10
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/settings.tsx",
+      "line": 210,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 10
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/question-types/word-fill/use-blank-inputs.ts",
+      "line": 22,
+      "name": "handleInputChange",
+      "cyclo": 0,
+      "cognit": 9
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/root.tsx",
+      "line": 72,
+      "name": "ErrorBoundary",
+      "cyclo": 0,
+      "cognit": 9
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.$workbookId.study.tsx",
+      "line": 112,
+      "name": "action",
+      "cyclo": 0,
+      "cognit": 9
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/question-types/ordering/chip-focus.ts",
+      "line": 45,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/start-study-dialog.tsx",
+      "line": 56,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/workbook/word-fill-edit-form.tsx",
+      "line": 9,
+      "name": "WordFillEditForm",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/i18n/config.ts",
+      "line": 42,
+      "name": "detectLanguageFromRequest",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/settings.tsx",
+      "line": 168,
+      "name": "SettingsPage",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/signup.tsx",
+      "line": 18,
+      "name": "action",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.index.tsx",
+      "line": 104,
+      "name": "action",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.public.tsx",
+      "line": 47,
+      "name": "action",
+      "cyclo": 0,
+      "cognit": 8
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/study/question-types/multiple-choice/body.tsx",
+      "line": 14,
+      "name": "choiceStyle",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/workbook/multiple-choice-edit-form.tsx",
+      "line": 11,
+      "name": "MultipleChoiceEditForm",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/workbook/schemas.ts",
+      "line": 93,
+      "name": "parseMultipleChoiceFormData",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/lib/study-session.ts",
+      "line": 36,
+      "name": "clampExcludeIds",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/settings.tsx",
+      "line": 90,
+      "name": "handleStudyIntent",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/routes/workbooks.$workbookId.tsx",
+      "line": 211,
+      "name": "action",
+      "cyclo": 0,
+      "cognit": 7
+    },
+    {
+      "lang": "ts",
+      "file": "cocotola-web/app/components/dashboard/contribution-graph.tsx",
+      "line": 137,
+      "name": "(anonymous)",
+      "cyclo": 0,
+      "cognit": 6
+    }
+  ],
+  "areaImports": [
+    {
+      "from": "auth",
+      "to": "lib",
+      "imports": 37
+    },
+    {
+      "from": "question",
+      "to": "lib",
+      "imports": 25
+    },
+    {
+      "from": "app",
+      "to": "lib",
+      "imports": 7
+    },
+    {
+      "from": "empty",
+      "to": "lib",
+      "imports": 5
+    },
+    {
+      "from": "init",
+      "to": "auth",
+      "imports": 5
+    },
+    {
+      "from": "init",
+      "to": "lib",
+      "imports": 5
+    },
+    {
+      "from": "app",
+      "to": "question",
+      "imports": 4
+    },
+    {
+      "from": "app",
+      "to": "auth",
+      "imports": 2
+    }
+  ],
+  "stability": [
+    {
+      "dir": "cocotola-audio-generator/domain",
+      "afferent": 2,
+      "efferent": 0,
+      "instability": 0
+    },
+    {
+      "dir": "cocotola-auth/domain",
+      "afferent": 31,
+      "efferent": 3,
+      "instability": 0.08823529411764706
+    },
+    {
+      "dir": "cocotola-auth/domain/group",
+      "afferent": 2,
+      "efferent": 2,
+      "instability": 0.5
+    },
+    {
+      "dir": "cocotola-auth/domain/rbac",
+      "afferent": 10,
+      "efferent": 1,
+      "instability": 0.09090909090909091
+    },
+    {
+      "dir": "cocotola-auth/domain/space",
+      "afferent": 4,
+      "efferent": 1,
+      "instability": 0.2
+    },
+    {
+      "dir": "cocotola-auth/domain/token",
+      "afferent": 2,
+      "efferent": 1,
+      "instability": 0.3333333333333333
+    },
+    {
+      "dir": "cocotola-auth/domain/user",
+      "afferent": 4,
+      "efferent": 1,
+      "instability": 0.2
+    },
+    {
+      "dir": "cocotola-lib/domain",
+      "afferent": 8,
+      "efferent": 0,
+      "instability": 0
+    },
+    {
+      "dir": "cocotola-lib/domain/audio",
+      "afferent": 1,
+      "efferent": 0,
+      "instability": 0
+    },
+    {
+      "dir": "cocotola-lib/domain/idset",
+      "afferent": 3,
+      "efferent": 0,
+      "instability": 0
+    },
+    {
+      "dir": "cocotola-lib/domain/versioned",
+      "afferent": 8,
+      "efferent": 0,
+      "instability": 0
+    },
+    {
+      "dir": "cocotola-question/domain",
+      "afferent": 19,
+      "efferent": 2,
+      "instability": 0.09523809523809523
+    },
+    {
+      "dir": "cocotola-question/domain/question",
+      "afferent": 6,
+      "efferent": 2,
+      "instability": 0.25
+    },
+    {
+      "dir": "cocotola-question/domain/reference",
+      "afferent": 2,
+      "efferent": 1,
+      "instability": 0.3333333333333333
+    },
+    {
+      "dir": "cocotola-question/domain/study",
+      "afferent": 2,
+      "efferent": 1,
+      "instability": 0.3333333333333333
+    },
+    {
+      "dir": "cocotola-question/domain/workbook",
+      "afferent": 6,
+      "efferent": 2,
+      "instability": 0.25
+    }
+  ],
+  "coverage": {
+    "reports": [
+      {
+        "file": "coverage.lcov",
+        "modTime": "2026-11-24T00:12:05.963838393+09:00",
+        "skipped": 0
+      }
+    ],
+    "layers": [
+      {
+        "area": "app",
+        "layer": "config",
+        "covered": 21,
+        "lines": 27
+      },
+      {
+        "area": "audio-generator",
+        "layer": "config",
+        "covered": 8,
+        "lines": 22
+      },
+      {
+        "area": "audio-generator",
+        "layer": "gateway",
+        "covered": 151,
+        "lines": 252
+      },
+      {
+        "area": "audio-generator",
+        "layer": "usecase",
+        "covered": 151,
+        "lines": 155
+      },
+      {
+        "area": "auth",
+        "layer": "controller",
+        "covered": 844,
+        "lines": 1100
+      },
+      {
+        "area": "auth",
+        "layer": "domain",
+        "covered": 1083,
+        "lines": 1137
+      },
+      {
+        "area": "auth",
+        "layer": "gateway",
+        "covered": 1008,
+        "lines": 1333
+      },
+      {
+        "area": "auth",
+        "layer": "service",
+        "covered": 229,
+        "lines": 229
+      },
+      {
+        "area": "auth",
+        "layer": "usecase",
+        "covered": 833,
+        "lines": 967
+      },
+      {
+        "area": "init",
+        "layer": "config",
+        "covered": 50,
+        "lines": 56
+      },
+      {
+        "area": "init",
+        "layer": "gateway",
+        "covered": 116,
+        "lines": 159
+      },
+      {
+        "area": "init",
+        "layer": "importer",
+        "covered": 79,
+        "lines": 79
+      },
+      {
+        "area": "init",
+        "layer": "initialize",
+        "covered": 252,
+        "lines": 290
+      },
+      {
+        "area": "init",
+        "layer": "seed",
+        "covered": 421,
+        "lines": 479
+      },
+      {
+        "area": "lib",
+        "layer": "controller",
+        "covered": 220,
+        "lines": 239
+      },
+      {
+        "area": "lib",
+        "layer": "domain",
+        "covered": 46,
+        "lines": 46
+      },
+      {
+        "area": "lib",
+        "layer": "gateway",
+        "covered": 415,
+        "lines": 641
+      },
+      {
+        "area": "lib",
+        "layer": "i18n",
+        "covered": 3,
+        "lines": 3
+      },
+      {
+        "area": "lib",
+        "layer": "process",
+        "covered": 29,
+        "lines": 29
+      },
+      {
+        "area": "lib",
+        "layer": "telemetry",
+        "covered": 13,
+        "lines": 16
+      },
+      {
+        "area": "lib",
+        "layer": "usecase",
+        "covered": 8,
+        "lines": 8
+      },
+      {
+        "area": "question",
+        "layer": "config",
+        "covered": 19,
+        "lines": 25
+      },
+      {
+        "area": "question",
+        "layer": "contentjson",
+        "covered": 45,
+        "lines": 45
+      },
+      {
+        "area": "question",
+        "layer": "controller",
+        "covered": 1146,
+        "lines": 1569
+      },
+      {
+        "area": "question",
+        "layer": "domain",
+        "covered": 979,
+        "lines": 994
+      },
+      {
+        "area": "question",
+        "layer": "gateway",
+        "covered": 930,
+        "lines": 1083
+      },
+      {
+        "area": "question",
+        "layer": "initialize",
+        "covered": 88,
+        "lines": 88
+      },
+      {
+        "area": "question",
+        "layer": "service",
+        "covered": 352,
+        "lines": 376
+      },
+      {
+        "area": "question",
+        "layer": "usecase",
+        "covered": 1147,
+        "lines": 1325
+      }
+    ]
+  },
+  "largestFiles": [
+    {
+      "path": "cocotola-auth/service/auth/auth.go",
+      "area": "auth",
+      "lang": "go",
+      "test": false,
+      "lines": 420
+    },
+    {
+      "path": "cocotola-question/service/study/study.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 419
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.$workbookId.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 404
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.$workbookId.study.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 389
+    },
+    {
+      "path": "cocotola-init/initialize/initializer.go",
+      "area": "init",
+      "lang": "go",
+      "test": false,
+      "lines": 377
+    },
+    {
+      "path": "cocotola-web/app/routes/workbooks.index.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 377
+    },
+    {
+      "path": "cocotola-web/app/routes/settings.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 376
+    },
+    {
+      "path": "cocotola-question/domain/question/question.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 368
+    },
+    {
+      "path": "cocotola-question/gateway/question_repository.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 368
+    },
+    {
+      "path": "cocotola-web/app/components/workbook/add-question-section.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 354
+    },
+    {
+      "path": "cocotola-init/seed/workbook_seeder.go",
+      "area": "init",
+      "lang": "go",
+      "test": false,
+      "lines": 327
+    },
+    {
+      "path": "cocotola-init/seed/csv_converter.go",
+      "area": "init",
+      "lang": "go",
+      "test": false,
+      "lines": 322
+    },
+    {
+      "path": "cocotola-question/gateway/auth_client.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 303
+    },
+    {
+      "path": "cocotola-audio-generator/usecase/generate_audio_batch.go",
+      "area": "audio-generator",
+      "lang": "go",
+      "test": false,
+      "lines": 292
+    },
+    {
+      "path": "cocotola-question/controller/handler/question/audio_handler.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 283
+    },
+    {
+      "path": "cocotola-question/domain/question/content.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 257
+    },
+    {
+      "path": "cocotola-audio-generator/gateway/question_client.go",
+      "area": "audio-generator",
+      "lang": "go",
+      "test": false,
+      "lines": 256
+    },
+    {
+      "path": "cocotola-web/app/components/dashboard/contribution-graph.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 252
+    },
+    {
+      "path": "cocotola-auth/main.go",
+      "area": "auth",
+      "lang": "go",
+      "test": false,
+      "lines": 245
+    },
+    {
+      "path": "cocotola-init/gateway/question_api_client.go",
+      "area": "init",
+      "lang": "go",
+      "test": false,
+      "lines": 245
+    },
+    {
+      "path": "cocotola-web/app/components/workbook/question-card.tsx",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 245
+    },
+    {
+      "path": "cocotola-question/domain/question/audio.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 242
+    },
+    {
+      "path": "cocotola-auth/domain/ids.go",
+      "area": "auth",
+      "lang": "go",
+      "test": false,
+      "lines": 240
+    },
+    {
+      "path": "cocotola-test/playwright/tests/helpers/workbook.ts",
+      "area": "test",
+      "lang": "ts",
+      "test": false,
+      "lines": 238
+    },
+    {
+      "path": "cocotola-auth/domain/rbac/authorization.go",
+      "area": "auth",
+      "lang": "go",
+      "test": false,
+      "lines": 229
+    },
+    {
+      "path": "cocotola-question/gateway/study_record_repository.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 220
+    },
+    {
+      "path": "cocotola-web/app/lib/study-session.ts",
+      "area": "web",
+      "lang": "ts",
+      "test": false,
+      "lines": 220
+    },
+    {
+      "path": "cocotola-question/usecase/question/audio_batch_command.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 218
+    },
+    {
+      "path": "cocotola-question/usecase/study/record_answer_command.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 214
+    },
+    {
+      "path": "cocotola-question/controller/handler/study/record_answer_handler.go",
+      "area": "question",
+      "lang": "go",
+      "test": false,
+      "lines": 211
+    }
+  ]
+}
