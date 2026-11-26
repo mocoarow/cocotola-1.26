@@ -48,6 +48,12 @@ func sampleItem() domain.PendingItem {
 	}
 }
 
+func failReasonFor(slot string, cause error) any {
+	return mock.MatchedBy(func(reason string) bool {
+		return strings.Contains(reason, slot) && strings.Contains(reason, cause.Error())
+	})
+}
+
 func Test_GenerateAudioBatch_shouldReturnZero_whenNoPending(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -114,6 +120,82 @@ func Test_GenerateAudioBatch_shouldFailItem_whenSynthesisFails(t *testing.T) {
 	// then: fail is reported via api.Fail (not via the return error)
 	require.NoError(t, err)
 	assert.Equal(t, 1, processed)
+}
+
+func Test_GenerateAudioBatch_shouldFailItem_whenSourceUploadFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: no expectation for the target slot or Complete
+	item := sampleItem()
+	sourceAudio := []byte("source-audio")
+	uploadErr := errors.New("storage unavailable")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, failReasonFor(domain.SlotSource, uploadErr)).Return(nil).Once()
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, item.SourceText, mock.Anything, mock.Anything).Return(sourceAudio, nil).Once()
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, sourceAudio).Return(int64(0), uploadErr).Once()
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_GenerateAudioBatch_shouldFailItem_whenTargetSynthesisFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: no expectation for the target upload or Complete
+	item := sampleItem()
+	sourceAudio := []byte("source-audio")
+	synthErr := errors.New("tts quota exceeded")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, failReasonFor(domain.SlotTarget, synthErr)).Return(nil).Once()
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, item.SourceText, mock.Anything, mock.Anything).Return(sourceAudio, nil).Once()
+	tts.EXPECT().Synthesize(ctx, item.TargetText, mock.Anything, mock.Anything).Return(nil, synthErr).Once()
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, sourceAudio).Return(int64(5), nil).Once()
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_GenerateAudioBatch_shouldFailItem_whenTargetUploadFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: no expectation for Complete
+	item := sampleItem()
+	sourceAudio := []byte("source-audio")
+	targetAudio := []byte("target-audio")
+	uploadErr := errors.New("storage unavailable")
+	api := NewMockQuestionAPI(t)
+	api.EXPECT().ListPending(ctx, mock.Anything).Return([]domain.PendingItem{item}, nil)
+	api.EXPECT().Claim(ctx, item).Return(nil)
+	api.EXPECT().Fail(ctx, item, failReasonFor(domain.SlotTarget, uploadErr)).Return(nil).Once()
+	tts := NewMockTTS(t)
+	tts.EXPECT().Synthesize(ctx, item.SourceText, mock.Anything, mock.Anything).Return(sourceAudio, nil).Once()
+	tts.EXPECT().Synthesize(ctx, item.TargetText, mock.Anything, mock.Anything).Return(targetAudio, nil).Once()
+	storage := NewMockStorage(t)
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, sourceAudio).Return(int64(5), nil).Once()
+	storage.EXPECT().Upload(ctx, mock.Anything, mock.Anything, targetAudio).Return(int64(0), uploadErr).Once()
+
+	// when
+	_, err := usecase.GenerateAudioBatch(ctx, newDiscardLogger(), api, tts, storage, defaultBatchConfig())
+
+	// then
+	require.NoError(t, err)
 }
 
 func Test_GenerateAudioBatch_shouldFailItemWithoutSynthesis_whenLangIsUnsupported(t *testing.T) {
