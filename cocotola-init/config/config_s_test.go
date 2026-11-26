@@ -132,6 +132,20 @@ func Test_LoadConfig_shouldSucceed_whenOwnerIsUnset(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_LoadConfig_shouldReadGoogleTraceProjectID_whenEnvIsSet(t *testing.T) {
+	// given
+	setRequiredEnv(t)
+	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "test-project")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	require.NotNil(t, cfg.Trace.Google)
+	assert.Equal(t, "test-project", cfg.Trace.Google.ProjectID)
+}
+
 func validConfig() *config.Config {
 	return &config.Config{
 		App:      config.InitConfig{OwnerLoginID: "owner", OwnerPassword: "password123"},

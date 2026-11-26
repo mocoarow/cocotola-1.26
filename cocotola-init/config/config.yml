@@ -29,3 +29,5 @@ trace:
   otlp:
     endpoint: ${TRACE_OTLP_ENDPOINT:-localhost:4317}
     insecure: ${TRACE_OTLP_INSECURE:-true}
+  google:
+    projectId: ${TRACE_GOOGLE_PROJECT_ID:-}

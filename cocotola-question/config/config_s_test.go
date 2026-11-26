@@ -131,6 +131,59 @@ func Test_LoadConfig_shouldDisableMeCache_whenEnvIsZero(t *testing.T) {
 	assert.Equal(t, 0, cfg.Auth.MeCacheTTLSec)
 }
 
+func Test_LoadConfig_shouldSampleAllTraces_whenSamplingEnvIsNotSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("TRACE_SAMPLING_PERCENTAGE", "")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 100, cfg.Trace.SamplingPercentage)
+}
+
+func Test_LoadConfig_shouldUseSamplingEnv_whenSamplingEnvIsSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("TRACE_SAMPLING_PERCENTAGE", "10")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, 10, cfg.Trace.SamplingPercentage)
+}
+
+func Test_LoadConfig_shouldReadGoogleTraceProjectID_whenEnvIsSet(t *testing.T) {
+	// given
+	setRequiredConfigEnv(t)
+	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "test-project")
+
+	// when
+	cfg, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+	require.NotNil(t, cfg.Trace.Google)
+	assert.Equal(t, "test-project", cfg.Trace.Google.ProjectID)
+}
+
+func Test_LoadConfig_shouldSucceed_whenGoogleTraceProjectIDIsUnset(t *testing.T) {
+	// given: the default trace exporter is none
+	setRequiredConfigEnv(t)
+	t.Setenv("TRACE_EXPORTER", "")
+	t.Setenv("TRACE_GOOGLE_PROJECT_ID", "")
+
+	// when
+	_, err := config.LoadConfig()
+
+	// then
+	require.NoError(t, err)
+}
+
 func Test_ExpandEnvWithDefaults_shouldReturnEnvValue_whenEnvIsSetAndNoDefault(t *testing.T) {
 	// given
 	t.Setenv("COCOTOLA_TEST_PLAIN_VAR", "plain_value")

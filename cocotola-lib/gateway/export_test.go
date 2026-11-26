@@ -19,6 +19,12 @@ var StringToLogLevel = stringToLogLevel
 // InitTraceSampler exports initTraceSampler for testing.
 var InitTraceSampler = initTraceSampler
 
+// InitTracerExporter exports initTracerExporter for testing.
+var InitTracerExporter = initTracerExporter
+
+// TraceResource exports traceResource for testing.
+var TraceResource = traceResource
+
 // TraceBatchSpanProcessorOptions exports traceBatchSpanProcessorOptions for testing.
 var TraceBatchSpanProcessorOptions = traceBatchSpanProcessorOptions
 

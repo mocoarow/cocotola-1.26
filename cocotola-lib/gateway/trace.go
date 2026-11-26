@@ -2,12 +2,14 @@ package gateway
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/contrib/processors/baggagecopy"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -22,12 +24,18 @@ const (
 	samplingPercentageFull = 100
 	samplingPercentageDiv  = 100.0
 	traceShutdownTimeout   = 5 * time.Second
+	traceExporterGoogle    = "google"
 )
 
 // OTLPTraceConfig holds OTLP trace exporter settings.
 type OTLPTraceConfig struct {
 	Endpoint string `yaml:"endpoint" validate:"required"`
 	Insecure bool   `yaml:"insecure"`
+}
+
+// GoogleTraceConfig holds Cloud Trace exporter settings.
+type GoogleTraceConfig struct {
+	ProjectID string `yaml:"projectId"`
 }
 
 // UptraceTraceConfig holds Uptrace trace exporter settings.
@@ -38,14 +46,29 @@ type UptraceTraceConfig struct {
 
 // TraceConfig holds the exporter type, sampling percentage, and provider-specific settings.
 type TraceConfig struct {
-	Exporter           string              `yaml:"exporter" validate:"required,oneof=otlphttp otlpgrpc uptracehttp stdout none"`
+	Exporter           string              `yaml:"exporter" validate:"required,oneof=otlphttp otlpgrpc uptracehttp google stdout none"`
 	SamplingPercentage int                 `yaml:"samplingPercentage" validate:"gte=0,lte=100"`
 	OTLP               *OTLPTraceConfig    `yaml:"otlp"`
+	Google             *GoogleTraceConfig  `yaml:"google"`
 	Uptrace            *UptraceTraceConfig `yaml:"uptrace"`
+}
+
+// ErrGoogleTraceProjectIDRequired is returned when the google trace exporter has no project ID.
+var ErrGoogleTraceProjectIDRequired = errors.New("trace.google.projectId is required for the google trace exporter")
+
+func traceResource(traceConfig TraceConfig, appName string) *resource.Resource {
+	attrs := []attribute.KeyValue{semconv.ServiceNameKey.String(appName)}
+	if traceConfig.Exporter == traceExporterGoogle && traceConfig.Google != nil {
+		attrs = append(attrs, attribute.String("gcp.project_id", traceConfig.Google.ProjectID))
+	}
+
+	return resource.NewWithAttributes(semconv.SchemaURL, attrs...)
 }
 
 func initTracerExporter(ctx context.Context, traceConfig TraceConfig) (sdktrace.SpanExporter, error) { //nolint:ireturn // returns interface required by OpenTelemetry SDK
 	switch traceConfig.Exporter {
+	case traceExporterGoogle:
+		return initTracerExporterGoogle(ctx, traceConfig)
 	case "otlphttp":
 		return initTracerExporterOTLPHTTP(ctx, traceConfig)
 	case "otlpgrpc":
@@ -95,10 +118,7 @@ func InitTracerProvider(ctx context.Context, traceConfig TraceConfig, appName st
 		sdktrace.WithSpanProcessor(bp),
 		sdktrace.WithSpanProcessor(baggagecopy.NewSpanProcessor(baggagecopy.AllowAllMembers)),
 		sdktrace.WithSampler(sampler),
-		sdktrace.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(appName),
-		)),
+		sdktrace.WithResource(traceResource(traceConfig, appName)),
 	)
 
 	otel.SetTracerProvider(tp)
