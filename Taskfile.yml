@@ -21,7 +21,7 @@ vars:
     - cocotola-audio-generator
   PKGFORBID: github.com/mocoarow/pkgforbid/cmd/pkgforbid@v0.0.0-20250827153920-225ba0cfa5ed
   COMMENTRATIO: github.com/mocoarow/commentratio/cmd/commentratio@v0.1.2
-  REPOHEALTH: github.com/mocoarow/repohealth/cmd/repohealth@v2026-11-23
+  REPOHEALTH: github.com/mocoarow/repohealth/cmd/repohealth@v2026-11-27
 
 tasks:
   init:
@@ -273,7 +273,7 @@ tasks:
       - task: test-web
 
   health:
-    desc: "Refresh coverage.lcov, record a repohealth snapshot and write CSV reports"
+    desc: "Refresh coverage.lcov, record a repohealth snapshot and write the Markdown report"
     preconditions:
       # snapshot checks this too; checking first avoids running test-go for minutes in vain.
       - sh: test -z "$(git status --porcelain --untracked-files=no -- . ':(exclude).repohealth')"
@@ -281,7 +281,7 @@ tasks:
     cmds:
       - task: test-go
       - go run {{ .REPOHEALTH }} snapshot -config repohealth.yml
-      - go run {{ .REPOHEALTH }} report -config repohealth.yml -out .repohealth/report
+      - go run {{ .REPOHEALTH }} markdown -config repohealth.yml -out .repohealth/REPORT.md
 
   test-go-remote:
     cmds:
