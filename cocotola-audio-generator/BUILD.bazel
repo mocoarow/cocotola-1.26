@@ -1,6 +1,7 @@
 load("@rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_oci//oci:defs.bzl", "oci_image", "oci_load", "oci_push")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
+load("//bazel:go_test.bzl", "smart_go_test")
 
 go_library(
     name = "cocotola-audio-generator_lib",
@@ -48,4 +49,20 @@ oci_push(
     remote_tags = ["latest"],
     repository = "us-central1-docker.pkg.dev/mocoarow-cocotola/cocotola-audio-generator/cocotola-audio-generator",
     tags = ["manual"],
+)
+
+smart_go_test(
+    name = "cocotola-audio-generator_test",
+    srcs = [
+        "export_test.go",
+        "main_s_test.go",
+    ],
+    embed = [":cocotola-audio-generator_lib"],
+    deps = [
+        "//cocotola-audio-generator/config",
+        "//cocotola-audio-generator/gateway",
+        "//cocotola-audio-generator/usecase",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
