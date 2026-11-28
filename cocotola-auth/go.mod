@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-auth
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.8.0
@@ -110,7 +110,7 @@ require (
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.47.0 // indirect
-	go.opentelemetry.io/otel/sdk/log v0.21.0 // indirect
+	go.opentelemetry.io/otel/sdk/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/trace v1.47.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
