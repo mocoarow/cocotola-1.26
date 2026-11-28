@@ -182,12 +182,13 @@ func Test_ReconstructWorkbook_shouldReturnWorkbook_withoutValidation(t *testing.
 	id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
 
 	// when
-	wb := workbook.ReconstructWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, 3, createdAt, updatedAt)
+	wb := workbook.ReconstructWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, "vocab-v1", 3, createdAt, updatedAt)
 
 	// then
 	assert.Equal(t, id, wb.ID())
 	assert.Equal(t, title, wb.Title())
 	assert.Equal(t, "ja", wb.Language().Value())
+	assert.Equal(t, "vocab-v1", wb.SeedKey())
 	assert.Equal(t, 3, wb.Version())
 }
 
@@ -307,4 +308,118 @@ func Test_Workbook_Touch_shouldUpdateUpdatedAt(t *testing.T) {
 	// then
 	assert.Equal(t, newUpdatedAt, wb.UpdatedAt())
 	assert.Equal(t, createdAt, wb.CreatedAt())
+}
+
+func Test_Workbook_AssignSeedKey_shouldSetSeedKey_whenWorkbookHasNone(t *testing.T) {
+	t.Parallel()
+
+	// given
+	wb := newValidWorkbook(t)
+
+	// when
+	err := wb.AssignSeedKey("cefr-b1_wordfill-V1")
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "cefr-b1_wordfill-V1", wb.SeedKey())
+}
+
+func Test_Workbook_AssignSeedKey_shouldSucceed_whenSameSeedKeyIsAssignedAgain(t *testing.T) {
+	t.Parallel()
+
+	// given
+	wb := newValidWorkbook(t)
+	require.NoError(t, wb.AssignSeedKey("vocab-v1"))
+
+	// when
+	err := wb.AssignSeedKey("vocab-v1")
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_Workbook_AssignSeedKey_shouldReturnError_whenDifferentSeedKeyIsAlreadyAssigned(t *testing.T) {
+	t.Parallel()
+
+	// given
+	wb := newValidWorkbook(t)
+	require.NoError(t, wb.AssignSeedKey("vocab-v1"))
+
+	// when
+	err := wb.AssignSeedKey("vocab-v2")
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
+}
+
+func Test_Workbook_AssignSeedKey_shouldKeepSeedKey_whenDifferentSeedKeyIsRejected(t *testing.T) {
+	t.Parallel()
+
+	// given
+	wb := newValidWorkbook(t)
+	require.NoError(t, wb.AssignSeedKey("vocab-v1"))
+	require.ErrorIs(t, wb.AssignSeedKey("vocab-v2"), domain.ErrInvalidArgument)
+
+	// when
+	got := wb.SeedKey()
+
+	// then
+	assert.Equal(t, "vocab-v1", got)
+}
+
+func Test_Workbook_AssignSeedKey_shouldReturnError_whenSeedKeyIsInvalid(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		seedKey string
+	}{
+		{name: "empty", seedKey: ""},
+		{name: "space", seedKey: "vocab v1"},
+		{name: "colon", seedKey: "vocab:v1"},
+		{name: "bracket", seedKey: "[seedKey:vocab-v1]"},
+		{name: "multibyte", seedKey: "語彙"},
+		{name: "too long", seedKey: strings.Repeat("a", workbook.MaxSeedKeyLength+1)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			wb := newValidWorkbook(t)
+
+			// when
+			err := wb.AssignSeedKey(tt.seedKey)
+
+			// then
+			require.ErrorIs(t, err, domain.ErrInvalidArgument)
+		})
+	}
+}
+
+func Test_Workbook_AssignSeedKey_shouldSucceed_whenSeedKeyIsAtMaxLength(t *testing.T) {
+	t.Parallel()
+
+	// given
+	wb := newValidWorkbook(t)
+
+	// when
+	err := wb.AssignSeedKey(strings.Repeat("a", workbook.MaxSeedKeyLength))
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_NewWorkbook_shouldHaveNoSeedKey(t *testing.T) {
+	t.Parallel()
+
+	// given
+	id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt := validWorkbookArgs()
+
+	// when
+	wb, err := workbook.NewWorkbook(id, spaceID, ownerID, orgID, title, desc, vis, lang, createdAt, updatedAt)
+
+	// then
+	require.NoError(t, err)
+	assert.Empty(t, wb.SeedKey())
 }

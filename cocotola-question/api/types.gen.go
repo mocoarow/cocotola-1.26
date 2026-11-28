@@ -43,6 +43,7 @@ type AddQuestionRequest struct {
 type CreateWorkbookRequest struct {
 	Description string                          `binding:"max=1000" json:"description,omitempty"`
 	Language    string                          `binding:"required,len=2" json:"language"`
+	SeedKey     string                          `binding:"omitempty,max=100" json:"seedKey,omitempty"`
 	SpaceID     string                          `binding:"required" json:"spaceId"`
 	Title       string                          `binding:"required,max=200" json:"title"`
 	Visibility  CreateWorkbookRequestVisibility `binding:"required,oneof=private public" json:"visibility"`
@@ -262,6 +263,7 @@ type UpdateQuestionRequest struct {
 type UpdateWorkbookRequest struct {
 	Description string                          `binding:"max=1000" json:"description,omitempty"`
 	Language    string                          `binding:"required,len=2" json:"language"`
+	SeedKey     string                          `binding:"omitempty,max=100" json:"seedKey,omitempty"`
 	Title       string                          `binding:"required,max=200" json:"title"`
 	Visibility  UpdateWorkbookRequestVisibility `binding:"required,oneof=private public" json:"visibility"`
 }
@@ -276,6 +278,7 @@ type WorkbookResponse struct {
 	Language       string                     `json:"language"`
 	OrganizationID string                     `json:"organizationId"`
 	OwnerID        string                     `json:"ownerId"`
+	SeedKey        string                     `json:"seedKey"`
 	SpaceID        string                     `json:"spaceId"`
 	Title          string                     `json:"title"`
 	UpdatedAt      time.Time                  `json:"updatedAt"`

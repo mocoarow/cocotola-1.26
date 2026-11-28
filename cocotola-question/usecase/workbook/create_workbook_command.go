@@ -78,9 +78,9 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("generate workbook id: %w", err)
 	}
 	now := time.Now()
-	wb, err := domainworkbook.NewWorkbook(id.String(), input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang, now, now)
+	wb, err := newWorkbook(id.String(), input, visibility, lang, now)
 	if err != nil {
-		return nil, fmt.Errorf("new workbook: %w", err)
+		return nil, fmt.Errorf("build workbook: %w", err)
 	}
 
 	if err := c.reserveOwnedListSlot(ctx, ownedList, wb.ID(), maxWorkbooks); err != nil {
@@ -95,11 +95,24 @@ func (c *CreateWorkbookCommand) CreateWorkbook(ctx context.Context, input *workb
 		return nil, fmt.Errorf("grant workbook policies: %w", err)
 	}
 
-	output, err := workbookservice.NewCreateWorkbookOutput(wb.ID(), wb.SpaceID(), wb.OwnerID(), wb.OrganizationID(), wb.Title(), wb.Description(), wb.Visibility().Value(), wb.Language().Value(), wb.CreatedAt(), wb.UpdatedAt())
+	output, err := workbookservice.NewCreateWorkbookOutput(wb.ID(), wb.SpaceID(), wb.OwnerID(), wb.OrganizationID(), wb.Title(), wb.Description(), wb.Visibility().Value(), wb.Language().Value(), wb.SeedKey(), wb.CreatedAt(), wb.UpdatedAt())
 	if err != nil {
 		return nil, fmt.Errorf("create workbook output: %w", err)
 	}
 	return output, nil
+}
+
+func newWorkbook(id string, input *workbookservice.CreateWorkbookInput, visibility domainworkbook.Visibility, lang domainworkbook.Language, now time.Time) (*domainworkbook.Workbook, error) {
+	wb, err := domainworkbook.NewWorkbook(id, input.SpaceID, input.OperatorID, input.OrganizationID, input.Title, input.Description, visibility, lang, now, now)
+	if err != nil {
+		return nil, fmt.Errorf("new workbook: %w", err)
+	}
+	if input.SeedKey != "" {
+		if err := wb.AssignSeedKey(input.SeedKey); err != nil {
+			return nil, fmt.Errorf("assign seed key: %w", err)
+		}
+	}
+	return wb, nil
 }
 
 func (c *CreateWorkbookCommand) resolveVisibility(ctx context.Context, spaceID string) (domainworkbook.Visibility, error) {

@@ -58,7 +58,7 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		return
 	}
 
-	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, req.Description, string(req.Visibility), req.Language)
+	input, err := workbookservice.NewCreateWorkbookInput(userID, organizationID, req.SpaceID, req.Title, req.Description, string(req.Visibility), req.Language, req.SeedKey)
 	if err != nil {
 		controller.HandleError(ctx, h.logger, c, "new create workbook input", err)
 		return
@@ -79,6 +79,7 @@ func (h *CreateWorkbookHandler) CreateWorkbook(c *gin.Context) {
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),
 		Language:       output.Language,
+		SeedKey:        output.SeedKey,
 		CreatedAt:      output.CreatedAt,
 		UpdatedAt:      output.UpdatedAt,
 	})

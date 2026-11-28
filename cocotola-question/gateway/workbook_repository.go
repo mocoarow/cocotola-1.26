@@ -26,6 +26,7 @@ type workbookRecord struct {
 	Description    string    `firestore:"description"`
 	Visibility     string    `firestore:"visibility"`
 	Language       string    `firestore:"language"`
+	SeedKey        string    `firestore:"seedKey,omitempty"`
 	Version        int       `firestore:"version"`
 	CreatedAt      time.Time `firestore:"createdAt"`
 	UpdatedAt      time.Time `firestore:"updatedAt"`
@@ -44,7 +45,7 @@ func toWorkbookDomain(id string, r *workbookRecord) (*domainworkbook.Workbook, e
 	if err != nil {
 		return nil, fmt.Errorf("invalid language %q: %w", r.Language, err)
 	}
-	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, lang, r.Version, r.CreatedAt, r.UpdatedAt), nil
+	return domainworkbook.ReconstructWorkbook(id, r.SpaceID, r.OwnerID, r.OrganizationID, r.Title, r.Description, vis, lang, r.SeedKey, r.Version, r.CreatedAt, r.UpdatedAt), nil
 }
 
 func toWorkbookRecord(wb *domainworkbook.Workbook, version int) workbookRecord {
@@ -56,6 +57,7 @@ func toWorkbookRecord(wb *domainworkbook.Workbook, version int) workbookRecord {
 		Description:    wb.Description(),
 		Visibility:     wb.Visibility().Value(),
 		Language:       wb.Language().Value(),
+		SeedKey:        wb.SeedKey(),
 		Version:        version,
 		CreatedAt:      wb.CreatedAt(),
 		UpdatedAt:      wb.UpdatedAt(),

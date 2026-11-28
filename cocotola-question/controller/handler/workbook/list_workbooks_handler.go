@@ -81,6 +81,7 @@ func (h *ListWorkbooksHandler) ListWorkbooks(c *gin.Context) {
 			Description:    wb.Description,
 			Visibility:     api.WorkbookResponseVisibility(wb.Visibility),
 			Language:       wb.Language,
+			SeedKey:        wb.SeedKey,
 			CreatedAt:      wb.CreatedAt,
 			UpdatedAt:      wb.UpdatedAt,
 		}

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,11 +64,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldCreateAllWorkbooksAndQu
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
-		return input.Title == "Vocabulary" && strings.Contains(input.Description, "[seedKey:vocab-v1]")
-	})).Return("wb-Vocabulary", nil)
+		return input.Title == "Vocabulary" && input.SeedKey == "vocab-v1"
+	})).Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Vocabulary", SeedKey: "vocab-v1"}, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
-		return input.Title == "Grammar" && strings.Contains(input.Description, "[seedKey:grammar-v1]")
-	})).Return("wb-Grammar", nil)
+		return input.Title == "Grammar" && input.SeedKey == "grammar-v1"
+	})).Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Grammar", SeedKey: "grammar-v1"}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.MatchedBy(func(input seed.AddQuestionInput) bool {
@@ -100,8 +99,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldBeIdempotent_onSecondRu
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return([]seed.WorkbookListItem{
-			{WorkbookID: "wb-Vocabulary", Title: "Vocabulary", Description: "vocab desc [seedKey:vocab-v1]"},
-			{WorkbookID: "wb-Grammar", Title: "Grammar", Description: "grammar desc [seedKey:grammar-v1]"},
+			{WorkbookID: "wb-Vocabulary", Title: "Vocabulary", Description: "vocab desc", SeedKey: "vocab-v1"},
+			{WorkbookID: "wb-Grammar", Title: "Grammar", Description: "grammar desc", SeedKey: "grammar-v1"},
 		}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return([]seed.QuestionListItem{
@@ -118,11 +117,11 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldBeIdempotent_onSecondRu
 	// when
 	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
 
-	// then: no CreateWorkbook or AddQuestion calls
+	// then: no CreateWorkbook, UpdateWorkbook or AddQuestion calls
 	require.NoError(t, err)
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_byDescriptionSeedKey_evenWhenTitleChanges(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_bySeedKey_evenWhenTitleChanges(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -132,7 +131,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldDetectExistingWorkbook_
 		Return([]seed.WorkbookListItem{{
 			WorkbookID:  "wb-existing",
 			Title:       "Old Vocabulary Title",
-			Description: "any free text [seedKey:vocab-v1]",
+			Description: "any free text",
+			SeedKey:     "vocab-v1",
 		}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return(nil, nil)
@@ -177,7 +177,7 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldReportPositionsAndMaxExistingOrderI
 	// given: q1 and q2 were imported before
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
-		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", Description: "[seedKey:vocab-v1]"}}, nil)
+		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", SeedKey: "vocab-v1"}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return([]seed.QuestionListItem{
 			{QuestionID: "q-1", Tags: []string{"seed-vocab-v1:q1"}},
@@ -225,7 +225,7 @@ func Test_WorkbookSeeder_SeedWorkbooks_shouldLogToInjectedLogger_whenWorkbookAlr
 	// given
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
-		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", Description: "[seedKey:vocab-v1]"}}, nil)
+		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", SeedKey: "vocab-v1"}}, nil)
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	seeder := seed.NewWorkbookSeeder(client, existingVocabularyEnsurer(ctx, t), logger)
@@ -243,13 +243,14 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldNotReAddExistingQuestio
 	t.Parallel()
 	ctx := context.Background()
 
-	// given: workbook exists with seedKey marker, and one of its two questions already exists
+	// given: workbook exists with the seed key, and one of its two questions already exists
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return([]seed.WorkbookListItem{{
 			WorkbookID:  "wb-existing",
 			Title:       "Vocabulary",
-			Description: "vocab desc [seedKey:vocab-v1]",
+			Description: "vocab desc",
+			SeedKey:     "vocab-v1",
 		}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").
 		Return([]seed.QuestionListItem{{
@@ -303,7 +304,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenCreateW
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
-		Return("", createErr)
+		Return(seed.CreateWorkbookOutput{}, createErr)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 
@@ -360,7 +361,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnError_whenEnsureP
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
-		Return("wb-Vocabulary", nil)
+		Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Vocabulary", SeedKey: "vocab-v1"}, nil)
 
 	ensurer := NewMockWorkbookPolicyEnsurer(t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Vocabulary").
@@ -381,7 +382,7 @@ func existingVocabularyClient(ctx context.Context, t *testing.T) *MockWorkbookAP
 	t.Helper()
 	client := NewMockWorkbookAPIClient(t)
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
-		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", Description: "[seedKey:vocab-v1]"}}, nil)
+		Return([]seed.WorkbookListItem{{WorkbookID: "wb-existing", SeedKey: "vocab-v1"}}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-existing").Return(nil, nil)
 	return client
 }
@@ -428,7 +429,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSeedLaterWorkbooks_when
 		Return(nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
 		return input.Title == "Grammar"
-	})).Return("wb-Grammar", nil)
+	})).Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Grammar", SeedKey: "grammar-v1"}, nil)
 	ensurer := existingVocabularyEnsurer(ctx, t)
 	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-Grammar").Return(nil)
 	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, ensurer, discardLogger()), sampleSeeds())
@@ -468,7 +469,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
-		Return("wb-Vocabulary", nil)
+		Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Vocabulary", SeedKey: "vocab-v1"}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
@@ -496,7 +497,7 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmitQuestionTagsMatchin
 	}
 }
 
-func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDescription(t *testing.T) {
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldSendDescriptionAsIs_onCreate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
@@ -505,8 +506,8 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDe
 	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
 		Return(nil, nil)
 	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.MatchedBy(func(input seed.CreateWorkbookInput) bool {
-		return strings.HasSuffix(input.Description, "[seedKey:vocab-v1]")
-	})).Return("wb-Vocabulary", nil)
+		return input.Description == "vocab desc"
+	})).Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Vocabulary", SeedKey: "vocab-v1"}, nil)
 	client.EXPECT().ListQuestions(ctx, testOrgID, "wb-Vocabulary").
 		Return(nil, nil)
 	client.EXPECT().AddQuestion(ctx, testOrgID, "wb-Vocabulary", mock.Anything).
@@ -522,4 +523,400 @@ func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldEmbedSeedKeyMarker_inDe
 
 	// then
 	require.NoError(t, err)
+}
+
+func Test_PublicWorkbookSeeder_SeedPublicWorkbooks_shouldReturnErrSeedKeyNotStored_whenCreateResponseLacksSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a question service that predates the seedKey field drops it
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return(nil, nil)
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
+		Return(seed.CreateWorkbookOutput{WorkbookID: "wb-Vocabulary", SeedKey: ""}, nil)
+
+	seeder := seed.NewPublicWorkbookSeeder(seed.NewWorkbookSeeder(client, NewMockWorkbookPolicyEnsurer(t), discardLogger()), sampleSeeds()[:1])
+
+	// when
+	err := seeder.SeedPublicWorkbooks(ctx, testOrgID, testPublicSpaceID)
+
+	// then
+	require.ErrorIs(t, err, seed.ErrSeedKeyNotStored)
+}
+
+const legacyDescription = "vocab desc [seedKey:vocab-v1]"
+
+func legacyWorkbook() seed.WorkbookListItem {
+	return seed.WorkbookListItem{
+		WorkbookID:  "wb-legacy",
+		Title:       "Old Title",
+		Description: legacyDescription,
+		Visibility:  "public",
+		Language:    "ja",
+		SeedKey:     "",
+	}
+}
+
+func questionlessVocabularySeeds() []seed.PublicWorkbookSeed {
+	return []seed.PublicWorkbookSeed{{SeedKey: "vocab-v1", Title: "Vocabulary", Description: "vocab desc", Language: "ja"}}
+}
+
+func legacyWorkbookEnsurer(ctx context.Context, t *testing.T) *MockWorkbookPolicyEnsurer {
+	t.Helper()
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-legacy").Return(nil)
+	return ensurer
+}
+
+func updateWithDescription(description string) any {
+	return mock.MatchedBy(func(input seed.UpdateWorkbookInput) bool { return input.Description == description })
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldAssignSeedKeyWithoutChangingDescription_whenWorkbookHasLegacyMarker(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", seed.UpdateWorkbookInput{
+		Title:       "Old Title",
+		Description: legacyDescription,
+		Visibility:  "public",
+		Language:    "ja",
+		SeedKey:     "vocab-v1",
+	}).Return("vocab-v1", nil).Once()
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", mock.Anything).Return("vocab-v1", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then: no CreateWorkbook call
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldRemoveMarker_afterSeedKeyIsStored(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription(legacyDescription)).Return("vocab-v1", nil).Once()
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", seed.UpdateWorkbookInput{
+		Title:       "Old Title",
+		Description: "vocab desc",
+		Visibility:  "public",
+		Language:    "ja",
+		SeedKey:     "vocab-v1",
+	}).Return("vocab-v1", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldKeepMarker_whenAssignResponseLacksSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: a question service that predates the seedKey field drops it; a second update would fail the mock
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription(legacyDescription)).Return("", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.ErrorIs(t, err, seed.ErrSeedKeyNotStored)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldOnlyRemoveMarker_whenSeedKeyIsAlreadyStored(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: an earlier run stored the seed key but stopped before removing the marker
+	halfMigrated := legacyWorkbook()
+	halfMigrated.SeedKey = "vocab-v1"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{halfMigrated}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription("vocab desc")).Return("vocab-v1", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldEnsurePolicies_beforeMigratingSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	var calls []string
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", mock.Anything).
+		Run(func(_ context.Context, _, _ string, _ seed.UpdateWorkbookInput) { calls = append(calls, "update") }).
+		Return("vocab-v1", nil).Times(2)
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-legacy").
+		Run(func(_ context.Context, _, _ string) { calls = append(calls, "policies") }).
+		Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, ensurer, discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, []string{"policies", "update", "update"}, calls)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReturnError_whenMigrationUpdateFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	updateErr := errors.New("conflict")
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", mock.Anything).Return("", updateErr).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.ErrorIs(t, err, updateErr)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldUseWorkbookWithSeedKeyField_whenLegacyMarkerHasSameSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the legacy workbook is listed first; neither is updated
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{legacyWorkbook(), {WorkbookID: "wb-migrated", Description: "vocab desc", SeedKey: "vocab-v1"}}, nil)
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-migrated").Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, ensurer, discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_RemoveSeedKeyMarker_shouldRemoveMarkerAndSeparatingSpace_whenDescriptionHasMarker(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		description string
+		want        string
+	}{
+		{name: "after text", description: "vocab desc [seedKey:vocab-v1]", want: "vocab desc"},
+		{name: "marker only", description: "[seedKey:vocab-v1]", want: ""},
+		{name: "between text", description: "vocab [seedKey:vocab-v1] desc", want: "vocab desc"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			description := tt.description
+
+			// when
+			got, found := seed.RemoveSeedKeyMarker(description, "vocab-v1")
+
+			// then
+			require.True(t, found)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_RemoveSeedKeyMarker_shouldReportNotFound_whenDescriptionHasNoMarker(t *testing.T) {
+	t.Parallel()
+
+	// given
+	description := "vocab desc"
+
+	// when
+	_, found := seed.RemoveSeedKeyMarker(description, "vocab-v1")
+
+	// then
+	assert.False(t, found)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReturnErrSeedKeyNotStored_whenMarkerRemovalResponseLacksSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	halfMigrated := legacyWorkbook()
+	halfMigrated.SeedKey = "vocab-v1"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{halfMigrated}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription("vocab desc")).Return("", nil).Once()
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", mock.Anything).Return("", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.ErrorIs(t, err, seed.ErrSeedKeyNotStored)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldPutMarkerBack_whenMarkerRemovalResponseLacksSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: an old question service revision dropped both the marker and the seed key
+	halfMigrated := legacyWorkbook()
+	halfMigrated.SeedKey = "vocab-v1"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{halfMigrated}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription("vocab desc")).Return("", nil).Once()
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", seed.UpdateWorkbookInput{
+		Title:       "Old Title",
+		Description: legacyDescription,
+		Visibility:  "public",
+		Language:    "ja",
+		SeedKey:     "vocab-v1",
+	}).Return("", nil).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.ErrorIs(t, err, seed.ErrSeedKeyNotStored)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldUseFirstListedWorkbook_whenSeedKeyFieldIsDuplicated(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{
+			{WorkbookID: "wb-first", Description: "vocab desc", SeedKey: "vocab-v1"},
+			{WorkbookID: "wb-second", Description: "vocab desc", SeedKey: "vocab-v1"},
+		}, nil)
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-first").Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, ensurer, discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldNotUpdate_whenOnlyMarkerOfOtherSeedKeyRemains(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: an UpdateWorkbook call would fail the mock
+	migrated := legacyWorkbook()
+	migrated.SeedKey = "vocab-v1"
+	migrated.Description = "vocab desc [seedKey:other-v1]"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{migrated}, nil)
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldNotUpdate_whenWorkbookWasJustCreated(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: the seed's own description carries its marker; an UpdateWorkbook call would fail the mock
+	seeds := []seed.PublicWorkbookSeed{{SeedKey: "vocab-v1", Title: "Vocabulary", Description: legacyDescription, Language: "ja"}}
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return(nil, nil)
+	client.EXPECT().CreateWorkbook(ctx, testOrgID, mock.Anything).
+		Return(seed.CreateWorkbookOutput{WorkbookID: "wb-new", SeedKey: "vocab-v1"}, nil)
+	ensurer := NewMockWorkbookPolicyEnsurer(t)
+	ensurer.EXPECT().EnsureSystemOwnerWorkbookPolicies(ctx, testOrgID, "wb-new").Return(nil)
+	seeder := seed.NewWorkbookSeeder(client, ensurer, discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, seeds)
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldMigrateLastListedWorkbook_whenLegacyMarkerIsDuplicated(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	first := legacyWorkbook()
+	first.WorkbookID = "wb-first"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{first, legacyWorkbook()}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", mock.Anything).Return("vocab-v1", nil).Times(2)
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_WorkbookSeeder_SeedWorkbooks_shouldReturnRestoreError_whenPuttingMarkerBackFails(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	restoreErr := errors.New("connection reset")
+	halfMigrated := legacyWorkbook()
+	halfMigrated.SeedKey = "vocab-v1"
+	client := NewMockWorkbookAPIClient(t)
+	client.EXPECT().ListWorkbooks(ctx, testOrgID, testPublicSpaceID).
+		Return([]seed.WorkbookListItem{halfMigrated}, nil)
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription("vocab desc")).Return("", nil).Once()
+	client.EXPECT().UpdateWorkbook(ctx, testOrgID, "wb-legacy", updateWithDescription(legacyDescription)).Return("", restoreErr).Once()
+	seeder := seed.NewWorkbookSeeder(client, legacyWorkbookEnsurer(ctx, t), discardLogger())
+
+	// when
+	_, err := seeder.SeedWorkbooks(ctx, testOrgID, testPublicSpaceID, questionlessVocabularySeeds())
+
+	// then
+	require.ErrorIs(t, err, restoreErr)
 }

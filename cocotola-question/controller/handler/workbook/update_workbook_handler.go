@@ -65,7 +65,7 @@ func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 		return
 	}
 
-	input, err := workbookservice.NewUpdateWorkbookInput(userID, organizationID, workbookID, req.Title, req.Description, string(req.Visibility), req.Language)
+	input, err := workbookservice.NewUpdateWorkbookInput(userID, organizationID, workbookID, req.Title, req.Description, string(req.Visibility), req.Language, req.SeedKey)
 	if err != nil {
 		controller.HandleError(ctx, h.logger, c, "new update workbook input", err)
 		return
@@ -86,6 +86,7 @@ func (h *UpdateWorkbookHandler) UpdateWorkbook(c *gin.Context) {
 		Description:    output.Description,
 		Visibility:     api.WorkbookResponseVisibility(output.Visibility),
 		Language:       output.Language,
+		SeedKey:        output.SeedKey,
 		CreatedAt:      output.CreatedAt,
 		UpdatedAt:      output.UpdatedAt,
 	})

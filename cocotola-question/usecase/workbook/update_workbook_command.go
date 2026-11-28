@@ -49,24 +49,9 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 		return nil, domain.ErrForbidden
 	}
 
-	if err := wb.UpdateTitle(input.Title); err != nil {
-		return nil, fmt.Errorf("update title: %w", err)
+	if err := applyWorkbookUpdate(wb, input); err != nil {
+		return nil, fmt.Errorf("apply workbook update: %w", err)
 	}
-	if err := wb.UpdateDescription(input.Description); err != nil {
-		return nil, fmt.Errorf("update description: %w", err)
-	}
-
-	vis, err := domainworkbook.NewVisibility(input.Visibility)
-	if err != nil {
-		return nil, fmt.Errorf("new visibility: %w", err)
-	}
-	wb.ChangeVisibility(vis)
-
-	lang, err := domainworkbook.NewLanguage(input.Language)
-	if err != nil {
-		return nil, fmt.Errorf("new language: %w", err)
-	}
-	wb.ChangeLanguage(lang)
 
 	wb.Touch(time.Now())
 
@@ -84,8 +69,37 @@ func (c *UpdateWorkbookCommand) UpdateWorkbook(ctx context.Context, input *workb
 			Description:    wb.Description(),
 			Visibility:     wb.Visibility().Value(),
 			Language:       wb.Language().Value(),
+			SeedKey:        wb.SeedKey(),
 			CreatedAt:      wb.CreatedAt(),
 			UpdatedAt:      wb.UpdatedAt(),
 		},
 	}, nil
+}
+
+func applyWorkbookUpdate(wb *domainworkbook.Workbook, input *workbookservice.UpdateWorkbookInput) error {
+	if err := wb.UpdateTitle(input.Title); err != nil {
+		return fmt.Errorf("update title: %w", err)
+	}
+	if err := wb.UpdateDescription(input.Description); err != nil {
+		return fmt.Errorf("update description: %w", err)
+	}
+
+	vis, err := domainworkbook.NewVisibility(input.Visibility)
+	if err != nil {
+		return fmt.Errorf("new visibility: %w", err)
+	}
+	wb.ChangeVisibility(vis)
+
+	lang, err := domainworkbook.NewLanguage(input.Language)
+	if err != nil {
+		return fmt.Errorf("new language: %w", err)
+	}
+	wb.ChangeLanguage(lang)
+
+	if input.SeedKey != "" {
+		if err := wb.AssignSeedKey(input.SeedKey); err != nil {
+			return fmt.Errorf("assign seed key: %w", err)
+		}
+	}
+	return nil
 }

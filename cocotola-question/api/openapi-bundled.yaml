@@ -1532,6 +1532,12 @@ components:
           x-oapi-codegen-extra-tags:
             binding: required,len=2
           pattern: ^[a-z]{2}$
+        seedKey:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: omitempty,max=100
+          maxLength: 100
+          pattern: ^[a-zA-Z0-9_-]+$
       required:
         - spaceId
         - title
@@ -1564,6 +1570,12 @@ components:
           x-oapi-codegen-extra-tags:
             binding: required,len=2
           pattern: ^[a-z]{2}$
+        seedKey:
+          type: string
+          x-oapi-codegen-extra-tags:
+            binding: omitempty,max=100
+          maxLength: 100
+          pattern: ^[a-zA-Z0-9_-]+$
       required:
         - title
         - visibility
@@ -1601,6 +1613,10 @@ components:
         language:
           type: string
           pattern: ^[a-z]{2}$
+        seedKey:
+          type: string
+          maxLength: 100
+          pattern: ^[a-zA-Z0-9_-]*$
         createdAt:
           type: string
           format: date-time
@@ -1616,6 +1632,7 @@ components:
         - description
         - visibility
         - language
+        - seedKey
         - createdAt
         - updatedAt
     ListWorkbooksResponse:

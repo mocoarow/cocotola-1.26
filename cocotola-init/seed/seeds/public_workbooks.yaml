@@ -1,8 +1,8 @@
 ---
 # Public workbook seeds.
 #
-# Idempotency: workbook identity is the seedKey, embedded in the workbook
-# description as `[seedKey:<value>]`. Question identity is the per-workbook
+# Idempotency: workbook identity is the seedKey, stored in the workbook's
+# seedKey field. Question identity is the per-workbook
 # seedKey, embedded as a tag `seed-<workbookSeedKey>:<questionSeedKey>`.
 # Renaming a Title or Description is safe (the workbook is matched by
 # seedKey, not by Title). Renaming a seedKey creates a new entity.

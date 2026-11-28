@@ -54,6 +54,7 @@ func (q *GetWorkbookQuery) GetWorkbook(ctx context.Context, input *workbookservi
 			Description:    wb.Description(),
 			Visibility:     wb.Visibility().Value(),
 			Language:       wb.Language().Value(),
+			SeedKey:        wb.SeedKey(),
 			CreatedAt:      wb.CreatedAt(),
 			UpdatedAt:      wb.UpdatedAt(),
 		},

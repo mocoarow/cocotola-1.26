@@ -21,6 +21,7 @@ type workbookFields struct {
 	description    string
 	visibility     string
 	language       string
+	seedKey        string
 }
 
 func validWorkbookFields() workbookFields {
@@ -32,6 +33,7 @@ func validWorkbookFields() workbookFields {
 		description:    "A description",
 		visibility:     "private",
 		language:       "en",
+		seedKey:        "vocab-v1",
 	}
 }
 
@@ -47,6 +49,10 @@ func validWorkbookFieldVariants() []struct {
 	emptyDescription.description = ""
 	public := validWorkbookFields()
 	public.visibility = "public"
+	seedKeyAtMax := validWorkbookFields()
+	seedKeyAtMax.seedKey = strings.Repeat("s", 100)
+	emptySeedKey := validWorkbookFields()
+	emptySeedKey.seedKey = ""
 
 	return []struct {
 		name   string
@@ -57,6 +63,8 @@ func validWorkbookFieldVariants() []struct {
 		{name: "description at max length", fields: descriptionAtMax},
 		{name: "description empty", fields: emptyDescription},
 		{name: "visibility public", fields: public},
+		{name: "seedKey at max length", fields: seedKeyAtMax},
+		{name: "seedKey empty", fields: emptySeedKey},
 	}
 }
 
@@ -85,6 +93,7 @@ func invalidWorkbookFieldVariants() []struct {
 		{name: "language empty", fields: with(func(f *workbookFields) { f.language = "" })},
 		{name: "language one letter", fields: with(func(f *workbookFields) { f.language = "e" })},
 		{name: "language three letters", fields: with(func(f *workbookFields) { f.language = "eng" })},
+		{name: "seedKey over max length", fields: with(func(f *workbookFields) { f.seedKey = strings.Repeat("s", 101) })},
 	}
 }
 
@@ -99,7 +108,7 @@ func Test_NewCreateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing
 			f := tt.fields
 
 			// when
-			input, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+			input, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language, f.seedKey)
 
 			// then
 			require.NoError(t, err)
@@ -111,6 +120,7 @@ func Test_NewCreateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing
 				Description:    f.description,
 				Visibility:     f.visibility,
 				Language:       f.language,
+				SeedKey:        f.seedKey,
 			}, *input)
 		})
 	}
@@ -127,7 +137,7 @@ func Test_NewCreateWorkbookInput_shouldReturnErrInvalidArgument_whenFieldIsInval
 			f := tt.fields
 
 			// when
-			_, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+			_, err := workbookservice.NewCreateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language, f.seedKey)
 
 			// then
 			require.ErrorIs(t, err, domain.ErrInvalidArgument)
@@ -146,7 +156,7 @@ func Test_NewUpdateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing
 			f := tt.fields
 
 			// when
-			input, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+			input, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language, f.seedKey)
 
 			// then
 			require.NoError(t, err)
@@ -158,6 +168,7 @@ func Test_NewUpdateWorkbookInput_shouldReturnInput_whenFieldsAreValid(t *testing
 				Description:    f.description,
 				Visibility:     f.visibility,
 				Language:       f.language,
+				SeedKey:        f.seedKey,
 			}, *input)
 		})
 	}
@@ -174,7 +185,7 @@ func Test_NewUpdateWorkbookInput_shouldReturnErrInvalidArgument_whenFieldIsInval
 			f := tt.fields
 
 			// when
-			_, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language)
+			_, err := workbookservice.NewUpdateWorkbookInput(f.operatorID, f.organizationID, f.targetID, f.title, f.description, f.visibility, f.language, f.seedKey)
 
 			// then
 			require.ErrorIs(t, err, domain.ErrInvalidArgument)

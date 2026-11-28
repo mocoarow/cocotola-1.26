@@ -25,12 +25,12 @@ func newGetQuestionInput(t *testing.T) *questionservice.GetQuestionInput {
 
 func newPublicWorkbook() *domainworkbook.Workbook {
 	now := time.Now()
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), 1, now, now)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), "", 1, now, now)
 }
 
 func newPrivateWorkbook() *domainworkbook.Workbook {
 	now := time.Now()
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), 1, now, now)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, "space-1", fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPrivate(), domainworkbook.LanguageJa(), "", 1, now, now)
 }
 
 func newFixtureQuestion() *domainquestion.Question {

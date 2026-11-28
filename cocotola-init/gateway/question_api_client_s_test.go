@@ -59,14 +59,33 @@ func newRecorder() (*httptest.Server, *[]recordedCall) {
 		case http.MethodGet:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(`{"workbooks":[{"workbookId":"wb-1","title":"Existing","description":"desc [seedKey:k1]"}]}`))
+			_, _ = w.Write([]byte(`{"workbooks":[{"workbookId":"wb-1","title":"Existing","description":"desc [seedKey:k0]","visibility":"public","language":"ja","seedKey":"k1"}]}`))
 		case http.MethodPost:
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			_, _ = w.Write([]byte(`{"workbookId":"wb-new"}`))
+			_, _ = w.Write([]byte(`{"workbookId":"wb-new","seedKey":"k-new"}`))
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 		}
+	})
+	mux.HandleFunc("/api/v1/internal/workbook/wb-1", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		mu.Lock()
+		calls = append(calls, recordedCall{
+			Method:  r.Method,
+			Path:    r.URL.Path,
+			Headers: r.Header.Clone(),
+			Body:    body,
+		})
+		mu.Unlock()
+
+		if r.Method != http.MethodPut {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"workbookId":"wb-1","seedKey":"k-updated"}`))
 	})
 	mux.HandleFunc("/api/v1/internal/workbook/wb-1/question", func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -142,7 +161,7 @@ func Test_QuestionAPIClient_ListWorkbooks_shouldReturnEveryFieldOfResponse(t *te
 	// then
 	require.NoError(t, err)
 	assert.Equal(t, []seed.WorkbookListItem{
-		{WorkbookID: "wb-1", Title: "Existing", Description: "desc [seedKey:k1]"},
+		{WorkbookID: "wb-1", Title: "Existing", Description: "desc [seedKey:k0]", Visibility: "public", Language: "ja", SeedKey: "k1"},
 	}, out)
 }
 
@@ -153,7 +172,7 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldSendJsonBody(t *testing.T) {
 	client := newClient(srv)
 
 	// when
-	id, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{
+	out, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{
 		SpaceID:     "space-1",
 		Title:       "T",
 		Description: "D",
@@ -162,7 +181,7 @@ func Test_QuestionAPIClient_CreateWorkbook_shouldSendJsonBody(t *testing.T) {
 
 	// then
 	require.NoError(t, err)
-	assert.Equal(t, "wb-new", id)
+	assert.Equal(t, "wb-new", out.WorkbookID)
 	require.Len(t, *calls, 1)
 	c := (*calls)[0]
 	assert.Equal(t, http.MethodPost, c.Method)
@@ -444,4 +463,141 @@ func Test_QuestionAPIClient_shouldIncludeStatusInMessage_whenServerReturnsNon2xx
 
 	// then
 	require.ErrorContains(t, err, "status 403")
+}
+
+func Test_QuestionAPIClient_ListWorkbooks_shouldReturnErrSeedKeyNotStored_whenWorkbookHasNoSeedKeyField(t *testing.T) {
+	t.Parallel()
+
+	// given: a question service that predates the seedKey field
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"workbooks":[{"workbookId":"wb-1","title":"Existing","description":"desc","visibility":"public","language":"ja"}]}`))
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.ListWorkbooks(context.Background(), testRequestOrgID, "space-1")
+
+	// then
+	require.ErrorIs(t, err, seed.ErrSeedKeyNotStored)
+}
+
+func Test_QuestionAPIClient_ListWorkbooks_shouldReturnEmptySeedKey_whenSeedKeyFieldIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"workbooks":[{"workbookId":"wb-1","title":"Existing","description":"desc","visibility":"public","language":"ja","seedKey":""}]}`))
+	}))
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	out, err := client.ListWorkbooks(context.Background(), testRequestOrgID, "space-1")
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, out, 1)
+	assert.Empty(t, out[0].SeedKey)
+}
+
+func Test_QuestionAPIClient_CreateWorkbook_shouldSendSeedKey_whenInputHasSeedKey(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, calls := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{
+		SpaceID:     "space-1",
+		Title:       "T",
+		Description: "D",
+		Language:    "en",
+		SeedKey:     "k-new",
+	})
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, *calls, 1)
+	assert.JSONEq(t, `{"spaceId":"space-1","title":"T","description":"D","visibility":"public","language":"en","seedKey":"k-new"}`, string((*calls)[0].Body))
+}
+
+func Test_QuestionAPIClient_CreateWorkbook_shouldReturnStoredSeedKey(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, _ := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	out, err := client.CreateWorkbook(context.Background(), testRequestOrgID, seed.CreateWorkbookInput{SpaceID: "space-1", Title: "T", Language: "en", SeedKey: "k-sent"})
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "k-new", out.SeedKey)
+}
+
+func Test_QuestionAPIClient_UpdateWorkbook_shouldSendInputAsJsonBody(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, calls := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.UpdateWorkbook(context.Background(), testRequestOrgID, "wb-1", seed.UpdateWorkbookInput{
+		Title:       "T",
+		Description: "D",
+		Visibility:  "public",
+		Language:    "ja",
+		SeedKey:     "k1",
+	})
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, *calls, 1)
+	c := (*calls)[0]
+	assert.Equal(t, http.MethodPut, c.Method)
+	assert.Equal(t, testAPIKey, c.Headers.Get("X-Service-Api-Key"))
+	assert.Equal(t, testRequestOrgID, c.Headers.Get("X-Organization-Id"))
+	assert.JSONEq(t, `{"title":"T","description":"D","visibility":"public","language":"ja","seedKey":"k1"}`, string(c.Body))
+}
+
+func Test_QuestionAPIClient_UpdateWorkbook_shouldReturnStoredSeedKey(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv, _ := newRecorder()
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	got, err := client.UpdateWorkbook(context.Background(), testRequestOrgID, "wb-1", seed.UpdateWorkbookInput{Title: "T", Visibility: "public", Language: "ja", SeedKey: "k1"})
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "k-updated", got)
+}
+
+func Test_QuestionAPIClient_UpdateWorkbook_shouldReturnHTTPStatusError_whenServerReturnsNon2xx(t *testing.T) {
+	t.Parallel()
+
+	// given
+	srv := newStatusServer(http.StatusConflict)
+	defer srv.Close()
+	client := newClient(srv)
+
+	// when
+	_, err := client.UpdateWorkbook(context.Background(), testRequestOrgID, "wb-1", seed.UpdateWorkbookInput{})
+
+	// then
+	var statusErr *gateway.HTTPStatusError
+	require.ErrorAs(t, err, &statusErr)
+	assert.Equal(t, http.StatusConflict, statusErr.StatusCode)
 }
