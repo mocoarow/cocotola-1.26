@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "takenAt": "2026-11-24T00:12:09.18592049+09:00",
-  "rev": "37eda81def47e75d03a5c45789bd5b750fe17153",
-  "committedAt": "2026-11-24T00:05:03+09:00",
+  "takenAt": "2026-11-28T11:29:10.316223381Z",
+  "rev": "7c740a295ca16f653fd0f5ca42cc06c8fc52d517",
+  "committedAt": "2026-11-28T20:16:38+09:00",
   "tools": {
-    "repohealth": "v0.0.0-20261123133459-d188564a8b95",
+    "repohealth": "v0.0.0-20261126155732-2f359e27afa1",
     "biome": "2.4.10"
   },
   "crossArea": {
@@ -77,8 +77,8 @@
       },
       {
         "period": "2026-11",
-        "prs": 81,
-        "crossArea": 13,
+        "prs": 84,
+        "crossArea": 14,
         "groups": [
           {
             "group": "backend",
@@ -111,12 +111,12 @@
       {
         "a": "lib",
         "b": "question",
-        "prs": 15
+        "prs": 16
       },
       {
         "a": "init",
         "b": "question",
-        "prs": 13
+        "prs": 14
       },
       {
         "a": "app",
@@ -136,7 +136,7 @@
       {
         "a": "init",
         "b": "lib",
-        "prs": 9
+        "prs": 10
       },
       {
         "a": "audio-generator",
@@ -169,6 +169,11 @@
         "prs": 4
       },
       {
+        "a": "empty",
+        "b": "lib",
+        "prs": 4
+      },
+      {
         "a": "test",
         "b": "web",
         "prs": 4
@@ -185,7 +190,7 @@
       },
       {
         "a": "empty",
-        "b": "lib",
+        "b": "question",
         "prs": 3
       },
       {
@@ -205,7 +210,7 @@
       },
       {
         "a": "empty",
-        "b": "question",
+        "b": "init",
         "prs": 2
       },
       {
@@ -221,11 +226,6 @@
       {
         "a": "auth",
         "b": "test",
-        "prs": 1
-      },
-      {
-        "a": "empty",
-        "b": "init",
         "prs": 1
       }
     ]
@@ -320,6 +320,14 @@
       "score": 345
     },
     {
+      "path": "cocotola-init/seed/csv_converter.go",
+      "churn": 9,
+      "recentChurn": 7,
+      "sumCognit": 38,
+      "maxCognit": 7,
+      "score": 342
+    },
+    {
       "path": "cocotola-question/usecase/study/record_answer_command.go",
       "churn": 10,
       "recentChurn": 4,
@@ -342,14 +350,6 @@
       "sumCognit": 33,
       "maxCognit": 11,
       "score": 297
-    },
-    {
-      "path": "cocotola-init/seed/csv_converter.go",
-      "churn": 8,
-      "recentChurn": 6,
-      "sumCognit": 36,
-      "maxCognit": 7,
-      "score": 288
     },
     {
       "path": "cocotola-question/usecase/study/get_study_questions_query.go",
@@ -1098,7 +1098,7 @@
     "reports": [
       {
         "file": "coverage.lcov",
-        "modTime": "2026-11-24T00:12:05.963838393+09:00",
+        "modTime": "2026-11-28T11:28:49.599618685Z",
         "skipped": 0
       }
     ],
@@ -1124,7 +1124,7 @@
       {
         "area": "audio-generator",
         "layer": "usecase",
-        "covered": 151,
+        "covered": 153,
         "lines": 155
       },
       {
@@ -1142,7 +1142,7 @@
       {
         "area": "auth",
         "layer": "gateway",
-        "covered": 1008,
+        "covered": 1010,
         "lines": 1333
       },
       {
@@ -1172,8 +1172,8 @@
       {
         "area": "init",
         "layer": "importer",
-        "covered": 79,
-        "lines": 79
+        "covered": 82,
+        "lines": 82
       },
       {
         "area": "init",
@@ -1184,8 +1184,8 @@
       {
         "area": "init",
         "layer": "seed",
-        "covered": 421,
-        "lines": 479
+        "covered": 480,
+        "lines": 534
       },
       {
         "area": "lib",
@@ -1202,8 +1202,8 @@
       {
         "area": "lib",
         "layer": "gateway",
-        "covered": 415,
-        "lines": 641
+        "covered": 429,
+        "lines": 664
       },
       {
         "area": "lib",
@@ -1256,7 +1256,7 @@
       {
         "area": "question",
         "layer": "gateway",
-        "covered": 930,
+        "covered": 928,
         "lines": 1083
       },
       {
@@ -1351,18 +1351,18 @@
       "lines": 354
     },
     {
+      "path": "cocotola-init/seed/csv_converter.go",
+      "area": "init",
+      "lang": "go",
+      "test": false,
+      "lines": 345
+    },
+    {
       "path": "cocotola-init/seed/workbook_seeder.go",
       "area": "init",
       "lang": "go",
       "test": false,
       "lines": 327
-    },
-    {
-      "path": "cocotola-init/seed/csv_converter.go",
-      "area": "init",
-      "lang": "go",
-      "test": false,
-      "lines": 322
     },
     {
       "path": "cocotola-question/gateway/auth_client.go",
