@@ -23,6 +23,7 @@ smart_go_test(
     name = "gateway_test",
     srcs = [
         "export_test.go",
+        "gcs_client_s_test.go",
         "question_client_s_test.go",
         "tts_client_s_test.go",
     ],
@@ -31,6 +32,9 @@ smart_go_test(
         "//cocotola-audio-generator/domain",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@com_google_cloud_go_storage//:storage",
         "@com_google_cloud_go_texttospeech//apiv1/texttospeechpb",
+        "@org_golang_google_api//googleapi",
+        "@org_golang_google_api//option",
     ],
 )
