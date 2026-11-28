@@ -26,6 +26,11 @@ import (
 // the whole batch container alive.
 const runTimeout = 30 * time.Minute
 
+const (
+	jaLanguageCode = "ja-JP"
+	enLanguageCode = "en-US"
+)
+
 func main() {
 	exitCode, err := run()
 	if err != nil {
@@ -53,14 +58,21 @@ func run() (int, error) {
 		slog.String("env", cfg.AppEnv),
 	)
 
-	enc, err := gateway.ParseAudioEncoding(cfg.Audio.AudioEncoding)
+	if err := generate(ctx, logger, cfg.Audio); err != nil {
+		return 1, err
+	}
+	return 0, nil
+}
+
+func generate(ctx context.Context, logger *slog.Logger, cfg config.AudioGeneratorConfig) error {
+	enc, err := gateway.ParseAudioEncoding(cfg.AudioEncoding)
 	if err != nil {
-		return 1, fmt.Errorf("parse audio encoding: %w", err)
+		return fmt.Errorf("parse audio encoding: %w", err)
 	}
 
-	tts, err := gateway.NewTTSClient(ctx, enc, cfg.Audio.SampleRateHz)
+	tts, err := gateway.NewTTSClient(ctx, enc, cfg.SampleRateHz)
 	if err != nil {
-		return 1, fmt.Errorf("new tts client: %w", err)
+		return fmt.Errorf("new tts client: %w", err)
 	}
 	defer func() {
 		if err := tts.Close(); err != nil {
@@ -68,9 +80,9 @@ func run() (int, error) {
 		}
 	}()
 
-	gcs, err := gateway.NewGCSClient(ctx, cfg.Audio.BucketName)
+	gcs, err := gateway.NewGCSClient(ctx, cfg.BucketName)
 	if err != nil {
-		return 1, fmt.Errorf("new gcs client: %w", err)
+		return fmt.Errorf("new gcs client: %w", err)
 	}
 	defer func() {
 		if err := gcs.Close(); err != nil {
@@ -79,33 +91,30 @@ func run() (int, error) {
 	}()
 
 	api := gateway.NewQuestionAPIClient(
-		cfg.Audio.QuestionAPIBaseURL,
-		cfg.Audio.QuestionAPIKey,
-		time.Duration(cfg.Audio.QuestionAPITimeoutSec)*time.Second,
+		cfg.QuestionAPIBaseURL,
+		cfg.QuestionAPIKey,
+		time.Duration(cfg.QuestionAPITimeoutSec)*time.Second,
 	)
 
-	processed, err := usecase.GenerateAudioBatch(
-		ctx,
-		logger,
-		api,
-		tts,
-		gcs,
-		usecase.BatchConfig{
-			MaxPerRun:   cfg.Audio.MaxPerRun,
-			ContentType: enc.ContentType,
-			ObjectExt:   enc.ObjectExt,
-			Voices: usecase.VoiceConfig{
-				JaVoice: cfg.Audio.TTSVoiceJa,
-				JaLang:  "ja-JP",
-				EnVoice: cfg.Audio.TTSVoiceEn,
-				EnLang:  "en-US",
-			},
-			StaleAfter: time.Duration(cfg.Audio.StaleAfterSec) * time.Second,
-		},
-	)
+	processed, err := usecase.GenerateAudioBatch(ctx, logger, api, tts, gcs, newBatchConfig(cfg, enc))
 	logger.InfoContext(ctx, "batch finished", slog.Int("processed", processed))
 	if err != nil && !errors.Is(err, context.Canceled) {
-		return 1, fmt.Errorf("generate audio batch: %w", err)
+		return fmt.Errorf("generate audio batch: %w", err)
 	}
-	return 0, nil
+	return nil
+}
+
+func newBatchConfig(cfg config.AudioGeneratorConfig, enc gateway.AudioEncoding) usecase.BatchConfig {
+	return usecase.BatchConfig{
+		MaxPerRun:   cfg.MaxPerRun,
+		ContentType: enc.ContentType,
+		ObjectExt:   enc.ObjectExt,
+		Voices: usecase.VoiceConfig{
+			JaVoice: cfg.TTSVoiceJa,
+			JaLang:  jaLanguageCode,
+			EnVoice: cfg.TTSVoiceEn,
+			EnLang:  enLanguageCode,
+		},
+		StaleAfter: time.Duration(cfg.StaleAfterSec) * time.Second,
+	}
 }
