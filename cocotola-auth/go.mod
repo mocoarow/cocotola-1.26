@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/otel v1.47.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.4
 	golang.org/x/crypto v0.59.0
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 )
 
 require (

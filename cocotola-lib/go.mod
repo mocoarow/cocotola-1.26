@@ -32,7 +32,7 @@ require (
 	google.golang.org/grpc v1.85.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.31.1
+	gorm.io/gorm v1.31.2
 	gorm.io/plugin/opentelemetry v0.1.16
 )
 
