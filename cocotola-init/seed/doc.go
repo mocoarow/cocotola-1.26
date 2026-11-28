@@ -7,8 +7,8 @@
 // preserving the visibility/RBAC invariants enforced inside the workbook
 // usecases.
 //
-// Idempotency is keyed off a "seedKey" embedded in the workbook description
-// (and a seed tag on each question), not on the human-friendly title.
+// Idempotency is keyed off the workbook's seedKey field (and a seed tag on each
+// question), not on the human-friendly title.
 // This lets operators rename a workbook in the seed file without producing
 // duplicates on the next run.
 package seed

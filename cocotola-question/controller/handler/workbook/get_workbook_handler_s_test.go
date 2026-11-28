@@ -142,3 +142,26 @@ func Test_GetWorkbookHandler_GetWorkbook_shouldReturn500_whenUsecaseFailsUnexpec
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	validateErrorResponse(t, readBytes(t, w.Body), "internal_server_error", "Internal Server Error")
 }
+
+func Test_GetWorkbookHandler_GetWorkbook_shouldReturnEmptySeedKey_whenWorkbookHasNoSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	item := fixtureItem("get")
+	item.SeedKey = ""
+	usecases := newWorkbookUsecases(t)
+	usecases.get.On("GetWorkbook", mock.Anything, mock.Anything).
+		Return(&workbookservice.GetWorkbookOutput{Item: item}, nil).Once()
+	r := initWorkbookRouter(ctx, t, fixtureUserID, fixtureOrganizationID, usecases)
+
+	// when
+	w := serve(ctx, t, r, http.MethodGet, workbookPath+"/"+fixtureWorkbookID)
+
+	// then
+	require.Equal(t, http.StatusOK, w.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(readBytes(t, w.Body), &resp))
+	require.Contains(t, resp, "seedKey")
+	assert.Empty(t, resp["seedKey"])
+}

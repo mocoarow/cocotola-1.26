@@ -90,6 +90,7 @@ func fixtureItem(suffix string) workbookservice.Item {
 		Description:    "description-" + suffix,
 		Visibility:     "private",
 		Language:       "fr",
+		SeedKey:        "seed-" + suffix,
 		CreatedAt:      time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC),
 		UpdatedAt:      time.Date(2026, 6, 7, 8, 9, 10, 0, time.UTC),
 	}
@@ -105,6 +106,7 @@ func toWorkbookResponse(item workbookservice.Item) api.WorkbookResponse {
 		Description:    item.Description,
 		Visibility:     api.WorkbookResponseVisibility(item.Visibility),
 		Language:       item.Language,
+		SeedKey:        item.SeedKey,
 		CreatedAt:      item.CreatedAt,
 		UpdatedAt:      item.UpdatedAt,
 	}

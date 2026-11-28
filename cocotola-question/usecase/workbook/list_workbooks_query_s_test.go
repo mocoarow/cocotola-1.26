@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
 	"github.com/mocoarow/cocotola-1.26/cocotola-question/domain"
+	domainworkbook "github.com/mocoarow/cocotola-1.26/cocotola-question/domain/workbook"
 	workbookservice "github.com/mocoarow/cocotola-1.26/cocotola-question/service/workbook"
 	workbookusecase "github.com/mocoarow/cocotola-1.26/cocotola-question/usecase/workbook"
 )
@@ -80,4 +82,29 @@ func Test_ListWorkbooksQuery_shouldReturnError_whenAuthCheckFails(t *testing.T) 
 
 	// then
 	require.ErrorIs(t, err, authErr)
+}
+
+func Test_ListWorkbooksQuery_shouldReturnSeedKey_whenWorkbookHasSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	spaceResource, err := domain.ResourceSpace(fixtureSpaceID)
+	require.NoError(t, err)
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionViewWorkbook(), spaceResource).Return(true, nil)
+	now := time.Now()
+	seeded := *domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), "vocab-v1", 1, now, now)
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindBySpaceID", mock.Anything, fixtureSpaceID).Return([]domainworkbook.Workbook{seeded}, nil)
+
+	q := workbookusecase.NewListWorkbooksQuery(wbFinder, authChecker)
+
+	// when
+	output, err := q.ListWorkbooks(ctx, newListWorkbooksInput(t))
+
+	// then
+	require.NoError(t, err)
+	require.Len(t, output.Workbooks, 1)
+	assert.Equal(t, "vocab-v1", output.Workbooks[0].SeedKey)
 }

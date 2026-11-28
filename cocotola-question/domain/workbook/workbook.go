@@ -2,6 +2,7 @@ package workbook
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 	"unicode/utf8"
 
@@ -13,6 +14,11 @@ const (
 	maxDescriptionLength = 1000
 )
 
+// MaxSeedKeyLength is the maximum length of a seed key.
+const MaxSeedKeyLength = 100
+
+var seedKeyPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
 // Workbook is the aggregate root for the workbook aggregate.
 type Workbook struct {
 	id             string
@@ -23,6 +29,7 @@ type Workbook struct {
 	description    string
 	visibility     Visibility
 	language       Language
+	seedKey        string
 	version        int
 	createdAt      time.Time
 	updatedAt      time.Time
@@ -40,6 +47,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 		description:    description,
 		visibility:     visibility,
 		language:       language,
+		seedKey:        "",
 		version:        0,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
@@ -51,7 +59,7 @@ func NewWorkbook(id string, spaceID string, ownerID string, organizationID strin
 }
 
 // ReconstructWorkbook reconstitutes a Workbook from persistence without validation.
-func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, version int, createdAt time.Time, updatedAt time.Time) *Workbook {
+func ReconstructWorkbook(id string, spaceID string, ownerID string, organizationID string, title string, description string, visibility Visibility, language Language, seedKey string, version int, createdAt time.Time, updatedAt time.Time) *Workbook {
 	return &Workbook{
 		id:             id,
 		spaceID:        spaceID,
@@ -61,6 +69,7 @@ func ReconstructWorkbook(id string, spaceID string, ownerID string, organization
 		description:    description,
 		visibility:     visibility,
 		language:       language,
+		seedKey:        seedKey,
 		version:        version,
 		createdAt:      createdAt,
 		updatedAt:      updatedAt,
@@ -122,6 +131,9 @@ func (w *Workbook) Visibility() Visibility { return w.visibility }
 // Language returns the workbook language.
 func (w *Workbook) Language() Language { return w.language }
 
+// SeedKey returns the seed key, or "" if none.
+func (w *Workbook) SeedKey() string { return w.seedKey }
+
 // Version returns the persisted version (0 = new, not yet saved).
 func (w *Workbook) Version() int { return w.version }
 
@@ -166,6 +178,18 @@ func (w *Workbook) UpdateDescription(desc string) error {
 		return fmt.Errorf("workbook description must not exceed %d characters: %w", maxDescriptionLength, domain.ErrInvalidArgument)
 	}
 	w.description = desc
+	return nil
+}
+
+// AssignSeedKey sets the seed key.
+func (w *Workbook) AssignSeedKey(seedKey string) error {
+	if len(seedKey) > MaxSeedKeyLength || !seedKeyPattern.MatchString(seedKey) {
+		return fmt.Errorf("workbook seed key must be 1-%d characters of [a-zA-Z0-9_-]: %w", MaxSeedKeyLength, domain.ErrInvalidArgument)
+	}
+	if w.seedKey != "" && w.seedKey != seedKey {
+		return fmt.Errorf("workbook seed key is already assigned: %w", domain.ErrInvalidArgument)
+	}
+	w.seedKey = seedKey
 	return nil
 }
 

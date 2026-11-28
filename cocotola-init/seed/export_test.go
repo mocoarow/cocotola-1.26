@@ -7,3 +7,6 @@ var ValidateSeeds = validateSeeds
 func ValidateCSVManifest(m CSVWorkbookManifest) error {
 	return m.validate()
 }
+
+// RemoveSeedKeyMarker exposes removeSeedKeyMarker to the external seed_test package.
+var RemoveSeedKeyMarker = removeSeedKeyMarker

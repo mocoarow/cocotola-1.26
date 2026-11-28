@@ -203,22 +203,22 @@ func (_c *MockWorkbookAPIClient_AddQuestion_Call) RunAndReturn(run func(ctx cont
 }
 
 // CreateWorkbook provides a mock function for the type MockWorkbookAPIClient
-func (_mock *MockWorkbookAPIClient) CreateWorkbook(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (string, error) {
+func (_mock *MockWorkbookAPIClient) CreateWorkbook(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (seed.CreateWorkbookOutput, error) {
 	ret := _mock.Called(ctx, organizationID, input)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateWorkbook")
 	}
 
-	var r0 string
+	var r0 seed.CreateWorkbookOutput
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, seed.CreateWorkbookInput) (string, error)); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, seed.CreateWorkbookInput) (seed.CreateWorkbookOutput, error)); ok {
 		return returnFunc(ctx, organizationID, input)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, seed.CreateWorkbookInput) string); ok {
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, seed.CreateWorkbookInput) seed.CreateWorkbookOutput); ok {
 		r0 = returnFunc(ctx, organizationID, input)
 	} else {
-		r0 = ret.Get(0).(string)
+		r0 = ret.Get(0).(seed.CreateWorkbookOutput)
 	}
 	if returnFunc, ok := ret.Get(1).(func(context.Context, string, seed.CreateWorkbookInput) error); ok {
 		r1 = returnFunc(ctx, organizationID, input)
@@ -264,12 +264,12 @@ func (_c *MockWorkbookAPIClient_CreateWorkbook_Call) Run(run func(ctx context.Co
 	return _c
 }
 
-func (_c *MockWorkbookAPIClient_CreateWorkbook_Call) Return(s string, err error) *MockWorkbookAPIClient_CreateWorkbook_Call {
-	_c.Call.Return(s, err)
+func (_c *MockWorkbookAPIClient_CreateWorkbook_Call) Return(createWorkbookOutput seed.CreateWorkbookOutput, err error) *MockWorkbookAPIClient_CreateWorkbook_Call {
+	_c.Call.Return(createWorkbookOutput, err)
 	return _c
 }
 
-func (_c *MockWorkbookAPIClient_CreateWorkbook_Call) RunAndReturn(run func(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (string, error)) *MockWorkbookAPIClient_CreateWorkbook_Call {
+func (_c *MockWorkbookAPIClient_CreateWorkbook_Call) RunAndReturn(run func(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (seed.CreateWorkbookOutput, error)) *MockWorkbookAPIClient_CreateWorkbook_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -418,6 +418,84 @@ func (_c *MockWorkbookAPIClient_ListWorkbooks_Call) Return(workbookListItems []s
 }
 
 func (_c *MockWorkbookAPIClient_ListWorkbooks_Call) RunAndReturn(run func(ctx context.Context, organizationID string, spaceID string) ([]seed.WorkbookListItem, error)) *MockWorkbookAPIClient_ListWorkbooks_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateWorkbook provides a mock function for the type MockWorkbookAPIClient
+func (_mock *MockWorkbookAPIClient) UpdateWorkbook(ctx context.Context, organizationID string, workbookID string, input seed.UpdateWorkbookInput) (string, error) {
+	ret := _mock.Called(ctx, organizationID, workbookID, input)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateWorkbook")
+	}
+
+	var r0 string
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, seed.UpdateWorkbookInput) (string, error)); ok {
+		return returnFunc(ctx, organizationID, workbookID, input)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, seed.UpdateWorkbookInput) string); ok {
+		r0 = returnFunc(ctx, organizationID, workbookID, input)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, seed.UpdateWorkbookInput) error); ok {
+		r1 = returnFunc(ctx, organizationID, workbookID, input)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockWorkbookAPIClient_UpdateWorkbook_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateWorkbook'
+type MockWorkbookAPIClient_UpdateWorkbook_Call struct {
+	*mock.Call
+}
+
+// UpdateWorkbook is a helper method to define mock.On call
+//   - ctx context.Context
+//   - organizationID string
+//   - workbookID string
+//   - input seed.UpdateWorkbookInput
+func (_e *MockWorkbookAPIClient_Expecter) UpdateWorkbook(ctx interface{}, organizationID interface{}, workbookID interface{}, input interface{}) *MockWorkbookAPIClient_UpdateWorkbook_Call {
+	return &MockWorkbookAPIClient_UpdateWorkbook_Call{Call: _e.mock.On("UpdateWorkbook", ctx, organizationID, workbookID, input)}
+}
+
+func (_c *MockWorkbookAPIClient_UpdateWorkbook_Call) Run(run func(ctx context.Context, organizationID string, workbookID string, input seed.UpdateWorkbookInput)) *MockWorkbookAPIClient_UpdateWorkbook_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 seed.UpdateWorkbookInput
+		if args[3] != nil {
+			arg3 = args[3].(seed.UpdateWorkbookInput)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockWorkbookAPIClient_UpdateWorkbook_Call) Return(seedKey string, err error) *MockWorkbookAPIClient_UpdateWorkbook_Call {
+	_c.Call.Return(seedKey, err)
+	return _c
+}
+
+func (_c *MockWorkbookAPIClient_UpdateWorkbook_Call) RunAndReturn(run func(ctx context.Context, organizationID string, workbookID string, input seed.UpdateWorkbookInput) (string, error)) *MockWorkbookAPIClient_UpdateWorkbook_Call {
 	_c.Call.Return(run)
 	return _c
 }

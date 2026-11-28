@@ -17,10 +17,11 @@ type CreateWorkbookInput struct {
 	Description    string `validate:"max=1000"`
 	Visibility     string `validate:"required,oneof=private public"`
 	Language       string `validate:"required,len=2"`
+	SeedKey        string `validate:"omitempty,max=100"`
 }
 
 // NewCreateWorkbookInput creates a validated CreateWorkbookInput.
-func NewCreateWorkbookInput(operatorID string, organizationID string, spaceID string, title string, description string, visibility string, language string) (*CreateWorkbookInput, error) {
+func NewCreateWorkbookInput(operatorID string, organizationID string, spaceID string, title string, description string, visibility string, language string, seedKey string) (*CreateWorkbookInput, error) {
 	m := &CreateWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -29,6 +30,7 @@ func NewCreateWorkbookInput(operatorID string, organizationID string, spaceID st
 		Description:    description,
 		Visibility:     visibility,
 		Language:       language,
+		SeedKey:        seedKey,
 	}
 	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate create workbook input: %w", err)
@@ -46,12 +48,13 @@ type CreateWorkbookOutput struct {
 	Description    string
 	Visibility     string `validate:"required"`
 	Language       string `validate:"required,len=2"`
+	SeedKey        string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
 
 // NewCreateWorkbookOutput creates a validated CreateWorkbookOutput.
-func NewCreateWorkbookOutput(workbookID string, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string, createdAt time.Time, updatedAt time.Time) (*CreateWorkbookOutput, error) {
+func NewCreateWorkbookOutput(workbookID string, spaceID string, ownerID string, organizationID string, title string, description string, visibility string, language string, seedKey string, createdAt time.Time, updatedAt time.Time) (*CreateWorkbookOutput, error) {
 	m := &CreateWorkbookOutput{
 		WorkbookID:     workbookID,
 		SpaceID:        spaceID,
@@ -61,6 +64,7 @@ func NewCreateWorkbookOutput(workbookID string, spaceID string, ownerID string, 
 		Description:    description,
 		Visibility:     visibility,
 		Language:       language,
+		SeedKey:        seedKey,
 		CreatedAt:      createdAt,
 		UpdatedAt:      updatedAt,
 	}
@@ -100,6 +104,7 @@ type Item struct {
 	Description    string
 	Visibility     string
 	Language       string
+	SeedKey        string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -143,10 +148,11 @@ type UpdateWorkbookInput struct {
 	Description    string `validate:"max=1000"`
 	Visibility     string `validate:"required,oneof=private public"`
 	Language       string `validate:"required,len=2"`
+	SeedKey        string `validate:"omitempty,max=100"`
 }
 
 // NewUpdateWorkbookInput creates a validated UpdateWorkbookInput.
-func NewUpdateWorkbookInput(operatorID string, organizationID string, workbookID string, title string, description string, visibility string, language string) (*UpdateWorkbookInput, error) {
+func NewUpdateWorkbookInput(operatorID string, organizationID string, workbookID string, title string, description string, visibility string, language string, seedKey string) (*UpdateWorkbookInput, error) {
 	m := &UpdateWorkbookInput{
 		OperatorID:     operatorID,
 		OrganizationID: organizationID,
@@ -155,6 +161,7 @@ func NewUpdateWorkbookInput(operatorID string, organizationID string, workbookID
 		Description:    description,
 		Visibility:     visibility,
 		Language:       language,
+		SeedKey:        seedKey,
 	}
 	if err := domain.ValidateInput(m); err != nil {
 		return nil, fmt.Errorf("validate update workbook input: %w", err)

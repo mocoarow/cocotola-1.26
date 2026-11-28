@@ -388,3 +388,72 @@ func Test_WorkbookRepository_Delete_shouldRemoveDocument(t *testing.T) {
 	_, err = repo.FindByID(ctx, id)
 	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
 }
+
+func Test_WorkbookRepository_FindByID_shouldReturnSeedKey_whenSavedWithSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	id := "wb-seed-key-" + t.Name()
+	wb := newWorkbook(t, id, "space-1", "owner-1", "org-1")
+	require.NoError(t, wb.AssignSeedKey("vocab-v1"))
+	require.NoError(t, repo.Save(ctx, wb))
+
+	// when
+	loaded, err := repo.FindByID(ctx, id)
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "vocab-v1", loaded.SeedKey())
+}
+
+func Test_WorkbookRepository_FindByID_shouldReturnEmptySeedKey_whenDocumentHasNoSeedKeyField(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	id := "wb-no-seed-key-" + t.Name()
+	now := time.Now()
+	_, err := client.Collection("workbooks").Doc(id).Set(ctx, map[string]any{
+		"spaceID":        "space-1",
+		"ownerID":        "owner-1",
+		"organizationID": "org-1",
+		"title":          "Legacy Workbook",
+		"description":    "",
+		"visibility":     "private",
+		"language":       "ja",
+		"version":        1,
+		"createdAt":      now,
+		"updatedAt":      now,
+	})
+	require.NoError(t, err)
+
+	// when
+	loaded, err := repo.FindByID(ctx, id)
+
+	// then
+	require.NoError(t, err)
+	assert.Empty(t, loaded.SeedKey())
+}
+
+func Test_WorkbookRepository_Save_shouldNotWriteSeedKeyField_whenSeedKeyIsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	client := setupFirestoreClient(t)
+	repo := gateway.NewWorkbookRepository(client)
+	id := "wb-omit-seed-key-" + t.Name()
+	require.NoError(t, repo.Save(ctx, newWorkbook(t, id, "space-1", "owner-1", "org-1")))
+
+	// when
+	snap, err := client.Collection("workbooks").Doc(id).Get(ctx)
+
+	// then
+	require.NoError(t, err)
+	assert.NotContains(t, snap.Data(), "seedKey")
+}

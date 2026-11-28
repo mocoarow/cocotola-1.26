@@ -48,7 +48,7 @@ const (
 
 func newCreateWorkbookInput(t *testing.T) *workbookservice.CreateWorkbookInput {
 	t.Helper()
-	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja")
+	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja", "")
 	require.NoError(t, err)
 	return input
 }
@@ -141,7 +141,7 @@ func Test_CreateWorkbookCommand_shouldForceVisibilityToPublic_whenSpaceIsPublic(
 	expectAllWorkbookPolicies(policyAdder)
 
 	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
-	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja")
+	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja", "")
 	require.NoError(t, err)
 
 	// when
@@ -437,4 +437,95 @@ func Test_CreateWorkbookCommand_shouldReturnWorkbookSaveError_whenWorkbookSaveFa
 
 	// then
 	require.ErrorIs(t, err, saveErr)
+}
+
+func newCreateWorkbookInputWithSeedKey(t *testing.T, seedKey string) *workbookservice.CreateWorkbookInput {
+	t.Helper()
+	input, err := workbookservice.NewCreateWorkbookInput(fixtureOperatorID, fixtureOrganizationID, fixtureSpaceID, "Test Workbook", "description", "private", "ja", seedKey)
+	require.NoError(t, err)
+	return input
+}
+
+func newAllowedCreateMocks(t *testing.T) (*mockauthorizationChecker, *mockownedWorkbookListFinder, *mockmaxWorkbooksFetcher, *mockspaceTypeFetcher) {
+	t.Helper()
+	spaceResource, err := domain.ResourceSpace(fixtureSpaceID)
+	require.NoError(t, err)
+
+	authChecker := newMockauthorizationChecker(t)
+	authChecker.On("IsAllowed", mock.Anything, fixtureOrganizationID, fixtureOperatorID, domain.ActionCreateWorkbook(), spaceResource).Return(true, nil)
+
+	ownedList, err := domain.NewOwnedWorkbookList(fixtureOperatorID, nil)
+	require.NoError(t, err)
+	listFinder := newMockownedWorkbookListFinder(t)
+	listFinder.On("FindByOwnerID", mock.Anything, fixtureOperatorID).Return(ownedList, nil)
+
+	maxWbFetcher := newMockmaxWorkbooksFetcher(t)
+	maxWbFetcher.On("FetchMaxWorkbooks", mock.Anything, fixtureOperatorID).Return(3, nil)
+
+	spaceTypeFetcher := newMockspaceTypeFetcher(t)
+	spaceTypeFetcher.On("FetchSpaceType", mock.Anything, fixtureSpaceID).Return(domain.SpaceTypePublic(), nil)
+	return authChecker, listFinder, maxWbFetcher, spaceTypeFetcher
+}
+
+func Test_CreateWorkbookCommand_shouldSaveSeedKey_whenInputHasSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker, listFinder, maxWbFetcher, spaceTypeFetcher := newAllowedCreateMocks(t)
+	listSaver := newMockownedWorkbookListSaver(t)
+	listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.MatchedBy(func(wb *domainworkbook.Workbook) bool {
+		return wb.SeedKey() == "vocab-v1"
+	})).Return(nil)
+	policyAdder := newMockpolicyAdder(t)
+	expectAllWorkbookPolicies(policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+
+	// when
+	_, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInputWithSeedKey(t, "vocab-v1"))
+
+	// then
+	require.NoError(t, err)
+}
+
+func Test_CreateWorkbookCommand_shouldReturnSeedKey_whenInputHasSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	authChecker, listFinder, maxWbFetcher, spaceTypeFetcher := newAllowedCreateMocks(t)
+	listSaver := newMockownedWorkbookListSaver(t)
+	listSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	wbSaver := newMockworkbookSaver(t)
+	wbSaver.On("Save", mock.Anything, mock.Anything).Return(nil)
+	policyAdder := newMockpolicyAdder(t)
+	expectAllWorkbookPolicies(policyAdder)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+
+	// when
+	output, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInputWithSeedKey(t, "vocab-v1"))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "vocab-v1", output.SeedKey)
+}
+
+func Test_CreateWorkbookCommand_shouldNotSaveOwnedList_whenSeedKeyIsInvalid(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given: listSaver, wbSaver and policyAdder have no expectations, so any call fails the test
+	authChecker, listFinder, maxWbFetcher, spaceTypeFetcher := newAllowedCreateMocks(t)
+	listSaver := newMockownedWorkbookListSaver(t)
+	wbSaver := newMockworkbookSaver(t)
+	policyAdder := newMockpolicyAdder(t)
+	cmd := workbookusecase.NewCreateWorkbookCommand(wbSaver, listFinder, listSaver, maxWbFetcher, spaceTypeFetcher, authChecker, policyAdder)
+
+	// when
+	_, err := cmd.CreateWorkbook(ctx, newCreateWorkbookInputWithSeedKey(t, "vocab v1"))
+
+	// then
+	require.ErrorIs(t, err, domain.ErrInvalidArgument)
 }

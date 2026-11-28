@@ -44,9 +44,12 @@ func NewQuestionAPIClient(baseURL, apiKey string, httpClient *http.Client) *Ques
 }
 
 type workbookListItemResponse struct {
-	WorkbookID  string `json:"workbookId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
+	WorkbookID  string  `json:"workbookId"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Visibility  string  `json:"visibility"`
+	Language    string  `json:"language"`
+	SeedKey     *string `json:"seedKey"`
 }
 
 type listWorkbooksResponse struct {
@@ -66,7 +69,17 @@ func (c *QuestionAPIClient) ListWorkbooks(ctx context.Context, organizationID, s
 	}
 	items := make([]seed.WorkbookListItem, 0, len(resp.Workbooks))
 	for _, w := range resp.Workbooks {
-		items = append(items, seed.WorkbookListItem{WorkbookID: w.WorkbookID, Title: w.Title, Description: w.Description})
+		if w.SeedKey == nil {
+			return nil, fmt.Errorf("list workbooks (space %s): workbook %s has no seedKey field: %w", spaceID, w.WorkbookID, seed.ErrSeedKeyNotStored)
+		}
+		items = append(items, seed.WorkbookListItem{
+			WorkbookID:  w.WorkbookID,
+			Title:       w.Title,
+			Description: w.Description,
+			Visibility:  w.Visibility,
+			Language:    w.Language,
+			SeedKey:     *w.SeedKey,
+		})
 	}
 	return items, nil
 }
@@ -81,14 +94,16 @@ type createWorkbookRequest struct {
 	Description string `json:"description"`
 	Visibility  string `json:"visibility"`
 	Language    string `json:"language"`
+	SeedKey     string `json:"seedKey,omitempty"`
 }
 
 type workbookResponse struct {
 	WorkbookID string `json:"workbookId"`
+	SeedKey    string `json:"seedKey"`
 }
 
 // CreateWorkbook calls POST /api/v1/internal/workbook.
-func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (string, error) {
+func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID string, input seed.CreateWorkbookInput) (seed.CreateWorkbookOutput, error) {
 	reqURL := c.baseURL + "/api/v1/internal/workbook"
 	body := createWorkbookRequest{
 		SpaceID:     input.SpaceID,
@@ -96,12 +111,38 @@ func (c *QuestionAPIClient) CreateWorkbook(ctx context.Context, organizationID s
 		Description: input.Description,
 		Visibility:  workbookVisibilityPublic,
 		Language:    input.Language,
+		SeedKey:     input.SeedKey,
 	}
 	var resp workbookResponse
 	if err := c.do(ctx, http.MethodPost, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
-		return "", fmt.Errorf("create workbook: %w", err)
+		return seed.CreateWorkbookOutput{}, fmt.Errorf("create workbook: %w", err)
 	}
-	return resp.WorkbookID, nil
+	return seed.CreateWorkbookOutput{WorkbookID: resp.WorkbookID, SeedKey: resp.SeedKey}, nil
+}
+
+type updateWorkbookRequest struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Visibility  string `json:"visibility"`
+	Language    string `json:"language"`
+	SeedKey     string `json:"seedKey,omitempty"`
+}
+
+// UpdateWorkbook calls PUT /api/v1/internal/workbook/{workbookId}.
+func (c *QuestionAPIClient) UpdateWorkbook(ctx context.Context, organizationID, workbookID string, input seed.UpdateWorkbookInput) (string, error) {
+	reqURL := c.baseURL + "/api/v1/internal/workbook/" + url.PathEscape(workbookID)
+	body := updateWorkbookRequest{
+		Title:       input.Title,
+		Description: input.Description,
+		Visibility:  input.Visibility,
+		Language:    input.Language,
+		SeedKey:     input.SeedKey,
+	}
+	var resp workbookResponse
+	if err := c.do(ctx, http.MethodPut, reqURL, organizationID, body, &resp, maxBodyBytes); err != nil {
+		return "", fmt.Errorf("update workbook %s: %w", workbookID, err)
+	}
+	return resp.SeedKey, nil
 }
 
 type questionListItemResponse struct {

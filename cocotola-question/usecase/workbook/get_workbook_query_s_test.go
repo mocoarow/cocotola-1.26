@@ -17,7 +17,7 @@ import (
 
 func newFixturePublicWorkbook() *domainworkbook.Workbook {
 	now := time.Now()
-	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), 1, now, now)
+	return domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), "", 1, now, now)
 }
 
 func newGetWorkbookInput(t *testing.T) *workbookservice.GetWorkbookInput {
@@ -104,4 +104,25 @@ func Test_GetWorkbookQuery_shouldReturnError_whenWorkbookNotFound(t *testing.T) 
 
 	// then
 	require.ErrorIs(t, err, domain.ErrWorkbookNotFound)
+}
+
+func Test_GetWorkbookQuery_shouldReturnSeedKey_whenWorkbookHasSeedKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	// given
+	now := time.Now()
+	seeded := domainworkbook.ReconstructWorkbook(fixtureWorkbookID, fixtureSpaceID, fixtureOperatorID, fixtureOrganizationID, "title", "", domainworkbook.VisibilityPublic(), domainworkbook.LanguageJa(), "vocab-v1", 1, now, now)
+	wbFinder := newMockworkbookFinder(t)
+	wbFinder.On("FindByID", mock.Anything, fixtureWorkbookID).Return(seeded, nil)
+	authChecker := newMockauthorizationChecker(t)
+
+	q := workbookusecase.NewGetWorkbookQuery(wbFinder, authChecker)
+
+	// when
+	output, err := q.GetWorkbook(ctx, newGetWorkbookInput(t))
+
+	// then
+	require.NoError(t, err)
+	assert.Equal(t, "vocab-v1", output.SeedKey)
 }

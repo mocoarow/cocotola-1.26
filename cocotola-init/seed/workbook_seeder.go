@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	// seedKeyMarker is appended to the workbook description as a hidden marker
-	// so the seeder can identify previously-seeded workbooks even if their
-	// human-readable Title is later changed in the seed file.
 	seedKeyMarker = "[seedKey:"
 	seedKeyEnd    = "]"
 	// questionTagPrefix forms seed-<workbookSeedKey>:<questionSeedKey>; a hyphen,
@@ -25,10 +22,14 @@ const (
 // question service rejects the question as invalid.
 var ErrQuestionRejected = errors.New("question rejected")
 
+// ErrSeedKeyNotStored is returned when the question service does not store the seed key.
+var ErrSeedKeyNotStored = errors.New("question service did not store the seed key")
+
 // WorkbookAPIClient is the question service API required by WorkbookSeeder.
 type WorkbookAPIClient interface {
 	ListWorkbooks(ctx context.Context, organizationID, spaceID string) ([]WorkbookListItem, error)
-	CreateWorkbook(ctx context.Context, organizationID string, input CreateWorkbookInput) (string, error)
+	CreateWorkbook(ctx context.Context, organizationID string, input CreateWorkbookInput) (CreateWorkbookOutput, error)
+	UpdateWorkbook(ctx context.Context, organizationID, workbookID string, input UpdateWorkbookInput) (seedKey string, err error)
 	ListQuestions(ctx context.Context, organizationID, workbookID string) ([]QuestionListItem, error)
 	AddQuestion(ctx context.Context, organizationID, workbookID string, input AddQuestionInput) error
 }
@@ -38,6 +39,9 @@ type WorkbookListItem struct {
 	WorkbookID  string
 	Title       string
 	Description string
+	Visibility  string
+	Language    string
+	SeedKey     string
 }
 
 // CreateWorkbookInput describes a workbook to create.
@@ -46,6 +50,22 @@ type CreateWorkbookInput struct {
 	Title       string
 	Description string
 	Language    string
+	SeedKey     string
+}
+
+// CreateWorkbookOutput is a created workbook.
+type CreateWorkbookOutput struct {
+	WorkbookID string
+	SeedKey    string
+}
+
+// UpdateWorkbookInput describes a workbook update.
+type UpdateWorkbookInput struct {
+	Title       string
+	Description string
+	Visibility  string
+	Language    string
+	SeedKey     string
 }
 
 // QuestionListItem is a question already present in the workbook.
@@ -133,7 +153,7 @@ func (s *PublicWorkbookSeeder) SeedPublicWorkbooks(ctx context.Context, organiza
 }
 
 // SeedWorkbooks creates each seed's workbook (if absent) and then each nested
-// question (if absent). Existing entities are detected via seedKey markers.
+// question (if absent). Existing workbooks are detected by their seed key.
 func (s *WorkbookSeeder) SeedWorkbooks(ctx context.Context, organizationID, publicSpaceID string, seeds []PublicWorkbookSeed) ([]WorkbookOutput, error) {
 	existing, err := s.client.ListWorkbooks(ctx, organizationID, publicSpaceID)
 	if err != nil {
@@ -144,7 +164,8 @@ func (s *WorkbookSeeder) SeedWorkbooks(ctx context.Context, organizationID, publ
 
 	outputs := make([]WorkbookOutput, 0, len(seeds))
 	for _, sd := range seeds {
-		workbookID, err := s.ensureWorkbook(ctx, organizationID, publicSpaceID, sd, bySeedKey)
+		existingWorkbook, found := bySeedKey[sd.SeedKey]
+		workbookID, err := s.ensureWorkbook(ctx, organizationID, publicSpaceID, sd, existingWorkbook, found)
 		if err != nil {
 			return nil, fmt.Errorf("ensure workbook %q: %w", sd.SeedKey, err)
 		}
@@ -154,6 +175,12 @@ func (s *WorkbookSeeder) SeedWorkbooks(ctx context.Context, organizationID, publ
 		// persisted without policies, so AddQuestion authorization succeeds.
 		if err := s.policyEnsurer.EnsureSystemOwnerWorkbookPolicies(ctx, organizationID, workbookID); err != nil {
 			return nil, fmt.Errorf("ensure workbook policies %q: %w", sd.SeedKey, err)
+		}
+
+		if found {
+			if err := s.migrateLegacySeedKey(ctx, organizationID, sd.SeedKey, existingWorkbook); err != nil {
+				return nil, fmt.Errorf("migrate seed key of workbook %q: %w", sd.SeedKey, err)
+			}
 		}
 
 		output, err := s.ensureQuestions(ctx, organizationID, workbookID, sd)
@@ -166,13 +193,13 @@ func (s *WorkbookSeeder) SeedWorkbooks(ctx context.Context, organizationID, publ
 	return outputs, nil
 }
 
-func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, publicSpaceID string, sd PublicWorkbookSeed, existing map[string]string) (string, error) {
-	if id, ok := existing[sd.SeedKey]; ok {
+func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, publicSpaceID string, sd PublicWorkbookSeed, existing WorkbookListItem, found bool) (string, error) {
+	if found {
 		s.logger.InfoContext(ctx, "workbook already seeded",
 			slog.String("seed_key", sd.SeedKey),
-			slog.String("workbook_id", id),
+			slog.String("workbook_id", existing.WorkbookID),
 		)
-		return id, nil
+		return existing.WorkbookID, nil
 	}
 
 	// Catch malformed `language` early — without this, the cocotola-question
@@ -186,12 +213,17 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 	input := CreateWorkbookInput{
 		SpaceID:     publicSpaceID,
 		Title:       sd.Title,
-		Description: encodeDescription(sd.Description, sd.SeedKey),
+		Description: sd.Description,
 		Language:    sd.Language,
+		SeedKey:     sd.SeedKey,
 	}
-	workbookID, err := s.client.CreateWorkbook(ctx, organizationID, input)
+	created, err := s.client.CreateWorkbook(ctx, organizationID, input)
 	if err != nil {
 		return "", fmt.Errorf("create workbook %q: %w", sd.SeedKey, err)
+	}
+	workbookID := created.WorkbookID
+	if created.SeedKey != sd.SeedKey {
+		return "", fmt.Errorf("create workbook %q: workbook %s was created with seed key %q: %w", sd.SeedKey, workbookID, created.SeedKey, ErrSeedKeyNotStored)
 	}
 
 	s.logger.InfoContext(ctx, "workbook created",
@@ -199,6 +231,52 @@ func (s *WorkbookSeeder) ensureWorkbook(ctx context.Context, organizationID, pub
 		slog.String("workbook_id", workbookID),
 	)
 	return workbookID, nil
+}
+
+func (s *WorkbookSeeder) migrateLegacySeedKey(ctx context.Context, organizationID, seedKey string, wb WorkbookListItem) error {
+	if wb.SeedKey == "" {
+		input := UpdateWorkbookInput{Title: wb.Title, Description: wb.Description, Visibility: wb.Visibility, Language: wb.Language, SeedKey: seedKey}
+		stored, err := s.client.UpdateWorkbook(ctx, organizationID, wb.WorkbookID, input)
+		if err != nil {
+			return fmt.Errorf("assign seed key to workbook %s: %w", wb.WorkbookID, err)
+		}
+		if stored != seedKey {
+			return fmt.Errorf("assign seed key to workbook %s: got seed key %q: %w", wb.WorkbookID, stored, ErrSeedKeyNotStored)
+		}
+		s.logMigrated(ctx, seedKey, wb.WorkbookID, "assign_seed_key")
+	}
+
+	description, found := removeSeedKeyMarker(wb.Description, seedKey)
+	if !found {
+		return nil
+	}
+	input := UpdateWorkbookInput{Title: wb.Title, Description: description, Visibility: wb.Visibility, Language: wb.Language, SeedKey: seedKey}
+	stored, err := s.client.UpdateWorkbook(ctx, organizationID, wb.WorkbookID, input)
+	if err != nil {
+		return fmt.Errorf("remove seed key marker from workbook %s: %w", wb.WorkbookID, err)
+	}
+	if stored != seedKey {
+		return s.restoreSeedKeyMarker(ctx, organizationID, seedKey, wb, stored)
+	}
+	s.logMigrated(ctx, seedKey, wb.WorkbookID, "remove_marker")
+	return nil
+}
+
+func (s *WorkbookSeeder) restoreSeedKeyMarker(ctx context.Context, organizationID, seedKey string, wb WorkbookListItem, stored string) error {
+	notStored := fmt.Errorf("remove seed key marker from workbook %s: got seed key %q: %w", wb.WorkbookID, stored, ErrSeedKeyNotStored)
+	input := UpdateWorkbookInput{Title: wb.Title, Description: wb.Description, Visibility: wb.Visibility, Language: wb.Language, SeedKey: seedKey}
+	if _, err := s.client.UpdateWorkbook(ctx, organizationID, wb.WorkbookID, input); err != nil {
+		return fmt.Errorf("restore seed key marker of workbook %s: %w", wb.WorkbookID, errors.Join(notStored, err))
+	}
+	return notStored
+}
+
+func (s *WorkbookSeeder) logMigrated(ctx context.Context, seedKey, workbookID, step string) {
+	s.logger.InfoContext(ctx, "workbook seed key migrated",
+		slog.String("seed_key", seedKey),
+		slog.String("workbook_id", workbookID),
+		slog.String("step", step),
+	)
 }
 
 func (s *WorkbookSeeder) ensureQuestions(ctx context.Context, organizationID, workbookID string, sd PublicWorkbookSeed) (WorkbookOutput, error) {
@@ -274,13 +352,23 @@ func (s *WorkbookSeeder) addQuestion(ctx context.Context, organizationID, workbo
 	return false, nil
 }
 
-// indexWorkbooksBySeedKey extracts the seedKey marker from each workbook's
-// description and returns a map seedKey -> workbookID for fast lookup.
-func indexWorkbooksBySeedKey(items []WorkbookListItem) map[string]string {
-	result := make(map[string]string, len(items))
+func indexWorkbooksBySeedKey(items []WorkbookListItem) map[string]WorkbookListItem {
+	result := make(map[string]WorkbookListItem, len(items))
 	for _, w := range items {
-		if key, ok := decodeSeedKey(w.Description); ok {
-			result[key] = w.WorkbookID
+		if _, taken := result[w.SeedKey]; w.SeedKey != "" && !taken {
+			result[w.SeedKey] = w
+		}
+	}
+	for _, w := range items {
+		if w.SeedKey != "" {
+			continue
+		}
+		key, ok := decodeSeedKey(w.Description)
+		if !ok {
+			continue
+		}
+		if prev, taken := result[key]; !taken || prev.SeedKey == "" {
+			result[key] = w
 		}
 	}
 	return result
@@ -298,14 +386,15 @@ func indexQuestionTags(items []QuestionListItem) map[string]bool {
 	return result
 }
 
-// encodeDescription appends the seedKey marker to the description so it can be
-// recovered by decodeSeedKey on subsequent runs.
-func encodeDescription(description, seedKey string) string {
+func removeSeedKeyMarker(description, seedKey string) (string, bool) {
 	marker := seedKeyMarker + seedKey + seedKeyEnd
-	if description == "" {
-		return marker
+	if !strings.Contains(description, marker) {
+		return description, false
 	}
-	return description + " " + marker
+	if strings.Contains(description, " "+marker) {
+		return strings.Replace(description, " "+marker, "", 1), true
+	}
+	return strings.Replace(description, marker, "", 1), true
 }
 
 // decodeSeedKey extracts the seedKey marker from a description string. Returns

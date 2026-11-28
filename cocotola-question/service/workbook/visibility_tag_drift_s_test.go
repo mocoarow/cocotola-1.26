@@ -39,3 +39,30 @@ func Test_WorkbookInput_shouldMirrorDomainVisibilities_whenVisibilityTagIsRead(t
 		})
 	}
 }
+
+func Test_WorkbookInput_shouldMirrorDomainMaxSeedKeyLength_whenSeedKeyTagIsRead(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input reflect.Type
+	}{
+		{name: "CreateWorkbookInput", input: reflect.TypeFor[workbook.CreateWorkbookInput]()},
+		{name: "UpdateWorkbookInput", input: reflect.TypeFor[workbook.UpdateWorkbookInput]()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// given
+			field, ok := tt.input.FieldByName("SeedKey")
+			require.True(t, ok)
+
+			// when
+			tag := field.Tag.Get("validate")
+
+			// then
+			assert.Equal(t, fmt.Sprintf("omitempty,max=%d", domainworkbook.MaxSeedKeyLength), tag)
+		})
+	}
+}
