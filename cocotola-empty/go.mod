@@ -30,7 +30,7 @@ require (
 	github.com/cloudwego/base64x v0.1.7 // indirect
 	github.com/felixge/httpsnoop v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
-	github.com/gin-contrib/cors v1.7.7 // indirect
+	github.com/gin-contrib/cors v1.7.11 // indirect
 	github.com/gin-contrib/sse v1.1.1 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
