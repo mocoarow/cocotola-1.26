@@ -13,3 +13,9 @@ updates:
     directory: "/hello-world"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directories:
+      - "/cocotola-test/playwright"
+      - "/cocotola-web"
+    schedule:
+      interval: "weekly"
