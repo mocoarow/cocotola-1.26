@@ -21,6 +21,7 @@ vars:
     - cocotola-audio-generator
   PKGFORBID: github.com/mocoarow/pkgforbid/cmd/pkgforbid@v0.0.0-20250827153920-225ba0cfa5ed
   COMMENTRATIO: github.com/mocoarow/commentratio/cmd/commentratio@v0.1.2
+  GOVULNCHECK: golang.org/x/vuln/cmd/govulncheck@v1.10.0
   REPOHEALTH: github.com/mocoarow/repohealth/cmd/repohealth@v2026-11-27
 
 tasks:
@@ -71,6 +72,23 @@ tasks:
       - go run {{ .COMMENTRATIO }} -ignore-patterns '^(given|when|then)(, (when|then))*$' ./...
     requires:
       vars: [GO_PROJECT]
+
+  govulncheck:
+    desc: "Scan every module in go.work for reachable known vulnerabilities"
+    cmds:
+      - |
+        set -o pipefail
+        dirs="$(go list -m -json | jq -r .Dir)" || exit 1
+        if [ -z "${dirs}" ]; then
+          echo "no modules found in go.work" >&2
+          exit 1
+        fi
+        status=0
+        for dir in ${dirs}; do
+          echo "== ${dir}"
+          (cd "${dir}" && go run {{ .GOVULNCHECK }} ./...) || status=1
+        done
+        exit "${status}"
 
   lint:
     cmds:
@@ -135,6 +153,7 @@ tasks:
       - task: markdownlint
       - task: gitleaks
       - task: trivy
+      - task: govulncheck
 
   generate-openapi-auth:
     desc: "Bundle OpenAPI spec and generate Go types for cocotola-auth"

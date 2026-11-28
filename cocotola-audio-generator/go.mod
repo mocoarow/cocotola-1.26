@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-audio-generator
 
-go 1.26.10
+go 1.26.11
 
 require (
 	cloud.google.com/go/storage v1.71.0

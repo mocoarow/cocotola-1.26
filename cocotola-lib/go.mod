@@ -1,6 +1,6 @@
 module github.com/mocoarow/cocotola-1.26/cocotola-lib
 
-go 1.26.10
+go 1.26.11
 
 require (
 	cloud.google.com/go/firestore v1.22.0
@@ -24,7 +24,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.45.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
-	go.opentelemetry.io/otel/sdk/log v0.21.0
+	go.opentelemetry.io/otel/sdk/log v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/oauth2 v0.38.0
 	golang.org/x/sync v0.25.0
