@@ -1,18 +1,18 @@
 # Repository health
 
-Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:05:03+09:00, taken at 2026-11-24T00:12:09+09:00 (repohealth v0.0.0-20261123133459-d188564a8b95, Biome 2.4.10).
+Snapshot of 7c740a295ca16f653fd0f5ca42cc06c8fc52d517 committed at 2026-11-28T20:16:38+09:00, taken at 2026-11-28T11:29:10Z (repohealth v0.0.0-20261126155732-2f359e27afa1, Biome 2.4.10).
 
 ## Areas
 
 | Area | Go lines | Go test lines | Go functions | Go cyclo max | Go cognit sum | Go cognit max | Go over limit | TS lines | TS test lines | TS functions (cognit ≥ 2) | TS cognit sum | TS cognit max | TS over limit | Coverage |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | app | 213 | 75 | 4 | 9 | 15 | 8 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 77.8% |
-| audio-generator | 953 | 1027 | 31 | 9 | 85 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 72.3% |
+| audio-generator | 953 | 1109 | 31 | 9 | 85 | 10 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 72.7% |
 | auth | 10792 | 17475 | 608 | 12 | 786 | 17 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 83.9% |
-| empty | 179 | 0 | 8 | 5 | 13 | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | - |
-| init | 2268 | 3715 | 82 | 10 | 266 | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 86.4% |
-| lib | 2049 | 4668 | 91 | 8 | 155 | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 74.7% |
-| question | 10859 | 19271 | 497 | 11 | 961 | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 85.5% |
+| empty | 180 | 0 | 8 | 5 | 13 | 5 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | - |
+| init | 2388 | 4199 | 89 | 10 | 271 | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 87.4% |
+| lib | 2109 | 4793 | 93 | 8 | 161 | 15 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 74.4% |
+| question | 10859 | 19324 | 497 | 11 | 961 | 13 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 85.4% |
 | test | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 457 | 1799 | 2 | 4 | 2 | 0 | - |
 | web | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 9025 | 17032 | 206 | 785 | 15 | 0 | - |
 
@@ -23,18 +23,21 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 | Committed | Rev | app | audio-generator | auth | empty | init | lib | question | test | web |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-24T00:05:03+09:00 | 37eda81def47e75d03a5c45789bd5b750fe17153 | 77.8% | 72.3% | 83.9% | - | 86.4% | 74.7% | 85.5% | - | - |
+| 2026-11-28T20:16:38+09:00 | 7c740a295ca16f653fd0f5ca42cc06c8fc52d517 | 77.8% | 72.7% | 83.9% | - | 87.4% | 74.4% | 85.4% | - | - |
 
 ### Go cognitive complexity (sum)
 
 | Committed | Rev | app | audio-generator | auth | empty | init | lib | question | test | web |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-24T00:05:03+09:00 | 37eda81def47e75d03a5c45789bd5b750fe17153 | 15 | 85 | 786 | 13 | 266 | 155 | 961 | 0 | 0 |
+| 2026-11-28T20:16:38+09:00 | 7c740a295ca16f653fd0f5ca42cc06c8fc52d517 | 15 | 85 | 786 | 13 | 271 | 161 | 961 | 0 | 0 |
 
 ### TS cognitive complexity (sum)
 
 | Committed | Rev | app | audio-generator | auth | empty | init | lib | question | test | web |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 2026-11-24T00:05:03+09:00 | 37eda81def47e75d03a5c45789bd5b750fe17153 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 785 |
+| 2026-11-28T20:16:38+09:00 | 7c740a295ca16f653fd0f5ca42cc06c8fc52d517 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 785 |
 
 ## Cross-area changes
 
@@ -48,7 +51,7 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 | 2026-06 | 22 | 4 | 2 |
 | 2026-07 | 11 | 0 | 0 |
 | 2026-10 | 65 | 7 | 3 |
-| 2026-11 | 81 | 13 | 4 |
+| 2026-11 | 84 | 14 | 4 |
 
 ### Pairs
 
@@ -58,12 +61,12 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 | auth + init | 22 |
 | question + web | 20 |
 | auth + lib | 16 |
-| lib + question | 15 |
-| init + question | 13 |
+| lib + question | 16 |
+| init + question | 14 |
 | app + question | 12 |
 | auth + web | 12 |
 | app + auth | 10 |
-| init + lib | 9 |
+| init + lib | 10 |
 
 ## Dependencies
 
@@ -150,20 +153,20 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 | app | `config` | 21 | 27 | 77.8% |
 | audio-generator | `config` | 8 | 22 | 36.4% |
 | audio-generator | `gateway` | 151 | 252 | 59.9% |
-| audio-generator | `usecase` | 151 | 155 | 97.4% |
+| audio-generator | `usecase` | 153 | 155 | 98.7% |
 | auth | `controller` | 844 | 1100 | 76.7% |
 | auth | `domain` | 1083 | 1137 | 95.3% |
-| auth | `gateway` | 1008 | 1333 | 75.6% |
+| auth | `gateway` | 1010 | 1333 | 75.8% |
 | auth | `service` | 229 | 229 | 100.0% |
 | auth | `usecase` | 833 | 967 | 86.1% |
 | init | `config` | 50 | 56 | 89.3% |
 | init | `gateway` | 116 | 159 | 73.0% |
-| init | `importer` | 79 | 79 | 100.0% |
+| init | `importer` | 82 | 82 | 100.0% |
 | init | `initialize` | 252 | 290 | 86.9% |
-| init | `seed` | 421 | 479 | 87.9% |
+| init | `seed` | 480 | 534 | 89.9% |
 | lib | `controller` | 220 | 239 | 92.1% |
 | lib | `domain` | 46 | 46 | 100.0% |
-| lib | `gateway` | 415 | 641 | 64.7% |
+| lib | `gateway` | 429 | 664 | 64.6% |
 | lib | `i18n` | 3 | 3 | 100.0% |
 | lib | `process` | 29 | 29 | 100.0% |
 | lib | `telemetry` | 13 | 16 | 81.2% |
@@ -172,7 +175,7 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 | question | `contentjson` | 45 | 45 | 100.0% |
 | question | `controller` | 1146 | 1569 | 73.0% |
 | question | `domain` | 979 | 994 | 98.5% |
-| question | `gateway` | 930 | 1083 | 85.9% |
+| question | `gateway` | 928 | 1083 | 85.7% |
 | question | `initialize` | 88 | 88 | 100.0% |
 | question | `service` | 352 | 376 | 93.6% |
 | question | `usecase` | 1147 | 1325 | 86.6% |
@@ -181,7 +184,7 @@ Snapshot of 37eda81def47e75d03a5c45789bd5b750fe17153 committed at 2026-11-24T00:
 
 | File | Modified | Skipped |
 | --- | --- | --- |
-| `coverage.lcov` | 2026-11-24T00:12:05+09:00 | 0 |
+| `coverage.lcov` | 2026-11-28T11:28:49Z | 0 |
 
 ## Largest files
 
