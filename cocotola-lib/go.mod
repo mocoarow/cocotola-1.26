@@ -4,7 +4,7 @@ go 1.26.10
 
 require (
 	cloud.google.com/go/firestore v1.22.0
-	github.com/gin-contrib/cors v1.7.7
+	github.com/gin-contrib/cors v1.7.11
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-playground/validator/v10 v10.30.6
 	github.com/go-sql-driver/mysql v1.10.0
